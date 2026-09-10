@@ -1,0 +1,86 @@
+.nav
+  flex: none
+  display: flex
+  flex-direction: column
+  gap: 4px
+  width: 176px
+  padding: 16px 12px
+  background: var(--papel-alto)
+  border-right: 1px solid var(--linha)
+
+.marca
+  display: flex
+  flex-direction: column
+  gap: 1px
+  padding: 4px 10px 14px
+  text-decoration: none
+
+.sigla
+  font-size: 22px
+  font-weight: 700
+  letter-spacing: -.03em
+  line-height: 1
+
+.sub
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 9.5px
+  letter-spacing: .1em
+  text-transform: uppercase
+
+.link
+  display: flex
+  align-items: center
+  gap: 9px
+  padding: 8px 10px
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 14px
+  font-weight: 500
+  text-decoration: none
+  transition: background .12s ease, color .12s ease
+
+  &:hover
+    background: var(--papel)
+    color: var(--tinta)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.ativo
+  background: var(--tinta)
+  color: var(--papel-alto)
+
+  &:hover
+    background: var(--tinta)
+    color: var(--papel-alto)
+
+.rodape
+  margin-top: auto
+  padding: 0 10px
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 10px
+  letter-spacing: .06em
+
+// no celular a barra vira uma faixa no topo
+@media (max-width: 760px)
+  .nav
+    flex-direction: row
+    align-items: center
+    gap: 6px
+    width: 100%
+    padding: 8px 12px
+    border-right: none
+    border-bottom: 1px solid var(--linha)
+    overflow-x: auto
+
+  .marca
+    padding: 0 8px 0 0
+
+  .sub
+    display: none
+
+  .rodape
+    display: none

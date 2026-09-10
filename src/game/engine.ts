@@ -119,10 +119,12 @@ export function createRun(equipped: CardId[]): GameState {
     deck: shuffle(deck),
     hand: [],
     discard: [],
+    playedToday: [],
     meetingsToday: 0,
     blockedKinds: [],
     costModifier: 0,
     currentEvent: null,
+    eventRevealed: false,
     pendingEventChoice: false,
     rewardOptions: [],
     log: [],
@@ -146,13 +148,26 @@ function startDay(input: GameState): GameState {
   state.blockedKinds = []
   state.costModifier = 0
   state.pendingEventChoice = false
+  state.playedToday = []
 
   if (state.passiveProductivity > 0) {
     log(state, `Automatizar rende +${state.passiveProductivity} produtividade antes de começar.`)
   }
 
-  const event = pick(EVENT_CARDS)
-  state.currentEvent = event.id
+  // O evento entra virado para baixo. Nada acontece até o jogador revelar,
+  // e a mão só é comprada depois — a ordem que o README descreve.
+  state.currentEvent = pick(EVENT_CARDS).id
+  state.eventRevealed = false
+  return state
+}
+
+/** Vira a carta de evento: aplica o efeito e compra a mão do dia. */
+export function revealEvent(input: GameState): GameState {
+  const state = clone(input)
+  if (state.phase !== 'evento' || state.eventRevealed || !state.currentEvent) return input
+
+  const event = getEvent(state.currentEvent)
+  state.eventRevealed = true
   log(state, `${dayLabel(state)} — evento: ${event.name}.`)
 
   if (event.choices) {
@@ -169,7 +184,7 @@ function startDay(input: GameState): GameState {
     log(state, `Fofoca de Corredor descartou ${getCard(victim.cardId).name}.`)
   }
   state.phase = 'dia'
-  return state
+  return checkDefeat(state)
 }
 
 /** Aplica o efeito imediato do evento e devolve quantas cartas comprar. */
@@ -380,6 +395,7 @@ export function playCard(input: GameState, uid: string): GameState {
       break
   }
 
+  state.playedToday.push(card.id)
   log(state, `Jogou ${card.name}.`)
   return checkDefeat(state)
 }

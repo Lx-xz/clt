@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import Card from '@/components/Card'
 import { ACTION_CARDS, getCard } from '@/game/cards'
@@ -70,9 +69,6 @@ export default function BaralhoPage() {
           >
             Resetar
           </button>
-          <Link className={buttons.button} href="/">
-            Início
-          </Link>
         </div>
       </div>
       <p className={styles.hint}>
@@ -96,8 +92,8 @@ export default function BaralhoPage() {
                 <Card
                   key={id}
                   card={card}
-                  count={card.starter ? (card.copies ?? 1) : 1}
-                  onClick={() => unequip(id)}
+                  copies={card.starter ? (card.copies ?? 1) : 1}
+                  onOpen={() => unequip(id)}
                 />
               )
             })}
@@ -115,7 +111,7 @@ export default function BaralhoPage() {
         ) : (
           <div className={styles.grid}>
             {collection.unequipped.map((id) => (
-              <Card key={id} card={getCard(id)} onClick={() => equip(id)} />
+              <Card key={id} card={getCard(id)} onOpen={() => equip(id)} />
             ))}
           </div>
         )}

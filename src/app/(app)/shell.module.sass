@@ -1,0 +1,15 @@
+// A casca ocupa exatamente a janela: quem rola é o conteúdo, nunca a página.
+.shell
+  display: flex
+  height: 100dvh
+  overflow: hidden
+
+.conteudo
+  flex: 1
+  min-width: 0
+  min-height: 0
+  overflow: auto
+
+@media (max-width: 760px)
+  .shell
+    flex-direction: column

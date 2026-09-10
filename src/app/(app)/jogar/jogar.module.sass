@@ -1,0 +1,299 @@
+// A mesa ocupa exatamente a altura disponível: nada de rolagem no jogo.
+.mesa
+  display: grid
+  grid-template-columns: minmax(96px, 132px) 1fr minmax(96px, 132px)
+  grid-template-rows: auto auto minmax(0, 1fr) auto
+  grid-template-areas: "hud hud hud" "event event event" "mat mat mat" "deck hand discard"
+  gap: 10px
+  height: 100%
+  padding: 12px
+  background: var(--papel-baixo)
+  background-image: repeating-linear-gradient(-45deg, transparent, transparent 11px, rgba(120, 110, 90, .045) 11px, rgba(120, 110, 90, .045) 22px)
+  // tamanho da carta preso à altura da janela, para caber sem rolar
+  --carta-h: clamp(132px, 21vh, 190px)
+  --carta-w: calc(var(--carta-h) * .66)
+  --carta-arte: calc(var(--carta-h) * .39)
+
+.arrastando
+  cursor: grabbing
+
+// ------------------------------------------------------------------ painel
+.hud
+  grid-area: hud
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 8px
+  padding: 7px 10px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+
+.dia
+  padding-right: 10px
+  border-right: 1px solid var(--linha)
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 600
+  letter-spacing: .04em
+  text-transform: uppercase
+
+.res
+  display: flex
+  align-items: center
+  gap: 6px
+  padding: 3px 9px 3px 7px
+  background: var(--papel)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+
+.resRot
+  color: var(--tinta-fraca)
+  font-size: 10.5px
+  letter-spacing: .07em
+  text-transform: uppercase
+
+.resVal
+  font-family: var(--mono)
+  font-size: 15px
+  font-weight: 600
+  font-variant-numeric: tabular-nums
+
+.energia
+  color: var(--energia)
+
+.estresse
+  color: var(--estresse)
+
+.produtividade
+  color: var(--produtividade)
+
+.dinheiro
+  color: var(--dinheiro)
+
+.espaco
+  flex: 1
+
+// ------------------------------------------------------------- evento
+.zonaEvento
+  grid-area: event
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 8px
+  min-height: 0
+
+.eventoCarta
+  --carta-h: clamp(140px, 22vh, 200px)
+
+.dicaEvento
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 10.5px
+  letter-spacing: .08em
+  text-transform: uppercase
+
+.chamando
+  color: var(--destaque)
+
+.escolhas
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 8px
+
+.notaEscolha
+  display: block
+  color: var(--tinta-fraca)
+  font-size: 11px
+  font-weight: 400
+
+// -------------------------------------------------------------- tapete
+.tapete
+  grid-area: mat
+  position: relative
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  gap: 8px
+  min-height: 0
+  padding: 10px
+  border: 2px dashed var(--linha)
+  border-radius: 8px
+  transition: border-color .15s ease, background .15s ease
+
+.alvo
+  background: color-mix(in srgb, var(--destaque) 12%, transparent)
+  border-color: var(--destaque)
+  border-style: solid
+
+.dicaTapete
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 11px
+  letter-spacing: .08em
+  text-align: center
+  text-transform: uppercase
+  pointer-events: none
+
+.jogadas
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 7px
+  max-height: 100%
+  overflow: hidden
+
+.jogada
+  --carta-h: clamp(76px, 11vh, 104px)
+
+// ------------------------------------------------------ baralho e descarte
+.pilha
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: flex-end
+  gap: 5px
+
+.pilhaDeck
+  grid-area: deck
+
+.pilhaDesc
+  grid-area: discard
+
+.monte
+  position: relative
+  width: calc(var(--carta-w) * .78)
+  height: calc(var(--carta-h) * .78)
+
+.lastro
+  position: absolute
+  inset: 0
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+
+.lastro1
+  transform: translate(6px, 6px)
+
+.lastro2
+  transform: translate(3px, 3px)
+
+.topo
+  position: absolute
+  inset: 0
+  display: grid
+  place-items: center
+  background: var(--papel-alto)
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, color-mix(in srgb, var(--linha) 55%, transparent) 5px, color-mix(in srgb, var(--linha) 55%, transparent) 10px)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  box-shadow: var(--sombra)
+
+.qtd
+  padding: 1px 7px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 14px
+  font-weight: 600
+
+.rotPilha
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 10px
+  letter-spacing: .08em
+  text-transform: uppercase
+
+.vazia
+  opacity: .4
+
+// ------------------------------------------------------------------ mão
+.zonaMao
+  grid-area: hand
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: flex-end
+  gap: 2px
+  min-height: 0
+
+// o leque: cartas sobrepostas, a de cima ganha o hover
+.leque
+  display: flex
+  align-items: flex-end
+  justify-content: center
+  // o arco empurra as cartas das pontas para baixo; sem esta folga elas
+  // encostam na borda da janela
+  padding-bottom: 16px
+
+  > *
+    margin-inline: calc(var(--carta-w) * -.11)
+
+  > *:hover
+    z-index: 20
+
+.maoVazia
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 11px
+  letter-spacing: .08em
+  text-transform: uppercase
+
+.statusMao
+  color: var(--tinta-fraca)
+  font-size: 11.5px
+
+// -------------------------------------------------------------- overlays
+.fundo
+  position: fixed
+  inset: 0
+  z-index: 150
+  display: grid
+  place-items: center
+  padding: 20px
+  background: color-mix(in srgb, var(--tinta) 55%, transparent)
+
+.painel
+  display: flex
+  flex-direction: column
+  gap: 12px
+  max-width: 560px
+  padding: 22px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
+
+.painelTitulo
+  font-size: 21px
+
+.painelTexto
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+
+.recompensas
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 12px
+
+.recompensa
+  --carta-h: 200px
+
+.acoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+@media (max-width: 760px)
+  .mesa
+    grid-template-columns: 1fr 1fr
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto
+    grid-template-areas: "hud hud" "event event" "mat mat" "hand hand" "deck discard"
+    height: auto
+    min-height: 100%

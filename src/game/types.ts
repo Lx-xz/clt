@@ -60,11 +60,15 @@ export interface GameState {
   deck: CardInstance[]
   hand: CardInstance[]
   discard: CardInstance[]
+  /** O que já foi jogado hoje, para o tapete mostrar o dia se montando. */
+  playedToday: CardId[]
 
   meetingsToday: number
   blockedKinds: CardKind[]
   costModifier: number
   currentEvent: CardId | null
+  /** O evento entra virado para baixo; só o clique do jogador aplica o efeito. */
+  eventRevealed: boolean
   pendingEventChoice: boolean
 
   rewardOptions: CardId[]
