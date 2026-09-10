@@ -22,7 +22,9 @@ import {
   revealEvent,
 } from '@/game/engine'
 import { getEvent } from '@/game/events'
-import { clearRun, loadCollection, loadRun, saveRun, unlockCard } from '@/game/storage'
+import { carregarDoBanco, sincronizar, type StatusSync } from '@/data/sync'
+import { useSessao } from '@/components/SessaoGuard'
+import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import type { CardInstance, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
@@ -32,6 +34,13 @@ const FIM: Record<Exclude<GameState['outcome'], 'jogando'>, { title: string; tex
   burnout: { title: 'Burnout', text: 'O estresse chegou a 10. O corpo cobrou antes do banco.' },
   demissao: { title: 'Demissão', text: 'Três advertências. O RH marcou uma conversa rápida.' },
   despejo: { title: 'Despejo', text: 'As contas de sexta não fecharam.' },
+}
+
+const SYNC_ROTULO: Record<StatusSync, string> = {
+  ocioso: '{nick}',
+  salvando: '{nick} · salvando…',
+  salvo: '{nick} · salvo',
+  erro: '{nick} · sem conexão, jogando local',
 }
 
 const CLASSES: Record<string, string> = {
@@ -46,24 +55,37 @@ export default function JogarPage() {
   const [aberta, setAberta] = useState<CardInstance | null>(null)
   const [eventoAberto, setEventoAberto] = useState(false)
   const [sobreTapete, setSobreTapete] = useState(false)
+  const [status, setStatus] = useState<StatusSync>('ocioso')
+  const [falha, setFalha] = useState<string | null>(null)
   const tapete = useRef<HTMLDivElement>(null)
+  const sessao = useSessao()
 
   useEffect(() => {
-    const salva = loadRun<GameState>()
-    if (salva) {
-      setState(salva)
-      return
+    let vivo = true
+    carregarDoBanco(sessao.id)
+      .then(({ run, collection }) => {
+        if (!vivo) return
+        if (run) {
+          setState(run)
+          return
+        }
+        // run nova já nasce salva: sem isso, recarregar antes da primeira
+        // jogada sorteava outra run
+        const nova = createRun(collection.equipped)
+        setState(nova)
+        sincronizar(sessao.id, nova, collection, setStatus)
+      })
+      .catch((e: unknown) => {
+        if (vivo) setFalha(e instanceof Error ? e.message : 'Não deu para falar com o banco.')
+      })
+    return () => {
+      vivo = false
     }
-    // a run nova precisa ser salva já: sem isso, recarregar a página antes da
-    // primeira jogada sorteava outra run
-    const nova = createRun(loadCollection().equipped)
-    saveRun(nova)
-    setState(nova)
-  }, [])
+  }, [sessao.id])
 
   function update(next: GameState) {
-    saveRun(next)
     setState(next)
+    sincronizar(sessao.id, next, loadCollection(), setStatus)
   }
 
   function recomecar() {
@@ -76,6 +98,28 @@ export default function JogarPage() {
     if (!state) return
     setAberta(null)
     update(playCard(state, uid))
+  }
+
+  if (falha) {
+    return (
+      <main className={styles.mesa}>
+        <div className={styles.fundo}>
+          <div className={styles.painel}>
+            <h2 className={styles.painelTitulo}>Não deu para carregar seu save</h2>
+            <p className={styles.painelTexto}>{falha}</p>
+            <div className={styles.acoes}>
+              <button
+                type="button"
+                className={`${buttons.button} ${buttons.primary}`}
+                onClick={() => window.location.reload()}
+              >
+                Tentar de novo
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
   }
 
   if (!state) {
@@ -140,6 +184,9 @@ export default function JogarPage() {
           subirEhRuim
         />
         <span className={styles.espaco} />
+        <span className={`${styles.sync} ${status === 'erro' ? styles.syncErro : ''}`}>
+          {SYNC_ROTULO[status].replace('{nick}', sessao.nick)}
+        </span>
         <button type="button" className={`${buttons.button} ${buttons.ghost}`} onClick={recomecar}>
           Reiniciar
         </button>

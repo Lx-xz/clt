@@ -56,15 +56,23 @@ const CAMPOS_DA_RUN = [
 ] as const
 
 /**
+ * Um estado de versão antiga não tem os campos que a mesa lê e derruba a
+ * página. Vale para o save local e para o que vier do banco.
+ */
+export function runUsavel(bruta: unknown): boolean {
+  if (!bruta || typeof bruta !== 'object') return false
+  const obj = bruta as Record<string, unknown>
+  return CAMPOS_DA_RUN.every((campo) => obj[campo] !== undefined)
+}
+
+/**
  * Devolve a run salva só quando ela tem o formato desta versão. Um estado de
  * versão antiga é descartado em vez de derrubar a página.
  */
 export function loadRun<T>(): T | null {
   descartarRunsAntigas()
   const bruta = read<Record<string, unknown>>(RUN_KEY)
-  if (!bruta || typeof bruta !== 'object') return null
-  const completa = CAMPOS_DA_RUN.every((campo) => bruta[campo] !== undefined)
-  if (!completa) {
+  if (!runUsavel(bruta)) {
     clearRun()
     return null
   }

@@ -37,6 +37,11 @@ jobs:
           DEPLOY_TARGET: gh-pages
           # o site é servido em /<nome-do-repo>
           PAGES_BASE_PATH: ${{ format('/{0}', github.event.repository.name) }}
+          # A chave anon é pública por natureza: ela vai embutida no bundle
+          # estático de qualquer jeito. Está aqui como secret só para não
+          # ficar no repositório. Quem protege os dados é o RLS.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: npm run build
 
       - uses: actions/configure-pages@v5

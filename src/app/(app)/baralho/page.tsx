@@ -3,21 +3,38 @@
 import { useEffect, useState } from 'react'
 import Card from '@/components/Card'
 import { ACTION_CARDS, getCard } from '@/game/cards'
-import { defaultCollection, loadCollection, lockedCards, saveCollection } from '@/game/storage'
+import { carregarDoBanco, sincronizar, type StatusSync } from '@/data/sync'
+import { useSessao } from '@/components/SessaoGuard'
+import { defaultCollection, loadCollection, loadRun, lockedCards, saveCollection } from '@/game/storage'
+import type { GameState } from '@/game/types'
 import type { CardId, Collection } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './baralho.module.sass'
 
 export default function BaralhoPage() {
   const [collection, setCollection] = useState<Collection | null>(null)
+  const [status, setStatus] = useState<StatusSync>('ocioso')
+  const sessao = useSessao()
 
   useEffect(() => {
-    setCollection(loadCollection())
-  }, [])
+    let vivo = true
+    carregarDoBanco(sessao.id)
+      .then((dados) => {
+        if (vivo) setCollection(dados.collection)
+      })
+      .catch(() => {
+        // sem banco o baralho ainda abre pelo espelho local
+        if (vivo) setCollection(loadCollection())
+      })
+    return () => {
+      vivo = false
+    }
+  }, [sessao.id])
 
   function update(next: Collection) {
     saveCollection(next)
     setCollection(next)
+    sincronizar(sessao.id, loadRun<GameState>(), next, setStatus)
   }
 
   function unequip(id: CardId) {
@@ -73,6 +90,7 @@ export default function BaralhoPage() {
       </div>
       <p className={styles.hint}>
         Clique numa carta para tirá-la ou colocá-la no baralho. A montagem vale para a próxima run.
+        {status === 'salvando' ? ' Salvando…' : status === 'salvo' ? ' Salvo.' : status === 'erro' ? ' Sem conexão — guardado local.' : ''}
       </p>
 
       <section className={styles.section}>

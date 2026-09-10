@@ -232,10 +232,63 @@ src/styles/    tokens de cor e botões
 O motor é um conjunto de funções puras sobre `GameState`, então dá para simular
 runs fora do navegador para checar balanceamento sem passar pela interface.
 
+### Entrar com um nick
+
+Para testar com várias pessoas, o jogo pede um nick na página inicial e procura
+esse jogador no banco. Se não existir, abre um aviso de primeira vez com a opção
+de criar ou de fechar e tentar outro nick.
+
+> **O nick identifica, não autentica.** Não há senha: quem digitar o nick de
+> outra pessoa joga no save dela. É uma escolha consciente para a fase de teste,
+> já que nada guardado aqui é sensível. Para valer, troque por Supabase Auth.
+
+### Banco (Supabase)
+
+O esquema está em [`supabase/schema.sql`](supabase/schema.sql) — rode-o no SQL
+Editor do projeto. Ele cria três tabelas:
+
+| Tabela | O que guarda |
+|---|---|
+| `players` | nick e id. O site nunca lê essa tabela direto |
+| `saves` | a run em andamento e a coleção, em `jsonb` |
+| `runs` | registro append-only de runs terminadas, para balanceamento |
+
+Duas decisões que valem explicação:
+
+- **A busca de nick passa por função `security definer`**, não por `select` na
+  tabela. Sem isso, o site precisaria de acesso de leitura a `players` e
+  qualquer pessoa poderia baixar a lista de nicks de todo mundo.
+- **`runs` só aceita `insert`**, nunca `select`. A telemetria é escrita pelo
+  site e lida por você no painel do Supabase.
+
+Configure as variáveis (veja `.env.example`):
+
+```bash
+cp .env.example .env.local   # preencha com os dados do seu projeto
+```
+
+No GitHub, as mesmas duas entram em **Settings → Secrets and variables →
+Actions** como `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+Sem elas o site ainda builda, mas avisa que o banco não está configurado.
+
+> A chave anon é **pública por natureza**: o build é estático, então ela vai
+> embutida no JavaScript do site. Quem protege os dados é o RLS. A chave
+> `service_role` nunca pode aparecer no projeto — ela ignora o RLS.
+
 ### Estado da persistência
 
-- `clt:collection:v1` — cartas equipadas e desbloqueadas (persiste entre runs)
-- `clt:run:v1` — a run em andamento (recomeçar limpa essa chave)
+O banco é a fonte da verdade. O `localStorage` fica como espelho, para a mesa
+abrir instantânea e o jogo não morrer se a conexão cair no meio do dia; a
+subida para o banco é adiada em 900 ms, senão cada carta jogada viraria uma
+escrita na rede.
+
+- `clt:sessao:v1` — quem está jogando (id e nick)
+- `clt:collection:v1` — espelho da coleção
+- `clt:run:v2` — espelho da run em andamento
+
+A chave da run é versionada de propósito: um save gravado por uma versão
+anterior não tem os campos que a mesa lê e derrubava a página. Hoje um save
+de formato incompatível é descartado, venha ele do espelho ou do banco.
 
 O botão **Desbloquear tudo (teste)** na página do baralho existe para testar as
 cartas desbloqueáveis sem jogar quatro semanas.

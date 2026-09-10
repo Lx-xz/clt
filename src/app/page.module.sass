@@ -3,9 +3,9 @@
   flex-direction: column
   align-items: center
   justify-content: center
-  gap: 28px
-  min-height: 100vh
-  padding-block: 48px
+  gap: 26px
+  min-height: 100dvh
+  padding-block: 40px
   padding-left: 20px
   padding-right: 20px
   text-align: center
@@ -42,3 +42,102 @@
   margin: 0
   color: var(--tinta-fraca)
   font-size: 12px
+
+// ------------------------------------------------------------- entrada
+.forma
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 8px
+  width: 100%
+  max-width: 380px
+
+.campo
+  flex: 1 1 200px
+  min-width: 0
+  padding: 10px 14px
+  background: var(--papel-alto)
+  border: 1px solid var(--tinta)
+  border-radius: var(--raio)
+  color: var(--tinta)
+  font-family: var(--mono)
+  font-size: 15px
+
+  &::placeholder
+    color: var(--tinta-fraca)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.erro
+  margin: 0
+  color: var(--estresse)
+  font-size: 13px
+
+.aviso
+  max-width: 42ch
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.quem
+  display: flex
+  align-items: center
+  gap: 8px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.nick
+  color: var(--tinta)
+  font-family: var(--mono)
+  font-weight: 600
+
+.trocar
+  padding: 0
+  background: none
+  border: none
+  color: var(--tinta-fraca)
+  font: inherit
+  font-size: 13px
+  text-decoration: underline
+  cursor: pointer
+
+  &:hover
+    color: var(--tinta)
+
+// --------------------------------------------------------------- popup
+.fundo
+  position: fixed
+  inset: 0
+  z-index: 200
+  display: grid
+  place-items: center
+  padding: 20px
+  background: color-mix(in srgb, var(--tinta) 55%, transparent)
+
+.painel
+  display: flex
+  flex-direction: column
+  gap: 12px
+  max-width: 420px
+  padding: 24px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
+  text-align: left
+
+.painelTitulo
+  font-size: 20px
+
+.painelTexto
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+
+.painelAcoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+  margin-top: 4px
