@@ -1,0 +1,43 @@
+.button
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  gap: 6px
+  padding: 10px 20px
+  background: var(--papel-alto)
+  border: 1px solid var(--tinta)
+  border-radius: var(--raio)
+  box-shadow: 2px 2px 0 var(--tinta)
+  color: var(--tinta)
+  font-size: 14px
+  font-weight: 600
+  text-decoration: none
+  cursor: pointer
+  transition: transform .1s ease, box-shadow .1s ease
+
+  &:hover:not(:disabled)
+    transform: translate(1px, 1px)
+    box-shadow: 1px 1px 0 var(--tinta)
+
+  &:active:not(:disabled)
+    transform: translate(2px, 2px)
+    box-shadow: none
+
+  &:disabled
+    opacity: .4
+    cursor: not-allowed
+    box-shadow: 2px 2px 0 var(--linha)
+
+.primary
+  background: var(--destaque)
+  color: #17150f
+
+.ghost
+  border-color: var(--linha)
+  box-shadow: none
+  color: var(--tinta-fraca)
+
+  &:hover:not(:disabled)
+    transform: none
+    box-shadow: none
+    color: var(--tinta)

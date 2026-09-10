@@ -1,0 +1,93 @@
+.card
+  position: relative
+  display: flex
+  flex-direction: column
+  gap: 8px
+  width: 100%
+  min-height: 158px
+  padding: 12px 12px 10px
+  text-align: left
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  box-shadow: var(--sombra)
+  cursor: default
+  transition: transform .12s ease, box-shadow .12s ease
+
+  // grampo de papel na lateral esquerda
+  &::before
+    content: ""
+    position: absolute
+    inset: 6px auto 6px 0
+    width: 3px
+    background: var(--linha)
+    border-radius: 3px 0 0 3px
+
+.clickable
+  cursor: pointer
+
+  &:hover
+    transform: translateY(-3px)
+    box-shadow: 0 3px 0 rgba(30, 28, 24, .18), 0 12px 20px rgba(30, 28, 24, .12)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.disabled
+  opacity: .45
+  filter: grayscale(.5)
+  cursor: not-allowed
+
+.locked
+  background: repeating-linear-gradient(-45deg, var(--papel-baixo), var(--papel-baixo) 7px, transparent 7px, transparent 14px)
+  border-style: dashed
+  box-shadow: none
+
+.head
+  display: flex
+  align-items: flex-start
+  justify-content: space-between
+  gap: 8px
+  padding-left: 8px
+
+.name
+  font-size: 14px
+  font-weight: 650
+  line-height: 1.25
+
+.cost
+  flex: none
+  display: grid
+  place-items: center
+  width: 30px
+  height: 30px
+  border: 2px solid var(--energia)
+  border-radius: 50%
+  color: var(--energia)
+  font-family: var(--mono)
+  font-size: 14px
+  font-weight: 700
+  // carimbo levemente torto
+  transform: rotate(4deg)
+
+.text
+  flex: 1
+  padding-left: 8px
+  color: var(--tinta-fraca)
+  font-size: 12.5px
+
+.kind
+  align-self: flex-start
+  margin-left: 8px
+  padding: 2px 7px
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-size: 10.5px
+  letter-spacing: .06em
+  text-transform: uppercase
+
+.badge
+  margin-right: 4px
+  font-size: 12px

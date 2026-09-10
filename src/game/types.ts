@@ -1,0 +1,89 @@
+export type CardId = string
+
+/** Categoria usada por eventos que bloqueiam um tipo de jogada (ex.: Sistema Fora do Ar). */
+export type CardKind = 'tarefa' | 'descanso' | 'grana' | 'social'
+
+export interface ActionCard {
+  id: CardId
+  name: string
+  cost: number
+  kind: CardKind
+  text: string
+  /** Cartas iniciais já vêm desbloqueadas; as demais entram como recompensa semanal. */
+  starter: boolean
+  /** Quantas cópias entram no baralho inicial. */
+  copies?: number
+}
+
+export type EventTone = 'negativo' | 'positivo' | 'ambiguo'
+
+export interface EventChoice {
+  label: string
+  text: string
+}
+
+export interface EventCard {
+  id: CardId
+  name: string
+  tone: EventTone
+  text: string
+  choices?: [EventChoice, EventChoice]
+}
+
+/** Uma instância de carta na mão/baralho (várias cópias da mesma carta). */
+export interface CardInstance {
+  uid: string
+  cardId: CardId
+}
+
+export type Phase = 'evento' | 'dia' | 'sexta' | 'recompensa' | 'fim'
+
+export interface GameState {
+  day: number // 1..20
+  phase: Phase
+  energy: number
+  stress: number
+  productivity: number
+  money: number
+  warnings: number
+  informalWarnings: number
+
+  weekProductivity: number
+  dailyQuota: number // cota do dia já com ajustes de evento
+  tomorrow: { energy: number; quota: number } // efeitos adiados
+
+  /** Bônus permanente de produtividade por dia (carta Automatizar). */
+  passiveProductivity: number
+  salaryBonus: number
+  usedPuxarOSaco: boolean
+
+  deck: CardInstance[]
+  hand: CardInstance[]
+  discard: CardInstance[]
+
+  meetingsToday: number
+  blockedKinds: CardKind[]
+  costModifier: number
+  currentEvent: CardId | null
+  pendingEventChoice: boolean
+
+  rewardOptions: CardId[]
+  log: string[]
+  outcome: 'jogando' | 'vitoria' | 'burnout' | 'demissao' | 'despejo'
+}
+
+/** Coleção persistida entre runs (o "baralho" fora da partida). */
+export interface Collection {
+  /** Cartas montadas no baralho da próxima run. */
+  equipped: CardId[]
+  /** Desbloqueadas, mas fora do baralho. */
+  unequipped: CardId[]
+}
+
+export interface WeekConfig {
+  week: number
+  dailyQuota: number
+  weeklyGoal: number
+  fullSalary: number
+  reducedSalary: number
+}
