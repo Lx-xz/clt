@@ -261,6 +261,11 @@ Duas decisões que valem explicação:
 - **`runs` só aceita `insert`**, nunca `select`. A telemetria é escrita pelo
   site e lida por você no painel do Supabase.
 
+A `NEXT_PUBLIC_SUPABASE_URL` é a **URL do projeto**, sem caminho
+(`https://xxxx.supabase.co`). O painel também mostra uma "API URL" terminada
+em `/rest/v1` — essa a `supabase-js` monta sozinha, e passá-la gera
+`/rest/v1/rest/v1`. O código corta esse sufixo se ele vier junto.
+
 Configure as variáveis (veja `.env.example`):
 
 ```bash
