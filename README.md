@@ -227,8 +227,11 @@ O site é totalmente client-side, então vai como export estático. O workflow
 `.github/workflows/pages.yml` builda e publica a cada push no branch padrão, e
 também pode ser rodado à mão em **Actions → Deploy no GitHub Pages**.
 
-Antes do primeiro deploy é preciso um passo manual no GitHub:
-**Settings → Pages → Source: GitHub Actions**.
+O `configure-pages` liga o Pages sozinho no primeiro deploy, então não houve
+passo manual. Se algum dia o job falhar dizendo que o Pages não está
+habilitado, ligue em **Settings → Pages → Source: GitHub Actions**.
+
+O site fica em <https://lx-xz.github.io/clt/>.
 
 Como uma página de projeto é servida em `https://<usuario>.github.io/clt/`, o
 build de deploy usa `basePath`. Isso só vale quando `DEPLOY_TARGET=gh-pages`,
