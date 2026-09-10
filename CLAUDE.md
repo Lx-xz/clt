@@ -132,21 +132,38 @@ O layout foi escolhido pelo autor a partir de um protótipo interativo com três
 opções. O que ele escolheu, e que deve ser preservado:
 
 - **Leque + carta estilo TCG.** Mão em leque sobreposto embaixo; carta com arte no
-  topo, custo sobreposto em círculo e texto em caixa rebaixada.
+  topo, custo numa aba no canto superior esquerdo, ícone do tipo só no canto
+  direito (sem rótulo de texto), e o resto da carta como área de texto.
 - **Mesa em tela cheia.** `100dvh`, sem rolagem no jogo. O tamanho da carta é
   preso a `vh` (`--carta-h`) justamente para caber sem rolar.
 - **Carta em 3D com verso.** Duas faces com `backface-visibility: hidden`,
-  girando em `rotateY`. Vale para mão, evento e pilhas.
+  girando em `rotateY`. Vale para mão, evento e pilhas. Cartas jogadas no tapete
+  ficam maiores e se empilham quando são muitas.
 - **Interação da carta:** hover cresce e levanta · clique simples abre o detalhe
   com o texto completo · clique duplo **ou** arraste até o tapete joga.
 - **Medidores compactos:** só ícone e valor (`⚡ 10`), com nome e explicação numa
-  dica que aparece no hover, no foco e no toque.
+  dica que aparece no hover, no foco e no toque. No celular o dinheiro perde o
+  "R$" e os 6 medidores viram uma grade 3×2.
+- **Barra lateral recolhível** (`SideNav.tsx`): no desktop fica só com ícones e
+  cresce no hover; no celular fica escondida e abre arrastando da borda
+  esquerda para a direita (fecha arrastando de volta). Muda de página fecha o
+  gaveteiro sozinho. "Reiniciar run" mora aqui agora, com confirmação — saiu
+  do HUD da mesa.
+- **HUD do celular:** header colado nas bordas, dia à esquerda e nick à
+  direita, "Próx. dia" ancorado abaixo do header, status de sync vira ícone
+  (girando / check / sem conexão) em vez de texto. Baralho e descarte somem da
+  mesa no celular (a carta jogada e a mão já ocupam o espaço).
 - **Paleta "papelada de escritório"** em `src/styles/_tokens.sass`: papel manila,
   tinta de caneta, custo como carimbo. Tem variante escura.
 
 O detalhe da carta no clique **resolve o problema do texto longo** (a Reunião é o
-texto mais comprido do baralho): a carta corta em 5 linhas e o texto inteiro vive
-no modal. Não encurte os textos em `cards.ts` por causa de espaço.
+texto mais comprido do baralho): a carta corta e o texto inteiro vive no modal.
+Não encurte os textos em `cards.ts` por causa de espaço.
+
+**Trocar de conta limpa o localStorage do jogo.** `limparLocalDoJogo()`
+(`storage.ts`) + `cancelarSync()` (`sync.ts`) rodam ao clicar em "trocar" na
+home. Sem isso o save de um nick vazava para o próximo jogador que entrasse
+no mesmo navegador — o espelho local não sabe de quem é.
 
 ---
 
