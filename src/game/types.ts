@@ -38,6 +38,8 @@ export interface CardInstance {
 
 export type Phase = 'evento' | 'dia' | 'sexta' | 'recompensa' | 'fim'
 
+export type FridayStep = 'salario' | 'contas' | 'descanso' | null
+
 export interface GameState {
   day: number // 1..20
   phase: Phase
@@ -62,6 +64,16 @@ export interface GameState {
   discard: CardInstance[]
   /** O que já foi jogado hoje, para o tapete mostrar o dia se montando. */
   playedToday: CardId[]
+
+  /** Embalo: cartas seguidas da mesma classe rendem bônus crescente. */
+  streakKind: CardKind | null
+  streakCount: number
+  /** Última mensagem de embalo, para a mesa mostrar o que aconteceu. */
+  lastCombo: string | null
+
+  /** Passo da sexta-feira, para salário, contas e descanso não passarem juntos. */
+  fridayStep: FridayStep
+  fridayResult: { metGoal: boolean; salary: number } | null
 
   meetingsToday: number
   blockedKinds: CardKind[]

@@ -14,7 +14,7 @@ import {
   weekdayOf,
 } from './cards'
 import { EVENT_CARDS, getEvent } from './events'
-import type { CardId, CardInstance, GameState } from './types'
+import type { CardId, CardInstance, CardKind, GameState } from './types'
 
 // ---------------------------------------------------------------- utilidades
 
@@ -120,6 +120,11 @@ export function createRun(equipped: CardId[]): GameState {
     hand: [],
     discard: [],
     playedToday: [],
+    streakKind: null,
+    streakCount: 0,
+    lastCombo: null,
+    fridayStep: null,
+    fridayResult: null,
     meetingsToday: 0,
     blockedKinds: [],
     costModifier: 0,
@@ -149,6 +154,9 @@ function startDay(input: GameState): GameState {
   state.costModifier = 0
   state.pendingEventChoice = false
   state.playedToday = []
+  state.streakKind = null
+  state.streakCount = 0
+  state.lastCombo = null
 
   if (state.passiveProductivity > 0) {
     log(state, `Automatizar rende +${state.passiveProductivity} produtividade antes de começar.`)
@@ -397,7 +405,71 @@ export function playCard(input: GameState, uid: string): GameState {
 
   state.playedToday.push(card.id)
   log(state, `Jogou ${card.name}.`)
+  aplicarEmbalo(state, card.kind)
   return checkDefeat(state)
+}
+
+// ------------------------------------------------------------------ embalo
+
+/** O que cada classe rende por nível de embalo. */
+const EMBALO: Record<CardKind, { rotulo: string; efeito: (s: GameState, n: number) => string }> = {
+  tarefa: {
+    rotulo: 'tarefa',
+    efeito: (s, n) => {
+      s.productivity += n
+      return `+${n} produtividade`
+    },
+  },
+  descanso: {
+    rotulo: 'descanso',
+    efeito: (s, n) => {
+      s.energy += n
+      return `+${n} energia`
+    },
+  },
+  grana: {
+    rotulo: 'grana',
+    efeito: (s, n) => {
+      s.money += n * 10
+      return `+R$ ${n * 10}`
+    },
+  },
+  social: {
+    rotulo: 'social',
+    efeito: (s, n) => {
+      s.stress = Math.max(0, s.stress - n)
+      return `−${n} estresse`
+    },
+  },
+}
+
+/**
+ * Duas cartas seguidas da mesma classe rendem bônus; a terceira em diante
+ * rende o dobro. É o que faz a ordem das jogadas importar.
+ */
+function aplicarEmbalo(state: GameState, kind: CardKind) {
+  if (state.streakKind === kind) {
+    state.streakCount += 1
+  } else {
+    state.streakKind = kind
+    state.streakCount = 1
+  }
+
+  if (state.streakCount < 2) {
+    state.lastCombo = null
+    return
+  }
+
+  const nivel = state.streakCount >= 3 ? 2 : 1
+  const ganho = EMBALO[kind].efeito(state, nivel)
+  state.lastCombo = `Embalo ${EMBALO[kind].rotulo} ×${state.streakCount}: ${ganho}`
+  log(state, state.lastCombo)
+}
+
+/** Quanto a próxima carta desta classe renderia de embalo, para a mesa avisar. */
+export function embaloAtual(state: GameState): { kind: CardKind; count: number } | null {
+  if (!state.streakKind || state.streakCount < 1) return null
+  return { kind: state.streakKind, count: state.streakCount }
 }
 
 // ---------------------------------------------------------------- fim do dia
@@ -426,6 +498,8 @@ export function endDay(input: GameState): GameState {
 
   if (isFriday(state.day)) {
     state.phase = 'sexta'
+    state.fridayStep = 'salario'
+    state.fridayResult = null
     return state
   }
 
@@ -434,14 +508,20 @@ export function endDay(input: GameState): GameState {
 
 // ------------------------------------------------------------ fim da semana
 
-export function resolveFriday(input: GameState): GameState {
-  let state = clone(input)
-  if (state.phase !== 'sexta') return input
+/**
+ * A sexta acontece em três passos separados — salário, contas e fim de semana
+ * — para o jogador ver cada número entrar e sair, em vez de tudo de uma vez.
+ */
+export function paySalary(input: GameState): GameState {
+  const state = clone(input)
+  if (state.phase !== 'sexta' || state.fridayStep !== 'salario') return input
 
   const week = currentWeek(state)
   const metGoal = state.weekProductivity >= week.weeklyGoal
   const salary = (metGoal ? week.fullSalary : week.reducedSalary) + state.salaryBonus
   state.money += salary
+  state.fridayResult = { metGoal, salary }
+
   if (metGoal) {
     log(state, `Meta semanal batida (${state.weekProductivity}/${week.weeklyGoal}). Salário: R$ ${salary}.`)
   } else {
@@ -449,16 +529,35 @@ export function resolveFriday(input: GameState): GameState {
     log(state, `Meta semanal falhou (${state.weekProductivity}/${week.weeklyGoal}). Salário reduzido: R$ ${salary} e +1 advertência.`)
   }
 
+  state.fridayStep = 'contas'
+  return state
+}
+
+export function payBills(input: GameState): GameState {
+  const state = clone(input)
+  if (state.phase !== 'sexta' || state.fridayStep !== 'contas') return input
+
   state.money -= WEEKLY_BILLS
   log(state, `Contas do mês: −R$ ${WEEKLY_BILLS}.`)
+
   if (state.money < 0) {
     state.outcome = 'despejo'
     state.phase = 'fim'
+    state.fridayStep = null
     return state
   }
 
+  state.fridayStep = 'descanso'
+  return state
+}
+
+export function restWeekend(input: GameState): GameState {
+  let state = clone(input)
+  if (state.phase !== 'sexta' || state.fridayStep !== 'descanso') return input
+
   state.stress = Math.max(0, state.stress - 3)
   state.weekProductivity = 0
+  state.fridayStep = null
   log(state, 'Fim de semana: −3 estresse.')
 
   state = checkDefeat(state)

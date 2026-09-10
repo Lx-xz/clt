@@ -148,6 +148,37 @@
 .jogada
   --carta-h: clamp(76px, 11vh, 104px)
 
+// aviso do embalo: diz o que a próxima carta da mesma classe renderia
+.embalo
+  position: absolute
+  bottom: 8px
+  left: 50%
+  padding: 4px 12px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 11px
+  letter-spacing: .04em
+  transform: translateX(-50%)
+  animation: embalo-entra .35s ease
+  pointer-events: none
+
+.embaloAtivo
+  background: var(--destaque)
+  border-color: var(--destaque)
+  color: #17150f
+  font-weight: 600
+
+@keyframes embalo-entra
+  from
+    opacity: 0
+    transform: translate(-50%, 8px)
+  to
+    opacity: 1
+    transform: translate(-50%, 0)
+
 // ------------------------------------------------------ baralho e descarte
 .pilha
   display: flex
@@ -231,7 +262,7 @@
   padding-bottom: 16px
 
   > *
-    margin-inline: calc(var(--carta-w) * -.11)
+    margin-inline: calc(var(--carta-w) * var(--sobreposicao, -.11))
 
   > *:hover
     z-index: 20
@@ -276,6 +307,50 @@
   color: var(--tinta-fraca)
   font-size: 14px
 
+.passos
+  display: flex
+  flex-direction: column
+  gap: 2px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.passo
+  display: flex
+  align-items: baseline
+  justify-content: space-between
+  gap: 16px
+  padding: 9px 2px
+  border-bottom: 1px dotted var(--linha)
+
+.passoNovo
+  animation: passo-entra .4s ease
+
+@keyframes passo-entra
+  from
+    opacity: 0
+    transform: translateY(-6px)
+  to
+    opacity: 1
+    transform: none
+
+.passoRot
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.passoVal
+  flex: none
+  font-family: var(--mono)
+  font-size: 17px
+  font-weight: 600
+  font-variant-numeric: tabular-nums
+
+.entrada
+  color: var(--dinheiro)
+
+.saida
+  color: var(--estresse)
+
 .recompensas
   display: flex
   flex-wrap: wrap
@@ -292,8 +367,53 @@
 
 @media (max-width: 760px)
   .mesa
-    grid-template-columns: 1fr 1fr
-    grid-template-rows: auto auto minmax(0, 1fr) auto auto
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+    grid-template-rows: auto auto minmax(84px, auto) auto auto
     grid-template-areas: "hud hud" "event event" "mat mat" "hand hand" "deck discard"
     height: auto
     min-height: 100%
+    gap: 8px
+    padding: 8px
+    // a carta encolhe pela largura da tela: é ela que definia a largura mínima
+    // da mesa e empurrava o painel para fora do celular
+    --carta-h: clamp(120px, 30vw, 156px)
+
+  .hud
+    gap: 5px
+    padding: 6px
+
+  .dia
+    width: 100%
+    padding-right: 0
+    border-right: none
+
+  .espaco
+    display: none
+
+  // o evento é o foco da tela no celular: vale mais espaço que o tapete
+  .eventoCarta
+    --carta-h: clamp(168px, 46vw, 210px)
+
+  .jogada
+    --carta-h: 78px
+
+  // no celular a mão sobrepõe muito mais, senão sete cartas não cabem
+  .leque
+    padding-bottom: 10px
+
+    > *
+      margin-inline: calc(var(--carta-w) * var(--sobreposicao-mobile, -.16))
+
+  .statusMao
+    font-size: 10.5px
+    text-align: center
+
+  .monte
+    width: calc(var(--carta-w) * .62)
+    height: calc(var(--carta-h) * .62)
+
+  .painel
+    padding: 16px
+
+  .recompensa
+    --carta-h: 168px

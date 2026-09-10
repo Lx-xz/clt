@@ -49,16 +49,35 @@ Vence quem chega ao fim das quatro semanas ainda empregado e com as contas pagas
 ### Loop do dia
 
 1. **Acordar** — calcula a energia (`10 − Estresse`).
-2. **Virar o evento** — aplica o efeito imediatamente.
+2. **Virar o evento** — a carta chega virada para baixo; o jogador a revela e o
+   efeito é aplicado.
 3. **Comprar 5 cartas** de ação.
 4. **Jogar** — quantas cartas quiser, enquanto houver energia.
 5. **Fim do dia** — confere a cota de produtividade. Não bateu: `+2 Estresse` e
    o chefe anota.
 6. Descarta a mão e avança para o próximo dia.
 
+### Embalo
+
+Cartas seguidas da **mesma classe** no mesmo dia rendem bônus crescente. É o que
+faz a ordem das jogadas importar: agrupar é melhor que alternar.
+
+| Cartas seguidas | Bônus por carta |
+|---|---|
+| 2ª da mesma classe | tarefa `+1 produtividade` · descanso `+1 energia` · grana `+R$ 10` · social `−1 estresse` |
+| 3ª em diante | o dobro |
+
+Jogar uma carta de outra classe zera o embalo. O contador reinicia todo dia.
+
+Isto **não estava no desenho original em papel** — foi acrescentado depois dos
+primeiros testes, porque sem ele a ordem das jogadas era indiferente. É o
+primeiro candidato a ajuste de balanceamento: o embalo de `grana` pode tornar a
+sequência Freela → Hora Extra forte demais na semana 1.
+
 ### Loop da semana
 
-A semana tem 5 dias úteis. Na sexta, depois do expediente:
+A semana tem 5 dias úteis. Na sexta, depois do expediente, cada passo é
+confirmado pelo jogador, para dar tempo de ver o dinheiro entrar antes de sair:
 
 1. **Cobrança do chefe** — soma a produtividade dos 5 dias e compara com a meta
    semanal. Bateu: salário cheio. Não bateu: salário reduzido + 1 advertência.

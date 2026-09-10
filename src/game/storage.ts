@@ -2,7 +2,10 @@ import { ACTION_CARDS, STARTER_CARDS } from './cards'
 import type { CardId, Collection } from './types'
 
 const COLLECTION_KEY = 'clt:collection:v1'
-const RUN_KEY = 'clt:run:v1'
+// v2: o estado ganhou eventRevealed, playedToday e o embalo. Uma run gravada
+// pela versão anterior não tem esses campos e quebrava a mesa ao abrir.
+const RUN_KEY = 'clt:run:v2'
+const RUN_KEYS_ANTIGAS = ['clt:run:v1']
 
 export function defaultCollection(): Collection {
   return { equipped: STARTER_CARDS.map((c) => c.id), unequipped: [] }
@@ -46,8 +49,37 @@ export function saveCollection(collection: Collection) {
   write(COLLECTION_KEY, collection)
 }
 
+/** Campos que a mesa lê direto; sem qualquer um deles a run é velha demais. */
+const CAMPOS_DA_RUN = [
+  'day', 'phase', 'energy', 'stress', 'productivity', 'money',
+  'deck', 'hand', 'discard', 'playedToday', 'eventRevealed', 'outcome',
+] as const
+
+/**
+ * Devolve a run salva só quando ela tem o formato desta versão. Um estado de
+ * versão antiga é descartado em vez de derrubar a página.
+ */
 export function loadRun<T>(): T | null {
-  return read<T>(RUN_KEY)
+  descartarRunsAntigas()
+  const bruta = read<Record<string, unknown>>(RUN_KEY)
+  if (!bruta || typeof bruta !== 'object') return null
+  const completa = CAMPOS_DA_RUN.every((campo) => bruta[campo] !== undefined)
+  if (!completa) {
+    clearRun()
+    return null
+  }
+  return bruta as T
+}
+
+function descartarRunsAntigas() {
+  if (typeof window === 'undefined') return
+  for (const chave of RUN_KEYS_ANTIGAS) {
+    try {
+      window.localStorage.removeItem(chave)
+    } catch {
+      // ignorado
+    }
+  }
 }
 
 export function saveRun(run: unknown) {
