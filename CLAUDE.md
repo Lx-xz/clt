@@ -236,6 +236,16 @@ só funciona dentro de um `<Suspense>` — sem ele o build estático falha. Use
 esse padrão para qualquer página futura de "ver um item específico" que
 precise de export estático.
 
+**Ícone de "Adicionar à Tela de Início" no iPhone.** O iOS ignora o
+`icon.svg` e ignora os `icons` do manifest: ele só lê a tag
+`apple-touch-icon`, e só aceita **PNG opaco** (sem transparência, sem canto
+arredondado — a máscara é dele). É o `src/app/apple-icon.png`, 180×180, que
+o Next publica sozinho. Trocar só o `icon.svg` não muda o ícone do atalho.
+E cuidado com o basePath: o Next prefixa o `<link>` para o manifest, mas
+**não** prefixa o conteúdo de dentro dele — `start_url`, `scope` e `icons`
+em `src/app/manifest.ts` levam o `/clt` na mão, senão o atalho instalado
+abre na raiz do domínio.
+
 **`create policy` não tem "if not exists".** Rodar `schema.sql` de novo num
 banco que já o rodou antes (para pegar funções/colunas novas) falha em
 "policy ... already exists" na primeira `create policy` que encontrar,
