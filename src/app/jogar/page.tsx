@@ -17,8 +17,10 @@ import {
   resolveFriday,
 } from '@/game/engine'
 import { getEvent } from '@/game/events'
+import { EndDayIcon, RESOURCE_ICONS, TONE_ICONS } from '@/components/icons'
 import { clearRun, loadCollection, loadRun, saveRun, unlockCard } from '@/game/storage'
 import type { GameState } from '@/game/types'
+import type { LucideIcon } from 'lucide-react'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
 
@@ -77,13 +79,13 @@ export default function JogarPage() {
       </div>
 
       <div className={styles.hud}>
-        <Stat label="Energia" value={state.energy} tone={styles.energia} />
-        <Stat label="Estresse" value={`${state.stress}/${MAX_STRESS}`} tone={styles.estresse} />
-        <Stat label="Produtividade" value={`${state.productivity}/${state.dailyQuota}`} tone={styles.produtividade} />
-        <Stat label="Dinheiro" value={`R$ ${state.money}`} tone={styles.dinheiro} />
-        <Stat label="Semana" value={`${state.weekProductivity}/${week.weeklyGoal}`} />
-        <Stat label="Advertências" value={`${state.warnings}/${MAX_WARNINGS}`} />
-        <Stat label="Baralho" value={`${state.deck.length}+${state.discard.length}`} />
+        <Stat label="Energia" value={state.energy} tone={styles.energia} icon={RESOURCE_ICONS.energia} />
+        <Stat label="Estresse" value={`${state.stress}/${MAX_STRESS}`} tone={styles.estresse} icon={RESOURCE_ICONS.estresse} />
+        <Stat label="Produtividade" value={`${state.productivity}/${state.dailyQuota}`} tone={styles.produtividade} icon={RESOURCE_ICONS.produtividade} />
+        <Stat label="Dinheiro" value={`R$ ${state.money}`} tone={styles.dinheiro} icon={RESOURCE_ICONS.dinheiro} />
+        <Stat label="Semana" value={`${state.weekProductivity}/${week.weeklyGoal}`} icon={RESOURCE_ICONS.semana} />
+        <Stat label="Advertências" value={`${state.warnings}/${MAX_WARNINGS}`} icon={RESOURCE_ICONS.advertencias} />
+        <Stat label="Baralho" value={`${state.deck.length}+${state.discard.length}`} icon={RESOURCE_ICONS.baralho} />
       </div>
 
       {finished ? (
@@ -101,7 +103,13 @@ export default function JogarPage() {
 
       {!finished && event ? (
         <section className={`${styles.event} ${styles[event.tone]}`}>
-          <span className={styles.eventTag}>Evento do dia · {event.tone}</span>
+          <span className={styles.eventTag}>
+            {(() => {
+              const ToneIcon = TONE_ICONS[event.tone]
+              return <ToneIcon size={12} aria-hidden />
+            })()}
+            Evento do dia · {event.tone}
+          </span>
           <h2 className={styles.eventName}>{event.name}</h2>
           <p className={styles.eventText}>{event.text}</p>
           {state.pendingEventChoice && event.choices ? (
@@ -145,6 +153,7 @@ export default function JogarPage() {
           )}
           <div className={styles.actions} style={{ marginTop: 16 }}>
             <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(endDay(state))}>
+              <EndDayIcon size={15} aria-hidden />
               Encerrar o dia
             </button>
           </div>
@@ -202,10 +211,23 @@ export default function JogarPage() {
   )
 }
 
-function Stat({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
+function Stat({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string
+  value: string | number
+  tone?: string
+  icon: LucideIcon
+}) {
   return (
     <div className={styles.stat}>
-      <span className={styles.statLabel}>{label}</span>
+      <span className={styles.statLabel}>
+        <Icon size={12} aria-hidden />
+        {label}
+      </span>
       <span className={`${styles.statValue} ${tone ?? ''}`}>{value}</span>
     </div>
   )

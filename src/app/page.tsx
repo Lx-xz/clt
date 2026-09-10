@@ -1,3 +1,4 @@
+import { Layers, Play } from 'lucide-react'
 import Link from 'next/link'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './page.module.sass'
@@ -17,9 +18,11 @@ export default function Home() {
 
       <div className={styles.actions}>
         <Link className={`${buttons.button} ${buttons.primary}`} href="/jogar">
+          <Play size={16} aria-hidden />
           Jogar
         </Link>
         <Link className={buttons.button} href="/baralho">
+          <Layers size={16} aria-hidden />
           Baralho
         </Link>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import type { ActionCard } from '@/game/types'
+import { KIND_ICONS, LockIcon } from './icons'
 import styles from './Card.module.sass'
 
 interface CardProps {
@@ -20,6 +21,7 @@ export default function Card({ card, cost, onClick, disabled, locked, count }: C
   if (onClick && !disabled && !locked) classes.push(styles.clickable)
   if (disabled) classes.push(styles.disabled)
 
+  const KindIcon = KIND_ICONS[card.kind]
   const shownCost = cost ?? card.cost
   const raised = shownCost > card.cost
 
@@ -27,7 +29,7 @@ export default function Card({ card, cost, onClick, disabled, locked, count }: C
     <>
       <div className={styles.head}>
         <span className={styles.name}>
-          {locked ? <span className={styles.badge}>🔒</span> : null}
+          {locked ? <LockIcon className={styles.badge} size={12} aria-label="bloqueada" /> : null}
           {card.name}
           {count && count > 1 ? <span className="mono"> ×{count}</span> : null}
         </span>
@@ -36,7 +38,10 @@ export default function Card({ card, cost, onClick, disabled, locked, count }: C
         </span>
       </div>
       <p className={styles.text}>{card.text}</p>
-      <span className={styles.kind}>{card.kind}</span>
+      <span className={styles.kind}>
+        <KindIcon size={11} aria-hidden />
+        {card.kind}
+      </span>
     </>
   )
 
