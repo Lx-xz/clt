@@ -3,10 +3,18 @@
 *, *::before, *::after
   box-sizing: border-box
 
+// Nenhuma página rola por padrão — a home e a mesa são feitas para caber
+// na tela. A exceção (o baralho, que cresce com a coleção) reabre o scroll
+// vertical só ali, em shell.module.sass.
+html
+  height: 100dvh
+  overflow: hidden
+
 body
   margin: 0
   padding: 0
-  min-height: 100vh
+  height: 100dvh
+  overflow: hidden
   background: var(--papel)
   color: var(--tinta)
   font-family: var(--fonte)

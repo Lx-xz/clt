@@ -135,24 +135,45 @@ opções. O que ele escolheu, e que deve ser preservado:
   topo, custo numa aba no canto superior esquerdo, ícone do tipo só no canto
   direito (sem rótulo de texto), e o resto da carta como área de texto.
 - **Mesa em tela cheia.** `100dvh`, sem rolagem no jogo. O tamanho da carta é
-  preso a `vh` (`--carta-h`) justamente para caber sem rolar.
+  preso a `vh` (`--carta-h`) justamente para caber sem rolar. Essa regra de
+  "nenhuma página rola" é global (`html, body { overflow: hidden }` em
+  `global.sass`); a **única exceção é o baralho**, que cresce com o tamanho da
+  coleção — `.conteudo:has(:global(.page))` em `shell.module.sass` reabre
+  `overflow-y: auto` só quando a página renderizada carrega a classe global
+  `.page` (usada apenas por `/baralho`). Uma página nova que precise rolar
+  tem que ou usar essa mesma classe `.page`, ou ganhar sua própria exceção —
+  o padrão-fixo, hoje, é não rolar.
 - **Carta em 3D com verso.** Duas faces com `backface-visibility: hidden`,
   girando em `rotateY`. Vale para mão, evento e pilhas. Cartas jogadas no tapete
-  ficam maiores e se empilham quando são muitas.
+  ficam maiores e se empilham quando são muitas. **O verso é uma estampa dos 3
+  ícones da logo** (Coffee, Hammer, Droplet — Coffee, Labor and Tears), repetidos
+  numa grade com leve rotação alternada, sem nome nem texto nenhum.
 - **Interação da carta:** hover cresce e levanta · clique simples abre o detalhe
-  com o texto completo · clique duplo **ou** arraste até o tapete joga.
+  com o texto completo · clique duplo **ou** arraste até o tapete joga. Toda
+  carta carrega o atributo `data-carta` no elemento arrastável — é o que a barra
+  lateral usa para não roubar o gesto de arrastar uma carta (veja abaixo).
 - **Medidores compactos:** só ícone e valor (`⚡ 10`), com nome e explicação numa
   dica que aparece no hover, no foco e no toque. No celular o dinheiro perde o
   "R$" e os 6 medidores viram uma grade 3×2.
 - **Barra lateral recolhível** (`SideNav.tsx`): no desktop fica só com ícones e
-  cresce no hover; no celular fica escondida e abre arrastando da borda
-  esquerda para a direita (fecha arrastando de volta). Muda de página fecha o
-  gaveteiro sozinho. "Reiniciar run" mora aqui agora, com confirmação — saiu
-  do HUD da mesa.
+  cresce no hover; no celular fica escondida e **abre arrastando da esquerda
+  para a direita em qualquer ponto da tela** — o painel acompanha o dedo em
+  tempo real via uma variável CSS (`--arraste`, em px), e só assume a posição
+  final (aberto/fechado) ao soltar, conforme passou ou não da metade do
+  caminho. Fecha arrastando de volta pra esquerda, também de qualquer ponto. Um
+  arraste que começa em cima de uma carta (`[data-carta]`) é ignorado, porque a
+  carta já usa esse mesmo gesto para ser jogada — sem essa exclusão, jogar uma
+  carta no celular abriria o menu.
+  Muda de página fecha o gaveteiro sozinho. "Reiniciar run" mora aqui agora,
+  com confirmação — saiu do HUD da mesa.
 - **HUD do celular:** header colado nas bordas, dia à esquerda e nick à
   direita, "Próx. dia" ancorado abaixo do header, status de sync vira ícone
   (girando / check / sem conexão) em vez de texto. Baralho e descarte somem da
-  mesa no celular (a carta jogada e a mão já ocupam o espaço).
+  mesa no celular (a carta jogada e a mão já ocupam o espaço). **A mão tem seu
+  próprio `--carta-h`** (`.zonaMao` no `@media (max-width: 760px)` de
+  `jogar.module.sass`, hoje `clamp(148px, 40vw, 192px)`) maior que o padrão da
+  mesa — é a carta que o jogador mais precisa ler no celular, e não deve
+  encolher só porque o resto da mesa encolheu.
 - **Paleta "papelada de escritório"** em `src/styles/_tokens.sass`: papel manila,
   tinta de caneta, custo como carimbo. Tem variante escura.
 
@@ -201,6 +222,28 @@ a chave em `storage.ts` e some o campo em `CAMPOS_DA_RUN`. A validação
 "API URL" (terminada em `/rest/v1`) em outro. A `supabase-js` quer a primeira —
 passar a segunda gera `/rest/v1/rest/v1` e "Invalid path specified in request
 URL". O código normaliza, mas o valor certo é a URL do projeto pura.
+
+**Gesto de arraste em `window` disputando com o arraste da carta.** A barra
+lateral no celular ouve `touchstart/touchmove` em `window` para abrir com
+arraste de qualquer ponto da tela. Sem cuidado, isso também dispara ao começar
+um arraste em cima de uma carta (que usa Pointer Events, não Touch Events, mas
+ambos os eventos disparam para o mesmo toque físico). A correção é checar
+`e.target.closest('[data-carta]')` no `touchstart` e ignorar o gesto inteiro
+quando ele começa numa carta. Qualquer novo elemento arrastável na mesa
+precisa do mesmo cuidado — ou herdar o atributo `data-carta`, ou a barra vai
+tentar abrir junto.
+
+**Uma regra CSS só pode ler `var()` de uma variável que ELA MESMA declarou,
+via cascata — não a variável de quem a chamou.** O painel da barra lateral usa
+um truque válido, mas fácil de "simplificar" por engano: a regra base
+(`.painel`) calcula `transform` a partir de `var(--arraste, 0px)`; a regra
+mais específica (`.nav.aberta .painel`) só redeclara `--arraste`, sem tocar em
+`transform`. Funciona porque `var()` resolve o valor cascateado da
+propriedade *no elemento*, não da regra que a declarou. Reescrever a regra
+`.aberta` para also declarar `transform: translateX(0)` direto quebraria o
+arraste ao vivo (o JS escreve `--arraste` inline durante o gesto, e essa
+declaração fixa ganharia por especificidade). O mesmo padrão já existia em
+`Card.module.sass` para `--lift`/`--ty`.
 
 ---
 

@@ -1,6 +1,10 @@
 // A barra fica recolhida mostrando só os ícones. No desktop ela cresce ao
 // passar o mouse; no celular fica escondida e abre com arraste da borda.
 
+// largura do painel aberto no celular — um só lugar, para não desalinhar a
+// largura de verdade (width) do cálculo do arraste (--arraste)
+$painel-largo: 216px
+
 .nav
   flex: none
   position: relative
@@ -20,7 +24,7 @@
 
 .nav:hover .painel,
 .nav:focus-within .painel
-  width: 216px
+  width: $painel-largo
   box-shadow: 8px 0 28px rgba(30, 28, 24, .14)
 
 // largura fixa para o conteúdo não se remontar durante a animação
@@ -28,7 +32,7 @@
   display: flex
   flex-direction: column
   gap: 4px
-  width: 216px
+  width: $painel-largo
   height: 100%
   padding: 16px 12px
 
@@ -203,18 +207,26 @@
     z-index: 200
 
   .painel
-    width: 216px
+    width: $painel-largo
     box-shadow: 0 0 44px rgba(0, 0, 0, .34)
-    transform: translateX(-100%)
+    // --arraste é a fatia do painel já visível, em px, escrita pelo JS
+    // durante o arraste; parada, ela vale 0 (fechado) ou $painel-largo
+    // (aberto, via a regra .aberta abaixo) — a mesma fórmula serve pros dois
+    transform: translateX(calc(var(--arraste, 0px) - 100%))
     transition: transform .24s cubic-bezier(.2, .8, .25, 1)
 
   .nav:hover .painel,
   .nav:focus-within .painel
-    width: 216px
+    width: $painel-largo
     box-shadow: 0 0 44px rgba(0, 0, 0, .34)
 
   .nav.aberta .painel
-    transform: translateX(0)
+    --arraste: #{$painel-largo}
+
+  // durante o arraste o painel não pode ter transição: ele precisa saltar
+  // para onde o dedo está, não animar atrás dele
+  .arrastando
+    transition: none
 
   .rotulo,
   .texto,

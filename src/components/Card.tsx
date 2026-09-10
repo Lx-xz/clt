@@ -1,5 +1,6 @@
 'use client'
 
+import { Coffee, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
 import { KIND_ICONS, LockIcon, TONE_ICONS } from './icons'
@@ -37,6 +38,10 @@ export interface CardProps {
 function isEvent(card: ActionCard | EventCard): card is EventCard {
   return 'tone' in card
 }
+
+// Os mesmos três ícones da logo (Coffee, Labor and Tears), repetidos como
+// estampa do verso — sem nome nem texto, só o motivo.
+const ICONES_VERSO = [Coffee, Hammer, Droplet, Droplet, Coffee, Hammer, Hammer, Droplet, Coffee]
 
 export default function Card({
   card,
@@ -177,6 +182,7 @@ export default function Card({
     <div className={`${styles.palco} ${className ?? ''}`} style={style}>
       <div
         ref={ref}
+        data-carta
         className={classes.join(' ')}
         style={
           {
@@ -221,7 +227,11 @@ export default function Card({
           </div>
         </div>
         <div className={`${styles.face} ${styles.tras}`}>
-          <span className={styles.marca}>CLT</span>
+          <div className={styles.padrao} aria-hidden>
+            {ICONES_VERSO.map((Icone, i) => (
+              <Icone key={i} className={styles.padraoIcone} strokeWidth={1.5} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

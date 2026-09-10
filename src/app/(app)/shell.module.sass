@@ -8,9 +8,13 @@
   flex: 1
   min-width: 0
   min-height: 0
-  overflow-y: auto
-  // o jogo nunca deve rolar de lado; se algo vazar, é bug a corrigir na mesa
-  overflow-x: hidden
+  overflow: hidden
+
+  // única exceção: a página do baralho (a única com a classe global .page)
+  // cresce com o tamanho da coleção e não cabe inteira numa tela
+  &:has(:global(.page))
+    overflow-y: auto
+    overflow-x: hidden
 
 @media (max-width: 760px)
   .shell

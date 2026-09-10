@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Coffee, Droplet, Hammer, House, Layers, Play, RotateCcw } from 'lucide-react'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './SideNav.module.sass'
@@ -20,6 +20,7 @@ export default function SideNav() {
   const pathname = usePathname()
   const [aberta, setAberta] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
+  const painelRef = useRef<HTMLDivElement>(null)
 
   // ao mudar de página o gaveteiro do celular se fecha sozinho
   useEffect(() => {
@@ -27,38 +28,70 @@ export default function SideNav() {
     setConfirmando(false)
   }, [pathname])
 
-  // no celular a barra fica escondida: arrastar da borda esquerda para a
-  // direita abre; arrastar de volta para a esquerda fecha
+  // no celular a barra fica escondida: arrastar da esquerda para a direita em
+  // qualquer ponto da tela abre, e o painel acompanha o dedo em tempo real —
+  // arrastar de volta para a esquerda fecha. Um arraste que começa numa carta
+  // é ignorado, porque a carta já usa o mesmo gesto para ser jogada.
   useEffect(() => {
     let x0 = 0
     let y0 = 0
-    let seguindo = false
+    let larguraPainel = 216
+    // 'esperando': ainda decidindo se é um arraste do menu; 'seguindo': é, e
+    // o painel já está sendo movido; 'ignorando': gesto de outra coisa.
+    let fase: 'esperando' | 'seguindo' | 'ignorando' = 'ignorando'
+
+    function progresso(dx: number) {
+      const base = aberta ? larguraPainel : 0
+      return Math.min(larguraPainel, Math.max(0, base + dx))
+    }
 
     function inicio(e: TouchEvent) {
+      const alvo = e.target as Element | null
+      if (alvo?.closest('[data-carta]')) {
+        fase = 'ignorando'
+        return
+      }
       const t = e.touches[0]
       x0 = t.clientX
       y0 = t.clientY
-      seguindo = aberta || x0 <= 28
+      larguraPainel = painelRef.current?.getBoundingClientRect().width || larguraPainel
+      fase = 'esperando'
     }
+
     function mover(e: TouchEvent) {
-      if (!seguindo) return
+      if (fase === 'ignorando') return
       const t = e.touches[0]
       const dx = t.clientX - x0
       const dy = t.clientY - y0
-      if (Math.abs(dy) > Math.abs(dx) + 8) {
-        seguindo = false
-        return
+
+      if (fase === 'esperando') {
+        if (Math.abs(dy) > Math.abs(dx) + 8) {
+          fase = 'ignorando'
+          return
+        }
+        if (Math.abs(dx) < 10) return
+        // fechado só abre arrastando pra direita; aberto só fecha pra esquerda
+        const direcaoValida = aberta ? dx < 0 : dx > 0
+        if (!direcaoValida) {
+          fase = 'ignorando'
+          return
+        }
+        fase = 'seguindo'
+        painelRef.current?.classList.add(styles.arrastando)
       }
-      if (!aberta && dx > 44) {
-        setAberta(true)
-        seguindo = false
-      } else if (aberta && dx < -44) {
-        setAberta(false)
-        seguindo = false
-      }
+
+      painelRef.current?.style.setProperty('--arraste', `${progresso(dx)}px`)
     }
-    function fim() {
-      seguindo = false
+
+    function fim(e: TouchEvent) {
+      if (fase === 'seguindo') {
+        const t = e.changedTouches[0]
+        const posicao = progresso(t.clientX - x0)
+        painelRef.current?.classList.remove(styles.arrastando)
+        painelRef.current?.style.removeProperty('--arraste')
+        setAberta(posicao > larguraPainel / 2)
+      }
+      fase = 'ignorando'
     }
 
     window.addEventListener('touchstart', inicio, { passive: true })
@@ -95,7 +128,7 @@ export default function SideNav() {
       />
 
       <nav className={`${styles.nav} ${aberta ? styles.aberta : ''}`} aria-label="Navegação principal">
-        <div className={styles.painel}>
+        <div ref={painelRef} className={styles.painel}>
           <div className={styles.corpo}>
             <Link className={styles.marca} href="/">
               <span className={styles.logo} aria-hidden>

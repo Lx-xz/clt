@@ -541,6 +541,13 @@
     --carta-w: calc(var(--carta-h) * .66)
     --carta-arte: calc(var(--carta-h) * .39)
 
+  // a mão é maior que o padrão da mesa — é a carta que o jogador mais olha
+  // e mais precisa ler no celular
+  .zonaMao
+    --carta-h: clamp(148px, 40vw, 192px)
+    --carta-w: calc(var(--carta-h) * .66)
+    --carta-arte: calc(var(--carta-h) * .39)
+
   // no celular a mão sobrepõe muito mais, senão sete cartas não cabem
   .leque
     padding-bottom: 10px

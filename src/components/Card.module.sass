@@ -82,18 +82,29 @@ $levantada: 18px
   transform: rotateY(180deg)
   align-items: center
   justify-content: center
-  background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, color-mix(in srgb, var(--linha) 55%, transparent) 5px, color-mix(in srgb, var(--linha) 55%, transparent) 10px)
+  background: var(--papel-baixo)
 
-.marca
-  padding: 5px 10px
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: 3px
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-  font-size: 12px
-  font-weight: 600
-  letter-spacing: .22em
+// estampa do verso: os 3 ícones da logo (Coffee, Labor and Tears) repetidos,
+// sem nome nem texto — cada carta tem o mesmo verso, então é só padrão
+.padrao
+  position: absolute
+  inset: 6%
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  grid-template-rows: repeat(3, 1fr)
+  place-items: center
+
+.padraoIcone
+  width: 44%
+  height: 44%
+  color: color-mix(in srgb, var(--tinta) 20%, transparent)
+
+  // uma leve rotação alternada por linha evita a leitura de grade rígida
+  &:nth-child(3n + 2)
+    transform: rotate(8deg)
+
+  &:nth-child(3n)
+    transform: rotate(-8deg)
 
 // ------------------------------------------------- frente, no estilo TCG
 .arte
