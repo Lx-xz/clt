@@ -62,11 +62,17 @@ alter table public.runs    enable row level security;
 -- nicks de todo mundo.
 
 -- o save é lido e escrito pelo site; sem login não há como restringir a dono
+-- (drop antes do create: "create policy" não tem "if not exists", e este
+-- arquivo precisa poder ser rodado de novo num banco que já o rodou)
+drop policy if exists "save é lido pelo site"       on public.saves;
+drop policy if exists "save é criado pelo site"     on public.saves;
+drop policy if exists "save é atualizado pelo site" on public.saves;
 create policy "save é lido pelo site"     on public.saves for select to anon using (true);
 create policy "save é criado pelo site"   on public.saves for insert to anon with check (true);
 create policy "save é atualizado pelo site" on public.saves for update to anon using (true) with check (true);
 
 -- telemetria é só de escrita: ninguém baixa nem altera a base pelo site
+drop policy if exists "site registra runs" on public.runs;
 create policy "site registra runs" on public.runs for insert to anon with check (true);
 
 -- ----------------------------------------------------------------- grants

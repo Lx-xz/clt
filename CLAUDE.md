@@ -236,6 +236,13 @@ só funciona dentro de um `<Suspense>` — sem ele o build estático falha. Use
 esse padrão para qualquer página futura de "ver um item específico" que
 precise de export estático.
 
+**`create policy` não tem "if not exists".** Rodar `schema.sql` de novo num
+banco que já o rodou antes (para pegar funções/colunas novas) falha em
+"policy ... already exists" na primeira `create policy` que encontrar,
+mesmo que todo o resto do arquivo seja `create or replace`/`if not exists`.
+A saída é um `drop policy if exists` logo antes de cada `create policy`.
+Qualquer política nova que entrar no arquivo precisa do mesmo par.
+
 **Gesto de arraste em `window` disputando com o arraste da carta.** A barra
 lateral no celular ouve `touchstart/touchmove` em `window` para abrir com
 arraste de qualquer ponto da tela. Sem cuidado, isso também dispara ao começar
