@@ -220,3 +220,27 @@ runs fora do navegador para checar balanceamento sem passar pela interface.
 
 O botão **Desbloquear tudo (teste)** na página do baralho existe para testar as
 cartas desbloqueáveis sem jogar quatro semanas.
+
+### Deploy (GitHub Pages)
+
+O site é totalmente client-side, então vai como export estático. O workflow
+`.github/workflows/pages.yml` builda e publica a cada push no branch padrão, e
+também pode ser rodado à mão em **Actions → Deploy no GitHub Pages**.
+
+Antes do primeiro deploy é preciso um passo manual no GitHub:
+**Settings → Pages → Source: GitHub Actions**.
+
+Como uma página de projeto é servida em `https://<usuario>.github.io/clt/`, o
+build de deploy usa `basePath`. Isso só vale quando `DEPLOY_TARGET=gh-pages`,
+para o `npm run dev` continuar na raiz:
+
+```bash
+npm run build:pages   # gera out/ com basePath, igual ao CI
+```
+
+Para testar o resultado exatamente como o Pages serve (num subdiretório):
+
+```bash
+mkdir -p /tmp/site && cp -r out /tmp/site/clt
+cd /tmp/site && python3 -m http.server 4000   # http://localhost:4000/clt/
+```

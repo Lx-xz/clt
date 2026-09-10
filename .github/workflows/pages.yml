@@ -1,0 +1,56 @@
+name: Deploy no GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      # o repositório ainda não tem main; enquanto isso o padrão é este branch
+      - claude/card-game-initial-site-s3ck6j
+  workflow_dispatch:
+
+# permissões que a action de deploy do Pages exige
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# um deploy por vez, sem cancelar o que já está no meio
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build estático
+        env:
+          DEPLOY_TARGET: gh-pages
+          # o site é servido em /<nome-do-repo>
+          PAGES_BASE_PATH: ${{ format('/{0}', github.event.repository.name) }}
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
