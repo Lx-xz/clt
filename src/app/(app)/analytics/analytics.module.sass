@@ -1,0 +1,106 @@
+.top
+  display: flex
+  flex-wrap: wrap
+  align-items: baseline
+  justify-content: space-between
+  gap: 12px
+  margin-bottom: 4px
+
+.title
+  font-size: 26px
+
+.hint
+  margin: 0 0 24px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.empty
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-style: italic
+
+.erro
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  gap: 10px
+  padding: 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+// ------------------------------------------------------------- ladrilhos
+.grade
+  display: grid
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+  gap: 10px
+  margin-bottom: 28px
+
+.ladrilho
+  display: flex
+  flex-direction: column
+  gap: 4px
+  padding: 14px 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+
+.rotulo
+  color: var(--tinta-fraca)
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: .05em
+  text-transform: uppercase
+
+.valor
+  font-family: var(--mono)
+  font-size: 28px
+  font-weight: 700
+  font-variant-numeric: tabular-nums
+
+.sub
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+// --------------------------------------------------------------- derrotas
+.section
+  margin-bottom: 32px
+
+.head
+  display: flex
+  align-items: baseline
+  gap: 10px
+  margin-bottom: 12px
+  padding-bottom: 6px
+  border-bottom: 1px solid var(--linha)
+
+.barras
+  display: flex
+  flex-direction: column
+  gap: 10px
+
+.barraLinha
+  display: grid
+  grid-template-columns: 110px 1fr 60px
+  align-items: center
+  gap: 10px
+  font-size: 13px
+
+.barraFundo
+  height: 10px
+  background: var(--papel-baixo)
+  border-radius: 999px
+  overflow: hidden
+
+.barraPreenchida
+  height: 100%
+  border-radius: 999px
+
+.numBarra
+  text-align: right
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-variant-numeric: tabular-nums

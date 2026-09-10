@@ -2,10 +2,10 @@ import { ACTION_CARDS, STARTER_CARDS } from './cards'
 import type { CardId, Collection } from './types'
 
 const COLLECTION_KEY = 'clt:collection:v1'
-// v2: o estado ganhou eventRevealed, playedToday e o embalo. Uma run gravada
-// pela versão anterior não tem esses campos e quebrava a mesa ao abrir.
-const RUN_KEY = 'clt:run:v2'
-const RUN_KEYS_ANTIGAS = ['clt:run:v1']
+// v3: o estado ganhou runId e history (o resumo dia-a-dia para "meus jogos").
+// Uma run gravada pela versão anterior não tem esses campos.
+const RUN_KEY = 'clt:run:v3'
+const RUN_KEYS_ANTIGAS = ['clt:run:v1', 'clt:run:v2']
 
 export function defaultCollection(): Collection {
   return { equipped: STARTER_CARDS.map((c) => c.id), unequipped: [] }
@@ -51,8 +51,8 @@ export function saveCollection(collection: Collection) {
 
 /** Campos que a mesa lê direto; sem qualquer um deles a run é velha demais. */
 const CAMPOS_DA_RUN = [
-  'day', 'phase', 'energy', 'stress', 'productivity', 'money',
-  'deck', 'hand', 'discard', 'playedToday', 'eventRevealed', 'outcome',
+  'runId', 'day', 'phase', 'energy', 'stress', 'productivity', 'money',
+  'deck', 'hand', 'discard', 'playedToday', 'eventRevealed', 'outcome', 'history',
 ] as const
 
 /**

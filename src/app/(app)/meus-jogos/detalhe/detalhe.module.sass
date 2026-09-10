@@ -1,0 +1,155 @@
+.top
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 12px
+  margin-bottom: 4px
+
+.voltar
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-decoration: none
+
+  &:hover
+    color: var(--tinta)
+    text-decoration: underline
+
+.title
+  font-size: 26px
+
+.empty
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-style: italic
+
+.erro
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  gap: 10px
+  padding: 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+// -------------------------------------------------------------- resumo
+.resumo
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 14px
+  margin: 14px 0 28px
+  padding: 14px 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+
+.selo
+  flex: none
+  padding: 4px 12px
+  border-radius: 999px
+  font-size: 12px
+  font-weight: 700
+  letter-spacing: .04em
+  text-transform: uppercase
+
+.vitoria
+  background: color-mix(in srgb, var(--produtividade) 22%, transparent)
+  color: var(--produtividade)
+
+.burnout
+  background: color-mix(in srgb, var(--estresse) 20%, transparent)
+  color: var(--estresse)
+
+.demissao
+  background: color-mix(in srgb, var(--destaque) 22%, transparent)
+  color: var(--destaque)
+
+.despejo
+  background: var(--papel-baixo)
+  color: var(--tinta-fraca)
+
+.resumoTexto
+  color: var(--tinta-fraca)
+  font-size: 13.5px
+
+// -------------------------------------------------------------- linha do tempo
+.linha
+  display: flex
+  flex-direction: column
+  gap: 14px
+  padding-left: 16px
+  border-left: 2px solid var(--linha)
+
+.diaBloco
+  position: relative
+
+  &::before
+    content: ""
+    position: absolute
+    left: -21px
+    top: 4px
+    width: 9px
+    height: 9px
+    background: var(--papel)
+    border: 2px solid var(--linha)
+    border-radius: 50%
+
+.diaHead
+  display: flex
+  flex-wrap: wrap
+  align-items: baseline
+  gap: 8px
+  margin-bottom: 6px
+
+.diaNum
+  font-weight: 700
+  font-size: 14.5px
+
+.eventoNome
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.eventoTexto
+  margin: 0 0 8px
+  color: var(--tinta-fraca)
+  font-size: 12.5px
+
+.escolha
+  display: inline-block
+  margin-bottom: 8px
+  padding: 2px 8px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  font-size: 11.5px
+
+.cotaOk
+  color: var(--produtividade)
+
+.cotaFalhou
+  color: var(--estresse)
+
+.cartas
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+  margin-bottom: 6px
+  --carta-h: 110px
+
+.semCartas
+  margin: 0 0 6px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  font-style: italic
+
+.numeros
+  display: flex
+  flex-wrap: wrap
+  gap: 14px
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Coffee, Droplet, Hammer, House, Layers, Play, RotateCcw } from 'lucide-react'
+import { Coffee, Droplet, Hammer, House, Layers, Play, RotateCcw, Trophy } from 'lucide-react'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './SideNav.module.sass'
 
@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/', label: 'Início', Icon: House },
   { href: '/jogar', label: 'Jogar', Icon: Play },
   { href: '/baralho', label: 'Baralho', Icon: Layers },
+  { href: '/ranking', label: 'Ranking', Icon: Trophy },
 ]
 
 /** Disparado ao confirmar o reinício; a mesa escuta e começa uma run nova. */

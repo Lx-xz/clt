@@ -38,6 +38,10 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/` | Entrada: pede um nick, procura no banco, oferece criar se não existir |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
+| `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral |
+| `/meus-jogos` | Toda run terminada do jogador da sessão. Sem link na barra — chega-se digitando a URL |
+| `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro) |
+| `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). **Reservada e escondida** de propósito — sem link, só para uso interno por enquanto |
 
 **20 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 12
 desbloqueáveis) e **20 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -223,6 +227,15 @@ a chave em `storage.ts` e some o campo em `CAMPOS_DA_RUN`. A validação
 passar a segunda gera `/rest/v1/rest/v1` e "Invalid path specified in request
 URL". O código normaliza, mas o valor certo é a URL do projeto pura.
 
+**Página de detalhe com "id" não pode ser rota dinâmica.** O site é export
+estático (`output: 'export'`), e `/meus-jogos/[id]` exigiria listar todo
+`run_id` possível em build time — inviável para IDs criados em produção. A
+saída é uma rota estática com o id por query string
+(`/meus-jogos/detalhe?id=123`), lida no cliente com `useSearchParams()`. Isso
+só funciona dentro de um `<Suspense>` — sem ele o build estático falha. Use
+esse padrão para qualquer página futura de "ver um item específico" que
+precise de export estático.
+
 **Gesto de arraste em `window` disputando com o arraste da carta.** A barra
 lateral no celular ouve `touchstart/touchmove` em `window` para abrir com
 arraste de qualquer ponto da tela. Sem cuidado, isso também dispara ao começar
@@ -258,13 +271,36 @@ SQL Editor do projeto.
 | `saves` | run em andamento e coleção, em `jsonb` |
 | `runs` | registro append-only de runs terminadas, para balanceamento |
 
+`runs` tem uma coluna `run_id` (uuid, gerado com `crypto.randomUUID()` na
+criação da run, em `createRun()`) com índice único, e uma coluna `details`
+(`jsonb`) com o dia-a-dia da partida (`GameState.history`, ver
+`src/game/types.ts` — `DayLog`). `registrarRun()` (`src/data/saves.ts`) grava
+com `upsert(..., { onConflict: 'run_id', ignoreDuplicates: true })`: se a
+mesma run for enviada duas vezes (duas abas, uma retentativa de rede), a
+segunda vira no-op em vez de duplicar a linha. `run_id` é nulo nas linhas
+gravadas antes desta mudança — nulo nunca colide com nulo num índice único do
+Postgres, então convivem sem problema.
+
 Duas decisões de segurança que não devem ser desfeitas:
 
 - **A busca de nick passa por função `security definer`** (`find_player`,
   `create_player`), não por `select`. Com `select`, o site precisaria de leitura
   em `players` e qualquer pessoa baixaria a lista de nicks de todo mundo.
-- **`runs` só aceita `insert`, nunca `select`.** Telemetria é escrita pelo site e
-  lida no painel do Supabase.
+- **`runs` só aceita `insert` direto.** Toda leitura agregada ou por jogador
+  passa por função `security definer`, nunca por `select` cru:
+  - `estatisticas_gerais()` — agregados globais, usada por `/analytics`.
+  - `ranking()` — nick + vitórias/derrotas de todo mundo, usada por
+    `/ranking`. **Exceção deliberada:** esta função expõe o `nick` de todo
+    jogador publicamente. É intencional — o nick já não protegia nada (não é
+    senha, é só identificação) e virar uma lista pública é o que a rota
+    pede. Não estenda esse padrão para expor qualquer outra coluna.
+  - `meus_jogos(p_player_id)` — runs de um jogador específico, usada por
+    `/meus-jogos`.
+  - `jogo_detalhe(p_run_id, p_player_id)` — uma run específica, checando que
+    pertence ao `p_player_id` informado (devolve vazio se não pertencer),
+    usada por `/meus-jogos/detalhe`.
+  Nenhuma delas dá `grant select` em `players` ou `runs` para `anon` — o
+  acesso continua só pela função.
 
 ### O nick não é autenticação
 

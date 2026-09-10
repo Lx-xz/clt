@@ -1,0 +1,102 @@
+.top
+  display: flex
+  flex-wrap: wrap
+  align-items: baseline
+  justify-content: space-between
+  gap: 12px
+  margin-bottom: 4px
+
+.title
+  font-size: 26px
+
+.hint
+  margin: 0 0 24px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.empty
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-style: italic
+
+.erro
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  gap: 10px
+  padding: 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+// ------------------------------------------------------------------ lista
+.lista
+  display: flex
+  flex-direction: column
+  gap: 8px
+
+.jogo
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 12px
+  padding: 12px 14px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: inherit
+  text-decoration: none
+  transition: border-color .12s ease, transform .1s ease
+
+  &:hover
+    border-color: var(--tinta)
+    transform: translateX(2px)
+
+.selo
+  flex: none
+  padding: 3px 10px
+  border-radius: 999px
+  font-size: 11px
+  font-weight: 700
+  letter-spacing: .04em
+  text-transform: uppercase
+
+.vitoria
+  background: color-mix(in srgb, var(--produtividade) 22%, transparent)
+  color: var(--produtividade)
+
+.burnout
+  background: color-mix(in srgb, var(--estresse) 20%, transparent)
+  color: var(--estresse)
+
+.demissao
+  background: color-mix(in srgb, var(--destaque) 22%, transparent)
+  color: var(--destaque)
+
+.despejo
+  background: var(--papel-baixo)
+  color: var(--tinta-fraca)
+
+.info
+  display: flex
+  flex-direction: column
+  gap: 1px
+
+.dia
+  font-size: 13.5px
+  font-weight: 600
+
+.data
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.espaco
+  flex: 1
+
+.dinheiro
+  font-family: var(--mono)
+  font-size: 14px
+  font-variant-numeric: tabular-nums

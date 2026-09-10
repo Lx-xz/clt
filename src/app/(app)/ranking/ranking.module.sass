@@ -1,0 +1,106 @@
+.top
+  display: flex
+  flex-wrap: wrap
+  align-items: baseline
+  justify-content: space-between
+  gap: 12px
+  margin-bottom: 4px
+
+.title
+  font-size: 26px
+
+.hint
+  margin: 0 0 24px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+// --------------------------------------------------------------- estados
+.empty
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-style: italic
+
+.erro
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  gap: 10px
+  padding: 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+// ------------------------------------------------------------------ tabela
+.tabela
+  width: 100%
+  border-collapse: collapse
+  font-size: 13.5px
+
+  th, td
+    padding: 10px 12px
+    text-align: left
+    border-bottom: 1px solid var(--linha)
+
+  th
+    color: var(--tinta-fraca)
+    font-size: 11px
+    font-weight: 600
+    letter-spacing: .05em
+    text-transform: uppercase
+
+  td.num, th.num
+    text-align: right
+    font-family: var(--mono)
+    font-variant-numeric: tabular-nums
+
+.linha
+  transition: background .12s ease
+
+  &:hover
+    background: var(--papel-alto)
+
+// destaca a linha de quem está jogando agora
+.euMesmo
+  background: color-mix(in srgb, var(--destaque) 12%, transparent)
+
+  &:hover
+    background: color-mix(in srgb, var(--destaque) 16%, transparent)
+
+.posicao
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+
+.nick
+  font-weight: 600
+
+.voce
+  margin-left: 6px
+  padding: 1px 7px
+  background: var(--destaque)
+  border-radius: 999px
+  color: #17150f
+  font-family: var(--mono)
+  font-size: 10px
+  letter-spacing: .04em
+  text-transform: uppercase
+
+.vitorias
+  color: var(--produtividade)
+  font-weight: 600
+
+.data
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+@media (max-width: 640px)
+  .tabela
+    font-size: 12.5px
+
+    th, td
+      padding: 8px 6px
+
+  .colOculta
+    display: none

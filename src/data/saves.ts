@@ -25,15 +25,28 @@ export async function subirSave(playerId: string, run: GameState | null, collect
   if (error) throw new Error(error.message)
 }
 
-/** Registro append-only de uma run terminada, para balanceamento. */
+/**
+ * Registro append-only de uma run terminada, para balanceamento e para as
+ * páginas de ranking/análise/meus-jogos.
+ *
+ * run_id identifica a run de verdade (gerado uma vez em createRun): o upsert
+ * com ignoreDuplicates faz de conta que nunca houve conflito quando a mesma
+ * run já foi registrada — evita duplicar a linha se duas abas terminarem a
+ * mesma run, ou se a sincronização repetir por uma falha de rede.
+ */
 export async function registrarRun(playerId: string, run: GameState) {
   if (!supabase || run.outcome === 'jogando') return
-  const { error } = await supabase.from('runs').insert({
-    player_id: playerId,
-    outcome: run.outcome,
-    day: Math.min(20, Math.max(1, run.day)),
-    money: run.money,
-    week_reached: Math.min(4, Math.max(1, Math.ceil(run.day / 5))),
-  })
+  const { error } = await supabase.from('runs').upsert(
+    {
+      run_id: run.runId,
+      player_id: playerId,
+      outcome: run.outcome,
+      day: Math.min(20, Math.max(1, run.day)),
+      money: run.money,
+      week_reached: Math.min(4, Math.max(1, Math.ceil(run.day / 5))),
+      details: { history: run.history },
+    },
+    { onConflict: 'run_id', ignoreDuplicates: true },
+  )
   if (error) throw new Error(error.message)
 }

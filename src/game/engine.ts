@@ -14,7 +14,7 @@ import {
   weekdayOf,
 } from './cards'
 import { EVENT_CARDS, getEvent } from './events'
-import type { CardId, CardInstance, CardKind, GameState } from './types'
+import type { CardId, CardInstance, CardKind, DayLog, GameState } from './types'
 
 // ---------------------------------------------------------------- utilidades
 
@@ -102,6 +102,7 @@ export function createRun(equipped: CardId[]): GameState {
   })
 
   const state: GameState = {
+    runId: crypto.randomUUID(),
     day: 0,
     phase: 'evento',
     energy: 0,
@@ -131,7 +132,9 @@ export function createRun(equipped: CardId[]): GameState {
     currentEvent: null,
     eventRevealed: false,
     pendingEventChoice: false,
+    lastEventChoice: null,
     rewardOptions: [],
+    history: [],
     log: [],
     outcome: 'jogando',
   }
@@ -153,6 +156,7 @@ function startDay(input: GameState): GameState {
   state.blockedKinds = []
   state.costModifier = 0
   state.pendingEventChoice = false
+  state.lastEventChoice = null
   state.playedToday = []
   state.streakKind = null
   state.streakCount = 0
@@ -298,6 +302,7 @@ export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
 
   log(state, `${event.name}: você escolheu "${choice.label}".`)
   state.pendingEventChoice = false
+  state.lastEventChoice = index
   draw(state, HAND_SIZE)
   state.phase = 'dia'
   return checkDefeat(state)
@@ -494,6 +499,22 @@ export function endDay(input: GameState): GameState {
   discardHand(state)
 
   state = checkDefeat(state)
+
+  // fecha o resumo do dia antes de qualquer coisa poder zerar playedToday —
+  // é o que "meus jogos" usa para reabrir a run jogada por jogada
+  const diaFechado: DayLog = {
+    day: state.day,
+    eventId: state.currentEvent,
+    eventChoice: state.lastEventChoice,
+    cardsPlayed: [...state.playedToday],
+    productivity: state.productivity,
+    quota: state.dailyQuota,
+    metQuota,
+    stress: state.stress,
+    money: state.money,
+  }
+  state.history = [...state.history, diaFechado]
+
   if (state.outcome !== 'jogando') return state
 
   if (isFriday(state.day)) {

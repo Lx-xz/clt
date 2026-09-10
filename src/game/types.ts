@@ -36,11 +36,35 @@ export interface CardInstance {
   cardId: CardId
 }
 
+/**
+ * O resumo de um dia já fechado — o que "meus jogos" mostra ao reabrir uma
+ * run terminada, jogada por jogada. Guardado em GameState.history e, ao fim
+ * da run, enviado ao banco dentro de runs.details.
+ */
+export interface DayLog {
+  day: number
+  eventId: CardId | null
+  /** Qual opção foi escolhida, se o evento do dia era ambíguo. */
+  eventChoice: 0 | 1 | null
+  /** As cartas jogadas naquele dia, na ordem em que foram jogadas. */
+  cardsPlayed: CardId[]
+  productivity: number
+  quota: number
+  metQuota: boolean
+  /** Estresse e dinheiro ao final do dia, depois da penalidade de cota. */
+  stress: number
+  money: number
+}
+
 export type Phase = 'evento' | 'dia' | 'sexta' | 'recompensa' | 'fim'
 
 export type FridayStep = 'salario' | 'contas' | 'descanso' | null
 
 export interface GameState {
+  /** Identifica esta run de verdade, para o banco nunca registrar a mesma
+   *  run duas vezes (duas abas, uma retentativa de rede). Não aparece na
+   *  interface. */
+  runId: string
   day: number // 1..20
   phase: Phase
   energy: number
@@ -82,8 +106,13 @@ export interface GameState {
   /** O evento entra virado para baixo; só o clique do jogador aplica o efeito. */
   eventRevealed: boolean
   pendingEventChoice: boolean
+  /** Escolha feita hoje num evento ambíguo — some no dia seguinte. Só existe
+   *  para o resumo do dia entrar em `history` com a escolha certa. */
+  lastEventChoice: 0 | 1 | null
 
   rewardOptions: CardId[]
+  /** Um resumo por dia fechado, para reabrir a run jogada por jogada depois. */
+  history: DayLog[]
   log: string[]
   outcome: 'jogando' | 'vitoria' | 'burnout' | 'demissao' | 'despejo'
 }
