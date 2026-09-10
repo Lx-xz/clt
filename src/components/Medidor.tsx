@@ -88,7 +88,7 @@ export default function Medidor({
     >
       <Icon size={14} className={tom} aria-hidden />
       <span className={`${styles.valor} ${tom ?? ''}`}>
-        {prefixo}
+        {prefixo ? <span className={styles.prefixo}>{prefixo}</span> : null}
         {mostrado}
       </span>
       {total !== undefined ? <span className={styles.total}>/{total}</span> : null}

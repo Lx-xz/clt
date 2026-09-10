@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ArrowRight, Check, CloudOff, Loader } from 'lucide-react'
 import Card from '@/components/Card'
 import CardDetail from '@/components/CardDetail'
 import Medidor from '@/components/Medidor'
@@ -24,6 +25,7 @@ import {
 import { getEvent } from '@/game/events'
 import { carregarDoBanco, sincronizar, type StatusSync } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
+import { EVENTO_REINICIAR } from '@/components/SideNav'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import type { CardInstance, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
@@ -34,13 +36,6 @@ const FIM: Record<Exclude<GameState['outcome'], 'jogando'>, { title: string; tex
   burnout: { title: 'Burnout', text: 'O estresse chegou a 10. O corpo cobrou antes do banco.' },
   demissao: { title: 'Demissão', text: 'Três advertências. O RH marcou uma conversa rápida.' },
   despejo: { title: 'Despejo', text: 'As contas de sexta não fecharam.' },
-}
-
-const SYNC_ROTULO: Record<StatusSync, string> = {
-  ocioso: '{nick}',
-  salvando: '{nick} · salvando…',
-  salvo: '{nick} · salvo',
-  erro: '{nick} · sem conexão, jogando local',
 }
 
 const CLASSES: Record<string, string> = {
@@ -94,6 +89,16 @@ export default function JogarPage() {
     update(createRun(loadCollection().equipped))
   }
 
+  // o botão de reiniciar vive no menu lateral (com confirmação); ele avisa por
+  // evento e a mesa recomeça aqui
+  const recomecarRef = useRef(recomecar)
+  recomecarRef.current = recomecar
+  useEffect(() => {
+    const aoReiniciar = () => recomecarRef.current()
+    window.addEventListener(EVENTO_REINICIAR, aoReiniciar)
+    return () => window.removeEventListener(EVENTO_REINICIAR, aoReiniciar)
+  }, [])
+
   function jogar(uid: string) {
     if (!state) return
     setAberta(null)
@@ -136,63 +141,73 @@ export default function JogarPage() {
     <main className={`${styles.mesa} ${sobreTapete ? styles.arrastando : ''}`}>
       <div className={styles.hud}>
         <span className={styles.dia}>{acabou ? 'Run encerrada' : dayLabel(state)}</span>
-        <Medidor
-          icon={RESOURCE_ICONS.energia}
-          nome="Energia"
-          descricao="Reinicia todo dia em 10 menos o estresse. É o que você gasta para jogar cartas."
-          valor={state.energy}
-          tom={styles.energia}
-        />
-        <Medidor
-          icon={RESOURCE_ICONS.estresse}
-          nome="Estresse"
-          descricao="Acumula entre os dias e encolhe a energia de amanhã. Chegou a 10, é burnout."
-          valor={state.stress}
-          total={MAX_STRESS}
-          tom={styles.estresse}
-          subirEhRuim
-        />
-        <Medidor
-          icon={RESOURCE_ICONS.produtividade}
-          nome="Produtividade"
-          descricao="Zera todo dia. Não bater a cota custa +2 estresse e uma anotação do chefe."
-          valor={state.productivity}
-          total={state.dailyQuota}
-          tom={styles.produtividade}
-        />
-        <Medidor
-          icon={RESOURCE_ICONS.dinheiro}
-          nome="Dinheiro"
-          descricao="Entra pelo salário, hora extra e freela. Sai nas contas de sexta. É a pontuação final."
-          valor={state.money}
-          prefixo="R$ "
-          tom={styles.dinheiro}
-        />
-        <Medidor
-          icon={RESOURCE_ICONS.semana}
-          nome="Meta da semana"
-          descricao="Soma da produtividade dos 5 dias. Não bater significa salário reduzido e advertência."
-          valor={state.weekProductivity}
-          total={week.weeklyGoal}
-        />
-        <Medidor
-          icon={RESOURCE_ICONS.advertencias}
-          nome="Advertências"
-          descricao="Chegou a três, é demissão."
-          valor={state.warnings}
-          total={MAX_WARNINGS}
-          subirEhRuim
-        />
+        <div className={styles.medidores}>
+          <Medidor
+            icon={RESOURCE_ICONS.energia}
+            nome="Energia"
+            descricao="Reinicia todo dia em 10 menos o estresse. É o que você gasta para jogar cartas."
+            valor={state.energy}
+            tom={styles.energia}
+          />
+          <Medidor
+            icon={RESOURCE_ICONS.estresse}
+            nome="Estresse"
+            descricao="Acumula entre os dias e encolhe a energia de amanhã. Chegou a 10, é burnout."
+            valor={state.stress}
+            total={MAX_STRESS}
+            tom={styles.estresse}
+            subirEhRuim
+          />
+          <Medidor
+            icon={RESOURCE_ICONS.produtividade}
+            nome="Produtividade"
+            descricao="Zera todo dia. Não bater a cota custa +2 estresse e uma anotação do chefe."
+            valor={state.productivity}
+            total={state.dailyQuota}
+            tom={styles.produtividade}
+          />
+          <Medidor
+            icon={RESOURCE_ICONS.dinheiro}
+            nome="Dinheiro"
+            descricao="Entra pelo salário, hora extra e freela. Sai nas contas de sexta. É a pontuação final."
+            valor={state.money}
+            prefixo="R$ "
+            tom={styles.dinheiro}
+          />
+          <Medidor
+            icon={RESOURCE_ICONS.semana}
+            nome="Meta da semana"
+            descricao="Soma da produtividade dos 5 dias. Não bater significa salário reduzido e advertência."
+            valor={state.weekProductivity}
+            total={week.weeklyGoal}
+          />
+          <Medidor
+            icon={RESOURCE_ICONS.advertencias}
+            nome="Advertências"
+            descricao="Chegou a três, é demissão."
+            valor={state.warnings}
+            total={MAX_WARNINGS}
+            subirEhRuim
+          />
+        </div>
         <span className={styles.espaco} />
         <span className={`${styles.sync} ${status === 'erro' ? styles.syncErro : ''}`}>
-          {SYNC_ROTULO[status].replace('{nick}', sessao.nick)}
+          <span className={styles.nick}>{sessao.nick}</span>
+          {status === 'salvando' ? (
+            <Loader size={13} className={styles.girando} aria-label="salvando" />
+          ) : null}
+          {status === 'salvo' ? <Check size={13} aria-label="salvo" /> : null}
+          {status === 'erro' ? <CloudOff size={13} aria-label="sem conexão" /> : null}
         </span>
-        <button type="button" className={`${buttons.button} ${buttons.ghost}`} onClick={recomecar}>
-          Reiniciar
-        </button>
         {state.phase === 'dia' ? (
-          <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(endDay(state))}>
-            Encerrar o dia
+          <button
+            type="button"
+            className={`${buttons.button} ${buttons.primary} ${styles.proximoDia}`}
+            onClick={() => update(endDay(state))}
+          >
+            <span className={styles.rotuloLongo}>Próximo dia</span>
+            <span className={styles.rotuloCurto}>Próx. dia</span>
+            <ArrowRight size={15} aria-hidden />
           </button>
         ) : null}
       </div>
@@ -202,15 +217,10 @@ export default function JogarPage() {
           <Card
             card={evento}
             faceDown={esperandoEvento}
-            className={styles.eventoCarta}
+            className={`${styles.eventoCarta} ${esperandoEvento ? styles.revelavel : ''}`}
             onOpen={esperandoEvento ? () => update(revealEvent(state)) : () => setEventoAberto(true)}
           />
         ) : null}
-        {esperandoEvento ? (
-          <span className={`${styles.dicaEvento} ${styles.chamando}`}>Toque para revelar o dia</span>
-        ) : (
-          <span className={styles.dicaEvento}>Evento do dia · toque para ler</span>
-        )}
         {state.pendingEventChoice && evento?.choices ? (
           <div className={styles.escolhas}>
             {evento.choices.map((escolha, i) => (
@@ -232,9 +242,17 @@ export default function JogarPage() {
         {state.playedToday.length === 0 ? (
           <span className={styles.dicaTapete}>{dicaDoTapete(state, esperandoEvento)}</span>
         ) : (
-          <div className={styles.jogadas}>
+          <div
+            className={styles.jogadas}
+            style={{ '--n': state.playedToday.length } as React.CSSProperties}
+          >
             {state.playedToday.map((id, i) => (
-              <Card key={`${id}-${i}`} card={getCard(id)} className={styles.jogada} />
+              <Card
+                key={`${id}-${i}`}
+                card={getCard(id)}
+                className={styles.jogada}
+                style={{ '--i': i } as React.CSSProperties}
+              />
             ))}
           </div>
         )}
@@ -245,7 +263,7 @@ export default function JogarPage() {
           >
             {state.streakCount >= 2
               ? state.lastCombo
-              : `Outra carta de ${state.streakKind} agora rende +1 de ${CLASSES[state.streakKind]}`}
+              : `Outra de ${state.streakKind}: +1 ${CLASSES[state.streakKind]}`}
           </span>
         ) : null}
       </div>
@@ -256,21 +274,17 @@ export default function JogarPage() {
         {state.hand.length === 0 ? (
           <span className={styles.maoVazia}>{esperandoEvento ? 'Aguardando o evento' : 'Mão vazia'}</span>
         ) : (
-          <>
-            <span className={styles.statusMao}>
-              Toque para ver a carta · toque duplo ou arraste até o tapete para jogar
-            </span>
-            <div
-              className={styles.leque}
-              style={
-                {
-                  // com poucas cartas não há motivo para esconder os nomes
-                  '--sobreposicao': state.hand.length > 5 ? '-.16' : '-.08',
-                  '--sobreposicao-mobile': state.hand.length > 5 ? '-.28' : '-.15',
-                } as React.CSSProperties
-              }
-            >
-              {state.hand.map((instancia, i) => {
+          <div
+            className={styles.leque}
+            style={
+              {
+                // com poucas cartas não há motivo para esconder os nomes
+                '--sobreposicao': state.hand.length > 5 ? '-.16' : '-.08',
+                '--sobreposicao-mobile': state.hand.length > 5 ? '-.28' : '-.15',
+              } as React.CSSProperties
+            }
+          >
+            {state.hand.map((instancia, i) => {
                 const carta = getCard(instancia.cardId)
                 const podeJogar = canPlay(state, instancia)
                 return (
@@ -280,6 +294,7 @@ export default function JogarPage() {
                     cost={effectiveCost(state, carta.id)}
                     rotation={(i - meio) * 5}
                     lift={Math.abs(i - meio) * 7}
+                    style={{ '--i': i } as React.CSSProperties}
                     disabled={!podeJogar}
                     onOpen={() => setAberta(instancia)}
                     onPlay={podeJogar ? () => jogar(instancia.uid) : undefined}
@@ -288,8 +303,7 @@ export default function JogarPage() {
                   />
                 )
               })}
-            </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -366,11 +380,12 @@ export default function JogarPage() {
             <h2 className={styles.painelTitulo}>Recompensa da semana</h2>
             <p className={styles.painelTexto}>Escolha 1 carta entre 3 para entrar no baralho.</p>
             <div className={styles.recompensas}>
-              {state.rewardOptions.map((id) => (
+              {state.rewardOptions.map((id, i) => (
                 <Card
                   key={id}
                   card={getCard(id)}
                   className={styles.recompensa}
+                  style={{ '--i': i } as React.CSSProperties}
                   onOpen={() => {
                     unlockCard(id)
                     update(chooseReward(state, id))

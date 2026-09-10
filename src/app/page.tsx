@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react'
 import { normalizarNick, validarNick } from '@/data/nick'
 import { acharJogador, criarJogador } from '@/data/players'
 import { bancoConfigurado } from '@/data/supabase'
+import { cancelarSync } from '@/data/sync'
+import { limparLocalDoJogo } from '@/game/storage'
 import { gravarSessao, lerSessao, limparSessao, type Sessao } from '@/game/session'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './page.module.sass'
@@ -74,6 +76,10 @@ export default function Home() {
   }
 
   function trocar() {
+    // troca de conta zera o espelho local: o save de um nick não pode vazar
+    // para o próximo jogador que entrar neste navegador
+    cancelarSync()
+    limparLocalDoJogo()
     limparSessao()
     setSessao(null)
     setNick('')

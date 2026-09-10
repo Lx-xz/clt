@@ -103,3 +103,21 @@
 @media (prefers-reduced-motion: reduce)
   .subiu, .desceu, .delta
     animation: none
+
+// -------------------------------------------------- retângulos no celular
+// tijolos numa grade 3+3; fundo neutro, cor só no ícone e no número
+@media (max-width: 760px)
+  .medidor
+    justify-content: center
+    gap: 5px
+    padding: 7px 4px
+    border-radius: 7px
+
+  .medidor .valor
+    font-size: 13.5px
+
+  .medidor .total
+    font-size: 10px
+
+  .prefixo
+    display: none

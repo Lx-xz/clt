@@ -115,6 +115,7 @@
   place-items: center
   padding: 20px
   background: color-mix(in srgb, var(--tinta) 55%, transparent)
+  animation: fundo-entra .18s ease
 
 .painel
   display: flex
@@ -127,6 +128,26 @@
   border-radius: 8px
   box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
   text-align: left
+  animation: painel-entra .24s cubic-bezier(.2, .8, .25, 1)
+
+@keyframes fundo-entra
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+@keyframes painel-entra
+  from
+    opacity: 0
+    transform: translateY(10px) scale(.97)
+  to
+    opacity: 1
+    transform: none
+
+@media (prefers-reduced-motion: reduce)
+  .fundo,
+  .painel
+    animation: none
 
 .painelTitulo
   font-size: 20px

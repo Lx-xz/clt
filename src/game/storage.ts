@@ -103,6 +103,21 @@ export function clearRun() {
   }
 }
 
+/**
+ * Apaga todo o espelho local do jogo (run, coleção, sessão e chaves de versões
+ * antigas). Usado ao trocar de conta: sem isso o save de um nick poderia ser
+ * enviado para o próximo jogador que entrasse neste navegador.
+ */
+export function limparLocalDoJogo() {
+  if (typeof window === 'undefined') return
+  try {
+    const alvos = Object.keys(window.localStorage).filter((c) => c.startsWith('clt:'))
+    for (const chave of alvos) window.localStorage.removeItem(chave)
+  } catch {
+    // ignorado
+  }
+}
+
 /** Desbloqueia uma carta ganha como recompensa (entra fora do baralho). */
 export function unlockCard(cardId: CardId) {
   const collection = loadCollection()

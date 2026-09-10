@@ -203,23 +203,21 @@ export default function Card({
             evento ? styles[`ev${card.tone[0].toUpperCase()}${card.tone.slice(1)}`] : '',
           ].join(' ')}
         >
+          {custo !== null ? (
+            <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>{custo}</span>
+          ) : null}
+          <span className={styles.selo} aria-label={locked ? 'bloqueada' : undefined} aria-hidden={!locked}>
+            {locked ? <LockIcon size={13} /> : <Icon size={13} />}
+          </span>
+          {copies && copies > 1 ? <span className={styles.copias}>×{copies}</span> : null}
           <div className={styles.arte}>
             <Icon size={40} aria-hidden />
-            {custo !== null ? (
-              <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>{custo}</span>
-            ) : null}
-            {copies && copies > 1 ? <span className={styles.copias}>×{copies}</span> : null}
-            {locked ? <LockIcon className={styles.cadeado} size={14} aria-label="bloqueada" /> : null}
           </div>
           <div className={styles.topo}>
             <span className={styles.nome}>{card.name}</span>
           </div>
           <div className={styles.corpo}>
             <p className={styles.texto}>{card.text}</p>
-            <span className={styles.tipo}>
-              <Icon size={10} aria-hidden />
-              {evento ? 'evento' : card.kind}
-            </span>
           </div>
         </div>
         <div className={`${styles.face} ${styles.tras}`}>

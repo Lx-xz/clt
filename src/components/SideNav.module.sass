@@ -1,22 +1,64 @@
+// A barra fica recolhida mostrando só os ícones. No desktop ela cresce ao
+// passar o mouse; no celular fica escondida e abre com arraste da borda.
+
 .nav
   flex: none
+  position: relative
+  z-index: 40
+  width: 62px
+
+// painel visível: no desktop é um overlay que cresce sem empurrar o jogo
+.painel
+  position: absolute
+  inset: 0 auto 0 0
+  width: 62px
+  height: 100%
+  overflow: hidden
+  background: var(--papel-alto)
+  border-right: 1px solid var(--linha)
+  transition: width .22s cubic-bezier(.2, .8, .25, 1)
+
+.nav:hover .painel,
+.nav:focus-within .painel
+  width: 216px
+  box-shadow: 8px 0 28px rgba(30, 28, 24, .14)
+
+// largura fixa para o conteúdo não se remontar durante a animação
+.corpo
   display: flex
   flex-direction: column
   gap: 4px
-  width: 176px
+  width: 216px
+  height: 100%
   padding: 16px 12px
-  background: var(--papel-alto)
-  border-right: 1px solid var(--linha)
 
 .marca
   display: flex
+  align-items: center
+  gap: 11px
+  padding: 2px 6px 14px
+  text-decoration: none
+  white-space: nowrap
+
+.logo
+  flex: none
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 2px
+  width: 34px
+  color: var(--tinta)
+
+  svg:last-child
+    color: var(--energia)
+
+.texto
+  display: flex
   flex-direction: column
   gap: 1px
-  padding: 4px 10px 14px
-  text-decoration: none
 
 .sigla
-  font-size: 22px
+  font-size: 20px
   font-weight: 700
   letter-spacing: -.03em
   line-height: 1
@@ -24,21 +66,31 @@
 .sub
   color: var(--tinta-fraca)
   font-family: var(--mono)
-  font-size: 9.5px
-  letter-spacing: .1em
+  font-size: 9px
+  letter-spacing: .09em
   text-transform: uppercase
 
 .link
   display: flex
   align-items: center
-  gap: 9px
-  padding: 8px 10px
+  gap: 11px
+  flex: none
+  padding: 9px
+  border: none
   border-radius: var(--raio)
+  background: none
   color: var(--tinta-fraca)
+  font: inherit
   font-size: 14px
   font-weight: 500
+  text-align: left
   text-decoration: none
+  white-space: nowrap
+  cursor: pointer
   transition: background .12s ease, color .12s ease
+
+  svg
+    flex: none
 
   &:hover
     background: var(--papel)
@@ -56,31 +108,153 @@
     background: var(--tinta)
     color: var(--papel-alto)
 
+.empurra
+  flex: 1
+
 .rodape
-  margin-top: auto
-  padding: 0 10px
+  padding: 8px 8px 0
   color: var(--tinta-fraca)
   font-family: var(--mono)
   font-size: 10px
   letter-spacing: .06em
+  white-space: nowrap
 
-// no celular a barra vira uma faixa no topo
+// os rótulos só aparecem com a barra aberta
+.rotulo,
+.texto,
+.rodape
+  opacity: 0
+  transition: opacity .12s ease
+
+.nav:hover .rotulo,
+.nav:hover .texto,
+.nav:hover .rodape,
+.nav:focus-within .rotulo,
+.nav:focus-within .texto,
+.nav:focus-within .rodape
+  opacity: 1
+
+// puxador e cortina só existem no celular
+.puxador
+  display: none
+
+.backdrop
+  display: none
+
+// --------------------------------------------------------------- confirmação
+.fundo
+  position: fixed
+  inset: 0
+  z-index: 260
+  display: grid
+  place-items: center
+  padding: 20px
+  background: color-mix(in srgb, var(--tinta) 55%, transparent)
+  animation: cortina-entra .16s ease
+
+.dialogo
+  display: flex
+  flex-direction: column
+  gap: 12px
+  max-width: 400px
+  padding: 22px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
+  animation: dialogo-entra .2s cubic-bezier(.2, .8, .25, 1)
+
+.dialogoTitulo
+  font-size: 20px
+
+.dialogoTexto
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+
+.dialogoAcoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+  margin-top: 4px
+
+@keyframes cortina-entra
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+@keyframes dialogo-entra
+  from
+    opacity: 0
+    transform: translateY(8px) scale(.97)
+  to
+    opacity: 1
+    transform: none
+
+// ------------------------------------------------------------------- celular
 @media (max-width: 760px)
   .nav
-    flex-direction: row
-    align-items: center
-    gap: 6px
-    width: 100%
-    padding: 8px 12px
-    border-right: none
-    border-bottom: 1px solid var(--linha)
-    overflow-x: auto
+    position: fixed
+    left: 0
+    top: 0
+    bottom: 0
+    width: 0
+    z-index: 200
 
-  .marca
-    padding: 0 8px 0 0
+  .painel
+    width: 216px
+    box-shadow: 0 0 44px rgba(0, 0, 0, .34)
+    transform: translateX(-100%)
+    transition: transform .24s cubic-bezier(.2, .8, .25, 1)
 
-  .sub
-    display: none
+  .nav:hover .painel,
+  .nav:focus-within .painel
+    width: 216px
+    box-shadow: 0 0 44px rgba(0, 0, 0, .34)
 
+  .nav.aberta .painel
+    transform: translateX(0)
+
+  .rotulo,
+  .texto,
   .rodape
-    display: none
+    opacity: 1
+
+  .puxador
+    display: block
+    position: fixed
+    left: 0
+    top: 50%
+    z-index: 180
+    width: 6px
+    height: 52px
+    padding: 0
+    background: var(--linha)
+    border: none
+    border-radius: 0 5px 5px 0
+    transform: translateY(-50%)
+    cursor: pointer
+
+  .backdrop
+    display: block
+    position: fixed
+    inset: 0
+    z-index: 190
+    background: color-mix(in srgb, var(--tinta) 45%, transparent)
+    opacity: 0
+    pointer-events: none
+    transition: opacity .24s ease
+
+  .backdropVisivel
+    opacity: 1
+    pointer-events: auto
+
+@media (prefers-reduced-motion: reduce)
+  .painel,
+  .backdrop
+    transition: none
+
+  .fundo,
+  .dialogo
+    animation: none

@@ -9,6 +9,14 @@ const ESPERA_MS = 900
 
 let timer: ReturnType<typeof setTimeout> | null = null
 
+/** Cancela uma subida ainda pendente — ao trocar de conta, por exemplo. */
+export function cancelarSync() {
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
+  }
+}
+
 /**
  * O banco é a fonte da verdade. O localStorage fica como espelho para a mesa
  * abrir instantânea e o jogo não morrer se a conexão cair no meio do dia.

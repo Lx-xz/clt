@@ -111,31 +111,47 @@ $levantada: 18px
     width: 46%
     height: auto
 
+// custo preso ao canto superior esquerdo da carta; tipo, ao canto direito —
+// nenhum dos dois flutua sobre a arte, e o texto ganha o espaço que sobra
 .custo
   position: absolute
-  top: 6px
-  left: 6px
+  top: 0
+  left: 0
+  z-index: 3
   display: grid
   place-items: center
-  width: 30px
-  height: 30px
-  background: var(--papel-alto)
-  border: 2px solid var(--energia)
-  border-radius: 50%
-  box-shadow: 0 2px 5px rgba(0, 0, 0, .18)
-  color: var(--energia)
+  min-width: 22px
+  height: 21px
+  padding: 0 5px
+  background: var(--energia)
+  border-bottom-right-radius: 7px
+  color: #f4efe3
   font-family: var(--mono)
-  font-size: 14px
-  font-weight: 600
+  font-size: 12px
+  font-weight: 700
+  font-variant-numeric: tabular-nums
 
 .custoAlto
-  border-color: var(--estresse)
-  color: var(--estresse)
+  background: var(--estresse)
+
+.selo
+  position: absolute
+  top: 0
+  right: 0
+  z-index: 3
+  display: grid
+  place-items: center
+  width: 21px
+  height: 21px
+  background: color-mix(in srgb, var(--papel-baixo) 88%, var(--tinta))
+  border-bottom-left-radius: 7px
+  color: var(--tinta-fraca)
 
 .copias
   position: absolute
-  top: 6px
-  right: 6px
+  right: 4px
+  bottom: 4px
+  z-index: 3
   padding: 1px 7px
   background: var(--papel-alto)
   border: 1px solid var(--linha)
@@ -148,9 +164,8 @@ $levantada: 18px
 .topo
   display: flex
   align-items: flex-start
-  justify-content: space-between
   gap: 6px
-  padding: 6px 8px 4px
+  padding: 5px 8px 4px
 
 .nome
   // acompanha o tamanho da carta: em carta pequena o nome de 3 linhas
@@ -168,8 +183,6 @@ $levantada: 18px
   min-height: 0
   display: flex
   flex-direction: column
-  justify-content: space-between
-  gap: 6px
   margin: 0 6px 6px
   padding: 7px
   background: var(--papel)
@@ -179,23 +192,13 @@ $levantada: 18px
 .texto
   margin: 0
   color: var(--tinta-fraca)
-  font-size: clamp(9px, calc(var(--carta-h, 200px) * .056), 12px)
-  line-height: 1.3
+  font-size: clamp(9px, calc(var(--carta-h, 200px) * .058), 12.5px)
+  line-height: 1.32
   // o texto completo vive no detalhe; aqui ele só não pode vazar
   display: -webkit-box
-  -webkit-line-clamp: 5
+  -webkit-line-clamp: 7
   -webkit-box-orient: vertical
   overflow: hidden
-
-.tipo
-  display: inline-flex
-  align-items: center
-  gap: 4px
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-  font-size: 9.5px
-  letter-spacing: .1em
-  text-transform: uppercase
 
 // o tom do evento colore a borda da carta
 .evNegativo
@@ -214,8 +217,5 @@ $levantada: 18px
   .arte
     background: repeating-linear-gradient(-45deg, var(--papel-baixo), var(--papel-baixo) 7px, transparent 7px, transparent 14px)
 
-.cadeado
-  position: absolute
-  top: 6px
-  right: 6px
-  color: var(--destaque)
+  .selo
+    color: var(--destaque)
