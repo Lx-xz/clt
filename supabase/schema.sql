@@ -128,7 +128,7 @@ grant execute on function public.create_player(text) to anon;
 -- a tabela crua. /ranking é a exceção deliberada de "nick vira público": ele
 -- já não protegia nada (não é senha), e agora vira uma lista intencional.
 
--- contagens gerais, para a página de análise (reservada, sem link no menu)
+-- contagens gerais, para a página de análise
 create or replace function public.estatisticas_gerais()
 returns table (
   jogadores             bigint,

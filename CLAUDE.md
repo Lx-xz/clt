@@ -39,9 +39,9 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
 | `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral |
-| `/meus-jogos` | Toda run terminada do jogador da sessão. Sem link na barra — chega-se digitando a URL |
-| `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro) |
-| `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). **Reservada e escondida** de propósito — sem link, só para uso interno por enquanto |
+| `/meus-jogos` | Toda run terminada do jogador da sessão. Link na barra lateral |
+| `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro). Chega-se clicando numa run em `/meus-jogos` |
+| `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). Link na barra lateral, como "Análise" |
 
 **20 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 12
 desbloqueáveis) e **20 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -387,9 +387,16 @@ antes de usá-los para decidir qualquer coisa.
   português. Não vale a pena renomear o antigo só por consistência.
 - **Comentário explica o porquê, não o quê.** Os comentários deste código
   registram decisões e armadilhas — preserve-os ao refatorar.
-- **Verificação é pelo navegador.** Não há suíte de testes. As mudanças foram
-  validadas dirigindo o app com Playwright: jogar uma run inteira, medir se a
-  carta acompanha o cursor, conferir vazamento horizontal no celular. Se for
-  mexer em interação ou layout, meça — não confie em parecer certo.
+- **Verificação é pelo navegador — mas na medida da mudança.** Não há suíte de
+  testes, então o que valida é dirigir o app com Playwright. Só que subir
+  servidor + Supabase falso + navegador custa caro, e nem toda mudança paga
+  esse preço. A régua:
+  - **Dados ou marcação** (um link novo no menu, um texto, uma cor): só
+    `npx tsc --noEmit` e `npm run build`. Sem navegador.
+  - **Interação ou layout** (arraste, tamanho de carta, rolagem, celular):
+    meça no navegador. Todas as armadilhas da seção acima nasceram assim, e
+    nenhuma delas apareceria só lendo o código.
+  - **Fluxo novo inteiro** (uma rota nova, uma regra nova do motor): um
+    teste de ponta a ponta no fim, não um a cada passo.
 - **Mensagem de commit conta o porquê**, incluindo a causa raiz quando o commit
   conserta um bug. O histórico é curto e vale ler.
