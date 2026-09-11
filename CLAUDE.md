@@ -76,6 +76,7 @@ o próprio peso — o jogo é pequeno.
 ```
 src/game/     regras puras — nenhum import de React
   types.ts      GameState e companhia
+  acoes.ts      o catálogo: o vocabulário que carta e evento têm para mexer no jogo
   cards.ts      20 cartas de ação, progressão das semanas, constantes
   events.ts     20 cartas de evento
   engine.ts     o motor: funções puras GameState -> GameState
@@ -90,6 +91,7 @@ src/data/     tudo que fala com o Supabase
   feedback.ts   bugs e sugestões, tudo por RPC
   notificacoes.ts  o sininho da barra lateral
   changelog.ts  o histórico de versões, escrito à mão
+  balanceamento.ts  a versão do baralho e o que já mudou em cada carta
 src/components/  Card, CardDetail, Medidor, SideNav, SessaoGuard, Dialogo,
                  ComoJogar, icons
 src/app/
@@ -114,19 +116,87 @@ componente.
 
 O README original foi escrito antes de qualquer código. Duas coisas mudaram:
 
-### O efeito da carta é dado, a exceção é código
+### O que a carta faz é dado, e agora não sobrou exceção
 
-`ActionCard.efeito` (`types.ts`) guarda a soma simples que a carta faz:
-produtividade, energia, estresse, dinheiro. `playCard` aplica isso primeiro e
-só então entra num `switch` que sobrou com **cinco** casos — os que não cabem
-numa tabela: a segunda reunião do dia, o descarte do Foco Total, o passivo do
-Automatizar, o sorteio do Pedir Aumento e a advertência cancelada pelo Puxar o
-Saco. Essas cinco levam `especial: true`.
+`ActionCard.efeitos` é uma lista de **ações** do catálogo em `src/game/acoes.ts`
+— `recurso`, `comprar`, `descartar`, `custo`, `advertencia`, `sorteio` e mais
+uma dúzia —, cada bloco com um `se` (condição) e um `quando` (gatilho)
+opcionais. `playCard` roda a lista e acabou: **o motor não conhece o id de
+carta nenhuma.** As cinco que tinham `case` no `switch` viraram dado como
+qualquer outra:
 
-Isso é o que permite rebalancear trocando um número (e o que permite o
-`/lab/cartas` existir). **Carta nova sem `especial` não precisa de uma linha
-de motor.** A refatoração foi conferida rodando o mesmo bot nos dois motores
-com sorteio determinístico: os agregados bateram exatamente.
+| Carta | Como virou dado |
+|---|---|
+| Reunião | dois blocos excludentes por `se: jaJogadaHoje` |
+| Foco Total | `descartar: 'tudo'` |
+| Puxar o Saco | `restricao: { umaVezPorRun, exige: advertencias ≥ 1 }` + `advertencia: −1` |
+| Automatizar | `produtividadePassiva: +1` |
+| Pedir Aumento | `sorteio` com `entao`/`senao` |
+
+Os 20 eventos seguiram o mesmo caminho (`EventCard.efeitos`, e as escolhas dos
+ambíguos carregam suas próprias `acoes`), então `revealEvent` também perdeu o
+`switch`. `especial: true` continua existindo, mas com outro sentido: marca a
+carta que faz mais do que somar recurso, para o editor avisar que mexer só nos
+números não conta a carta inteira.
+
+**Duas regras seguram isto de pé:**
+
+1. **A composição acontece na LISTA, não em função nova.** "Reembaralhar 1" não
+   é uma ação: é `descartar(1)` seguido de `comprar(1)`. Se cada combinação
+   virar primitiva, em três meses são trinta primitivas e o editor precisa de
+   um formulário para cada uma.
+2. **Isto não é para virar linguagem de programação.** `sorteio` já carrega
+   listas dentro e é o limite: laço, variável e expressão ficam de fora. O que
+   não couber continua sendo código no motor, e tudo bem.
+
+**O que NÃO foi para o catálogo, de propósito:** comprar, descartar e
+embaralhar continuam funções do motor, entregues ao interpretador por
+`contexto()`. "Quando o baralho acaba, o descarte é embaralhado e vira o
+baralho" é regra do jogo, não de uma carta, e nenhuma carta deveria poder
+mudá-la. O sorteio também entra por ali (`ctx.sorte`) em vez de a ação chamar
+`Math.random()` — é o que permite rodar o motor com sorteio determinístico.
+
+A migração foi conferida com o comparador determinístico: o mesmo bot, com
+`Math.random` trocado por um LCG semeado, rodou 80 runs com **todas** as cartas
+equipadas nos dois motores, e o **estado final inteiro** (log, histórico,
+baralho, descarte) bateu byte a byte — com as cinco cartas especiais e o
+dobramento de advertência informal aparecendo o mesmo número de vezes nos dois.
+Faça o mesmo antes de dar por boa qualquer refatoração do motor.
+
+### O versionamento do baralho
+
+Rebalancear é mexer em carta que já foi jogada. Sem cuidado, mudar a Hora Extra
+de 4 para 6 reescreve todas as partidas antigas — o replay passa a mostrar a
+carta de hoje no lugar da que a pessoa jogou —, e apagar uma carta deixa o
+replay sem nem nome para mostrar. A solução tem duas metades, que resolvem
+coisas diferentes:
+
+1. **O retrato, dentro da run.** `createRun` grava em `GameState.baralho` uma
+   cópia de cada carta equipada como ela era naquele dia, mais `VERSAO_BARALHO`.
+   Sobe junto com a run (`runs.details.baralho`, e a versão também em
+   `runs.versao_baralho`) e é o que faz o replay continuar verdadeiro para
+   sempre, sem depender de nada externo. **É a única metade que não dá para
+   acrescentar depois**: run jogada antes disto existir nunca vai saber quanto
+   a carta custava — foi por isso que entrou antes de o balanceamento começar,
+   e não junto com ele. A recompensa de fim de semana é fotografada em
+   `chooseReward`, porque ela entra no baralho depois do retrato inicial.
+2. **O histórico, à mão.** `MUDANCAS` em `src/data/balanceamento.ts`, uma linha
+   por ajuste, com `oQue` (o número) e `porque` (o motivo). É o que o jogador lê
+   ao clicar em **histórico** numa carta do baralho. Um diff automático saberia
+   dizer "custo 4 → 6" e não saberia dizer "porque Freela → Hora Extra fechava
+   a semana 1 sozinha", que é a parte que importa.
+
+**Ao ajustar uma carta:** suba `VERSAO_BARALHO`, acrescente a linha em
+`MUDANCAS`, e cite em `changelog.ts`. Carta removida vai para
+`CARTAS_REMOVIDAS` com o último formato que teve — `cartaComoEra()` procura
+nessa ordem (retrato da run → baralho de hoje → removidas → rótulo honesto) e
+por isso nenhuma dessas mudanças derruba a página de ninguém.
+
+**Por que ainda não há tabela `cartas` no banco:** com as cartas no código, o
+retrato dentro da run já garante a integridade das partidas antigas e
+`MUDANCAS` já dá a leitura para o jogador. A tabela vira necessária quando as
+cartas saírem do código — e aí `CARTAS_REMOVIDAS` + `MUDANCAS` são exatamente
+o conteúdo de `cartas_antigas`, então esta estrutura migra sem mudar de forma.
 
 ### Embalo
 
@@ -274,6 +344,12 @@ opções. O que ele escolheu, e que deve ser preservado:
   exceção que mexe na conta de quem clica — e são de admin porque uma coleção
   inteira desbloqueada estraga qualquer leitura de dificuldade que venha
   daquela conta.
+- **`/lab/cartas` edita a carta inteira.** Desde que o efeito virou lista de
+  ações, não existe mais "a regra está no motor": os quatro campos de recurso
+  mexem no bloco sem condição (o que se usa para rebalancear) e o painel de
+  ações mostra a lista crua em JSON, que é a única forma de editar carta
+  condicional sem inventar um formulário por tipo de ação. Continua sem gravar
+  em lugar nenhum: leva o `cards.ts` pronto para o repositório.
 - **`/lab/avatar` produz código, não salva nada.** O site é export estático:
   não há servidor para escrever arquivo, então a bancada devolve a linha de
   `MEDIDAS` para colar em `Avatar.tsx`. Ela desenha com o **mesmo** componente
@@ -521,7 +597,7 @@ SQL Editor do projeto.
 |---|---|
 | `players` | o perfil: nick, nome, e-mail, se é convidado, se é admin, pontos, avatar. **O site nunca lê esta tabela direto** |
 | `saves` | run em andamento e coleção, em `jsonb` |
-| `runs` | registro append-only de runs terminadas, para balanceamento |
+| `runs` | registro append-only de runs terminadas, para balanceamento. `versao_baralho` diz em que balanceamento a run foi jogada, e `details.baralho` guarda as cartas como eram naquele dia |
 | `feedbacks` | bugs e sugestões, com estado, urgência e nota |
 | `feedback_comentarios` | a conversa de cada relato |
 | `notificacoes` | o que aconteceu com o relato de cada um |
@@ -732,7 +808,12 @@ antes de usá-los para decidir qualquer coisa.
   ("Café depois de Reunião não gera estresse") foram propostos e não feitos.
 - **Código morto:** `embaloAtual()` e `weekNumber()` em `engine.ts` não têm uso
   fora do próprio arquivo.
-- **Rebalancear depois do Embalo**, especialmente a classe `grana`.
+- **Rebalancear depois do Embalo**, especialmente a classe `grana`. A
+  infraestrutura já está pronta: retrato dentro da run, `VERSAO_BARALHO` e o
+  histórico por carta. Falta decidir os números.
+- **Cartas no banco (`cartas` + `cartas_antigas`).** Adiado de propósito: veja
+  "O versionamento do baralho" acima para o que já cobre o problema hoje e o
+  que a tabela resolveria.
 - **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica.tsx`,
   `public/som/`), com os dois volumes em `src/data/som.ts`. Falta o resto: um
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,

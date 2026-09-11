@@ -98,6 +98,14 @@ alter table public.runs add column if not exists visivel boolean not null defaul
 -- jogador convidado é apagável e a run não: guardar a marca na própria linha
 -- mantém o dado depois de o perfil sumir.
 alter table public.runs add column if not exists convidado boolean not null default false;
+-- em que versão do baralho a run foi jogada. Fica em coluna própria, e não só
+-- dentro de `details`, porque é por ela que a análise separa "antes e depois
+-- do ajuste" — comparar o desfecho de runs de balanceamentos diferentes é
+-- comparar dois jogos. Zero é a run gravada antes de isto existir.
+-- O retrato das cartas em si (nome, custo e texto como eram naquele dia) vai
+-- em `details.baralho`: é o que mantém o replay verdadeiro depois de a carta
+-- mudar ou sumir, e é a única parte que NÃO dá para preencher depois.
+alter table public.runs add column if not exists versao_baralho smallint not null default 0;
 
 -- 'abandono' é o quinto desfecho: a run que o jogador reiniciou no meio. Não é
 -- derrota (ninguém foi demitido), mas é o dado que diz o que faz desistir.

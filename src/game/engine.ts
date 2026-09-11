@@ -13,8 +13,11 @@ import {
   weekOfDay,
   weekdayOf,
 } from './cards'
+import { fotografarBaralho, fotografarCarta } from './cards'
+import { condicaoVale, dispararEfeitos, executar, type Contexto } from './acoes'
+import { VERSAO_BARALHO } from '@/data/balanceamento'
 import { EVENT_CARDS, getEvent } from './events'
-import type { CardId, CardInstance, CardKind, DayLog, EfeitoCarta, GameState } from './types'
+import type { CardId, CardInstance, CardKind, DayLog, GameState } from './types'
 
 // ---------------------------------------------------------------- utilidades
 
@@ -45,6 +48,36 @@ function clone(state: GameState): GameState {
   return structuredClone(state)
 }
 
+/**
+ * A ponte entre o catálogo de ações e o motor. Comprar, descartar e
+ * embaralhar continuam AQUI de propósito — "quando o baralho acaba, o
+ * descarte é embaralhado e vira o baralho" é regra do jogo, não de uma carta,
+ * e nenhuma carta deveria poder mudá-la.
+ *
+ * `sorte` entra por aqui em vez de a ação chamar `Math.random()` direto: é o
+ * que permite rodar o motor com sorteio determinístico e comparar duas
+ * versões jogada por jogada.
+ */
+function contexto(cartaId?: CardId): Contexto {
+  return {
+    cartaId,
+    comprar: (state, quantas) => draw(state, quantas),
+    descartarMao: (state) => discardHand(state),
+    descartarUma: (state, aleatoria, porque) => {
+      if (state.hand.length === 0) return null
+      const alvo = aleatoria ? pick(state.hand) : state.hand[state.hand.length - 1]
+      state.hand = state.hand.filter((c) => c.uid !== alvo.uid)
+      state.discard.push(alvo)
+      const nome = getCard(alvo.cardId).name
+      log(state, porque ? `${porque} descartou ${nome}.` : `Descartou ${nome}.`)
+      return alvo.cardId
+    },
+    criarCarta: (cardId) => makeInstance(cardId),
+    log: (state, texto) => log(state, texto),
+    sorte: () => Math.random(),
+  }
+}
+
 // ------------------------------------------------------------------ leitura
 
 export function currentWeek(state: GameState) {
@@ -67,7 +100,12 @@ export function canPlay(state: GameState, instance: CardInstance) {
   if (state.phase !== 'dia') return false
   const card = getCard(instance.cardId)
   if (state.blockedKinds.includes(card.kind)) return false
-  if (card.id === 'puxar-o-saco' && (state.usedPuxarOSaco || state.warnings === 0)) return false
+  // a restrição decide se DÁ para jogar; o efeito decide o que acontece
+  // depois. Sem essa separação, "uma vez por run" viraria um booleano novo no
+  // estado a cada carta dessas
+  const restricao = card.restricao
+  if (restricao?.umaVezPorRun && state.usadasNaRun.includes(card.id)) return false
+  if (restricao?.exige && !condicaoVale(state, restricao.exige, contexto(card.id))) return false
   return effectiveCost(state, card.id) <= state.energy
 }
 
@@ -103,6 +141,9 @@ export function createRun(equipped: CardId[]): GameState {
 
   const state: GameState = {
     runId: crypto.randomUUID(),
+    // o retrato do baralho é tirado AQUI, uma vez só: é a única parte do
+    // versionamento que não dá para acrescentar depois
+    baralho: { versao: VERSAO_BARALHO, cartas: fotografarBaralho(equipped) },
     startedAt: new Date().toISOString(),
     maxCombo: 0,
     cardsPlayed: 0,
@@ -121,7 +162,7 @@ export function createRun(equipped: CardId[]): GameState {
     tomorrow: { energy: 0, quota: 0 },
     passiveProductivity: 0,
     salaryBonus: 0,
-    usedPuxarOSaco: false,
+    usadasNaRun: [],
     deck: shuffle(deck),
     hand: [],
     discard: [],
@@ -131,7 +172,7 @@ export function createRun(equipped: CardId[]): GameState {
     lastCombo: null,
     fridayStep: null,
     fridayResult: null,
-    meetingsToday: 0,
+    maoDoDia: HAND_SIZE,
     blockedKinds: [],
     costModifier: 0,
     currentEvent: null,
@@ -157,7 +198,7 @@ function startDay(input: GameState): GameState {
   state.productivity = state.passiveProductivity
   state.dailyQuota = currentWeek(state).dailyQuota + state.tomorrow.quota
   state.tomorrow = { energy: 0, quota: 0 }
-  state.meetingsToday = 0
+  state.maoDoDia = HAND_SIZE
   state.blockedKinds = []
   state.costModifier = 0
   state.pendingEventChoice = false
@@ -184,78 +225,22 @@ export function revealEvent(input: GameState): GameState {
   if (state.phase !== 'evento' || state.eventRevealed || !state.currentEvent) return input
 
   const event = getEvent(state.currentEvent)
+  const ctx = contexto()
   state.eventRevealed = true
   log(state, `${dayLabel(state)} — evento: ${event.name}.`)
 
+  // o evento ambíguo não faz nada sozinho: quem carrega o efeito é a escolha
   if (event.choices) {
     state.pendingEventChoice = true
     return state
   }
 
-  const drawCount = applyImmediateEvent(state, event.id)
-  draw(state, drawCount)
-  if (event.id === 'fofoca-de-corredor' && state.hand.length > 0) {
-    const victim = pick(state.hand)
-    state.hand = state.hand.filter((c) => c.uid !== victim.uid)
-    state.discard.push(victim)
-    log(state, `Fofoca de Corredor descartou ${getCard(victim.cardId).name}.`)
-  }
+  dispararEfeitos(state, event.efeitos, 'aoRevelar', ctx)
+  draw(state, state.maoDoDia)
+  // e só depois da mão chegar vem o que precisa dela (a Fofoca de Corredor)
+  dispararEfeitos(state, event.efeitos, 'aposComprar', ctx)
   state.phase = 'dia'
   return checkDefeat(state)
-}
-
-/** Aplica o efeito imediato do evento e devolve quantas cartas comprar. */
-function applyImmediateEvent(state: GameState, eventId: CardId): number {
-  switch (eventId) {
-    case 'sistema-fora-do-ar':
-      state.blockedKinds = ['tarefa']
-      break
-    case 'reuniao-de-alinhamento':
-      state.energy = Math.max(0, state.energy - 3)
-      break
-    case 'chefe-de-mau-humor':
-      state.stress += 2
-      break
-    case 'relatorio-de-ultima-hora':
-      state.dailyQuota += 2
-      break
-    case 'transito':
-      state.energy = Math.max(0, state.energy - 2)
-      break
-    case 'colega-faltou':
-      state.dailyQuota += 1
-      state.money += 20
-      break
-    case 'ar-condicionado-quebrado':
-      state.costModifier = 1
-      break
-    case 'cobranca-no-zap':
-      state.stress += 1
-      break
-    case 'dormiu-bem':
-      state.energy += 3
-      break
-    case 'bolo-na-copa':
-      state.stress = Math.max(0, state.stress - 2)
-      break
-    case 'sexta-de-folga':
-      state.dailyQuota = 0
-      break
-    case 'elogio-do-chefe':
-      state.stress = Math.max(0, state.stress - 1)
-      state.productivity += 1
-      break
-    case 'reembolso-atrasado':
-      state.money += 40
-      break
-    case 'dia-tranquilo':
-      return HAND_SIZE + 2
-    case 'internet-caiu':
-      return 3
-    default:
-      break
-  }
-  return HAND_SIZE
 }
 
 export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
@@ -265,64 +250,19 @@ export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
   const choice = event.choices?.[index]
   if (!choice) return state
 
-  switch (event.id) {
-    case 'hora-extra-nao-solicitada':
-      if (index === 0) {
-        state.money += 40
-        state.stress += 3
-      } else {
-        state.informalWarnings += 1
-        if (state.informalWarnings >= 2) {
-          state.informalWarnings -= 2
-          state.warnings += 1
-          log(state, 'Duas advertências informais viraram uma advertência real.')
-        }
-      }
-      break
-    case 'convite-happy-hour':
-      if (index === 0) {
-        state.stress = Math.max(0, state.stress - 3)
-        state.tomorrow.energy -= 3
-      } else {
-        state.stress += 1
-      }
-      break
-    case 'freela-de-um-amigo':
-      if (index === 0) {
-        state.money += 60
-        state.tomorrow.quota += 2
-      }
-      break
-    case 'chamado-de-madrugada':
-      if (index === 0) {
-        state.money += 25
-        state.tomorrow.energy -= 4
-      } else {
-        state.stress += 2
-      }
-      break
-    default:
-      break
-  }
+  const ctx = contexto()
+  executar(state, choice.acoes, ctx)
 
   log(state, `${event.name}: você escolheu "${choice.label}".`)
   state.pendingEventChoice = false
   state.lastEventChoice = index
-  draw(state, HAND_SIZE)
+  draw(state, state.maoDoDia)
+  dispararEfeitos(state, event.efeitos, 'aposComprar', ctx)
   state.phase = 'dia'
   return checkDefeat(state)
 }
 
 // ------------------------------------------------------------ jogar cartas
-
-/** Soma os recursos que a carta declara. Estresse nunca passa de zero. */
-function aplicarEfeito(state: GameState, efeito: EfeitoCarta | undefined) {
-  if (!efeito) return
-  if (efeito.produtividade) state.productivity += efeito.produtividade
-  if (efeito.energia) state.energy += efeito.energia
-  if (efeito.dinheiro) state.money += efeito.dinheiro
-  if (efeito.estresse) state.stress = Math.max(0, state.stress + efeito.estresse)
-}
 
 export function playCard(input: GameState, uid: string): GameState {
   const state = clone(input)
@@ -334,48 +274,14 @@ export function playCard(input: GameState, uid: string): GameState {
   state.hand = state.hand.filter((c) => c.uid !== uid)
   state.discard.push(instance)
 
-  // a soma simples vem do DADO da carta (`efeito`), não de código: é o que
-  // deixa 15 das 20 cartas serem editadas numa tabela sem tocar no motor
-  aplicarEfeito(state, card.efeito)
-
-  // e aqui embaixo sobra só o que não é soma: a segunda reunião do dia, o
-  // descarte do Foco Total, o passivo do Automatizar e o sorteio do aumento.
-  // Carta nova sem `especial` não precisa de nada disto.
-  switch (card.id) {
-    case 'reuniao':
-      state.meetingsToday += 1
-      if (state.meetingsToday >= 2) {
-        state.stress += 1
-        log(state, 'Segunda reunião do dia: só estresse, nenhuma produtividade.')
-      } else {
-        state.productivity += 1
-      }
-      break
-    case 'foco-total':
-      discardHand(state)
-      log(state, 'Foco Total: o resto da mão foi descartado.')
-      break
-    case 'puxar-o-saco':
-      state.warnings = Math.max(0, state.warnings - 1)
-      state.usedPuxarOSaco = true
-      break
-    case 'automatizar':
-      state.passiveProductivity += 1
-      break
-    case 'pedir-aumento':
-      if (Math.random() < 0.5) {
-        state.salaryBonus += 100
-        log(state, 'Pedir Aumento: deu certo! Salário +R$ 100 pelo resto da run.')
-      } else {
-        state.stress += 3
-        log(state, 'Pedir Aumento: "vamos ver no próximo ciclo". +3 estresse.')
-      }
-      break
-    default:
-      break
-  }
+  // TUDO que a carta faz vem da lista de ações dela — inclusive a segunda
+  // reunião do dia, o descarte do Foco Total e o sorteio do Pedir Aumento.
+  // O motor não conhece o id de carta nenhuma, e é isso que deixa carta nova
+  // nascer só de dado.
+  dispararEfeitos(state, card.efeitos, 'aoJogar', contexto(card.id))
 
   state.playedToday.push(card.id)
+  if (!state.usadasNaRun.includes(card.id)) state.usadasNaRun.push(card.id)
   state.cardsPlayed += 1
   log(state, `Jogou ${card.name}.`)
   aplicarEmbalo(state, card.kind)
@@ -457,12 +363,14 @@ export function endDay(input: GameState): GameState {
   if (!metQuota) {
     state.stress += 2
     log(state, `Cota não batida (${state.productivity}/${state.dailyQuota}): +2 estresse e o chefe anotou.`)
-    if (state.currentEvent === 'cobranca-no-zap') {
-      state.stress += 2
-      log(state, 'A cobrança no grupo do zap piorou: +2 estresse extra.')
-    }
   } else {
     log(state, `Cota batida (${state.productivity}/${state.dailyQuota}).`)
+  }
+
+  // o evento que só cobra no fim do dia (Cobrança no Zap). Depois da
+  // penalidade de cota, porque é dela que o "se" depende
+  if (state.currentEvent) {
+    dispararEfeitos(state, getEvent(state.currentEvent).efeitos, 'fimDoDia', contexto())
   }
 
   state.weekProductivity += state.productivity
@@ -583,6 +491,12 @@ export function chooseReward(input: GameState, cardId: CardId): GameState {
   const state = clone(input)
   if (state.phase !== 'recompensa' || !state.rewardOptions.includes(cardId)) return input
   state.discard.push(makeInstance(cardId))
+  // a recompensa entra no baralho DEPOIS do retrato inicial, então ela
+  // precisa ser fotografada aqui — senão o replay não saberia dizer como era
+  // a única carta que a pessoa ganhou no meio da run
+  if (!state.baralho.cartas.some((c) => c.id === cardId)) {
+    state.baralho.cartas.push(fotografarCarta(getCard(cardId)))
+  }
   state.rewardOptions = []
   log(state, `${getCard(cardId).name} entrou no baralho.`)
   return startDay(state)

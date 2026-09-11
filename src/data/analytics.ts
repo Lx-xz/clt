@@ -1,4 +1,4 @@
-import type { DayLog } from '@/game/types'
+import type { CartaSnapshot, DayLog } from '@/game/types'
 import { supabase } from './supabase'
 
 /**
@@ -59,7 +59,10 @@ export async function buscarMeusJogos(playerId: string): Promise<LinhaMeuJogo[]>
 }
 
 export interface DetalheDoJogo extends LinhaMeuJogo {
-  details: { history: DayLog[] } | null
+  /** `baralho` é o retrato das cartas como elas eram naquele dia; runs
+   *  gravadas antes do versionamento não o têm, e aí o replay cai nas cartas
+   *  de hoje. Veja `src/data/balanceamento.ts`. */
+  details: { history: DayLog[]; baralho?: { versao: number; cartas: CartaSnapshot[] } } | null
 }
 
 /** Devolve null quando a run não existe ou não é deste jogador. */

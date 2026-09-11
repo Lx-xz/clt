@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react'
 import Card from '@/components/Card'
 import Dialogo from '@/components/Dialogo'
 import { ACTION_CARDS } from '@/game/cards'
-import type { ActionCard, CardKind, EfeitoCarta } from '@/game/types'
+import type { Acao, Efeito, Recurso } from '@/game/acoes'
+import type { ActionCard, CardKind } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './cartas.module.sass'
 
@@ -20,29 +21,57 @@ import styles from './cartas.module.sass'
  * rascunho e se leva o `cards.ts` pronto para o repositório — que continua
  * sendo a fonte da verdade.
  *
- * O que dá para editar de verdade: nome, custo, classe, texto, cópias no
- * baralho inicial e o `efeito` — a soma de recursos que a carta faz. Isso
- * cobre 15 das 20 cartas inteirinhas.
+ * Agora dá para editar a carta INTEIRA, inclusive as cinco marcadas
+ * `especial`: desde que o que a carta faz virou lista de ações (`acoes.ts`),
+ * a segunda reunião do dia e o sorteio do Pedir Aumento são dado como
+ * qualquer outro. Não existe mais "a regra está no motor".
  *
- * O que NÃO dá: a regra das cinco cartas marcadas `especial`. A segunda
- * reunião do dia, o descarte do Foco Total, o passivo do Automatizar, o
- * sorteio do Pedir Aumento e o cancelamento de advertência do Puxar o Saco
- * são CÓDIGO, no `switch` de `playCard`. O editor mostra o aviso e deixa
- * mexer no resto da carta; a regra em si continua sendo assunto do motor.
+ * A edição tem dois níveis, de propósito:
+ *
+ * - **Os quatro campos de recurso** mexem no bloco de efeito SEM condição —
+ *   o "+2 produtividade" da carta. É o que cobre a maioria e o que se usa
+ *   para rebalancear.
+ * - **O painel de ações** mostra a lista inteira em JSON e aceita edição.
+ *   É a única forma de mexer numa carta condicional sem inventar um
+ *   formulário para cada tipo de ação, e o rascunho é local: JSON inválido
+ *   estraga o rascunho, não o jogo de ninguém.
  */
 
 const CHAVE = 'clt:lab-cartas:v1'
 
 const CLASSES: CardKind[] = ['tarefa', 'descanso', 'grana', 'social']
-const RECURSOS: { campo: keyof EfeitoCarta; rotulo: string }[] = [
-  { campo: 'produtividade', rotulo: 'produtividade' },
-  { campo: 'energia', rotulo: 'energia' },
-  { campo: 'estresse', rotulo: 'estresse' },
-  { campo: 'dinheiro', rotulo: 'dinheiro' },
-]
+const RECURSOS: Recurso[] = ['produtividade', 'energia', 'estresse', 'dinheiro']
 
 function nova(): ActionCard {
-  return { id: 'carta-nova', name: 'Carta Nova', cost: 2, kind: 'tarefa', text: '', efeito: {}, starter: false }
+  return { id: 'carta-nova', name: 'Carta Nova', cost: 2, kind: 'tarefa', text: '', efeitos: [{ acoes: [] }], starter: false }
+}
+
+/** O índice do bloco sem condição — o "efeito simples" da carta. */
+function blocoSimples(c: ActionCard): number {
+  return c.efeitos.findIndex((e) => !e.se && !e.quando)
+}
+
+/** Quanto a carta soma num recurso, somando as ações do bloco simples. */
+function somaDe(c: ActionCard, qual: Recurso): number | '' {
+  const bloco = c.efeitos[blocoSimples(c)]
+  if (!bloco) return ''
+  const total = bloco.acoes
+    .filter((a): a is Extract<Acao, { faz: 'recurso' }> => a.faz === 'recurso' && a.qual === qual)
+    .reduce((soma, a) => soma + a.quanto, 0)
+  return total === 0 ? '' : total
+}
+
+/** Objeto literal de TypeScript (chave sem aspas), para o código sair colável. */
+function literal(valor: unknown): string {
+  if (Array.isArray(valor)) return `[${valor.map(literal).join(', ')}]`
+  if (valor && typeof valor === 'object') {
+    const partes = Object.entries(valor as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => `${k}: ${literal(v)}`)
+    return `{ ${partes.join(', ')} }`
+  }
+  if (typeof valor === 'string') return `'${valor.replace(/'/g, "\\'")}'`
+  return String(valor)
 }
 
 /** O arquivo `cards.ts` reconstruído a partir do rascunho, pronto para colar. */
@@ -55,11 +84,9 @@ function comoCodigo(cartas: ActionCard[]): string {
         `cost: ${c.cost}`,
         `kind: '${c.kind}'`,
         `text: '${c.text.replace(/'/g, "\\'")}'`,
-        `efeito: { ${Object.entries(c.efeito ?? {})
-          .filter(([, v]) => v)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ')} }`,
+        `efeitos: ${literal(c.efeitos)}`,
       ]
+      if (c.restricao) partes.push(`restricao: ${literal(c.restricao)}`)
       if (c.especial) partes.push('especial: true')
       partes.push(`starter: ${c.starter}`)
       if (c.copies) partes.push(`copies: ${c.copies}`)
@@ -97,9 +124,35 @@ export default function LabCartasPage() {
     guardar(cartas.map((c, j) => (j === i ? { ...c, ...mudanca } : c)))
   }
 
-  function mudarEfeito(i: number, campo: keyof EfeitoCarta, valor: string) {
-    const n = valor === '' ? undefined : Number(valor)
-    mudar(i, { efeito: { ...cartas[i].efeito, [campo]: Number.isFinite(n) ? n : undefined } })
+  /**
+   * Escreve a soma de um recurso no bloco sem condição: tira as ações
+   * daquele recurso e põe uma só com o total. Sem isso, digitar no campo duas
+   * vezes deixaria duas ações somando a mesma coisa.
+   */
+  function mudarRecurso(i: number, qual: Recurso, valor: string) {
+    const c = cartas[i]
+    const n = Number(valor)
+    const quanto = valor === '' || !Number.isFinite(n) ? 0 : n
+    const efeitos = [...c.efeitos]
+    let alvo = blocoSimples(c)
+    if (alvo < 0) {
+      efeitos.push({ acoes: [] })
+      alvo = efeitos.length - 1
+    }
+    const restantes = efeitos[alvo].acoes.filter((a) => !(a.faz === 'recurso' && a.qual === qual))
+    const acoes: Acao[] = quanto === 0 ? restantes : [...restantes, { faz: 'recurso', qual, quanto }]
+    efeitos[alvo] = { ...efeitos[alvo], acoes }
+    mudar(i, { efeitos })
+  }
+
+  /** O painel cru. JSON inválido não é salvo — o rascunho anterior fica. */
+  function mudarEfeitosCrus(i: number, texto: string) {
+    try {
+      const lido = JSON.parse(texto) as Efeito[]
+      if (Array.isArray(lido)) mudar(i, { efeitos: lido })
+    } catch {
+      // digitação no meio do caminho: ignora até o JSON fechar
+    }
   }
 
   const codigo = comoCodigo(cartas)
@@ -148,7 +201,7 @@ export default function LabCartasPage() {
             <Card card={c} className={styles.carta} />
             <span className={styles.rotulo}>
               {c.starter ? `inicial ×${c.copies ?? 1}` : 'desbloqueável'}
-              {c.especial ? <b className={styles.marcaEspecial}>regra no motor</b> : null}
+              {c.especial ? <b className={styles.marcaEspecial}>tem condição</b> : null}
             </span>
           </button>
         ))}
@@ -162,9 +215,9 @@ export default function LabCartasPage() {
 
           {emEdicao.especial ? (
             <p className={styles.especial}>
-              Esta carta tem <b>regra no motor</b>, no <code>switch</code> de <code>playCard</code>:
-              o que a torna especial não está em nenhum campo daqui. Dá para mudar nome, custo,
-              classe, texto e a soma de recursos — a regra continua sendo código.
+              Esta carta faz <b>mais do que somar recurso</b>: ela tem condição, descarte ou
+              sorteio. Os quatro campos de recurso mexem só no efeito sem condição — o resto está
+              no painel de ações, embaixo.
             </p>
           ) : null}
 
@@ -242,20 +295,36 @@ export default function LabCartasPage() {
           </p>
 
           <div className={styles.campos}>
-            {RECURSOS.map(({ campo, rotulo }) => (
-              <label key={campo}>
-                <span>{rotulo}</span>
+            {RECURSOS.map((qual) => (
+              <label key={qual}>
+                <span>{qual}</span>
                 <input
                   type="number"
-                  value={emEdicao.efeito?.[campo] ?? ''}
+                  value={somaDe(emEdicao, qual)}
                   placeholder="0"
-                  onChange={(ev) => mudarEfeito(aberta, campo, ev.target.value)}
+                  onChange={(ev) => mudarRecurso(aberta, qual, ev.target.value)}
                 />
               </label>
             ))}
           </div>
           <p className={styles.dica}>
             Estresse positivo <b>sobe</b> o estresse, negativo desce. Nunca passa de zero.
+          </p>
+
+          <label className={styles.texto}>
+            <span>ações da carta</span>
+            <textarea
+              rows={6}
+              spellCheck={false}
+              defaultValue={JSON.stringify(emEdicao.efeitos, null, 1)}
+              onChange={(ev) => mudarEfeitosCrus(aberta, ev.target.value)}
+            />
+          </label>
+          <p className={styles.dica}>
+            A lista inteira, do jeito que o motor lê. O vocabulário está em{' '}
+            <code>src/game/acoes.ts</code>: <code>recurso</code>, <code>comprar</code>,{' '}
+            <code>descartar</code>, <code>custo</code>, <code>sorteio</code> e companhia, cada
+            bloco com um <code>se</code> opcional. JSON inválido é ignorado até fechar.
           </p>
 
           <button
@@ -289,9 +358,9 @@ export default function LabCartasPage() {
         >
           <p className={styles.dica}>
             Cole no lugar do miolo de <code>ACTION_CARDS</code>, em{' '}
-            <code>src/game/cards.ts</code>. Carta com <code>especial: true</code> precisa do
-            <code> case</code> dela no <code>playCard</code>; sem ele, a parte especial some e
-            sobra só o efeito.
+            <code>src/game/cards.ts</code>. Não há mais nada a fazer no motor: ele lê a lista de
+            ações e pronto. Mudou número de carta? Suba <code>VERSAO_BARALHO</code> e escreva a
+            linha em <code>src/data/balanceamento.ts</code> — é ela que o jogador lê no baralho.
           </p>
           <pre className={styles.codigo}>{codigo}</pre>
         </Dialogo>

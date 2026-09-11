@@ -23,17 +23,30 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
-  'Cartas com habilidade especial editáveis sem mexer no motor do jogo.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
   'Mais peças de avatar (óculos, barba) e o avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
   'Notificação de verdade (e-mail ou aviso no aparelho) quando o seu relato mudar de estado.',
-  'Rebalancear o jogo depois do Embalo, em especial as cartas de grana.',
+  'Rebalancear o jogo depois do Embalo, em especial as cartas de grana — agora com o histórico de cada carta à vista no baralho.',
   'Deixar clonar o repositório e jogar sem configurar banco nenhum.',
   'Animação das cartas voando do baralho para a mão, como no protótipo.',
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.9',
+    data: '2026-09-11',
+    titulo: 'As cartas viraram dado, e as partidas antigas ficaram intactas',
+    itens: [
+      { tipo: 'melhor', texto: 'Toda carta agora diz o que faz numa lista de ações que o jogo lê — inclusive as cinco que tinham regra escrita no motor (Reunião, Foco Total, Puxar o Saco, Automatizar e Pedir Aumento). Na prática: dá para ajustar qualquer carta sem mexer no código do jogo, e carta nova nasce só de dado.' },
+      { tipo: 'melhor', texto: 'Os 20 eventos seguiram o mesmo caminho. O motor não conhece mais o nome de carta nenhuma.' },
+      { tipo: 'novo', texto: 'Cada partida guarda o retrato do baralho que você usou: nome, custo e texto das cartas como eram naquele dia. Quando o balanceamento começar, o replay de uma partida antiga continua mostrando a carta que você jogou, e não a de hoje.' },
+      { tipo: 'novo', texto: 'No baralho, cada carta tem um atalho de histórico: o que já mudou nela, quando, e por quê. Está vazio hoje porque o baralho ainda está na v1 — nenhuma carta mudou desde que o jogo existe.' },
+      { tipo: 'novo', texto: 'O baralho passou a ter versão, visível no topo da página. Ela sobe a cada ajuste de carta e fica gravada na partida.' },
+      { tipo: 'melhor', texto: 'O laboratório de cartas agora edita a carta inteira, condição e sorteio inclusive — antes ele parava nas cinco especiais.' },
+      { tipo: 'correcao', texto: 'Uma partida que cite uma carta removida no futuro não derruba mais a página do replay.' },
+    ],
+  },
   {
     versao: '0.8',
     data: '2026-09-11',

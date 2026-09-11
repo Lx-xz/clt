@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 import { buscarDetalheDoJogo, type DetalheDoJogo } from '@/data/analytics'
 import Card from '@/components/Card'
-import { getCard } from '@/game/cards'
+import { cartaParaMostrar } from '@/data/balanceamento'
 import { getEvent } from '@/game/events'
 import { useSessao } from '@/components/SessaoGuard'
 import buttons from '@/styles/buttons.module.sass'
@@ -97,6 +97,9 @@ function Detalhe() {
 
 function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
   const historico = jogo.details?.history ?? []
+  // as cartas como elas eram NAQUELE dia. Sem isto, mudar o custo de uma
+  // carta reescreveria todas as partidas já jogadas
+  const retrato = jogo.details?.baralho?.cartas
 
   return (
     <>
@@ -104,6 +107,7 @@ function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
         <span className={`${styles.selo} ${styles[jogo.outcome]}`}>{ROTULO[jogo.outcome]}</span>
         <span className={styles.resumoTexto}>
           Semana {jogo.week_reached} · dia {jogo.day} · R$ {jogo.money} · {formatarData(jogo.ended_at)}
+          {jogo.details?.baralho ? ` · baralho v${jogo.details.baralho.versao}` : ''}
         </span>
       </div>
 
@@ -130,7 +134,7 @@ function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
                 ) : (
                   <div className={styles.cartas}>
                     {dia.cardsPlayed.map((id, i) => (
-                      <Card key={`${id}-${i}`} card={getCard(id)} />
+                      <Card key={`${id}-${i}`} card={cartaParaMostrar(id, retrato)} />
                     ))}
                   </div>
                 )}

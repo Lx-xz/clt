@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Card from '@/components/Card'
+import HistoricoDaCarta from '@/components/HistoricoDaCarta'
+import { VERSAO_BARALHO } from '@/data/balanceamento'
 import { ACTION_CARDS, getCard } from '@/game/cards'
 import { carregarDoBanco, sincronizar, type StatusSync } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
@@ -14,6 +16,7 @@ import styles from './baralho.module.sass'
 export default function BaralhoPage() {
   const [collection, setCollection] = useState<Collection | null>(null)
   const [status, setStatus] = useState<StatusSync>('ocioso')
+  const [historico, setHistorico] = useState<CardId | null>(null)
   const sessao = useSessao()
 
   useEffect(() => {
@@ -70,7 +73,10 @@ export default function BaralhoPage() {
   return (
     <main className="page">
       <div className={styles.top}>
-        <h1 className={styles.title}>Baralho</h1>
+        <div className={styles.tituloLinha}>
+          <h1 className={styles.title}>Baralho</h1>
+          <span className={styles.versao}>v{VERSAO_BARALHO}</span>
+        </div>
         <div className={styles.tools}>
           <button
             type="button"
@@ -89,7 +95,8 @@ export default function BaralhoPage() {
         </div>
       </div>
       <p className={styles.hint}>
-        Clique numa carta para tirá-la ou colocá-la no baralho. A montagem vale para a próxima run.
+        Clique numa carta para tirá-la ou colocá-la no baralho; em <b>histórico</b> para ver o que
+        já mudou nela. A montagem vale para a próxima run.
         {status === 'salvando' ? ' Salvando…' : status === 'salvo' ? ' Salvo.' : status === 'erro' ? ' Sem conexão — guardado local.' : ''}
       </p>
 
@@ -107,12 +114,16 @@ export default function BaralhoPage() {
             {collection.equipped.map((id) => {
               const card = getCard(id)
               return (
-                <Card
-                  key={id}
-                  card={card}
-                  copies={card.starter ? (card.copies ?? 1) : 1}
-                  onOpen={() => unequip(id)}
-                />
+                <div key={id} className={styles.celula}>
+                  <Card
+                    card={card}
+                    copies={card.starter ? (card.copies ?? 1) : 1}
+                    onOpen={() => unequip(id)}
+                  />
+                  <button type="button" className={styles.historico} onClick={() => setHistorico(id)}>
+                    histórico
+                  </button>
+                </div>
               )
             })}
           </div>
@@ -129,7 +140,12 @@ export default function BaralhoPage() {
         ) : (
           <div className={styles.grid}>
             {collection.unequipped.map((id) => (
-              <Card key={id} card={getCard(id)} onOpen={() => equip(id)} />
+              <div key={id} className={styles.celula}>
+                <Card card={getCard(id)} onOpen={() => equip(id)} />
+                <button type="button" className={styles.historico} onClick={() => setHistorico(id)}>
+                  histórico
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -145,11 +161,17 @@ export default function BaralhoPage() {
         ) : (
           <div className={styles.grid}>
             {locked.map((id) => (
-              <Card key={id} card={getCard(id)} locked />
+              <div key={id} className={styles.celula}>
+                <Card card={getCard(id)} locked />
+                <button type="button" className={styles.historico} onClick={() => setHistorico(id)}>
+                  histórico
+                </button>
+              </div>
             ))}
           </div>
         )}
       </section>
+      {historico ? <HistoricoDaCarta id={historico} onFechar={() => setHistorico(null)} /> : null}
     </main>
   )
 }

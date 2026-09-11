@@ -41,13 +41,19 @@ export interface RunRegistravel {
   cards_played: number
   warnings: number
   max_dias_sem_descanso: number
+  /** A versão do baralho em que a run foi jogada, numa coluna própria para a
+   *  análise poder separar "antes e depois do ajuste" sem abrir o jsonb. */
+  versao_baralho: number
   /** Falso na run abandonada sem permissão: conta para a análise, mas não
    *  aparece em "meus jogos" nem no ranking. */
   visivel: boolean
   /** Partida jogada sem conta. Fica na própria linha porque o perfil de
    *  convidado é descartável e a run não. */
   convidado: boolean
-  details: { history: GameState['history'] }
+  /** O dia a dia da run e o retrato do baralho usado nela. O retrato é o que
+   *  mantém a partida legível depois de a carta mudar de custo ou sumir —
+   *  veja `src/data/balanceamento.ts`. */
+  details: { history: GameState['history']; baralho?: GameState['baralho'] }
 }
 
 export function montarRun(
@@ -69,9 +75,10 @@ export function montarRun(
     cards_played: run.cardsPlayed,
     warnings: run.warnings,
     max_dias_sem_descanso: run.maxDaysNoRest,
+    versao_baralho: run.baralho?.versao ?? 0,
     visivel,
     convidado,
-    details: { history: run.history },
+    details: { history: run.history, baralho: run.baralho },
   }
 }
 

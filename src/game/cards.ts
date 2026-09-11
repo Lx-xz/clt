@@ -1,29 +1,169 @@
-import type { ActionCard, WeekConfig } from './types'
+import type { ActionCard, CardId, CartaSnapshot, WeekConfig } from './types'
 
+/**
+ * As 20 cartas. O que cada uma FAZ é uma lista de ações do catálogo
+ * (`acoes.ts`) — inclusive as cinco que antes tinham um `case` no motor.
+ * Depois desta migração `playCard` não conhece o id de carta nenhuma.
+ */
 export const ACTION_CARDS: ActionCard[] = [
   // --- baralho inicial (15 cartas) ---
-  { id: 'tarefa-simples', name: 'Tarefa Simples', cost: 3, kind: 'tarefa', text: '+2 produtividade', efeito: { produtividade: 2 }, starter: true, copies: 4 },
-  { id: 'planilha-infinita', name: 'Planilha Infinita', cost: 2, kind: 'tarefa', text: '+1 produtividade', efeito: { produtividade: 1 }, starter: true, copies: 2 },
-  { id: 'reuniao', name: 'Reunião', cost: 2, kind: 'social', text: '+1 produtividade. Se for a 2ª reunião do dia: +1 estresse e nenhuma produtividade.', efeito: {}, especial: true, starter: true, copies: 2 },
-  { id: 'cafe', name: 'Café', cost: 0, kind: 'descanso', text: '+3 energia, +1 estresse', efeito: { energia: 3, estresse: 1 }, starter: true, copies: 2 },
-  { id: 'hora-extra', name: 'Hora Extra', cost: 4, kind: 'grana', text: '+R$ 30, +2 estresse', efeito: { dinheiro: 30, estresse: 2 }, starter: true, copies: 2 },
-  { id: 'freela', name: 'Freela', cost: 5, kind: 'grana', text: '+R$ 50', efeito: { dinheiro: 50 }, starter: true, copies: 1 },
-  { id: 'enrolar-no-corredor', name: 'Enrolar no Corredor', cost: 1, kind: 'descanso', text: '−1 estresse', efeito: { estresse: -1 }, starter: true, copies: 1 },
-  { id: 'almoco-decente', name: 'Almoço Decente', cost: 1, kind: 'descanso', text: '+2 energia', efeito: { energia: 2 }, starter: true, copies: 1 },
+  {
+    id: 'tarefa-simples', name: 'Tarefa Simples', cost: 3, kind: 'tarefa',
+    text: '+2 produtividade', starter: true, copies: 4,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 2 }] }],
+  },
+  {
+    id: 'planilha-infinita', name: 'Planilha Infinita', cost: 2, kind: 'tarefa',
+    text: '+1 produtividade', starter: true, copies: 2,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 1 }] }],
+  },
+  {
+    id: 'reuniao', name: 'Reunião', cost: 2, kind: 'social',
+    text: '+1 produtividade. Se for a 2ª reunião do dia: +1 estresse e nenhuma produtividade.',
+    especial: true, starter: true, copies: 2,
+    // a carta que muda de poder ao se repetir: duas linhas excludentes,
+    // separadas pela quantidade de vezes que ELA já saiu hoje
+    efeitos: [
+      { se: { se: 'jaJogadaHoje', noMaximo: 0 }, acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 1 }] },
+      {
+        se: { se: 'jaJogadaHoje', aoMenos: 1 },
+        acoes: [
+          { faz: 'recurso', qual: 'estresse', quanto: 1 },
+          { faz: 'aviso', texto: 'Segunda reunião do dia: só estresse, nenhuma produtividade.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'cafe', name: 'Café', cost: 0, kind: 'descanso',
+    text: '+3 energia, +1 estresse', starter: true, copies: 2,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'energia', quanto: 3 },
+      { faz: 'recurso', qual: 'estresse', quanto: 1 },
+    ] }],
+  },
+  {
+    id: 'hora-extra', name: 'Hora Extra', cost: 4, kind: 'grana',
+    text: '+R$ 30, +2 estresse', starter: true, copies: 2,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'dinheiro', quanto: 30 },
+      { faz: 'recurso', qual: 'estresse', quanto: 2 },
+    ] }],
+  },
+  {
+    id: 'freela', name: 'Freela', cost: 5, kind: 'grana',
+    text: '+R$ 50', starter: true, copies: 1,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'dinheiro', quanto: 50 }] }],
+  },
+  {
+    id: 'enrolar-no-corredor', name: 'Enrolar no Corredor', cost: 1, kind: 'descanso',
+    text: '−1 estresse', starter: true, copies: 1,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -1 }] }],
+  },
+  {
+    id: 'almoco-decente', name: 'Almoço Decente', cost: 1, kind: 'descanso',
+    text: '+2 energia', starter: true, copies: 1,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }],
+  },
 
   // --- desbloqueáveis (recompensa semanal) ---
-  { id: 'atalho-no-sistema', name: 'Atalho no Sistema', cost: 3, kind: 'tarefa', text: '+3 produtividade', efeito: { produtividade: 3 }, starter: false },
-  { id: 'delegar', name: 'Delegar', cost: 1, kind: 'social', text: '+2 produtividade, +1 estresse (alguém vai reclamar)', efeito: { produtividade: 2, estresse: 1 }, starter: false },
-  { id: 'cafe-duplo', name: 'Café Duplo', cost: 0, kind: 'descanso', text: '+5 energia, +2 estresse', efeito: { energia: 5, estresse: 2 }, starter: false },
-  { id: 'terapia', name: 'Terapia', cost: 2, kind: 'descanso', text: '−3 estresse', efeito: { estresse: -3 }, starter: false },
-  { id: 'vale-refeicao', name: 'Vale-Refeição', cost: 0, kind: 'grana', text: '+R$ 20', efeito: { dinheiro: 20 }, starter: false },
-  { id: 'home-office', name: 'Home Office', cost: 2, kind: 'tarefa', text: '+2 produtividade, −1 estresse', efeito: { produtividade: 2, estresse: -1 }, starter: false },
-  { id: 'foco-total', name: 'Foco Total', cost: 4, kind: 'tarefa', text: '+4 produtividade, mas descarta o resto da mão', efeito: { produtividade: 4 }, especial: true, starter: false },
-  { id: 'puxar-o-saco', name: 'Puxar o Saco', cost: 2, kind: 'social', text: 'Cancela 1 advertência (uma vez por run)', efeito: {}, especial: true, starter: false },
-  { id: 'freela-grande', name: 'Freela Grande', cost: 6, kind: 'grana', text: '+R$ 90, +2 estresse', efeito: { dinheiro: 90, estresse: 2 }, starter: false },
-  { id: 'soneca-no-banheiro', name: 'Soneca no Banheiro', cost: 1, kind: 'descanso', text: '+2 energia, −1 estresse', efeito: { energia: 2, estresse: -1 }, starter: false },
-  { id: 'automatizar', name: 'Automatizar', cost: 5, kind: 'tarefa', text: '+2 produtividade agora e +1 produtividade em todos os dias seguintes', efeito: { produtividade: 2 }, especial: true, starter: false },
-  { id: 'pedir-aumento', name: 'Pedir Aumento', cost: 3, kind: 'social', text: '50%: salário +R$ 100 pelo resto da run. 50%: +3 estresse.', efeito: {}, especial: true, starter: false },
+  {
+    id: 'atalho-no-sistema', name: 'Atalho no Sistema', cost: 3, kind: 'tarefa',
+    text: '+3 produtividade', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 3 }] }],
+  },
+  {
+    id: 'delegar', name: 'Delegar', cost: 1, kind: 'social',
+    text: '+2 produtividade, +1 estresse (alguém vai reclamar)', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'produtividade', quanto: 2 },
+      { faz: 'recurso', qual: 'estresse', quanto: 1 },
+    ] }],
+  },
+  {
+    id: 'cafe-duplo', name: 'Café Duplo', cost: 0, kind: 'descanso',
+    text: '+5 energia, +2 estresse', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'energia', quanto: 5 },
+      { faz: 'recurso', qual: 'estresse', quanto: 2 },
+    ] }],
+  },
+  {
+    id: 'terapia', name: 'Terapia', cost: 2, kind: 'descanso',
+    text: '−3 estresse', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -3 }] }],
+  },
+  {
+    id: 'vale-refeicao', name: 'Vale-Refeição', cost: 0, kind: 'grana',
+    text: '+R$ 20', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'dinheiro', quanto: 20 }] }],
+  },
+  {
+    id: 'home-office', name: 'Home Office', cost: 2, kind: 'tarefa',
+    text: '+2 produtividade, −1 estresse', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'produtividade', quanto: 2 },
+      { faz: 'recurso', qual: 'estresse', quanto: -1 },
+    ] }],
+  },
+  {
+    id: 'foco-total', name: 'Foco Total', cost: 4, kind: 'tarefa',
+    text: '+4 produtividade, mas descarta o resto da mão', especial: true, starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'produtividade', quanto: 4 },
+      { faz: 'descartar', quantas: 'tudo' },
+      { faz: 'aviso', texto: 'Foco Total: o resto da mão foi descartado.' },
+    ] }],
+  },
+  {
+    id: 'puxar-o-saco', name: 'Puxar o Saco', cost: 2, kind: 'social',
+    text: 'Cancela 1 advertência (uma vez por run)', especial: true, starter: false,
+    // o "uma vez por run" e o "só serve se houver advertência" são RESTRIÇÃO,
+    // não efeito: eles decidem se dá para jogar, não o que acontece depois
+    restricao: { umaVezPorRun: true, exige: { se: 'advertencias', aoMenos: 1 } },
+    efeitos: [{ acoes: [{ faz: 'advertencia', quanto: -1 }] }],
+  },
+  {
+    id: 'freela-grande', name: 'Freela Grande', cost: 6, kind: 'grana',
+    text: '+R$ 90, +2 estresse', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'dinheiro', quanto: 90 },
+      { faz: 'recurso', qual: 'estresse', quanto: 2 },
+    ] }],
+  },
+  {
+    id: 'soneca-no-banheiro', name: 'Soneca no Banheiro', cost: 1, kind: 'descanso',
+    text: '+2 energia, −1 estresse', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'energia', quanto: 2 },
+      { faz: 'recurso', qual: 'estresse', quanto: -1 },
+    ] }],
+  },
+  {
+    id: 'automatizar', name: 'Automatizar', cost: 5, kind: 'tarefa',
+    text: '+2 produtividade agora e +1 produtividade em todos os dias seguintes',
+    especial: true, starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'produtividade', quanto: 2 },
+      { faz: 'produtividadePassiva', quanto: 1 },
+    ] }],
+  },
+  {
+    id: 'pedir-aumento', name: 'Pedir Aumento', cost: 3, kind: 'social',
+    text: '50%: salário +R$ 100 pelo resto da run. 50%: +3 estresse.',
+    especial: true, starter: false,
+    efeitos: [{ acoes: [{
+      faz: 'sorteio', chance: 0.5,
+      entao: [
+        { faz: 'salarioPermanente', quanto: 100 },
+        { faz: 'aviso', texto: 'Pedir Aumento: deu certo! Salário +R$ 100 pelo resto da run.' },
+      ],
+      senao: [
+        { faz: 'recurso', qual: 'estresse', quanto: 3 },
+        { faz: 'aviso', texto: 'Pedir Aumento: "vamos ver no próximo ciclo". +3 estresse.' },
+      ],
+    }] }],
+  },
 ]
 
 export const CARDS_BY_ID: Record<string, ActionCard> = Object.fromEntries(
@@ -68,4 +208,18 @@ export function weekdayOf(day: number): string {
 
 export function isFriday(day: number): boolean {
   return day % DAYS_PER_WEEK === 0
+}
+
+/** A carta reduzida ao que a run precisa lembrar. Veja `CartaSnapshot`. */
+export function fotografarCarta(card: ActionCard): CartaSnapshot {
+  return { id: card.id, name: card.name, cost: card.cost, kind: card.kind, text: card.text }
+}
+
+/**
+ * O retrato do baralho equipado. Guardado dentro da run porque é a única
+ * parte do versionamento que NÃO dá para acrescentar depois: uma run jogada
+ * antes de isto existir nunca vai saber quanto custava a carta naquele dia.
+ */
+export function fotografarBaralho(equipped: CardId[]): CartaSnapshot[] {
+  return equipped.filter((id) => CARDS_BY_ID[id]).map((id) => fotografarCarta(CARDS_BY_ID[id]))
 }

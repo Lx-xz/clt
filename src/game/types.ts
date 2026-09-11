@@ -1,23 +1,9 @@
+import type { Acao, Efeito, Restricao } from './acoes'
+
 export type CardId = string
 
 /** Categoria usada por eventos que bloqueiam um tipo de jogada (ex.: Sistema Fora do Ar). */
 export type CardKind = 'tarefa' | 'descanso' | 'grana' | 'social'
-
-/**
- * A soma simples que uma carta faz ao ser jogada. Fica como DADO, e não como
- * código, para 15 das 20 cartas caberem numa tabela editável (veja
- * `/lab/cartas`) — e para rebalancear ser trocar um número, não mexer no
- * motor. O que não cabe aqui (segunda reunião do dia, descartar a mão,
- * sorteio do aumento) continua no `switch` de `playCard`, e é só isso que
- * sobrou lá.
- */
-export interface EfeitoCarta {
-  produtividade?: number
-  energia?: number
-  /** Positivo sobe o estresse, negativo desce. Nunca passa de zero. */
-  estresse?: number
-  dinheiro?: number
-}
 
 export interface ActionCard {
   id: CardId
@@ -25,10 +11,15 @@ export interface ActionCard {
   cost: number
   kind: CardKind
   text: string
-  /** A parte da carta que é só somar recurso. Veja `EfeitoCarta`. */
-  efeito?: EfeitoCarta
-  /** Marca a carta cuja regra NÃO cabe em `efeito` — ela tem código no motor
-   *  (`playCard`) e o editor de cartas não mexe nessa parte. */
+  /** O que a carta FAZ, como lista de ações do catálogo (`acoes.ts`). É dado,
+   *  não código: carta nova não precisa de uma linha no motor. */
+  efeitos: Efeito[]
+  /** O que limita poder jogar a carta — diferente do que ela faz ao ser
+   *  jogada. Só o Puxar o Saco usa hoje. */
+  restricao?: Restricao
+  /** Marca a carta que faz mais do que somar recurso. Não muda nada no motor
+   *  (a regra dela também é dado); serve para o editor avisar que mexer só
+   *  nos números não conta a carta inteira. */
   especial?: boolean
   /** Cartas iniciais já vêm desbloqueadas; as demais entram como recompensa semanal. */
   starter: boolean
@@ -36,11 +27,27 @@ export interface ActionCard {
   copies?: number
 }
 
+/**
+ * A carta como ela era no dia em que a run foi jogada. Vai gravada dentro da
+ * run — é o que mantém uma partida antiga legível depois de a carta mudar de
+ * custo, de nome, ou deixar de existir. Veja `src/data/balanceamento.ts`.
+ */
+export interface CartaSnapshot {
+  id: CardId
+  name: string
+  cost: number
+  kind: CardKind
+  text: string
+}
+
 export type EventTone = 'negativo' | 'positivo' | 'ambiguo'
 
 export interface EventChoice {
   label: string
   text: string
+  /** O que a escolha faz. Lista vazia é uma escolha que não faz nada
+   *  (recusar o freela do amigo), e isso é uma resposta legítima. */
+  acoes: Acao[]
 }
 
 export interface EventCard {
@@ -48,6 +55,8 @@ export interface EventCard {
   name: string
   tone: EventTone
   text: string
+  /** O que o evento faz ao ser revelado — mesmo catálogo das cartas. */
+  efeitos?: Efeito[]
   choices?: [EventChoice, EventChoice]
 }
 
@@ -90,6 +99,10 @@ export interface GameState {
    *  run duas vezes (duas abas, uma retentativa de rede). Não aparece na
    *  interface. */
   runId: string
+  /** O baralho como ele era quando esta run começou: a versão do
+   *  balanceamento e a cópia de cada carta equipada. Sem isto, reabrir uma
+   *  partida antiga mostraria a carta de HOJE no lugar da que foi jogada. */
+  baralho: { versao: number; cartas: CartaSnapshot[] }
   /** Quando a run começou (ISO). Com o `ended_at` do banco dá a duração. */
   startedAt: string
   /** Maior embalo alcançado em qualquer dia da run. */
@@ -115,7 +128,9 @@ export interface GameState {
   /** Bônus permanente de produtividade por dia (carta Automatizar). */
   passiveProductivity: number
   salaryBonus: number
-  usedPuxarOSaco: boolean
+  /** Cartas já jogadas alguma vez nesta run, sem repetir. É o que sustenta
+   *  `umaVezPorRun` sem um booleano por carta (era `usedPuxarOSaco`). */
+  usadasNaRun: CardId[]
 
   deck: CardInstance[]
   hand: CardInstance[]
@@ -133,7 +148,9 @@ export interface GameState {
   fridayStep: FridayStep
   fridayResult: { metGoal: boolean; salary: number } | null
 
-  meetingsToday: number
+  /** Quantas cartas o dia compra. Volta a HAND_SIZE todo dia; o evento é
+   *  quem mexe (Dia Tranquilo compra 7, Internet Caiu compra 3). */
+  maoDoDia: number
   blockedKinds: CardKind[]
   costModifier: number
   currentEvent: CardId | null
