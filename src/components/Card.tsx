@@ -3,7 +3,7 @@
 import { Coffee, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
-import { KIND_ICONS, LockIcon, TONE_ICONS } from './icons'
+import { LockIcon, TONE_ICONS, iconeDaClasse } from './icons'
 import styles from './Card.module.sass'
 
 /** Distância em px que separa um clique de um arraste. */
@@ -69,7 +69,7 @@ export default function Card({
   }, [])
 
   const evento = isEvent(card)
-  const Icon = evento ? TONE_ICONS[card.tone] : KIND_ICONS[card.kind]
+  const Icon = evento ? TONE_ICONS[card.tone] : iconeDaClasse(card.kind)
   const custo = evento ? null : (cost ?? card.cost)
   const custoAlto = !evento && custo !== null && custo > card.cost
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))

@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from './Card'
-import { RESOURCE_ICONS } from './icons'
+import { RESOURCE_ICONS, nomeDaClasse } from './icons'
 import styles from './CardDetail.module.sass'
 
 interface CardDetailProps {
@@ -53,7 +53,7 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason 
                   {custo} de energia
                   {custo !== card.cost ? ` (base ${card.cost})` : ''}
                 </span>
-                <span className={styles.chip}>{card.kind}</span>
+                <span className={styles.chip}>{nomeDaClasse(card.kind)}</span>
               </>
             )}
           </div>

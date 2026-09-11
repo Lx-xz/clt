@@ -16,8 +16,7 @@ import {
   type EstatisticasNerds,
   type EstressePorDia,
 } from '@/data/analytics'
-import { getCard } from '@/game/cards'
-import { getEvent } from '@/game/events'
+import { getCard, getEvent } from '@/game/catalogo'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './analise.module.sass'
 

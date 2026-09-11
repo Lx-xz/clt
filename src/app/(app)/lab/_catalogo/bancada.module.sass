@@ -1,0 +1,97 @@
+.origem
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 8px
+  margin: 0 0 20px
+  padding: 10px 14px
+  border-radius: 10px
+  font-size: 13px
+  line-height: 1.5
+
+  p
+    display: flex
+    align-items: center
+    gap: 8px
+    margin: 0
+
+  svg
+    flex: none
+
+// vivo = está mexendo no jogo de verdade. A cor existe para isso ser sentido
+// antes de ser lido
+.viva
+  border: 1px solid var(--linha)
+  background: var(--papel-alto)
+  color: var(--tinta-fraca)
+
+.semente
+  flex-direction: column
+  align-items: flex-start
+  border: 1px solid var(--destaque)
+  background: var(--papel-alto)
+  color: var(--tinta)
+
+.rotulo
+  display: flex
+  flex-direction: column
+  gap: 4px
+  margin-bottom: 14px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  font-weight: 600
+
+.campo,
+.campoTexto
+  width: 100%
+  padding: 8px 10px
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  background: var(--papel)
+  color: var(--tinta)
+  // 16px é o mínimo: abaixo disso o Safari do iPhone dá zoom ao focar e não
+  // desfaz ao sair
+  font-size: 16px
+  font-family: inherit
+
+.campoTexto
+  resize: vertical
+  line-height: 1.45
+
+.mono
+  font-family: var(--mono)
+  font-size: 13px
+
+.invalido
+  border-color: var(--estresse)
+
+.dica
+  color: var(--tinta-fraca)
+  font-size: 11px
+  font-weight: 400
+
+.aviso
+  margin: -4px 0 12px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.5
+
+.erro
+  display: flex
+  align-items: center
+  gap: 6px
+  margin: 0 0 12px
+  color: var(--estresse)
+  font-size: 13px
+
+.acoesDialogo
+  display: flex
+  flex-wrap: wrap
+  justify-content: flex-end
+  gap: 8px
+
+.excluir
+  color: var(--estresse)
+
+  &:hover
+    border-color: var(--estresse)

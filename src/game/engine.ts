@@ -6,18 +6,24 @@ import {
   MAX_WARNINGS,
   STARTING_MONEY,
   TOTAL_DAYS,
-  UNLOCKABLE_CARDS,
   WEEKLY_BILLS,
-  getCard,
   isFriday,
   weekOfDay,
   weekdayOf,
 } from './cards'
-import { fotografarBaralho, fotografarCarta } from './cards'
-import { condicaoVale, dispararEfeitos, executar, type Contexto } from './acoes'
-import { VERSAO_BARALHO } from '@/data/balanceamento'
-import { EVENT_CARDS, getEvent } from './events'
-import type { CardId, CardInstance, CardKind, DayLog, GameState } from './types'
+// as cartas vêm do catálogo, não de um array importado: desde a v0.10 elas
+// moram no banco e podem mudar entre uma abertura do site e a próxima
+import {
+  cartasDesbloqueaveis,
+  eventosDoJogo,
+  fotografarBaralho,
+  fotografarCarta,
+  getCard,
+  getEvent,
+  versaoDoBaralho,
+} from './catalogo'
+import { condicaoVale, dispararEfeitos, executar, type Acao, type Contexto } from './acoes'
+import type { CardId, CardInstance, ClasseDaCarta, DayLog, GameState } from './types'
 
 // ---------------------------------------------------------------- utilidades
 
@@ -72,6 +78,17 @@ function contexto(cartaId?: CardId): Contexto {
       log(state, porque ? `${porque} descartou ${nome}.` : `Descartou ${nome}.`)
       return alvo.cardId
     },
+    mostrarDescarte: (state, cartas, porque) => anunciarDescarte(state, cartas, porque),
+    pedirDescarte: (state, quantas, porque, entao, cartaId) => {
+      // mais do que há na mão vira o que há: pedir 3 de uma mão de 1 travaria
+      // o dia esperando uma escolha impossível
+      const restam = Math.min(quantas, state.hand.length)
+      if (restam <= 0) {
+        executar(state, entao, contexto(cartaId ?? undefined))
+        return
+      }
+      state.escolhaDeDescarte = { restam, porque, entao, cartaId }
+    },
     criarCarta: (cardId) => makeInstance(cardId),
     log: (state, texto) => log(state, texto),
     sorte: () => Math.random(),
@@ -98,8 +115,13 @@ export function effectiveCost(state: GameState, cardId: CardId) {
 
 export function canPlay(state: GameState, instance: CardInstance) {
   if (state.phase !== 'dia') return false
+  // uma escolha de descarte em aberto é uma pergunta: o dia para até ela ser
+  // respondida, senão o jogador escaparia dela jogando outra coisa
+  if (state.escolhaDeDescarte) return false
   const card = getCard(instance.cardId)
-  if (state.blockedKinds.includes(card.kind)) return false
+  // carta neutra não tem classe para ser bloqueada — Sistema Fora do Ar não
+  // tem como proibir "nenhum tipo"
+  if (card.kind !== null && state.blockedKinds.includes(card.kind)) return false
   // a restrição decide se DÁ para jogar; o efeito decide o que acontece
   // depois. Sem essa separação, "uma vez por run" viraria um booleano novo no
   // estado a cada carta dessas
@@ -125,9 +147,22 @@ function draw(state: GameState, amount: number) {
   for (let i = 0; i < amount; i += 1) drawOne(state)
 }
 
-function discardHand(state: GameState) {
+function discardHand(state: GameState): CardId[] {
+  const saiu = state.hand.map((c) => c.cardId)
   state.discard.push(...state.hand)
   state.hand = []
+  return saiu
+}
+
+/**
+ * Registra um descarte para a mesa mostrar. Só o descarte causado por efeito
+ * passa por aqui: o de fim de dia não entra, porque o dia está acabando de
+ * qualquer jeito e anunciá-lo seria barulho.
+ */
+function anunciarDescarte(state: GameState, cartas: CardId[], porque: string) {
+  if (cartas.length === 0) return
+  const selo = (state.ultimoDescarte?.selo ?? 0) + 1
+  state.ultimoDescarte = { cartas, porque, selo }
 }
 
 // ------------------------------------------------------------ início da run
@@ -143,7 +178,7 @@ export function createRun(equipped: CardId[]): GameState {
     runId: crypto.randomUUID(),
     // o retrato do baralho é tirado AQUI, uma vez só: é a única parte do
     // versionamento que não dá para acrescentar depois
-    baralho: { versao: VERSAO_BARALHO, cartas: fotografarBaralho(equipped) },
+    baralho: { versao: versaoDoBaralho(), cartas: fotografarBaralho(equipped) },
     startedAt: new Date().toISOString(),
     maxCombo: 0,
     cardsPlayed: 0,
@@ -167,6 +202,8 @@ export function createRun(equipped: CardId[]): GameState {
     hand: [],
     discard: [],
     playedToday: [],
+    ultimoDescarte: null,
+    escolhaDeDescarte: null,
     streakKind: null,
     streakCount: 0,
     lastCombo: null,
@@ -204,6 +241,8 @@ function startDay(input: GameState): GameState {
   state.pendingEventChoice = false
   state.lastEventChoice = null
   state.playedToday = []
+  state.ultimoDescarte = null
+  state.escolhaDeDescarte = null
   state.streakKind = null
   state.streakCount = 0
   state.lastCombo = null
@@ -214,7 +253,7 @@ function startDay(input: GameState): GameState {
 
   // O evento entra virado para baixo. Nada acontece até o jogador revelar,
   // e a mão só é comprada depois — a ordem que o README descreve.
-  state.currentEvent = pick(EVENT_CARDS).id
+  state.currentEvent = pick(eventosDoJogo()).id
   state.eventRevealed = false
   return state
 }
@@ -288,10 +327,45 @@ export function playCard(input: GameState, uid: string): GameState {
   return checkDefeat(state)
 }
 
+/**
+ * O jogador escolheu qual carta descartar.
+ *
+ * Isto existe porque "descarte 1 para comprar 1" não é a mesma coisa que
+ * "descarte 1 ao acaso": a primeira é uma decisão, e decisão precisa de mão à
+ * mostra. Enquanto a escolha está em pé o dia não anda — nem outra carta, nem
+ * fechar o dia —, e quando a última carta é escolhida o `entao` roda: é ele
+ * que entrega a carta nova, o recurso, o que a carta tiver prometido.
+ */
+export function escolherParaDescartar(input: GameState, uid: string): GameState {
+  const state = clone(input)
+  const pedido = state.escolhaDeDescarte
+  if (!pedido) return input
+
+  const alvo = state.hand.find((c) => c.uid === uid)
+  if (!alvo) return input
+
+  state.hand = state.hand.filter((c) => c.uid !== uid)
+  state.discard.push(alvo)
+  log(state, `${pedido.porque} descartou ${getCard(alvo.cardId).name}.`)
+  anunciarDescarte(state, [alvo.cardId], pedido.porque)
+
+  const restam = pedido.restam - 1
+  // a mão pode ter acabado antes da conta fechar (uma carta que pede 2 numa
+  // mão de 2, sendo ela mesma uma delas): acabou a mão, acabou a escolha
+  if (restam > 0 && state.hand.length > 0) {
+    state.escolhaDeDescarte = { ...pedido, restam }
+    return state
+  }
+
+  state.escolhaDeDescarte = null
+  executar(state, pedido.entao, contexto(pedido.cartaId ?? undefined))
+  return checkDefeat(state)
+}
+
 // ------------------------------------------------------------------ embalo
 
 /** O que cada classe rende por nível de embalo. */
-const EMBALO: Record<CardKind, { rotulo: string; efeito: (s: GameState, n: number) => string }> = {
+const EMBALO: Record<Exclude<ClasseDaCarta, null>, { rotulo: string; efeito: (s: GameState, n: number) => string }> = {
   tarefa: {
     rotulo: 'tarefa',
     efeito: (s, n) => {
@@ -326,7 +400,16 @@ const EMBALO: Record<CardKind, { rotulo: string; efeito: (s: GameState, n: numbe
  * Duas cartas seguidas da mesma classe rendem bônus; a terceira em diante
  * rende o dobro. É o que faz a ordem das jogadas importar.
  */
-function aplicarEmbalo(state: GameState, kind: CardKind) {
+function aplicarEmbalo(state: GameState, kind: ClasseDaCarta) {
+  // A carta neutra QUEBRA o embalo e não começa nenhum. "Sem tipo" é uma
+  // troca de assunto como qualquer outra; deixá-la atravessar o embalo em
+  // silêncio seria um combo escondido, que ninguém leria na carta.
+  if (kind === null) {
+    state.streakKind = null
+    state.streakCount = 0
+    state.lastCombo = null
+    return
+  }
   if (state.streakKind === kind) {
     state.streakCount += 1
   } else {
@@ -348,7 +431,7 @@ function aplicarEmbalo(state: GameState, kind: CardKind) {
 }
 
 /** Quanto a próxima carta desta classe renderia de embalo, para a mesa avisar. */
-export function embaloAtual(state: GameState): { kind: CardKind; count: number } | null {
+export function embaloAtual(state: GameState): { kind: Exclude<ClasseDaCarta, null>; count: number } | null {
   if (!state.streakKind || state.streakCount < 1) return null
   return { kind: state.streakKind, count: state.streakCount }
 }
@@ -358,6 +441,8 @@ export function embaloAtual(state: GameState): { kind: CardKind; count: number }
 export function endDay(input: GameState): GameState {
   let state = clone(input)
   if (state.phase !== 'dia') return input
+  // a escolha de descarte é uma pergunta em aberto; o dia não fecha por cima
+  if (state.escolhaDeDescarte) return input
 
   const metQuota = state.productivity >= state.dailyQuota
   if (!metQuota) {
@@ -483,7 +568,7 @@ export function restWeekend(input: GameState): GameState {
   }
 
   state.phase = 'recompensa'
-  state.rewardOptions = shuffle(UNLOCKABLE_CARDS.map((c) => c.id)).slice(0, 3)
+  state.rewardOptions = shuffle(cartasDesbloqueaveis().map((c) => c.id)).slice(0, 3)
   return state
 }
 

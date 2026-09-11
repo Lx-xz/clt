@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import Card from '@/components/Card'
 import HistoricoDaCarta from '@/components/HistoricoDaCarta'
-import { VERSAO_BARALHO } from '@/data/balanceamento'
-import { ACTION_CARDS, getCard } from '@/game/cards'
+import { versaoDoBaralho } from '@/data/balanceamento'
+import { cartasDoJogo, getCard } from '@/game/catalogo'
 import { carregarDoBanco, sincronizar, type StatusSync } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
 import { defaultCollection, loadCollection, loadRun, lockedCards, saveCollection } from '@/game/storage'
@@ -75,13 +75,13 @@ export default function BaralhoPage() {
       <div className={styles.top}>
         <div className={styles.tituloLinha}>
           <h1 className={styles.title}>Baralho</h1>
-          <span className={styles.versao}>v{VERSAO_BARALHO}</span>
+          <span className={styles.versao}>v{versaoDoBaralho()}</span>
         </div>
         <div className={styles.tools}>
           <button
             type="button"
             className={`${buttons.button} ${buttons.ghost}`}
-            onClick={() => update({ equipped: ACTION_CARDS.map((c) => c.id), unequipped: [] })}
+            onClick={() => update({ equipped: cartasDoJogo().map((c) => c.id), unequipped: [] })}
           >
             Desbloquear tudo (teste)
           </button>

@@ -1,0 +1,71 @@
+// Fica por cima da mesa e não recebe ponteiro: é um aviso, não um controle —
+// e a carta que está sendo arrastada passa por baixo sem esbarrar nele
+.caixa
+  position: absolute
+  z-index: 30
+  top: 50%
+  left: 50%
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 8px
+  transform: translate(-50%, -50%)
+  pointer-events: none
+  animation: entrar .18s ease-out
+
+.motivo
+  padding: 4px 12px
+  border-radius: 999px
+  background: var(--tinta)
+  color: var(--papel)
+  font-size: 13px
+  font-weight: 600
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .25)
+
+.cartas
+  display: flex
+  gap: 10px
+  // menor que a carta da mão: é uma carta que está SAINDO, e o tamanho já diz
+  --carta-h: 128px
+
+// cada carta sai um pouco depois da anterior, para duas cartas lerem como
+// duas e não como um borrão só
+.saindo
+  animation: sair 2.2s ease-in forwards
+  animation-delay: calc(var(--i) * .12s)
+
+@keyframes entrar
+  from
+    opacity: 0
+    transform: translate(-50%, -46%)
+
+@keyframes sair
+  0%
+    opacity: 0
+    transform: translateY(-14px) scale(.92) rotate(0deg)
+  12%
+    opacity: 1
+    transform: translateY(0) scale(1) rotate(0deg)
+  72%
+    opacity: 1
+    transform: translateY(0) scale(1) rotate(0deg)
+  100%
+    opacity: 0
+    transform: translateY(46px) scale(.8) rotate(6deg)
+
+// quem pediu para o sistema não animar não precisa ver a carta voando; o
+// aviso continua aparecendo e sumindo
+@media (prefers-reduced-motion: reduce)
+  .caixa
+    animation: none
+
+  .saindo
+    animation: sumir 2.2s steps(1, end) forwards
+
+@keyframes sumir
+  0%
+    opacity: 1
+  99%
+    opacity: 1
+  100%
+    opacity: 0

@@ -46,11 +46,12 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run. Chega-se clicando numa partida no seu perfil |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` | A oficina. **Só admin**, pelo layout de `/lab` |
 
-**20 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 12
-desbloqueáveis) e **20 cartas de evento**, das quais 4 são ambíguas e pedem uma
-escolha.
+**21 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 13
+desbloqueáveis) e **21 cartas de evento**, das quais 4 são ambíguas e pedem uma
+escolha. Esses números são o baralho de REFERÊNCIA (`cards.ts`/`events.ts`);
+o que está no ar é o que estiver na tabela `cartas` — veja abaixo.
 
 ---
 
@@ -76,9 +77,10 @@ o próprio peso — o jogo é pequeno.
 ```
 src/game/     regras puras — nenhum import de React
   types.ts      GameState e companhia
-  acoes.ts      o catálogo: o vocabulário que carta e evento têm para mexer no jogo
-  cards.ts      20 cartas de ação, progressão das semanas, constantes
-  events.ts     20 cartas de evento
+  acoes.ts      o catálogo de AÇÕES: o vocabulário que carta e evento têm
+  catalogo.ts   quais cartas e eventos existem agora — a porta única de getCard
+  cards.ts      o baralho de referência (semente e rede), semanas, constantes
+  events.ts     os eventos de referência, pelo mesmo motivo
   engine.ts     o motor: funções puras GameState -> GameState
   storage.ts    localStorage (espelho), validação de formato do save
   session.ts    quem está jogando (perfil da conta, ou o convidado)
@@ -91,7 +93,8 @@ src/data/     tudo que fala com o Supabase
   feedback.ts   bugs e sugestões, tudo por RPC
   notificacoes.ts  o sininho da barra lateral
   changelog.ts  o histórico de versões, escrito à mão
-  balanceamento.ts  a versão do baralho e o que já mudou em cada carta
+  cartas.ts     o catálogo do lado do banco: tradução, carga e as RPCs de admin
+  balanceamento.ts  as perguntas que a interface faz sobre versões de carta
 src/components/  Card, CardDetail, Medidor, SideNav, SessaoGuard, Dialogo,
                  ComoJogar, icons
 src/app/
@@ -192,11 +195,69 @@ coisas diferentes:
 nessa ordem (retrato da run → baralho de hoje → removidas → rótulo honesto) e
 por isso nenhuma dessas mudanças derruba a página de ninguém.
 
-**Por que ainda não há tabela `cartas` no banco:** com as cartas no código, o
-retrato dentro da run já garante a integridade das partidas antigas e
-`MUDANCAS` já dá a leitura para o jogador. A tabela vira necessária quando as
-cartas saírem do código — e aí `CARTAS_REMOVIDAS` + `MUDANCAS` são exatamente
-o conteúdo de `cartas_antigas`, então esta estrutura migra sem mudar de forma.
+**Onde as cartas moram, desde a v0.10:** na tabela `cartas` (e
+`cartas_evento`). `cards.ts` e `events.ts` continuam existindo como SEMENTE
+(é a lista que `admin_semear_catalogo` leva para o banco na estreia) e como
+REDE: sem banco configurado, com a rede fora, ou com o catálogo ainda vazio,
+o jogo abre com elas em vez de não abrir. Quem serve as cartas para o resto
+do código é `src/game/catalogo.ts`, e `getCard`/`getEvent` vêm de lá — nunca
+de um array importado.
+
+**As três peças que tornaram o banco seguro**, e que precisam continuar
+valendo juntas (foi a ausência delas que adiou esta mudança por duas
+entregas):
+
+1. **Nada é apagado.** Remover é `ativa = false` mais uma linha em
+   `cartas_antigas`. A carta continua no catálogo, então quem está no meio de
+   uma run com ela na mão termina a partida; o que ela deixa de fazer é
+   entrar em baralho novo e sair como recompensa.
+2. **A run guarda o próprio retrato.** Mudar o custo hoje não reescreve a
+   partida de ontem.
+3. **Não dá para mudar em silêncio.** `admin_salvar_carta` recusa `porque`
+   vazio. O `o_que` ("Custo 4 → 6") é sugerido automaticamente pela bancada,
+   porque essa metade um diff sabe escrever; o `porque` é digitado, porque
+   essa não.
+
+**Uma carta desconhecida não derruba mais nada.** `getCard` devolve uma carta
+inerte (custo 0, sem classe, sem efeito) e avisa no console, em vez de lançar.
+Com o catálogo no banco, id desconhecido deixou de ser impossível e virou
+raro — um save antigo, um `delete` na mão no SQL Editor —, e lançar ali
+levaria a mesa inteira junto.
+
+### A carta neutra
+
+`ActionCard.kind` aceita `null`, e isso é a AUSÊNCIA de classe, não uma
+quinta classe. Duas consequências, e as duas são regra:
+
+- Nenhum evento de bloqueio a alcança — Sistema Fora do Ar não tem como
+  proibir "nenhum tipo".
+- Ela não entra no embalo, e jogar uma QUEBRA o embalo que estiver em pé.
+  Deixá-la atravessar em silêncio seria um combo escondido, que ninguém
+  leria na carta. É uma linha em `aplicarEmbalo` — se um dia a decisão for
+  outra, é lá que se muda.
+
+### O descarte é visível, e às vezes é escolha
+
+Duas coisas diferentes, que antes eram a mesma:
+
+- **`descartar`** tira carta sem perguntar (Fofoca de Corredor, Foco Total).
+  O que mudou é que agora a mesa MOSTRA: `GameState.ultimoDescarte` guarda o
+  lote e o motivo, e `DescarteNaMesa.tsx` desenha as cartas saindo. Antes a
+  mão só encolhia, e o único vestígio era uma linha no histórico que ninguém
+  lê no meio da jogada. O lote é anunciado de uma vez de propósito —
+  "descartou 2" é um acontecimento só. O descarte de fim de dia NÃO é
+  anunciado: o dia está acabando de qualquer jeito.
+- **`escolherDescarte`** para o dia e pergunta. Enquanto
+  `GameState.escolhaDeDescarte` existir, `canPlay` recusa tudo e `endDay`
+  não fecha o dia; `escolherParaDescartar()` é a resposta, e quando a conta
+  fecha o `entao` roda. É o `entao` que sustenta "descarte 1 para comprar 1"
+  sem uma ação nova para cada troca.
+
+**A mão em modo de escolha não embrulha a carta num `<div>`.** O leque
+posiciona os filhos DIRETOS a partir de `--carta-w`, que mora na própria
+carta; um invólucro no meio come a sobreposição e o arco. O rótulo
+"Descartar" é um `::after` com `pointer-events: none` — a carta inteira já é
+o alvo do clique.
 
 ### Embalo
 
@@ -344,12 +405,19 @@ opções. O que ele escolheu, e que deve ser preservado:
   exceção que mexe na conta de quem clica — e são de admin porque uma coleção
   inteira desbloqueada estraga qualquer leitura de dificuldade que venha
   daquela conta.
-- **`/lab/cartas` edita a carta inteira.** Desde que o efeito virou lista de
-  ações, não existe mais "a regra está no motor": os quatro campos de recurso
-  mexem no bloco sem condição (o que se usa para rebalancear) e o painel de
-  ações mostra a lista crua em JSON, que é a única forma de editar carta
-  condicional sem inventar um formulário por tipo de ação. Continua sem gravar
-  em lugar nenhum: leva o `cards.ts` pronto para o repositório.
+- **`/lab/cartas` e `/lab/eventos` gravam no banco.** Até a v0.10 a bancada
+  era um rascunho que devolvia `cards.ts` para colar, e o motivo era bom: com
+  as cartas no código, um `delete` apagaria uma carta que está dentro do save
+  de alguém. O que mudou não foi a opinião, foram as três peças descritas em
+  "O versionamento do baralho" — sem elas, isto volta a ser perigoso.
+  A edição tem dois níveis de propósito: os quatro campos de recurso mexem no
+  bloco de efeito SEM condição (é o que se usa para rebalancear), e o painel
+  de JSON mostra a lista inteira — a única forma de editar carta condicional
+  sem inventar um formulário por tipo de ação, que é a mesma decisão que
+  mantém o catálogo de ações pequeno.
+  **Salvar pede um motivo, e a função do banco recusa sem ele.** O histórico
+  de uma carta nasce no momento da mudança, porque escrito depois ele não
+  seria escrito.
 - **`/lab/avatar` produz código, não salva nada.** O site é export estático:
   não há servidor para escrever arquivo, então a bancada devolve a linha de
   `MEDIDAS` para colar em `Avatar.tsx`. Ela desenha com o **mesmo** componente
@@ -413,6 +481,13 @@ Qualquer decoração sobreposta precisa de `pointer-events: none`.
 **Inline style ganha de `:hover`.** O levantar no hover não funcionava porque o
 componente escrevia `--ty` inline. Hoje o inline escreve `--lift` e o CSS compõe
 `--ty`. Cuidado ao adicionar variáveis novas na carta.
+
+**A mesa não pode abrir antes do catálogo.** `SessaoGuard` espera
+`catalogoPronto()` junto com `lerConta()` — em paralelo, então custa o tempo
+da mais lenta e não a soma. Começar uma run com o baralho de referência e
+terminá-la com o do banco seria trocar as cartas no meio do jogo. A home
+dispara a mesma promessa sem esperar (`CarregarCatalogo.tsx`), porque lá o
+tutorial só abre no clique e até então a resposta chegou.
 
 **Save de versão antiga derruba a página.** Quando `GameState` ganha campo novo,
 um save gravado pela versão anterior não o tem e a mesa quebra ao ler. Já
@@ -601,6 +676,9 @@ SQL Editor do projeto.
 | `feedbacks` | bugs e sugestões, com estado, urgência e nota |
 | `feedback_comentarios` | a conversa de cada relato |
 | `notificacoes` | o que aconteceu com o relato de cada um |
+| `cartas` · `cartas_evento` | o catálogo do jogo. `ativa = false` é carta removida, que continua existindo |
+| `cartas_antigas` | versões anteriores E cartas removidas, com `o_que` e `porque` de cada mudança |
+| `baralho` | uma linha só: a versão do baralho, que sobe a cada mudança de carta |
 
 Para apagar tudo e recomeçar do zero existe [`supabase/reset.sql`](supabase/reset.sql)
 — ele derruba as tabelas **e as contas do Auth**, e não tem desfazer.
@@ -811,9 +889,10 @@ antes de usá-los para decidir qualquer coisa.
 - **Rebalancear depois do Embalo**, especialmente a classe `grana`. A
   infraestrutura já está pronta: retrato dentro da run, `VERSAO_BARALHO` e o
   histórico por carta. Falta decidir os números.
-- **Cartas no banco (`cartas` + `cartas_antigas`).** Adiado de propósito: veja
-  "O versionamento do baralho" acima para o que já cobre o problema hoje e o
-  que a tabela resolveria.
+- **Semear o catálogo em produção.** A tabela nasce vazia e o jogo cai no
+  baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
+  isso não acontece, editar carta é impossível (o botão fica desligado) e o
+  jogo funciona normalmente — é o estado intencional, não um bug.
 - **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica.tsx`,
   `public/som/`), com os dois volumes em `src/data/som.ts`. Falta o resto: um
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,

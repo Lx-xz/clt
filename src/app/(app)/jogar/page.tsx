@@ -5,9 +5,11 @@ import { ArrowRight, BookOpen, Check, CloudOff, Loader } from 'lucide-react'
 import Card from '@/components/Card'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
+import DescarteNaMesa from '@/components/DescarteNaMesa'
 import Medidor from '@/components/Medidor'
 import { RESOURCE_ICONS } from '@/components/icons'
-import { MAX_STRESS, MAX_WARNINGS, WEEKLY_BILLS, getCard } from '@/game/cards'
+import { MAX_STRESS, MAX_WARNINGS, WEEKLY_BILLS } from '@/game/cards'
+import { getCard, getEvent } from '@/game/catalogo'
 import {
   canPlay,
   chooseEventOption,
@@ -17,13 +19,13 @@ import {
   dayLabel,
   effectiveCost,
   endDay,
+  escolherParaDescartar,
   payBills,
   paySalary,
   playCard,
   restWeekend,
   revealEvent,
 } from '@/game/engine'
-import { getEvent } from '@/game/events'
 import {
   carregarDoBanco,
   enviarRunsPendentes,
@@ -142,6 +144,13 @@ export default function JogarPage() {
     update(playCard(state, uid))
   }
 
+  /** A resposta do jogador ao pedido de descarte de uma carta ou evento. */
+  function escolherDescarte(uid: string) {
+    if (!state) return
+    setAberta(null)
+    update(escolherParaDescartar(state, uid))
+  }
+
   if (falha) {
     return (
       <main className={styles.mesa}>
@@ -173,6 +182,7 @@ export default function JogarPage() {
   const acabou = state.outcome !== 'jogando'
   const esperandoEvento = state.phase === 'evento' && !state.eventRevealed
   const meio = (state.hand.length - 1) / 2
+  const escolhendo = state.escolhaDeDescarte
 
   return (
     <main className={`${styles.mesa} ${sobreTapete ? styles.arrastando : ''}`}>
@@ -251,6 +261,9 @@ export default function JogarPage() {
           <button
             type="button"
             className={`${buttons.button} ${buttons.primary} ${styles.proximoDia}`}
+            // o dia não fecha por cima de uma pergunta em aberto; o motor
+            // recusa de qualquer jeito, e o botão apagado explica por quê
+            disabled={Boolean(escolhendo)}
             onClick={() => update(endDay(state))}
           >
             <span className={styles.rotuloLongo}>Próximo dia</span>
@@ -304,6 +317,18 @@ export default function JogarPage() {
             ))}
           </div>
         )}
+        <DescarteNaMesa descarte={state.ultimoDescarte} />
+
+        {escolhendo ? (
+          <div className={styles.pedido} role="status">
+            <b>{escolhendo.porque}</b>
+            <span>
+              Escolha {escolhendo.restam === 1 ? '1 carta' : `${escolhendo.restam} cartas`} da sua
+              mão para descartar.
+            </span>
+          </div>
+        ) : null}
+
         {state.streakKind && state.streakCount >= 1 ? (
           <span
             key={`${state.streakKind}-${state.streakCount}`}
@@ -335,6 +360,27 @@ export default function JogarPage() {
             {state.hand.map((instancia, i) => {
                 const carta = getCard(instancia.cardId)
                 const podeJogar = canPlay(state, instancia)
+                // com uma escolha de descarte em pé, a mão inteira vira
+                // seletor: o clique simples deixa de abrir o detalhe e passa
+                // a ser a resposta. Sem essa troca o jogador clicaria na
+                // carta esperando escolher e leria o texto dela
+                // a carta NÃO é embrulhada num div: o leque posiciona os
+                // filhos diretos a partir de `--carta-w`, que mora na própria
+                // carta. Um invólucro no meio come a sobreposição e o arco
+                if (escolhendo) {
+                  return (
+                    <Card
+                      key={instancia.uid}
+                      card={carta}
+                      cost={effectiveCost(state, carta.id)}
+                      rotation={(i - meio) * 5}
+                      lift={Math.abs(i - meio) * 7}
+                      style={{ '--i': i } as React.CSSProperties}
+                      className={styles.escolhivel}
+                      onOpen={() => escolherDescarte(instancia.uid)}
+                    />
+                  )
+                }
                 return (
                   <Card
                     key={instancia.uid}
@@ -494,8 +540,16 @@ function dicaDoTapete(state: GameState, esperandoEvento: boolean): string {
 function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   const carta = getCard(instancia.cardId)
   if (state.phase !== 'dia') return 'Só dá para jogar depois de revelar o evento do dia.'
-  if (state.blockedKinds.includes(carta.kind)) return `O evento de hoje bloqueia cartas de ${carta.kind}.`
-  if (carta.id === 'puxar-o-saco') return 'Só uma vez por run, e só com alguma advertência para cancelar.'
+  if (state.escolhaDeDescarte) return 'Primeiro escolha o que descartar.'
+  if (carta.kind !== null && state.blockedKinds.includes(carta.kind)) {
+    return `O evento de hoje bloqueia cartas de ${carta.kind}.`
+  }
+  // a restrição é da CARTA, não do motor: citar "puxar-o-saco" pelo id aqui
+  // deixaria de valer no dia em que a carta mudasse de nome no /lab/cartas
+  if (carta.restricao?.umaVezPorRun && state.usadasNaRun.includes(carta.id)) {
+    return 'Esta carta só sai uma vez por run, e já saiu.'
+  }
+  if (carta.restricao?.exige) return 'As condições desta carta ainda não aconteceram.'
   return `Energia insuficiente: custa ${effectiveCost(state, carta.id)} e você tem ${state.energy}.`
 }
 

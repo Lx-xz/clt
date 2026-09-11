@@ -177,6 +177,92 @@ create table if not exists public.notificacoes (
 
 create index if not exists notificacoes_dono_idx on public.notificacoes (destinatario_id, lida_em);
 
+-- ------------------------------------------------------------- o catálogo
+-- As cartas saíram do código e vieram para cá. O que torna isso seguro é que
+-- NADA é apagado de verdade: excluir uma carta é `ativa = false` mais uma
+-- linha em `cartas_antigas` com o último formato que ela teve. Assim uma run
+-- em andamento que tem a carta na mão continua jogável, e um replay antigo
+-- continua com nome e custo para mostrar.
+--
+-- A outra metade da proteção não está aqui: é o retrato que cada run guarda
+-- de si mesma em `runs.details.baralho`. Estas tabelas dizem o que a carta é
+-- HOJE; o retrato diz o que ela era naquele dia, e é ele que manda no replay.
+create table if not exists public.cartas (
+  id            text primary key,
+  nome          text not null,
+  custo         smallint not null default 0,
+  -- null é carta NEUTRA, sem classe: não entra em embalo e nenhum evento de
+  -- bloqueio de classe a alcança
+  classe        text,
+  texto         text not null default '',
+  efeitos       jsonb not null default '[]'::jsonb,
+  restricao     jsonb,
+  especial      boolean not null default false,
+  inicial       boolean not null default false,
+  copias        smallint,
+  versao        smallint not null default 1,
+  ativa         boolean not null default true,
+  criada_em     timestamptz not null default now(),
+  atualizada_em timestamptz not null default now(),
+  constraint cartas_classe_ok check (
+    classe is null or classe in ('tarefa', 'descanso', 'grana', 'social')
+  ),
+  constraint cartas_custo_ok  check (custo between 0 and 20),
+  constraint cartas_copias_ok check (copias is null or copias between 1 and 10)
+);
+
+create table if not exists public.cartas_evento (
+  id            text primary key,
+  nome          text not null,
+  tom           text not null,
+  texto         text not null default '',
+  efeitos       jsonb not null default '[]'::jsonb,
+  -- null = evento direto; um array de 2 = evento ambíguo, que pergunta
+  escolhas      jsonb,
+  versao        smallint not null default 1,
+  ativa         boolean not null default true,
+  criada_em     timestamptz not null default now(),
+  atualizada_em timestamptz not null default now(),
+  constraint eventos_tom_ok check (tom in ('negativo', 'positivo', 'ambiguo'))
+);
+
+-- Versões antigas E cartas excluídas, na mesma tabela de propósito: as duas
+-- respondem a mesma pergunta ("como era antes?"), e separá-las obrigaria a
+-- procurar em dois lugares para montar um histórico.
+--
+-- `o_que` e `porque` são o motivo de esta tabela não ser um `diff`
+-- automático. Um diff sabe dizer "custo 4 → 6"; só uma pessoa sabe dizer
+-- "porque Freela → Hora Extra fechava a semana 1 sozinha", e é essa metade
+-- que vira Novidades e histórico da carta.
+create table if not exists public.cartas_antigas (
+  id        bigint generated always as identity primary key,
+  carta_id  text not null,
+  familia   text not null,
+  versao    smallint not null,
+  -- a carta INTEIRA como ela era, para a excluída ainda ter o que mostrar
+  dados     jsonb not null,
+  tipo      text not null,
+  o_que     text not null default '',
+  porque    text not null default '',
+  criada_em timestamptz not null default now(),
+  constraint antigas_familia_ok check (familia in ('acao', 'evento')),
+  constraint antigas_tipo_ok    check (tipo in ('criada', 'ajustada', 'removida'))
+);
+
+create index if not exists antigas_carta_idx on public.cartas_antigas (carta_id, id desc);
+
+-- Uma linha só, para sempre. A versão do baralho é global: ela diz em que
+-- balanceamento uma run foi jogada, e é isso que a torna comparável entre
+-- runs. A `check` na chave primária é o truque que impede a segunda linha.
+create table if not exists public.baralho (
+  unica  boolean primary key default true,
+  versao smallint not null default 1,
+  constraint baralho_linha_unica check (unica)
+);
+
+insert into public.baralho (unica, versao) values (true, 1)
+on conflict (unica) do nothing;
+
 -- ------------------------------------------------------------ quem é quem
 --
 -- Estas duas nascem ANTES das políticas porque as políticas as chamam: criar
@@ -220,6 +306,16 @@ alter table public.runs                 enable row level security;
 alter table public.feedbacks            enable row level security;
 alter table public.feedback_comentarios enable row level security;
 alter table public.notificacoes         enable row level security;
+alter table public.cartas               enable row level security;
+alter table public.cartas_evento        enable row level security;
+alter table public.cartas_antigas       enable row level security;
+alter table public.baralho              enable row level security;
+
+-- As quatro tabelas do catálogo entram na mesma regra: nenhuma política.
+-- Ler o catálogo é público (todo mundo precisa das cartas para jogar, e
+-- carta não é segredo), mas passa por `catalogo()`; escrever passa pelas
+-- RPCs de admin, que conferem `sou_admin()` por dentro. Esconder o botão no
+-- React não é permissão.
 
 -- players, feedbacks, feedback_comentarios e notificacoes NÃO recebem
 -- política nenhuma, de propósito: com o RLS ligado e nenhuma política, o
@@ -315,6 +411,12 @@ drop function if exists public.editar_feedback(bigint, text, text, text);
 drop function if exists public.excluir_feedback(bigint);
 drop function if exists public.comentar_feedback(bigint, text);
 drop function if exists public.admin_atualizar_feedback(bigint, text, text, smallint);
+drop function if exists public.catalogo();
+drop function if exists public.arquivar_carta(text, text, text, text, text);
+drop function if exists public.admin_salvar_carta(jsonb, text, text);
+drop function if exists public.admin_salvar_evento(jsonb, text, text);
+drop function if exists public.admin_excluir_carta(text, text, text);
+drop function if exists public.admin_semear_catalogo(jsonb, jsonb);
 drop function if exists public.minhas_notificacoes();
 drop function if exists public.marcar_notificacoes_lidas();
 
@@ -1192,6 +1294,305 @@ as $$
 $$;
 
 grant execute on function public.marcar_notificacoes_lidas() to authenticated;
+
+-- ------------------------------------------------------------- o catálogo
+-- Uma chamada só devolve o baralho inteiro. É de propósito: o site pede isto
+-- uma vez ao abrir e nunca mais, então vale trazer tudo junto em vez de
+-- quatro viagens. O retorno é `jsonb` porque assim acrescentar um campo
+-- depois não esbarra em "cannot change return type of existing function".
+--
+-- Uma carta inativa (excluída) VEM junto, marcada. O motor precisa dela: se
+-- alguém está no meio de uma run com a carta na mão, o jogo tem que saber o
+-- que ela faz para terminar a partida. O que a inativa não faz é entrar em
+-- baralho novo nem sair como recompensa.
+create function public.catalogo()
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select jsonb_build_object(
+    'versao', (select versao from public.baralho where unica),
+    'cartas', coalesce((
+      select jsonb_agg(to_jsonb(c) order by c.inicial desc, c.id)
+      from public.cartas c
+    ), '[]'::jsonb),
+    'eventos', coalesce((
+      select jsonb_agg(to_jsonb(e) order by e.id)
+      from public.cartas_evento e
+    ), '[]'::jsonb),
+    -- o histórico sem o `dados`, que é grande e só interessa para a removida
+    'mudancas', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'carta', a.carta_id, 'familia', a.familia, 'versao', a.versao,
+        'tipo', a.tipo, 'oQue', a.o_que, 'porque', a.porque,
+        'data', to_char(a.criada_em, 'YYYY-MM-DD')
+      ) order by a.id desc)
+      from public.cartas_antigas a
+    ), '[]'::jsonb),
+    -- só o último formato de cada carta removida, que é o que o replay usa
+    'removidas', coalesce((
+      select jsonb_agg(distinct a.dados)
+      from public.cartas_antigas a
+      where a.tipo = 'removida'
+    ), '[]'::jsonb)
+  );
+$$;
+
+grant execute on function public.catalogo() to anon, authenticated;
+
+-- Guarda a versão que está saindo de cena antes de escrever a nova. Todo
+-- caminho que muda carta passa por aqui — é o que garante que nenhuma versão
+-- some sem deixar registro.
+create function public.arquivar_carta(
+  p_id      text,
+  p_familia text,
+  p_tipo    text,
+  p_o_que   text,
+  p_porque  text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_dados  jsonb;
+  v_versao smallint;
+begin
+  if p_familia = 'acao' then
+    select to_jsonb(c), c.versao into v_dados, v_versao from public.cartas c where c.id = p_id;
+  else
+    select to_jsonb(e), e.versao into v_dados, v_versao from public.cartas_evento e where e.id = p_id;
+  end if;
+
+  -- carta que ainda não existe não tem versão anterior para arquivar; o
+  -- registro de "criada" é escrito pelo chamador, depois do insert
+  if v_dados is null then
+    return;
+  end if;
+
+  insert into public.cartas_antigas (carta_id, familia, versao, dados, tipo, o_que, porque)
+  values (p_id, p_familia, v_versao, v_dados, p_tipo, coalesce(p_o_que, ''), coalesce(p_porque, ''));
+end;
+$$;
+
+-- Cria ou ajusta uma carta de ação. `p_o_que` e `p_porque` não são enfeite:
+-- é o que o jogador lê no histórico da carta e o que vira item de Novidades.
+-- Salvar sem motivo é mudar o jogo em silêncio, então a função recusa.
+create function public.admin_salvar_carta(
+  p_carta  jsonb,
+  p_o_que  text,
+  p_porque text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id       text := p_carta ->> 'id';
+  v_existia  boolean;
+  v_classe   text := nullif(p_carta ->> 'classe', '');
+begin
+  if not public.sou_admin() then
+    raise exception 'Só admin mexe no catálogo.';
+  end if;
+  if v_id is null or v_id !~ '^[a-z0-9-]{2,40}$' then
+    raise exception 'Id inválido: use minúsculas, números e hífen.';
+  end if;
+  if coalesce(btrim(p_porque), '') = '' then
+    raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';
+  end if;
+
+  select true into v_existia from public.cartas where id = v_id;
+
+  if v_existia then
+    perform public.arquivar_carta(v_id, 'acao', 'ajustada', p_o_que, p_porque);
+  end if;
+
+  insert into public.cartas as c
+    (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias, versao)
+  values (
+    v_id,
+    coalesce(p_carta ->> 'nome', 'Sem nome'),
+    coalesce((p_carta ->> 'custo')::smallint, 0),
+    v_classe,
+    coalesce(p_carta ->> 'texto', ''),
+    coalesce(p_carta -> 'efeitos', '[]'::jsonb),
+    case when p_carta -> 'restricao' = 'null'::jsonb then null else p_carta -> 'restricao' end,
+    coalesce((p_carta ->> 'especial')::boolean, false),
+    coalesce((p_carta ->> 'inicial')::boolean, false),
+    nullif(p_carta ->> 'copias', '')::smallint,
+    1
+  )
+  on conflict (id) do update set
+    nome = excluded.nome, custo = excluded.custo, classe = excluded.classe,
+    texto = excluded.texto, efeitos = excluded.efeitos, restricao = excluded.restricao,
+    especial = excluded.especial, inicial = excluded.inicial, copias = excluded.copias,
+    versao = c.versao + 1, ativa = true, atualizada_em = now();
+
+  -- carta nova também entra no histórico: "criada" é uma mudança de
+  -- balanceamento como qualquer outra
+  if not coalesce(v_existia, false) then
+    insert into public.cartas_antigas (carta_id, familia, versao, dados, tipo, o_que, porque)
+    select v_id, 'acao', c.versao, to_jsonb(c), 'criada', coalesce(p_o_que, 'Carta nova'), p_porque
+    from public.cartas c where c.id = v_id;
+  end if;
+
+  update public.baralho set versao = versao + 1 where unica;
+  return public.catalogo();
+end;
+$$;
+
+create function public.admin_salvar_evento(
+  p_evento jsonb,
+  p_o_que  text,
+  p_porque text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id      text := p_evento ->> 'id';
+  v_existia boolean;
+begin
+  if not public.sou_admin() then
+    raise exception 'Só admin mexe no catálogo.';
+  end if;
+  if v_id is null or v_id !~ '^[a-z0-9-]{2,40}$' then
+    raise exception 'Id inválido: use minúsculas, números e hífen.';
+  end if;
+  if coalesce(btrim(p_porque), '') = '' then
+    raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';
+  end if;
+
+  select true into v_existia from public.cartas_evento where id = v_id;
+
+  if v_existia then
+    perform public.arquivar_carta(v_id, 'evento', 'ajustada', p_o_que, p_porque);
+  end if;
+
+  insert into public.cartas_evento as e (id, nome, tom, texto, efeitos, escolhas, versao)
+  values (
+    v_id,
+    coalesce(p_evento ->> 'nome', 'Sem nome'),
+    coalesce(p_evento ->> 'tom', 'negativo'),
+    coalesce(p_evento ->> 'texto', ''),
+    coalesce(p_evento -> 'efeitos', '[]'::jsonb),
+    case when p_evento -> 'escolhas' = 'null'::jsonb then null else p_evento -> 'escolhas' end,
+    1
+  )
+  on conflict (id) do update set
+    nome = excluded.nome, tom = excluded.tom, texto = excluded.texto,
+    efeitos = excluded.efeitos, escolhas = excluded.escolhas,
+    versao = e.versao + 1, ativa = true, atualizada_em = now();
+
+  if not coalesce(v_existia, false) then
+    insert into public.cartas_antigas (carta_id, familia, versao, dados, tipo, o_que, porque)
+    select v_id, 'evento', e.versao, to_jsonb(e), 'criada', coalesce(p_o_que, 'Evento novo'), p_porque
+    from public.cartas_evento e where e.id = v_id;
+  end if;
+
+  update public.baralho set versao = versao + 1 where unica;
+  return public.catalogo();
+end;
+$$;
+
+-- Excluir NÃO apaga a linha. `ativa = false` tira a carta dos baralhos novos
+-- e das recompensas, e o motor continua sabendo o que ela faz — porque pode
+-- haver alguém no meio de uma run com ela na mão neste exato momento.
+create function public.admin_excluir_carta(
+  p_id      text,
+  p_familia text,
+  p_porque  text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not public.sou_admin() then
+    raise exception 'Só admin mexe no catálogo.';
+  end if;
+  if coalesce(btrim(p_porque), '') = '' then
+    raise exception 'Diga por que está removendo: o replay de quem jogou com ela vai mostrar esse texto.';
+  end if;
+
+  perform public.arquivar_carta(p_id, p_familia, 'removida', 'Carta removida do jogo', p_porque);
+
+  if p_familia = 'acao' then
+    update public.cartas set ativa = false, atualizada_em = now() where id = p_id;
+  else
+    update public.cartas_evento set ativa = false, atualizada_em = now() where id = p_id;
+  end if;
+
+  update public.baralho set versao = versao + 1 where unica;
+  return public.catalogo();
+end;
+$$;
+
+-- A ponte de mão única entre o código e o banco: pega as cartas que o site
+-- já traz embutidas e escreve as que ainda não existem. Roda uma vez, na
+-- estreia do catálogo no banco, e depois é inofensiva (nada é sobrescrito).
+create function public.admin_semear_catalogo(p_cartas jsonb, p_eventos jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  item jsonb;
+begin
+  if not public.sou_admin() then
+    raise exception 'Só admin mexe no catálogo.';
+  end if;
+
+  for item in select * from jsonb_array_elements(p_cartas) loop
+    insert into public.cartas
+      (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias, versao)
+    values (
+      item ->> 'id',
+      item ->> 'nome',
+      coalesce((item ->> 'custo')::smallint, 0),
+      nullif(item ->> 'classe', ''),
+      coalesce(item ->> 'texto', ''),
+      coalesce(item -> 'efeitos', '[]'::jsonb),
+      case when item -> 'restricao' = 'null'::jsonb then null else item -> 'restricao' end,
+      coalesce((item ->> 'especial')::boolean, false),
+      coalesce((item ->> 'inicial')::boolean, false),
+      nullif(item ->> 'copias', '')::smallint,
+      1
+    )
+    on conflict (id) do nothing;
+  end loop;
+
+  for item in select * from jsonb_array_elements(p_eventos) loop
+    insert into public.cartas_evento (id, nome, tom, texto, efeitos, escolhas, versao)
+    values (
+      item ->> 'id',
+      item ->> 'nome',
+      coalesce(item ->> 'tom', 'negativo'),
+      coalesce(item ->> 'texto', ''),
+      coalesce(item -> 'efeitos', '[]'::jsonb),
+      case when item -> 'escolhas' = 'null'::jsonb then null else item -> 'escolhas' end,
+      1
+    )
+    on conflict (id) do nothing;
+  end loop;
+
+  return public.catalogo();
+end;
+$$;
+
+grant execute on function public.admin_salvar_carta(jsonb, text, text)   to authenticated;
+grant execute on function public.admin_salvar_evento(jsonb, text, text)  to authenticated;
+grant execute on function public.admin_excluir_carta(text, text, text)   to authenticated;
+grant execute on function public.admin_semear_catalogo(jsonb, jsonb)     to authenticated;
 
 -- ------------------------------------------------------------------ admin
 -- Não existe tela para promover ninguém, e é de propósito: admin se dá aqui,

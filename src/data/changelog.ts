@@ -27,12 +27,27 @@ export const EM_ANDAMENTO: string[] = [
   'Mais peças de avatar (óculos, barba) e o avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
   'Notificação de verdade (e-mail ou aviso no aparelho) quando o seu relato mudar de estado.',
-  'Rebalancear o jogo depois do Embalo, em especial as cartas de grana — agora com o histórico de cada carta à vista no baralho.',
+  'Rebalancear o jogo depois do Embalo, em especial as cartas de grana — a medição já mostrou que o despejo quase não acontece e que o embalo de grana é caro demais para sair.',
   'Deixar clonar o repositório e jogar sem configurar banco nenhum.',
   'Animação das cartas voando do baralho para a mão, como no protótipo.',
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.10',
+    data: '2026-09-11',
+    titulo: 'As cartas saíram do código, e o descarte ficou visível',
+    itens: [
+      { tipo: 'novo', texto: 'As cartas e os eventos agora moram no banco. Um ajuste de balanceamento passa a valer na próxima vez que você abrir o site, sem esperar uma versão nova do jogo.' },
+      { tipo: 'novo', texto: 'Carta sem tipo. Ela não é bloqueada por evento nenhum, e em troca não entra em embalo: jogar uma quebra a sequência que estiver em pé.' },
+      { tipo: 'novo', texto: 'Reorganizar a Mesa: descarte 1 carta à SUA escolha e compre 1. É a primeira carta que pergunta antes de agir — e a primeira sem tipo.' },
+      { tipo: 'novo', texto: 'Limpeza de Mesa: um evento que manda descartar 2 cartas, e deixa você escolher quais.' },
+      { tipo: 'melhor', texto: 'Descarte visível. Quando uma carta ou um evento tira algo da sua mão, a carta aparece no meio da mesa com o motivo antes de ir para o descarte — antes a mão só encolhia e você não sabia o que tinha perdido.' },
+      { tipo: 'melhor', texto: 'Nenhuma carta é apagada de verdade. Carta removida sai dos baralhos novos, mas quem estiver no meio de uma partida com ela na mão termina normalmente, e o replay continua sabendo o que ela era.' },
+      { tipo: 'melhor', texto: 'O histórico de cada carta agora nasce junto com a mudança: não dá para ajustar uma carta sem escrever por que — e é esse texto que aparece para você no baralho.' },
+      { tipo: 'correcao', texto: 'O aviso de por que uma carta não pode ser jogada parou de citar o Puxar o Saco pelo nome: ele lê a restrição da carta, então continua certo se a carta mudar.' },
+    ],
+  },
   {
     versao: '0.9',
     data: '2026-09-11',

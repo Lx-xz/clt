@@ -32,6 +32,10 @@ export type Acao =
    *  `porque` é quem aparece no histórico: "Fofoca de Corredor descartou
    *  Café." diz mais do que "Descartou Café.", e o custo é um campo. */
   | { faz: 'descartar'; quantas: number | 'tudo'; aleatorio?: boolean; porque?: string }
+  /** Para o dia e pede ao JOGADOR que escolha o que sai da mão. `entao` é o
+   *  que acontece depois — é assim que "descarte 1 para comprar 1" existe sem
+   *  uma ação nova para cada troca. */
+  | { faz: 'escolherDescarte'; quantas: number; porque?: string; entao?: Acao[] }
   | { faz: 'ganharCarta'; carta: CardId; onde: 'mao' | 'descarte' }
   /** Muda o custo de todas as cartas até o fim do dia. */
   | { faz: 'custo'; quanto: number }
@@ -93,8 +97,19 @@ export interface Restricao {
 export interface Contexto {
   cartaId?: CardId
   comprar: (state: GameState, quantas: number) => void
-  descartarMao: (state: GameState) => void
+  descartarMao: (state: GameState) => CardId[]
   descartarUma: (state: GameState, aleatoria: boolean, porque?: string) => CardId | null
+  /** Avisa a mesa do que acabou de sair, para o jogador VER as cartas indo
+   *  embora em vez de a mão encolher sozinha. */
+  mostrarDescarte: (state: GameState, cartas: CardId[], porque: string) => void
+  /** Pausa o dia até o jogador escolher o que descartar. */
+  pedirDescarte: (
+    state: GameState,
+    quantas: number,
+    porque: string,
+    entao: Acao[],
+    cartaId: CardId | null,
+  ) => void
   criarCarta: (cardId: CardId) => { uid: string; cardId: CardId }
   log: (state: GameState, texto: string) => void
   /** 0..1; recebe o sorteio de fora para o teste poder ser determinístico. */
@@ -150,13 +165,28 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
     case 'comprar':
       ctx.comprar(state, acao.quantas)
       break
-    case 'descartar':
-      if (acao.quantas === 'tudo') ctx.descartarMao(state)
+    case 'descartar': {
+      // as cartas saem uma a uma, mas a mesa mostra o LOTE: "descartou 2" é
+      // um acontecimento só, e piscar duas vezes contaria outra história
+      const saiu: CardId[] = []
+      if (acao.quantas === 'tudo') saiu.push(...ctx.descartarMao(state))
       else {
         for (let i = 0; i < acao.quantas; i += 1) {
-          ctx.descartarUma(state, acao.aleatorio === true, acao.porque)
+          const id = ctx.descartarUma(state, acao.aleatorio === true, acao.porque)
+          if (id) saiu.push(id)
         }
       }
+      ctx.mostrarDescarte(state, saiu, acao.porque ?? 'Descarte')
+      break
+    }
+    case 'escolherDescarte':
+      ctx.pedirDescarte(
+        state,
+        acao.quantas,
+        acao.porque ?? 'Escolha o que descartar',
+        acao.entao ?? [],
+        ctx.cartaId ?? null,
+      )
       break
     case 'ganharCarta': {
       const nova = ctx.criarCarta(acao.carta)

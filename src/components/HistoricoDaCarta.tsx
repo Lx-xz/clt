@@ -2,8 +2,9 @@
 
 import Card from '@/components/Card'
 import Dialogo from '@/components/Dialogo'
-import { MUDANCAS, VERSAO_BARALHO, mudancasDaCarta } from '@/data/balanceamento'
-import { getCard } from '@/game/cards'
+import { mudancasDaCarta, versaoDoBaralho } from '@/data/balanceamento'
+import { mudancasDoCatalogo } from '@/game/catalogo'
+import { getCard } from '@/game/catalogo'
 import type { CardId } from '@/game/types'
 import styles from './HistoricoDaCarta.module.sass'
 
@@ -31,12 +32,12 @@ export default function HistoricoDaCarta({ id, onFechar }: { id: CardId; onFecha
       </div>
 
       <p className={styles.versao}>
-        Baralho <b>v{VERSAO_BARALHO}</b> · custo {carta.cost} · {carta.kind}
+        Baralho <b>v{versaoDoBaralho()}</b> · custo {carta.cost} · {carta.kind ?? 'sem tipo'}
       </p>
 
       {mudancas.length === 0 ? (
         <p className={styles.nada}>
-          {MUDANCAS.length === 0
+          {mudancasDoCatalogo().length === 0
             ? 'Nenhuma carta mudou desde que o jogo existe. Quando o balanceamento começar, o que mudar aparece aqui.'
             : 'Esta carta nunca mudou. Ela está como nasceu.'}
         </p>
@@ -45,7 +46,7 @@ export default function HistoricoDaCarta({ id, onFechar }: { id: CardId; onFecha
           {mudancas.map((m) => (
             <li key={`${m.versao}-${m.data}`} className={styles.item}>
               <div className={styles.cabeca}>
-                <b className={styles.oque}>{m.oQue}</b>
+                <b className={styles.oque}>{m.oQue || 'Ajuste de balanceamento'}</b>
                 <span className={styles.selo}>
                   v{m.versao} · {ROTULO[m.tipo]}
                 </span>

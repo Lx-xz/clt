@@ -11,6 +11,10 @@ drop trigger if exists ao_criar_usuario on auth.users;
 
 -- ------------------------------------------------------------- tabelas
 -- cascade leva junto as políticas, os índices e as funções que dependem
+drop table if exists public.cartas_antigas       cascade;
+drop table if exists public.cartas_evento        cascade;
+drop table if exists public.cartas               cascade;
+drop table if exists public.baralho              cascade;
 drop table if exists public.notificacoes        cascade;
 drop table if exists public.feedback_comentarios cascade;
 drop table if exists public.feedbacks           cascade;

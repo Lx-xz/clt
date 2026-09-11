@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { catalogoPronto } from '@/data/cartas'
 import { aoMudarConta, lerConta } from '@/data/conta'
 import { lerSessao, type Sessao } from '@/game/session'
 import styles from './SessaoGuard.module.sass'
@@ -40,8 +41,13 @@ export default function SessaoGuard({ children }: { children: React.ReactNode })
   const router = useRouter()
 
   const conferir = useCallback(() => {
-    lerConta()
-      .then((conta) => {
+    // o catálogo entra junto com a conta, em paralelo: as duas são uma ida ao
+    // banco cada, e esperar as duas custa o mesmo que esperar a mais lenta.
+    // A mesa não pode abrir antes do catálogo — começar a run com o baralho
+    // de referência e terminá-la com o do banco seria trocar as cartas no
+    // meio do jogo
+    Promise.all([lerConta(), catalogoPronto()])
+      .then(([conta]) => {
         if (conta.tipo === 'conta' || conta.tipo === 'convidado') {
           setSessao(conta.perfil)
           setPronto(true)

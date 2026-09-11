@@ -1,21 +1,24 @@
-import { ACTION_CARDS, STARTER_CARDS } from './cards'
+import { cartasDoJogo, cartasIniciais } from './catalogo'
 import type { CardId, Collection } from './types'
 
 const COLLECTION_KEY = 'clt:collection:v1'
-// v6: as cartas viraram lista de ações. O estado perdeu `meetingsToday` e
-// `usedPuxarOSaco`, ganhou `usadasNaRun`, `maoDoDia` e o retrato do baralho
-// (`baralho`) — uma run da v5 não tem nenhum dos três e quebraria a mesa.
-const RUN_KEY = 'clt:run:v6'
-const RUN_KEYS_ANTIGAS = ['clt:run:v1', 'clt:run:v2', 'clt:run:v3', 'clt:run:v4', 'clt:run:v5']
+// v7: o descarte virou visível. O estado ganhou `ultimoDescarte` (o que a
+// mesa mostra) e `escolhaDeDescarte` (o dia parado esperando o jogador
+// escolher) — uma run da v6 não tem nenhum dos dois.
+const RUN_KEY = 'clt:run:v7'
+const RUN_KEYS_ANTIGAS = [
+  'clt:run:v1', 'clt:run:v2', 'clt:run:v3',
+  'clt:run:v4', 'clt:run:v5', 'clt:run:v6',
+]
 
 export function defaultCollection(): Collection {
-  return { equipped: STARTER_CARDS.map((c) => c.id), unequipped: [] }
+  return { equipped: cartasIniciais().map((c) => c.id), unequipped: [] }
 }
 
 /** Cartas que ainda não foram desbloqueadas por nenhuma recompensa. */
 export function lockedCards(collection: Collection): CardId[] {
   const owned = new Set([...collection.equipped, ...collection.unequipped])
-  return ACTION_CARDS.filter((c) => !owned.has(c.id)).map((c) => c.id)
+  return cartasDoJogo().filter((c) => !owned.has(c.id)).map((c) => c.id)
 }
 
 function read<T>(key: string): T | null {
@@ -40,7 +43,9 @@ function write(key: string, value: unknown) {
 export function loadCollection(): Collection {
   const stored = read<Partial<Collection>>(COLLECTION_KEY)
   if (!stored || !Array.isArray(stored.equipped)) return defaultCollection()
-  const known = new Set(ACTION_CARDS.map((c) => c.id))
+  // uma carta removida do jogo some do baralho salvo na próxima abertura —
+  // e é só isso que a remoção faz com quem já a tinha
+  const known = new Set(cartasDoJogo().map((c) => c.id))
   const equipped = stored.equipped.filter((id) => known.has(id))
   const unequipped = (stored.unequipped ?? []).filter((id) => known.has(id) && !equipped.includes(id))
   return { equipped, unequipped }
@@ -52,7 +57,8 @@ export function saveCollection(collection: Collection) {
 
 /** Campos que a mesa lê direto; sem qualquer um deles a run é velha demais. */
 const CAMPOS_DA_RUN = [
-  'runId', 'baralho', 'usadasNaRun', 'maoDoDia', 'startedAt', 'maxCombo', 'cardsPlayed', 'daysNoRest', 'maxDaysNoRest',
+  'runId', 'baralho', 'usadasNaRun', 'maoDoDia', 'ultimoDescarte', 'escolhaDeDescarte',
+  'startedAt', 'maxCombo', 'cardsPlayed', 'daysNoRest', 'maxDaysNoRest',
   'day', 'phase', 'energy', 'stress', 'productivity', 'money',
   'deck', 'hand', 'discard', 'playedToday', 'eventRevealed', 'outcome', 'history',
 ] as const

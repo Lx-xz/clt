@@ -1,11 +1,11 @@
 'use client'
 
-import { Layers, RotateCcw, Sparkles, TestTube, Unlock } from 'lucide-react'
+import { Layers, RotateCcw, Shuffle, Sparkles, TestTube, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
 import { useSessao } from '@/components/SessaoGuard'
-import { ACTION_CARDS } from '@/game/cards'
+import { cartasDoJogo } from '@/game/catalogo'
 import { clearRun, defaultCollection, loadCollection, saveCollection } from '@/game/storage'
 import { sincronizar } from '@/data/sync'
 import buttons from '@/styles/buttons.module.sass'
@@ -20,9 +20,15 @@ const BANCADAS = [
   },
   {
     href: '/lab/cartas',
-    titulo: 'Cartas',
-    texto: 'Nome, custo, classe e o efeito de cada carta, com o baralho inteiro à vista.',
+    titulo: 'Cartas de ação',
+    texto: 'Criar, editar e remover carta — direto no banco, com o motivo da mudança obrigatório.',
     Icon: Layers,
+  },
+  {
+    href: '/lab/eventos',
+    titulo: 'Cartas de evento',
+    texto: 'O mesmo para os eventos do dia, escolhas dos ambíguos inclusas.',
+    Icon: Shuffle,
   },
 ]
 
@@ -40,7 +46,7 @@ export default function LabPage() {
 
   function desbloquearTudo() {
     const colecao = loadCollection()
-    const todas = ACTION_CARDS.map((c) => c.id)
+    const todas = cartasDoJogo().map((c) => c.id)
     const nova = {
       equipped: colecao.equipped,
       unequipped: todas.filter((id) => !colecao.equipped.includes(id)),

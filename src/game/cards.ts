@@ -1,11 +1,18 @@
-import type { ActionCard, CardId, CartaSnapshot, WeekConfig } from './types'
+import type { ActionCard, WeekConfig } from './types'
 
 /**
- * As 20 cartas. O que cada uma FAZ é uma lista de ações do catálogo
- * (`acoes.ts`) — inclusive as cinco que antes tinham um `case` no motor.
- * Depois desta migração `playCard` não conhece o id de carta nenhuma.
+ * O baralho de referência: as cartas como o código as conhece.
+ *
+ * **Isto não é mais a fonte da verdade.** Desde a v0.10 as cartas moram no
+ * banco, e quem as serve para o jogo é `catalogo.ts`. O que sobrou aqui é a
+ * SEMENTE (é esta lista que `admin_semear_catalogo` leva para o banco na
+ * estreia) e a REDE: sem banco configurado, ou com a rede fora do ar, o jogo
+ * abre com estas cartas em vez de não abrir.
+ *
+ * O que cada uma FAZ continua sendo uma lista de ações (`acoes.ts`), e é por
+ * isso que a mudança de casa foi barata: uma carta já era só dado.
  */
-export const ACTION_CARDS: ActionCard[] = [
+export const CARTAS_BASE: ActionCard[] = [
   // --- baralho inicial (15 cartas) ---
   {
     id: 'tarefa-simples', name: 'Tarefa Simples', cost: 3, kind: 'tarefa',
@@ -149,6 +156,22 @@ export const ACTION_CARDS: ActionCard[] = [
     ] }],
   },
   {
+    id: 'reorganizar-a-mesa', name: 'Reorganizar a Mesa', cost: 1,
+    // A primeira carta NEUTRA: sem classe. Ela não entra em embalo nenhum e
+    // quebra o que estiver em pé — é o preço de servir para tudo.
+    kind: null,
+    text: 'Descarte 1 carta à sua escolha e compre 1.',
+    especial: true, starter: false,
+    // e a primeira que PERGUNTA: `escolherDescarte` para o dia até o jogador
+    // apontar a carta, e só então roda o `entao`. "Descarte 1 à sua escolha"
+    // é uma decisão, e decisão precisa de mão à mostra — diferente do
+    // descarte ao acaso da Fofoca de Corredor
+    efeitos: [{ acoes: [{
+      faz: 'escolherDescarte', quantas: 1, porque: 'Reorganizar a Mesa',
+      entao: [{ faz: 'comprar', quantas: 1 }],
+    }] }],
+  },
+  {
     id: 'pedir-aumento', name: 'Pedir Aumento', cost: 3, kind: 'social',
     text: '50%: salário +R$ 100 pelo resto da run. 50%: +3 estresse.',
     especial: true, starter: false,
@@ -166,18 +189,16 @@ export const ACTION_CARDS: ActionCard[] = [
   },
 ]
 
-export const CARDS_BY_ID: Record<string, ActionCard> = Object.fromEntries(
-  ACTION_CARDS.map((c) => [c.id, c]),
-)
-
-export const STARTER_CARDS = ACTION_CARDS.filter((c) => c.starter)
-export const UNLOCKABLE_CARDS = ACTION_CARDS.filter((c) => !c.starter)
-
-export function getCard(id: string): ActionCard {
-  const card = CARDS_BY_ID[id]
-  if (!card) throw new Error(`Carta desconhecida: ${id}`)
-  return card
-}
+/**
+ * A versão do baralho de referência. Quando o catálogo vem do banco quem
+ * manda é `public.baralho.versao`; este número é o que vale enquanto o jogo
+ * estiver rodando só com o código.
+ *
+ * Não é a versão do site (`changelog.ts`): duas entregas seguidas que não
+ * tocam em carta nenhuma mantêm o mesmo número aqui, e é isso que o deixa
+ * comparável entre runs.
+ */
+export const VERSAO_BARALHO_BASE = 2
 
 export const WEEKS: WeekConfig[] = [
   { week: 1, dailyQuota: 3, weeklyGoal: 16, fullSalary: 400, reducedSalary: 250 },
@@ -208,18 +229,4 @@ export function weekdayOf(day: number): string {
 
 export function isFriday(day: number): boolean {
   return day % DAYS_PER_WEEK === 0
-}
-
-/** A carta reduzida ao que a run precisa lembrar. Veja `CartaSnapshot`. */
-export function fotografarCarta(card: ActionCard): CartaSnapshot {
-  return { id: card.id, name: card.name, cost: card.cost, kind: card.kind, text: card.text }
-}
-
-/**
- * O retrato do baralho equipado. Guardado dentro da run porque é a única
- * parte do versionamento que NÃO dá para acrescentar depois: uma run jogada
- * antes de isto existir nunca vai saber quanto custava a carta naquele dia.
- */
-export function fotografarBaralho(equipped: CardId[]): CartaSnapshot[] {
-  return equipped.filter((id) => CARDS_BY_ID[id]).map((id) => fotografarCarta(CARDS_BY_ID[id]))
 }

@@ -152,3 +152,44 @@
   font-size: 11px
   line-height: 1.5
   white-space: pre
+
+.subtitulo
+  margin: 32px 0 4px
+  font-size: 18px
+
+.dicaSecao
+  margin: 0 0 12px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+
+.recado
+  margin: 0 0 16px
+  padding: 8px 12px
+  border-left: 3px solid var(--produtividade)
+  background: var(--papel-alto)
+  font-size: 13px
+
+.erroTopo
+  margin: 0 0 16px
+  padding: 8px 12px
+  border-left: 3px solid var(--estresse)
+  background: var(--papel-alto)
+  color: var(--estresse)
+  font-size: 13px
+
+// a carta fora do jogo continua legível: esmaecer é dizer "não está em uso",
+// e esconder seria dizer "não existe", que é justamente o que ela não é
+.fantasma
+  opacity: .5
+
+  &:hover
+    opacity: 1
+
+.marca
+  display: flex
+  align-items: center
+  gap: 8px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  font-weight: 600

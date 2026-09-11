@@ -2,14 +2,17 @@ import { HAND_SIZE } from './cards'
 import type { EventCard } from './types'
 
 /**
- * Os 20 eventos. Como as cartas, o que eles fazem é lista de ação — e por
+ * Os 20 eventos de referência — a semente e a rede, como em `cards.ts`.
+ * A fonte da verdade é a tabela `cartas_evento`; quem serve é `catalogo.ts`.
+ *
+ * Como as cartas, o que eles fazem é lista de ação — e por
  * isso `revealEvent` não tem mais um `switch` com um `case` por evento.
  *
  * Dois deles dependem de QUANDO o efeito roda, e é só por isso que `quando`
  * existe: a Fofoca descarta depois de a mão chegar, e a Cobrança no Zap só
  * pesa no fim do dia, se a cota não tiver sido batida.
  */
-export const EVENT_CARDS: EventCard[] = [
+export const EVENTOS_BASE: EventCard[] = [
   // negativas
   {
     id: 'sistema-fora-do-ar', name: 'Sistema Fora do Ar', tone: 'negativo',
@@ -53,6 +56,14 @@ export const EVENT_CARDS: EventCard[] = [
     text: 'Descarte 1 carta da sua mão ao acaso',
     // depois de comprar, senão não haveria mão para descartar
     efeitos: [{ quando: 'aposComprar', acoes: [{ faz: 'descartar', quantas: 1, aleatorio: true, porque: 'Fofoca de Corredor' }] }],
+  },
+  {
+    id: 'limpeza-de-mesa', name: 'Limpeza de Mesa', tone: 'negativo',
+    text: 'O chefe mandou "organizar": descarte 2 cartas à sua escolha',
+    // depois de comprar, senão não haveria mão para escolher
+    efeitos: [{ quando: 'aposComprar', acoes: [
+      { faz: 'escolherDescarte', quantas: 2, porque: 'Limpeza de Mesa' },
+    ] }],
   },
   {
     id: 'internet-caiu', name: 'Internet Caiu', tone: 'negativo',
@@ -174,13 +185,3 @@ export const EVENT_CARDS: EventCard[] = [
     ],
   },
 ]
-
-export const EVENTS_BY_ID: Record<string, EventCard> = Object.fromEntries(
-  EVENT_CARDS.map((e) => [e.id, e]),
-)
-
-export function getEvent(id: string): EventCard {
-  const event = EVENTS_BY_ID[id]
-  if (!event) throw new Error(`Evento desconhecido: ${id}`)
-  return event
-}

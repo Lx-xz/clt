@@ -5,11 +5,22 @@ export type CardId = string
 /** Categoria usada por eventos que bloqueiam um tipo de jogada (ex.: Sistema Fora do Ar). */
 export type CardKind = 'tarefa' | 'descanso' | 'grana' | 'social'
 
+/**
+ * A classe de uma carta, onde `null` é a carta NEUTRA — sem tipo.
+ *
+ * Neutra não é uma quinta classe: é a ausência de classe, e isso muda duas
+ * coisas no jogo. Ela não entra no embalo (não começa nem continua um, e
+ * jogar uma QUEBRA o embalo que estava em pé, como qualquer troca de
+ * assunto), e nenhum evento de bloqueio de classe a alcança — Sistema Fora
+ * do Ar não tem como proibir "nenhum tipo".
+ */
+export type ClasseDaCarta = CardKind | null
+
 export interface ActionCard {
   id: CardId
   name: string
   cost: number
-  kind: CardKind
+  kind: ClasseDaCarta
   text: string
   /** O que a carta FAZ, como lista de ações do catálogo (`acoes.ts`). É dado,
    *  não código: carta nova não precisa de uma linha no motor. */
@@ -25,6 +36,13 @@ export interface ActionCard {
   starter: boolean
   /** Quantas cópias entram no baralho inicial. */
   copies?: number
+  /** Carta removida do jogo. Ela CONTINUA no catálogo de propósito: pode
+   *  haver alguém no meio de uma run com ela na mão, e o motor precisa saber
+   *  o que ela faz para a partida terminar. O que ela não faz mais é entrar
+   *  em baralho novo nem sair como recompensa. */
+  ativa?: boolean
+  /** Em que versão do baralho este formato da carta passou a valer. */
+  versao?: number
 }
 
 /**
@@ -36,8 +54,26 @@ export interface CartaSnapshot {
   id: CardId
   name: string
   cost: number
-  kind: CardKind
+  kind: ClasseDaCarta
   text: string
+}
+
+export type TipoDeMudanca = 'criada' | 'ajustada' | 'removida'
+
+/**
+ * Uma linha do histórico de balanceamento. `oQue` é o número e `porque` é o
+ * motivo — e é o `porque` que justifica isto existir: um diff automático
+ * sabe dizer "custo 4 → 6" e não sabe dizer por quê.
+ */
+export interface MudancaDeCarta {
+  carta: CardId
+  familia: 'acao' | 'evento'
+  versao: number
+  /** AAAA-MM-DD. */
+  data: string
+  tipo: TipoDeMudanca
+  oQue: string
+  porque: string
 }
 
 export type EventTone = 'negativo' | 'positivo' | 'ambiguo'
@@ -54,6 +90,10 @@ export interface EventCard {
   id: CardId
   name: string
   tone: EventTone
+  /** Como em `ActionCard`: evento removido some do sorteio e continua
+   *  legível para quem tem uma run antiga que o cita. */
+  ativa?: boolean
+  versao?: number
   text: string
   /** O que o evento faz ao ser revelado — mesmo catálogo das cartas. */
   efeitos?: Efeito[]
@@ -137,6 +177,36 @@ export interface GameState {
   discard: CardInstance[]
   /** O que já foi jogado hoje, para o tapete mostrar o dia se montando. */
   playedToday: CardId[]
+
+  /**
+   * O último descarte causado por uma carta ou evento, para a mesa MOSTRAR
+   * o que saiu. Antes disto a mão simplesmente encolhia: a Fofoca de
+   * Corredor levava uma carta embora e o jogador não via qual.
+   *
+   * Só marca descarte causado por efeito. O descarte de fim de dia não entra
+   * — o dia está acabando de qualquer jeito, e anunciá-lo seria barulho.
+   *
+   * `selo` sobe a cada descarte para a mesa distinguir dois descartes
+   * iguais seguidos; sem ele o React não teria como saber que aconteceu de
+   * novo.
+   */
+  ultimoDescarte: { cartas: CardId[]; porque: string; selo: number } | null
+
+  /**
+   * O dia parado esperando o jogador escolher o que descartar. Enquanto isto
+   * existe não dá para jogar outra carta nem fechar o dia — é uma pergunta,
+   * e o jogo espera a resposta.
+   *
+   * `entao` é o que acontece depois de a escolha terminar, e é o que
+   * sustenta "descarte 1 para comprar 1" sem uma ação nova para cada troca.
+   */
+  escolhaDeDescarte: {
+    restam: number
+    porque: string
+    entao: Acao[]
+    /** Quem pediu, para o `se` das ações de `entao` continuar valendo. */
+    cartaId: CardId | null
+  } | null
 
   /** Embalo: cartas seguidas da mesma classe rendem bônus crescente. */
   streakKind: CardKind | null

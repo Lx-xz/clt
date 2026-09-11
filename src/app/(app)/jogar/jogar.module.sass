@@ -639,3 +639,68 @@
   .fundo,
   .painel
     animation: none
+
+// ------------------------------------------------------- escolher descarte
+// O pedido fica no tapete, onde o olhar já está: é ali que a jogada acontece,
+// e um aviso no topo da tela seria lido depois da mão, não antes
+.pedido
+  position: absolute
+  z-index: 20
+  top: 10px
+  left: 50%
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 2px
+  padding: 6px 14px
+  border: 1px solid var(--linha)
+  border-radius: 10px
+  background: var(--papel)
+  text-align: center
+  transform: translateX(-50%)
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18)
+
+  b
+    font-size: 13px
+
+  span
+    color: var(--tinta-fraca)
+    font-size: 12px
+
+// a carta escolhível não fica "desabilitada": ela fica CONVIDATIVA. O estado
+// desabilitado da mão significa "não dá para jogar", que é o contrário do
+// que está sendo pedido aqui
+.escolhivel
+  cursor: pointer
+
+  // o rótulo é um pseudo-elemento e não um botão: a carta inteira já é o
+  // alvo do clique, e um botão de verdade por cima dela roubaria o ponteiro
+  // — a armadilha do `::after` que engole o toque, com o remédio de sempre
+  &::after
+    content: 'Descartar'
+    position: absolute
+    z-index: 5
+    right: 0
+    bottom: 8px
+    left: 0
+    margin-inline: auto
+    width: max-content
+    padding: 3px 10px
+    border-radius: 999px
+    background: var(--tinta)
+    color: var(--papel)
+    font-size: 11px
+    font-weight: 600
+    pointer-events: none
+    opacity: .6
+    transition: opacity .15s ease
+
+  &:hover::after,
+  &:focus-within::after
+    opacity: 1
+
+// no toque não existe hover: o rótulo fica sempre visível, senão a única
+// pista de que a carta é clicável some
+@media (hover: none)
+  .escolhivel::after
+    opacity: 1

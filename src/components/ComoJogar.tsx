@@ -2,7 +2,10 @@
 
 import Card from './Card'
 import Dialogo from './Dialogo'
-import { KIND_ICONS, RESOURCE_ICONS } from './icons'
+import { RESOURCE_ICONS, iconeDaClasse } from './icons'
+
+/** O ícone de tarefa, citado no texto que explica o canto da carta. */
+const IconeDeTarefa = iconeDaClasse('tarefa')
 import {
   BASE_ENERGY,
   HAND_SIZE,
@@ -12,8 +15,8 @@ import {
   TOTAL_DAYS,
   WEEKLY_BILLS,
   WEEKS,
-  getCard,
 } from '@/game/cards'
+import { getCard } from '@/game/catalogo'
 import styles from './ComoJogar.module.sass'
 
 /**
@@ -130,7 +133,7 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
           <span className={styles.marcaCusto}>3</span> o <b>custo</b> em energia, na aba de cima
         </li>
         <li>
-          <KIND_ICONS.tarefa size={14} aria-hidden /> a <b>classe</b> da carta, no canto direito —
+          <IconeDeTarefa size={14} aria-hidden /> a <b>classe</b> da carta, no canto direito —
           é ela que conta para o Embalo
         </li>
         <li>
@@ -166,11 +169,12 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
       <h3 className={styles.titulo}>Embalo — a ordem importa</h3>
       <p className={styles.linha}>
         Cartas seguidas da <b>mesma classe</b> no mesmo dia rendem bônus: a 2ª dá o extra abaixo, e
-        da 3ª em diante o dobro. Jogar outra classe zera.
+        da 3ª em diante o dobro. Jogar outra classe zera — e carta <b>sem tipo</b> zera também,
+        porque ela não pertence a classe nenhuma.
       </p>
       <div className={styles.classes}>
         {CLASSES.map((c) => {
-          const Icone = KIND_ICONS[c.kind]
+          const Icone = iconeDaClasse(c.kind)
           return (
             <span key={c.kind} className={`${styles.classe} ${c.tom}`}>
               <Icone size={15} aria-hidden />

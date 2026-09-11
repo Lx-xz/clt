@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import CarregarCatalogo from '@/components/CarregarCatalogo'
 import { SCRIPT_TEMA } from '@/data/tema'
 import './global.sass'
 
@@ -40,7 +41,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             escuro quando o React monta — no tema que a pessoa não quer ver */}
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <CarregarCatalogo />
+        {children}
+      </body>
     </html>
   )
 }
