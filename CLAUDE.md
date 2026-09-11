@@ -147,11 +147,18 @@ números não conta a carta inteira.
 
 1. **A composição acontece na LISTA, não em função nova.** "Reembaralhar 1" não
    é uma ação: é `descartar(1)` seguido de `comprar(1)`. Se cada combinação
-   virar primitiva, em três meses são trinta primitivas e o editor precisa de
-   um formulário para cada uma.
+   virar primitiva, em três meses são trinta primitivas — e trinta linhas para
+   ler antes de entender uma carta.
 2. **Isto não é para virar linguagem de programação.** `sorteio` já carrega
    listas dentro e é o limite: laço, variável e expressão ficam de fora. O que
-   não couber continua sendo código no motor, e tudo bem.
+   não couber continua sendo código no motor, e tudo bem. Desde que existe um
+   editor visual, a régua deixou de ser "o editor aguenta desenhar isso?" e
+   passou a ser a única que sempre valeu: **cabe numa carta que alguém lê na
+   mão, em três linhas?**
+3. **Ação nova precisa de um descritor.** Quem sabe desenhar o formulário de
+   uma ação é `src/app/(app)/lab/_catalogo/descritores.ts`, e ela é um
+   `satisfies Record<Acao['faz'], Descritor>` — esquecer o descritor quebra o
+   build, em vez de deixar a ação sem editor em silêncio.
 
 **O que NÃO foi para o catálogo, de propósito:** comprar, descartar e
 embaralhar continuam funções do motor, entregues ao interpretador por
@@ -292,6 +299,34 @@ posiciona os filhos DIRETOS a partir de `--carta-w`, que mora na própria
 carta; um invólucro no meio come a sobreposição e o arco. O rótulo
 "Descartar" é um `::after` com `pointer-events: none` — a carta inteira já é
 o alvo do clique.
+
+### A carta se monta em blocos
+
+O que uma carta faz era um `textarea` de JSON no `/lab`. Hoje é uma pilha de
+blocos: menu agrupado para acrescentar ação, setas para reordenar, e listas
+dentro de listas nos dois únicos pontos de aninhamento que a linguagem tem
+(`sorteio.entao/senao` e `escolherDescarte.entao`).
+
+**Isto NÃO é o Scratch, e é por isso que coube em dois arquivos.** O Scratch é
+caro porque tem expressão (bloco que devolve valor e encaixa dentro de outro),
+variável e uma tela 2D com física de encaixe. Aqui todo parâmetro é literal,
+não há variável, e o aninhamento é só aquele — então uma lista vertical cobre
+100% da linguagem. Canvas, encaixe por forma e arrastar não acrescentariam
+capacidade nenhuma, e ficaram de fora de propósito: as setas ↑ ↓ resolvem a
+ordem, que era o que o arraste faria.
+
+- `_catalogo/descritores.ts` diz, por ação, o rótulo em português e os campos
+  (número, porcentagem, escolha, texto, sim/não, id de carta, lista de ações).
+- `_catalogo/EditorDeAcoes.tsx` tem os cinco tipos de campo e a recursão, e
+  mais nada específico de ação nenhuma.
+
+**A armadilha que a tabela cria:** ela é uma segunda fonte da verdade ao lado
+da união `Acao`. O `satisfies Record<Acao['faz'], Descritor>` é o que faz o
+esquecimento virar erro de build em vez de silêncio.
+
+**O JSON não sumiu, ficou recolhido** (`EscapeJson`). Continua sendo o jeito de
+colar uma carta inteira de fora e de conferir o que o editor produziu; texto
+inválido não é aplicado, e o editor de cima segue com o último estado bom.
 
 ### Embalo
 
@@ -452,10 +487,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   de alguém. O que mudou não foi a opinião, foram as três peças descritas em
   "O versionamento do baralho" — sem elas, isto volta a ser perigoso.
   A edição tem dois níveis de propósito: os quatro campos de recurso mexem no
-  bloco de efeito SEM condição (é o que se usa para rebalancear), e o painel
-  de JSON mostra a lista inteira — a única forma de editar carta condicional
-  sem inventar um formulário por tipo de ação, que é a mesma decisão que
-  mantém o catálogo de ações pequeno.
+  bloco de efeito SEM condição (é o atalho de quem só quer rebalancear um
+  número), e o editor de blocos abaixo monta a carta inteira, condição e
+  sorteio inclusive — veja "A carta se monta em blocos".
   **Salvar pede um motivo, e a função do banco recusa sem ele.** O histórico
   de uma carta nasce no momento da mudança, porque escrito depois ele não
   seria escrito.
@@ -502,6 +536,15 @@ espelho local não sabe de quem é.
 ## Armadilhas conhecidas
 
 Todas já morderam neste projeto. Leia antes de mexer nas áreas correspondentes.
+
+**Item flex não encolhe abaixo do próprio min-content.** O popup é um item
+flex centralizado pela cortina, com `width: min(100%, 560px)`. Isso NÃO
+impedia ele de ficar mais largo que a tela: bastava um filho com min-content
+grande (um `Segmentado` de cinco opções, um grid de `minmax(130px, 1fr)`) para
+a janela inteira passar de 390px no celular, e o `100%` não adiantava nada. O
+conserto é `min-width: 0` no painel — aí quem transborda é o conteúdo, e é ele
+que ganha um `overflow-x: auto` próprio (a tabela das semanas, a fileira de
+classes). Vale para qualquer caixa que seja item de um flex.
 
 **`position: fixed` dentro de elemento com `perspective`.** Um elemento com
 `perspective` vira bloco contentor de descendentes fixos — `left/top` passam a
@@ -637,6 +680,15 @@ caminho do mp3 é montado no `(app)/layout.tsx`, que roda no servidor e
 enxerga `DEPLOY_TARGET` — mesmo remendo do manifest e do apple-touch-icon.
 Componente cliente não serve para isso: o Next só embute `process.env` no
 bundle do navegador para variáveis `NEXT_PUBLIC_`.
+
+**Áudio tocando a volume zero rouba o som do aparelho.** Mudo era ganho 0 com
+o elemento tocando — silencioso, mas ainda "tocando" para o sistema. Um
+elemento de mídia em reprodução toma o foco de áudio: no celular ele vira a
+faixa dos controles do aparelho e PAUSA o YouTube (ou o Spotify) que estava
+tocando. Do lado de quem usa, o som simplesmente trava sem motivo, porque o
+nosso já era zero. Volume zero tem que ser `pause()` no elemento mais
+`suspend()` no AudioContext, devolvendo o foco; sair do mudo volta a tocar
+sozinho. No mudo o contexto nem nasce, e a trilha de 3,7 MB nem é baixada.
 
 **Áudio não toca antes de o visitante interagir.** Chamar `play()` na
 montagem é recusado em silêncio numa aba recém-aberta. `Musica.tsx` tenta
@@ -935,6 +987,14 @@ antes de usá-los para decidir qualquer coisa.
   baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
   isso não acontece, editar carta é impossível (o botão fica desligado) e o
   jogo funciona normalmente — é o estado intencional, não um bug.
+- **Conquistas.** Pedido do autor, e combinado para entrar **junto com a
+  próxima mexida no `schema.sql`** — não vale abrir uma migração só para isso,
+  e não vale deixar passar a próxima. O esqueleto: uma tabela `conquistas`
+  (id, nome, descrição, como se ganha) e uma `conquistas_do_jogador`
+  (jogador, conquista, quando), com a checagem saindo de `runs.details`, que
+  já guarda o dia-a-dia — do mesmo jeito que `cartas_fatais()` e
+  `estatisticas_nerds()` saem de lá, sem contador novo no motor.
+
 - **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica.tsx`,
   `public/som/`), com os dois volumes em `src/data/som.ts`. Falta o resto: um
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,

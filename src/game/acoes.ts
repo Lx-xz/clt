@@ -9,15 +9,22 @@ import type { CardId, CardKind, GameState } from './types'
  * 'estresse', quanto: 2 }` e o motor é quem sabe que estresse não passa de
  * zero e que dez é burnout. Carta nova não precisa de uma linha de motor.
  *
- * Duas regras que decidem se isto envelhece bem:
+ * Três regras que decidem se isto envelhece bem:
  *
  * 1. **A composição acontece na LISTA, não em função nova.** "Reembaralhar 1"
  *    não é uma ação: é `descartar(1)` seguido de `comprar(1)`. Se cada
- *    combinação virar uma primitiva, em três meses são trinta primitivas e o
- *    editor precisa de um formulário para cada uma.
+ *    combinação virar uma primitiva, em três meses são trinta primitivas —
+ *    e trinta linhas para ler antes de entender uma carta.
  * 2. **Isto não é para virar linguagem de programação.** `sorteio` já carrega
  *    listas dentro e é o limite: laço, variável e expressão ficam de fora. O
- *    que não couber aqui continua sendo código no motor, e tudo bem.
+ *    que não couber aqui continua sendo código no motor, e tudo bem. A régua
+ *    não é o que o editor aguenta desenhar; é o que cabe numa carta que
+ *    alguém lê na mão, em três linhas.
+ * 3. **Ação nova precisa de um descritor.** Desde que o editor visual existe,
+ *    quem sabe desenhar um campo é a tabela em
+ *    `src/app/(app)/lab/_catalogo/descritores.ts`. Ela é um
+ *    `satisfies Record<Acao['faz'], Descritor>`, então esquecer o descritor
+ *    quebra o BUILD em vez de deixar a ação sem formulário em silêncio.
  */
 
 export type Recurso = 'produtividade' | 'energia' | 'estresse' | 'dinheiro'

@@ -17,6 +17,12 @@
   // conforme o texto de dentro muda — era o que fazia o diálogo de volume
   // pular de tamanho quando o número passava de "99%" para "100%"
   width: min(100%, 420px)
+  // o painel é um item flex, e item flex não encolhe abaixo do próprio
+  // min-content: bastava um Segmentado de cinco opções lá dentro para a
+  // janela inteira ficar mais larga que a tela do celular. Com `min-width: 0`
+  // quem transborda é o conteúdo, e aí é ele que ganha um `overflow-x` — como
+  // já fazem a tabela das semanas e a fileira de classes na bancada
+  min-width: 0
   max-height: calc(100dvh - 32px)
   padding: 20px
   background: var(--papel-alto)

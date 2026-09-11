@@ -8,11 +8,11 @@ import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
   BotaoExcluir,
-  CampoJson,
   Origem,
   PedirMotivo,
   estilosDaBancada as comuns,
 } from '../_catalogo/Bancada'
+import { EditorDeEfeitos, EscapeJson } from '../_catalogo/EditorDeAcoes'
 import {
   excluirDoCatalogo,
   salvarCarta,
@@ -43,9 +43,10 @@ import styles from './cartas.module.sass'
  *    vira o histórico que o jogador lê no baralho.
  *
  * A edição continua em dois níveis, de propósito: os quatro campos de recurso
- * mexem no bloco de efeito SEM condição (é o que se usa para rebalancear), e
- * o painel de JSON mostra a lista inteira — a única forma de editar carta
- * condicional sem inventar um formulário por tipo de ação.
+ * mexem no bloco de efeito SEM condição (é o atalho de quem só quer
+ * rebalancear um número), e o editor visual abaixo mostra a carta inteira,
+ * condição e sorteio inclusive. O JSON continua ali, recolhido, para o caso
+ * raro — o que ele deixou de ser é o único caminho.
  */
 
 const CLASSES: { valor: string; rotulo: string }[] = [
@@ -127,7 +128,7 @@ export default function LabCartasPage() {
   const [doBanco, setDoBanco] = useState(() => catalogoVeioDoBanco())
   const [emEdicao, setEmEdicao] = useState<ActionCard | null>(null)
   const [criando, setCriando] = useState(false)
-  const [jsonEfeitos, setJsonEfeitos] = useState('[]')
+  const [efeitos, setEfeitos] = useState<Efeito[]>([])
   const [pedindo, setPedindo] = useState<'salvar' | 'excluir' | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
@@ -150,7 +151,7 @@ export default function LabCartasPage() {
   function abrir(c: ActionCard) {
     setEmEdicao({ ...c })
     setCriando(false)
-    setJsonEfeitos(JSON.stringify(c.efeitos, null, 2))
+    setEfeitos(c.efeitos)
     setErro(null)
   }
 
@@ -158,26 +159,19 @@ export default function LabCartasPage() {
     const c = nova()
     setEmEdicao(c)
     setCriando(true)
-    setJsonEfeitos(JSON.stringify(c.efeitos, null, 2))
+    setEfeitos(c.efeitos)
     setErro(null)
   }
 
-  /** O JSON só entra na carta na hora de salvar: assim o rascunho aceita um
-   *  estado intermediário inválido sem apagar o que já estava lá. */
+  /** Os efeitos moram fora de `emEdicao` porque quem os edita é o editor
+   *  visual, que trabalha em cima da lista e não do objeto inteiro. */
   function cartaParaGravar(): ActionCard | null {
-    if (!emEdicao) return null
-    try {
-      const efeitos = JSON.parse(jsonEfeitos) as Efeito[]
-      if (!Array.isArray(efeitos)) return null
-      return { ...emEdicao, efeitos }
-    } catch {
-      return null
-    }
+    return emEdicao ? { ...emEdicao, efeitos } : null
   }
 
   async function gravar(oQue: string, porque: string) {
     const carta = cartaParaGravar()
-    if (!carta) return setErro('As ações não são um JSON válido.')
+    if (!carta) return
     setOcupado(true)
     const r = await salvarCarta(carta, oQue, porque)
     setOcupado(false)
@@ -202,7 +196,6 @@ export default function LabCartasPage() {
 
   const noJogo = cartas.filter((c) => c.ativa !== false)
   const removidas = cartas.filter((c) => c.ativa === false)
-  const jsonValido = cartaParaGravar() !== null
 
   return (
     <main className="page">
@@ -287,14 +280,16 @@ export default function LabCartasPage() {
 
           <label className={comuns.rotulo}>
             Classe
-            <Segmentado
-              rotulo="Classe da carta"
-              opcoes={CLASSES}
-              valor={emEdicao.kind ?? 'neutra'}
-              onChange={(v) =>
-                setEmEdicao({ ...emEdicao, kind: (v === 'neutra' ? null : v) as ClasseDaCarta })
-              }
-            />
+            <div className={styles.rolaLado}>
+              <Segmentado
+                rotulo="Classe da carta"
+                opcoes={CLASSES}
+                valor={emEdicao.kind ?? 'neutra'}
+                onChange={(v) =>
+                  setEmEdicao({ ...emEdicao, kind: (v === 'neutra' ? null : v) as ClasseDaCarta })
+                }
+              />
+            </div>
             <span className={comuns.dica}>
               Sem tipo é a carta neutra: nenhum evento de bloqueio a alcança, e ela não entra em
               embalo — jogar uma quebra o que estiver em pé.
@@ -325,9 +320,7 @@ export default function LabCartasPage() {
                   value={somaDe(cartaParaGravar() ?? emEdicao, r)}
                   onChange={(e) => {
                     const base = cartaParaGravar() ?? emEdicao
-                    const mudada = mudarRecurso(base, r, Number(e.target.value) || 0)
-                    setEmEdicao({ ...emEdicao, efeitos: mudada.efeitos })
-                    setJsonEfeitos(JSON.stringify(mudada.efeitos, null, 2))
+                    setEfeitos(mudarRecurso(base, r, Number(e.target.value) || 0).efeitos)
                   }}
                   placeholder="0"
                 />
@@ -335,11 +328,19 @@ export default function LabCartasPage() {
             ))}
           </div>
 
-          <CampoJson
-            rotulo="Ações (a carta inteira)"
-            valor={jsonEfeitos}
-            aoMudar={setJsonEfeitos}
-            dica="Lista de blocos { quando?, se?, acoes[] }. É aqui que moram condição, sorteio e escolha de descarte."
+          <div className={comuns.rotulo}>
+            O que a carta faz
+            <span className={comuns.dica}>
+              Cada bloco tem um gatilho e uma condição; dentro dele, as ações rodam na ordem.
+              Duas fileiras com &quot;só se&quot; opostos é como a Reunião faz coisas diferentes na
+              primeira e na segunda vez.
+            </span>
+          </div>
+          <EditorDeEfeitos efeitos={efeitos} aoMudar={setEfeitos} padrao="aoJogar" />
+          <EscapeJson
+            rotulo="ver como JSON"
+            valor={efeitos}
+            aoMudar={(v) => { if (Array.isArray(v)) setEfeitos(v as Efeito[]) }}
           />
 
           <div className={styles.campos}>
@@ -384,7 +385,7 @@ export default function LabCartasPage() {
             <button
               type="button"
               className={`${buttons.button} ${buttons.primary}`}
-              disabled={!jsonValido || !emEdicao.id}
+              disabled={!emEdicao.id}
               onClick={() => { setErro(null); setPedindo('salvar') }}
             >
               Salvar no banco

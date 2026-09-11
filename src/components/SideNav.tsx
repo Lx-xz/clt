@@ -392,7 +392,7 @@ export default function SideNav() {
           <div className={styles.grupo}>
             <span className={styles.grupoTitulo}>Som</span>
             <Check marcado={volumes.mudo} onChange={(v) => mudarVolume('mudo', v)}>
-              Mudo — desliga tudo de uma vez
+              Mudo — desliga tudo, e solta o som do aparelho
             </Check>
             <Check
               marcado={volumes.baixaFora}

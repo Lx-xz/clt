@@ -123,39 +123,4 @@ export function BotaoExcluir({ onClick }: { onClick: () => void }) {
   )
 }
 
-/**
- * O campo de JSON cru das ações.
- *
- * Continua sendo a única forma de editar carta condicional sem inventar um
- * formulário por tipo de ação — e a decisão de NÃO inventar esse formulário é
- * a mesma que mantém o catálogo de ações pequeno. JSON inválido não é
- * gravado: o rascunho aceita, o botão de salvar não.
- */
-export function CampoJson({ rotulo, valor, aoMudar, dica }: {
-  rotulo: string
-  valor: string
-  aoMudar: (texto: string) => void
-  dica?: string
-}) {
-  let valido = true
-  try {
-    JSON.parse(valor)
-  } catch {
-    valido = false
-  }
-  return (
-    <label className={styles.rotulo}>
-      {rotulo}
-      <textarea
-        className={`${styles.campoTexto} ${styles.mono} ${valido ? '' : styles.invalido}`}
-        value={valor}
-        onChange={(e) => aoMudar(e.target.value)}
-        rows={6}
-        spellCheck={false}
-      />
-      <span className={styles.dica}>{valido ? dica : 'JSON inválido — corrija para poder salvar.'}</span>
-    </label>
-  )
-}
-
 export { styles as estilosDaBancada }

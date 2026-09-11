@@ -23,6 +23,7 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
+  'Conquistas: um punhado de objetivos para perseguir além de ganhar o mês.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
   'Mais peças de avatar (óculos, barba) e o avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
@@ -33,6 +34,18 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.11',
+    data: '2026-09-11',
+    titulo: 'A carta virou blocos, e o mudo passou a ser mudo de verdade',
+    itens: [
+      { tipo: 'novo', texto: 'O laboratório ganhou um editor visual de cartas: o que uma carta faz agora se monta em blocos empilhados, com menu de ações, setas para reordenar e listas dentro de listas para sorteio e escolha. Antes era preciso escrever JSON à mão.' },
+      { tipo: 'melhor', texto: 'O JSON continua ali, recolhido, para conferir o resultado ou colar uma carta inteira de fora — deixou de ser o único caminho, não de existir.' },
+      { tipo: 'correcao', texto: 'Mudo agora PARA a música em vez de abaixá-la a zero. Tocando em silêncio, o site tomava o controle de som do aparelho e pausava o YouTube ou o Spotify que estivesse tocando — no mudo o som é seu.' },
+      { tipo: 'correcao', texto: 'Abrindo o site no mudo, os 3,7 MB da trilha nem são baixados.' },
+      { tipo: 'correcao', texto: 'Os popups do laboratório ficavam mais largos que a tela do celular. Agora cabem, e o que não couber (a fileira de classes, a tabela das semanas) rola de lado sozinho.' },
+    ],
+  },
   {
     versao: '0.10',
     data: '2026-09-11',

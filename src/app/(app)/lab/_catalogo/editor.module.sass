@@ -1,0 +1,250 @@
+// O editor visual de ações. Uma pilha vertical com pilhas dentro — a
+// linguagem do jogo só tem dois pontos de aninhamento, então não há canvas
+// nem encaixe por forma para desenhar aqui.
+
+.efeitos
+  display: flex
+  flex-direction: column
+  gap: 12px
+  margin-bottom: 14px
+
+.efeito
+  margin: 0
+  padding: 10px 12px 12px
+  border: 1px solid var(--linha)
+  border-radius: 10px
+  background: var(--papel-alto)
+
+.legenda
+  display: flex
+  align-items: center
+  gap: 6px
+  padding: 0 6px
+  color: var(--tinta-fraca)
+  font-size: 11px
+  font-weight: 700
+  text-transform: uppercase
+  letter-spacing: .06em
+
+.gatilho
+  display: flex
+  flex-wrap: wrap
+  align-items: flex-end
+  gap: 10px
+  margin-bottom: 10px
+  padding-bottom: 10px
+  border-bottom: 1px dashed var(--linha)
+
+.condicao
+  display: flex
+  flex-wrap: wrap
+  align-items: flex-end
+  gap: 10px
+
+.lista
+  display: flex
+  flex-direction: column
+  gap: 8px
+
+.bloco
+  border: 1px solid var(--linha)
+  border-left: 3px solid var(--tinta-fraca)
+  border-radius: 8px
+  background: var(--papel)
+
+// a cor da borda diz de que família é a ação antes de o rótulo ser lido —
+// é a mesma ideia dos medidores do HUD
+.bloco[data-grupo='recursos']
+  border-left-color: var(--produtividade)
+
+.bloco[data-grupo='cartas']
+  border-left-color: var(--energia)
+
+.bloco[data-grupo='chefe']
+  border-left-color: var(--estresse)
+
+.bloco[data-grupo='dia']
+  border-left-color: var(--destaque)
+
+.bloco[data-grupo='especiais']
+  border-left-color: var(--tinta-fraca)
+
+.desconhecido
+  display: flex
+  align-items: center
+  justify-content: space-between
+  gap: 8px
+  padding: 8px 10px
+  border-left-color: var(--estresse)
+  color: var(--estresse)
+
+.cabeca
+  display: flex
+  flex-wrap: wrap
+  align-items: flex-end
+  gap: 10px
+  padding: 8px 10px
+
+.icone
+  flex: none
+  margin-bottom: 3px
+  color: var(--tinta-fraca)
+
+.nome
+  margin-bottom: 2px
+  color: var(--tinta)
+  font-size: 13px
+  font-weight: 600
+
+.campos
+  display: flex
+  flex: 1
+  flex-wrap: wrap
+  align-items: flex-end
+  gap: 10px
+
+.campo
+  display: flex
+  flex-direction: column
+  gap: 3px
+
+.cresce
+  flex: 1 1 160px
+
+.linha
+  display: flex
+  align-items: center
+  gap: 6px
+
+.rotulo
+  color: var(--tinta-fraca)
+  font-size: 11px
+  font-weight: 600
+
+.sufixo
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+// 16px é o mínimo em campo de formulário: abaixo disso o Safari do iPhone dá
+// zoom ao focar e não desfaz ao sair
+.numero,
+.texto,
+.seletor,
+.adicionar
+  padding: 5px 8px
+  border: 1px solid var(--linha)
+  border-radius: 6px
+  background: var(--papel-alto)
+  color: var(--tinta)
+  font-size: 16px
+  font-family: inherit
+
+.numero
+  width: 72px
+
+.texto
+  width: 100%
+  min-width: 0
+
+// campo de texto é o que mais precisa de espaço e o que menos tem: ele cresce
+// e os de número ficam do tamanho que são
+.campo:has(.texto)
+  flex: 1 1 200px
+  min-width: 0
+
+.marca
+  display: flex
+  align-items: center
+  gap: 5px
+  margin-bottom: 4px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  white-space: nowrap
+
+.mando
+  display: flex
+  gap: 2px
+  margin-left: auto
+
+.iconeBotao
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  width: 26px
+  height: 26px
+  padding: 0
+  border: 1px solid transparent
+  border-radius: 6px
+  background: none
+  color: var(--tinta-fraca)
+  cursor: pointer
+
+  &:hover:not(:disabled)
+    border-color: var(--linha)
+    color: var(--tinta)
+
+  &:disabled
+    opacity: .3
+    cursor: default
+
+.tirar:hover:not(:disabled)
+  border-color: var(--estresse)
+  color: var(--estresse)
+
+.aninhado
+  margin: 0 10px 10px
+  padding: 6px 8px 8px
+  border: 1px dashed var(--linha)
+  border-radius: 8px
+  background: var(--papel-alto)
+
+.adicionar
+  align-self: flex-start
+  border-style: dashed
+  color: var(--tinta-fraca)
+  cursor: pointer
+
+.novoBloco
+  align-self: flex-start
+  padding: 7px 12px
+  border: 1px dashed var(--linha)
+  border-radius: 8px
+  background: none
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-family: inherit
+  cursor: pointer
+
+  &:hover
+    border-color: var(--tinta-fraca)
+    color: var(--tinta)
+
+.json
+  margin-bottom: 14px
+
+.resumo
+  color: var(--tinta-fraca)
+  font-size: 12px
+  cursor: pointer
+
+.cru
+  width: 100%
+  margin-top: 6px
+  padding: 8px 10px
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  background: var(--papel)
+  color: var(--tinta)
+  font-size: 13px
+  font-family: var(--mono)
+  line-height: 1.45
+  resize: vertical
+
+.invalido
+  border-color: var(--estresse)
+
+.dica
+  display: block
+  margin-top: 4px
+  color: var(--tinta-fraca)
+  font-size: 11px

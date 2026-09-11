@@ -86,13 +86,19 @@
     font-family: var(--mono)
     font-size: 12px
 
+// flex e não grid: um grid de `minmax(130px, 1fr)` tem min-content igual à
+// soma das três colunas, e como o diálogo é um item flex (que não encolhe
+// abaixo do próprio min-content) isso empurrava a janela inteira para fora da
+// tela no celular. Em flex, o min-content é o do MAIOR campo, e a linha quebra
 .campos
-  display: grid
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr))
+  display: flex
+  flex-wrap: wrap
   gap: 10px
 
   label
     display: flex
+    flex: 1 1 130px
+    min-width: 0
     flex-direction: column
     gap: 4px
     color: var(--tinta-fraca)
@@ -277,3 +283,10 @@
   background: var(--papel-alto)
   font-size: 13px
   line-height: 1.55
+
+// as cinco classes não cabem em 390px, e o Segmentado mede o botão ativo para
+// posicionar o fundo que desliza — encolher os chips desalinharia o fundo. Ele
+// rola de lado, como a tabela das semanas, e pelo mesmo motivo leva `flex: none`
+.rolaLado
+  flex: none
+  overflow-x: auto

@@ -8,11 +8,11 @@ import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
   BotaoExcluir,
-  CampoJson,
   Origem,
   PedirMotivo,
   estilosDaBancada as comuns,
 } from '../_catalogo/Bancada'
+import { EditorDeEfeitos, EditorDeEscolhas, EscapeJson } from '../_catalogo/EditorDeAcoes'
 import { excluirDoCatalogo, salvarEvento, semearCatalogo } from '@/data/cartas'
 import { CARTAS_BASE } from '@/game/cards'
 import { EVENTOS_BASE } from '@/game/events'
@@ -70,8 +70,8 @@ export default function LabEventosPage() {
   const [doBanco, setDoBanco] = useState(() => catalogoVeioDoBanco())
   const [emEdicao, setEmEdicao] = useState<EventCard | null>(null)
   const [criando, setCriando] = useState(false)
-  const [jsonEfeitos, setJsonEfeitos] = useState('[]')
-  const [jsonEscolhas, setJsonEscolhas] = useState('null')
+  const [efeitos, setEfeitos] = useState<Efeito[]>([])
+  const [escolhas, setEscolhas] = useState<[EventChoice, EventChoice] | null>(null)
   const [pedindo, setPedindo] = useState<'salvar' | 'excluir' | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
@@ -94,27 +94,18 @@ export default function LabEventosPage() {
   function abrir(e: EventCard, ehNovo = false) {
     setEmEdicao({ ...e })
     setCriando(ehNovo)
-    setJsonEfeitos(JSON.stringify(e.efeitos ?? [], null, 2))
-    setJsonEscolhas(e.choices ? JSON.stringify(e.choices, null, 2) : 'null')
+    setEfeitos(e.efeitos ?? [])
+    setEscolhas(e.choices ?? null)
     setErro(null)
   }
 
   function eventoParaGravar(): EventCard | null {
-    if (!emEdicao) return null
-    try {
-      const efeitos = JSON.parse(jsonEfeitos) as Efeito[]
-      const escolhas = JSON.parse(jsonEscolhas) as [EventChoice, EventChoice] | null
-      if (!Array.isArray(efeitos)) return null
-      if (escolhas !== null && (!Array.isArray(escolhas) || escolhas.length !== 2)) return null
-      return { ...emEdicao, efeitos, choices: escolhas ?? undefined }
-    } catch {
-      return null
-    }
+    return emEdicao ? { ...emEdicao, efeitos, choices: escolhas ?? undefined } : null
   }
 
   async function gravar(oQue: string, porque: string) {
     const evento = eventoParaGravar()
-    if (!evento) return setErro('As ações ou as escolhas não são um JSON válido.')
+    if (!evento) return
     setOcupado(true)
     const r = await salvarEvento(evento, oQue, porque)
     setOcupado(false)
@@ -139,7 +130,6 @@ export default function LabEventosPage() {
 
   const noJogo = eventos.filter((e) => e.ativa !== false)
   const removidos = eventos.filter((e) => e.ativa === false)
-  const valido = eventoParaGravar() !== null
 
   return (
     <main className="page">
@@ -221,9 +211,7 @@ export default function LabEventosPage() {
                 setEmEdicao({ ...emEdicao, tone })
                 // ambíguo sem escolha não pergunta nada e trava o dia: o par
                 // em branco entra junto com o tom, não depois
-                if (tone === 'ambiguo' && jsonEscolhas === 'null') {
-                  setJsonEscolhas(JSON.stringify(ESCOLHAS_EM_BRANCO, null, 2))
-                }
+                if (tone === 'ambiguo' && !escolhas) setEscolhas(ESCOLHAS_EM_BRANCO)
               }}
             />
             <span className={comuns.dica}>
@@ -242,18 +230,34 @@ export default function LabEventosPage() {
             />
           </label>
 
-          <CampoJson
-            rotulo="Ações ao revelar"
-            valor={jsonEfeitos}
-            aoMudar={setJsonEfeitos}
-            dica="Use quando: 'aposComprar' para mexer na mão (ela só chega depois), e 'fimDoDia' para cobrar no fechamento."
-          />
+          <div className={comuns.rotulo}>
+            O que o evento faz
+            <span className={comuns.dica}>
+              &quot;Depois da mão chegar&quot; é o gatilho de quem mexe na mão: ela só existe
+              depois. &quot;No fim do dia&quot; é o de quem cobra no fechamento, com a cota já
+              conhecida.
+            </span>
+          </div>
+          <EditorDeEfeitos efeitos={efeitos} aoMudar={setEfeitos} padrao="aoRevelar" />
 
-          <CampoJson
-            rotulo="Escolhas (null, ou exatamente duas)"
-            valor={jsonEscolhas}
-            aoMudar={setJsonEscolhas}
-            dica="Cada escolha é { label, text, acoes[] }. Com escolhas, as ações acima não rodam sozinhas."
+          <div className={comuns.rotulo}>
+            Escolhas
+            <span className={comuns.dica}>
+              Com escolhas, as ações acima não rodam sozinhas — quem decide é o jogador.
+            </span>
+          </div>
+          <EditorDeEscolhas escolhas={escolhas} aoMudar={setEscolhas} />
+
+          <EscapeJson
+            rotulo="ver como JSON"
+            valor={{ efeitos, escolhas }}
+            aoMudar={(v) => {
+              const o = v as { efeitos?: Efeito[]; escolhas?: [EventChoice, EventChoice] | null }
+              if (Array.isArray(o?.efeitos)) setEfeitos(o.efeitos)
+              if (o?.escolhas === null || (Array.isArray(o?.escolhas) && o.escolhas.length === 2)) {
+                setEscolhas(o.escolhas ?? null)
+              }
+            }}
           />
 
           <div className={comuns.acoesDialogo}>
@@ -266,7 +270,7 @@ export default function LabEventosPage() {
             <button
               type="button"
               className={`${buttons.button} ${buttons.primary}`}
-              disabled={!valido || !emEdicao.id}
+              disabled={!emEdicao.id}
               onClick={() => { setErro(null); setPedindo('salvar') }}
             >
               Salvar no banco
