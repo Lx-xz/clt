@@ -425,3 +425,7 @@ antes de usá-los para decidir qualquer coisa.
     teste de ponta a ponta no fim, não um a cada passo.
 - **Mensagem de commit conta o porquê**, incluindo a causa raiz quando o commit
   conserta um bug. O histórico é curto e vale ler.
+- **"Pergunta" ou "constatação" no começo da mensagem = não mexa em nada.** O
+  autor usa essas duas palavras para marcar conversa, não tarefa: absorva,
+  responda, e pare. Nada de editar arquivo, rodar build, subir navegador ou
+  commitar. No fim, diga o que faria e pergunte se pode.
