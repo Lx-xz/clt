@@ -46,7 +46,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run. Chega-se clicando numa partida no seu perfil |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **21 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 13
 desbloqueáveis) e **21 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -79,7 +79,8 @@ src/game/     regras puras — nenhum import de React
   types.ts      GameState e companhia
   acoes.ts      o catálogo de AÇÕES: o vocabulário que carta e evento têm
   catalogo.ts   quais cartas e eventos existem agora — a porta única de getCard
-  cards.ts      o baralho de referência (semente e rede), semanas, constantes
+  cards.ts      o baralho de referência (semente e rede)
+  regras.ts     os modos de jogo: aluguel, cota, salário, energia base
   events.ts     os eventos de referência, pelo mesmo motivo
   engine.ts     o motor: funções puras GameState -> GameState
   storage.ts    localStorage (espelho), validação de formato do save
@@ -223,6 +224,39 @@ inerte (custo 0, sem classe, sem efeito) e avisa no console, em vez de lançar.
 Com o catálogo no banco, id desconhecido deixou de ser impossível e virou
 raro — um save antigo, um `delete` na mão no SQL Editor —, e lançar ali
 levaria a mesa inteira junto.
+
+### Os modos de jogo
+
+Os números que não pertencem a carta nenhuma — aluguel, cota, meta da semana,
+salário, energia base, estresse de burnout — moravam soltos em `cards.ts`
+como `const`. Isso queria dizer que **mexer no aluguel era publicar o site**,
+que é exatamente o contrário do que balancear precisa ser.
+
+Hoje eles são um **modo de jogo**: uma linha na tabela `modos`, carregada
+junto com o catálogo, editável em `/lab/regras`. Existe só o `normal`; a
+estrutura já é uma tabela porque um dia pode haver um "difícil", e porque
+isso não custou nada a mais do que uma coluna custaria.
+
+**A run copia as regras quando começa** (`GameState.modo`) e o motor lê de
+lá, nunca da global. Duas consequências, e as duas são o ponto:
+
+- Mexer no aluguel às três da tarde não muda o preço de quem está no dia 12.
+  A partida termina com as regras que começou.
+- O replay de uma partida antiga continua batendo, pelo mesmo motivo que o
+  retrato do baralho existe: `runs.details.modo` guarda as regras daquele dia,
+  e `runs.modo` guarda o id, para não comparar no mesmo gráfico uma run de
+  aluguel 300 com uma de 380.
+
+Quem NÃO lê da run é quem não tem run: o tutorial (`ComoJogar`) e a bancada
+mostram as regras de hoje, porque explicam o jogo e não uma partida. Por isso
+`recursos()` e `derrotas()` lá viraram funções — um valor calculado no
+carregamento do módulo congelaria o número de ontem.
+
+**Cuidado com número de regra escrito dentro de carta.** O Dia Tranquilo era
+`HAND_SIZE + 2`, resolvido na hora de montar o arquivo; com a mão vindo do
+banco isso congelaria o 7 para sempre. Virou `{ faz: 'maoDoDia', quantas: 2,
+relativo: true }`. Qualquer carta nova que queira "a mais" ou "a menos" de
+uma regra precisa desse tipo de relativo, e não do total já somado.
 
 ### A carta neutra
 
@@ -404,7 +438,14 @@ opções. O que ele escolheu, e que deve ser preservado:
   Os dois atalhos de teste da porta (**desbloquear tudo**, **resetar**) são a
   exceção que mexe na conta de quem clica — e são de admin porque uma coleção
   inteira desbloqueada estraga qualquer leitura de dificuldade que venha
-  daquela conta.
+  daquela conta. **Eles moram SÓ aqui.** Estiveram no `/baralho` por um
+  tempo, ao alcance de qualquer jogador, que é justamente onde não podiam
+  estar.
+- **`/lab/regras` é a bancada do aluguel.** Os números do modo de jogo, com a
+  conta do mês se refazendo enquanto se digita (entra tanto de salário contra
+  tanto de contas) — porque a pergunta que se faz ali é sempre "isso ainda
+  fecha?". Salvar pede motivo como as cartas, e a tela diz na cara que quem
+  está jogando não é afetado.
 - **`/lab/cartas` e `/lab/eventos` gravam no banco.** Até a v0.10 a bancada
   era um rascunho que devolvia `cards.ts` para colar, e o motivo era bom: com
   as cartas no código, um `delete` apagaria uma carta que está dentro do save
@@ -679,6 +720,7 @@ SQL Editor do projeto.
 | `cartas` · `cartas_evento` | o catálogo do jogo. `ativa = false` é carta removida, que continua existindo |
 | `cartas_antigas` | versões anteriores E cartas removidas, com `o_que` e `porque` de cada mudança |
 | `baralho` | uma linha só: a versão do baralho, que sobe a cada mudança de carta |
+| `modos` | os NÚMEROS do jogo: aluguel, cota, salário, energia base. Hoje só o `normal` |
 
 Para apagar tudo e recomeçar do zero existe [`supabase/reset.sql`](supabase/reset.sql)
 — ele derruba as tabelas **e as contas do Auth**, e não tem desfazer.

@@ -46,8 +46,11 @@ export type Acao =
   | { faz: 'cota'; quanto: number; absoluto?: boolean }
   | { faz: 'salarioPermanente'; quanto: number }
   | { faz: 'produtividadePassiva'; quanto: number }
-  /** Quantas cartas o dia compra, quando não são as 5 de sempre. */
-  | { faz: 'maoDoDia'; quantas: number }
+  /** Quantas cartas o dia compra, quando não são as de sempre. Com
+   *  `relativo`, `quantas` é somado ao tamanho normal da mão — é o que
+   *  mantém o Dia Tranquilo sendo "duas a mais" mesmo se o modo de jogo
+   *  mudar a mão de 5 para 6. */
+  | { faz: 'maoDoDia'; quantas: number; relativo?: boolean }
   | { faz: 'sorteio'; chance: number; entao: Acao[]; senao?: Acao[] }
   /** Só escreve no histórico da mesa. Serve para explicar o que aconteceu. */
   | { faz: 'aviso'; texto: string }
@@ -223,7 +226,9 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
       state.passiveProductivity += acao.quanto
       break
     case 'maoDoDia':
-      state.maoDoDia = acao.quantas
+      state.maoDoDia = acao.relativo
+        ? Math.max(0, state.modo.cartasNaMao + acao.quantas)
+        : acao.quantas
       break
     case 'sorteio':
       executar(state, ctx.sorte() < acao.chance ? acao.entao : (acao.senao ?? []), ctx)

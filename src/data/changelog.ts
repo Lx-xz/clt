@@ -38,6 +38,9 @@ export const VERSOES: Versao[] = [
     data: '2026-09-11',
     titulo: 'As cartas saíram do código, e o descarte ficou visível',
     itens: [
+      { tipo: 'novo', texto: 'As regras do jogo — aluguel, cota, meta da semana, salário, energia base — também foram para o banco, como modo de jogo. Hoje existe só o Normal. Um ajuste de dificuldade passa a valer na próxima partida que alguém começar, sem esperar versão nova do site.' },
+      { tipo: 'melhor', texto: 'Quem já está no meio de uma partida não é afetado por mudança de regra: cada partida guarda as regras com que começou e termina com elas. O replay de uma partida antiga mostra o aluguel que ela pagou, e não o de hoje.' },
+      { tipo: 'melhor', texto: '"Desbloquear tudo" e "Resetar" saíram do Baralho. Eles existem para teste e continuam no laboratório, que é o lugar deles.' },
       { tipo: 'novo', texto: 'As cartas e os eventos agora moram no banco. Um ajuste de balanceamento passa a valer na próxima vez que você abrir o site, sem esperar uma versão nova do jogo.' },
       { tipo: 'novo', texto: 'Carta sem tipo. Ela não é bloqueada por evento nenhum, e em troca não entra em embalo: jogar uma quebra a sequência que estiver em pé.' },
       { tipo: 'novo', texto: 'Reorganizar a Mesa: descarte 1 carta à SUA escolha e compre 1. É a primeira carta que pergunta antes de agir — e a primeira sem tipo.' },

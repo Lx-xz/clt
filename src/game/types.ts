@@ -1,4 +1,5 @@
 import type { Acao, Efeito, Restricao } from './acoes'
+import type { Regras } from './regras'
 
 export type CardId = string
 
@@ -143,6 +144,11 @@ export interface GameState {
    *  balanceamento e a cópia de cada carta equipada. Sem isto, reabrir uma
    *  partida antiga mostraria a carta de HOJE no lugar da que foi jogada. */
   baralho: { versao: number; cartas: CartaSnapshot[] }
+  /** As REGRAS desta run — aluguel, cota, salário, energia base —, copiadas
+   *  na criação. O motor lê daqui e não da global de propósito: mexer no
+   *  aluguel no meio da tarde não pode mudar o preço de quem já está no
+   *  dia 12, e o replay de uma partida antiga tem que continuar batendo. */
+  modo: Regras
   /** Quando a run começou (ISO). Com o `ended_at` do banco dá a duração. */
   startedAt: string
   /** Maior embalo alcançado em qualquer dia da run. */

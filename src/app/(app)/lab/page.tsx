@@ -1,6 +1,6 @@
 'use client'
 
-import { Layers, RotateCcw, Shuffle, Sparkles, TestTube, Unlock } from 'lucide-react'
+import { Layers, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -23,6 +23,12 @@ const BANCADAS = [
     titulo: 'Cartas de ação',
     texto: 'Criar, editar e remover carta — direto no banco, com o motivo da mudança obrigatório.',
     Icon: Layers,
+  },
+  {
+    href: '/lab/regras',
+    titulo: 'Regras do jogo',
+    texto: 'Aluguel, cota, salário e energia base. Quem já está jogando termina com as regras antigas.',
+    Icon: SlidersHorizontal,
   },
   {
     href: '/lab/eventos',

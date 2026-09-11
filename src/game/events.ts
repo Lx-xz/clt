@@ -1,4 +1,3 @@
-import { HAND_SIZE } from './cards'
 import type { EventCard } from './types'
 
 /**
@@ -113,7 +112,7 @@ export const EVENTOS_BASE: EventCard[] = [
   },
   {
     id: 'dia-tranquilo', name: 'Dia Tranquilo', tone: 'positivo', text: 'Compre 2 cartas a mais hoje',
-    efeitos: [{ acoes: [{ faz: 'maoDoDia', quantas: HAND_SIZE + 2 }] }],
+    efeitos: [{ acoes: [{ faz: 'maoDoDia', quantas: 2, relativo: true }] }],
   },
 
   // ambíguas

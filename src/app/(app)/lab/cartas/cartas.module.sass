@@ -193,3 +193,87 @@
   color: var(--tinta-fraca)
   font-size: 12px
   font-weight: 600
+
+.modos
+  display: flex
+  flex-wrap: wrap
+  gap: 12px
+  margin-bottom: 20px
+
+.modo
+  display: flex
+  flex-direction: column
+  gap: 4px
+  max-width: 420px
+  padding: 14px 16px
+  border: 1px solid var(--linha)
+  border-radius: 10px
+  background: var(--papel-alto)
+  color: var(--tinta)
+  text-align: left
+  cursor: pointer
+
+  b
+    font-size: 16px
+
+  span
+    color: var(--tinta-fraca)
+    font-size: 13px
+
+  &:hover:not(:disabled),
+  &:focus-visible
+    border-color: var(--tinta)
+
+  &:disabled
+    cursor: default
+    opacity: .6
+
+.modoNumeros
+  font-family: var(--mono)
+  font-size: 12px !important
+
+.subtituloDialogo
+  margin: 20px 0 4px
+  font-size: 15px
+
+// a tabela é a única coisa da página que pode passar da largura: no celular
+// quatro colunas de número não cabem, e encolher o campo até caber deixaria
+// de dar para digitar
+.tabelaRolavel
+  // `flex: none` porque o diálogo é uma coluna flex e espremia esta caixa até
+  // 77px: com `overflow-x: auto`, o eixo Y também vira `auto`, então as
+  // semanas 2 a 4 sumiam dentro de uma barra de rolagem minúscula em vez de
+  // simplesmente aparecerem
+  flex: none
+  overflow-x: auto
+  margin: 10px 0 16px
+
+.tabela
+  border-collapse: collapse
+  width: 100%
+  min-width: 460px
+
+  th,
+  td
+    padding: 4px 6px
+    text-align: left
+
+  thead th
+    color: var(--tinta-fraca)
+    font-size: 11px
+    font-weight: 600
+    text-transform: uppercase
+    letter-spacing: .04em
+
+  tbody th
+    color: var(--tinta-fraca)
+    font-family: var(--mono)
+    font-size: 13px
+
+.conta
+  margin: 0 0 16px
+  padding: 10px 12px
+  border-left: 3px solid var(--destaque)
+  background: var(--papel-alto)
+  font-size: 13px
+  line-height: 1.55

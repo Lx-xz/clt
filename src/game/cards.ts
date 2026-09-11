@@ -1,4 +1,4 @@
-import type { ActionCard, WeekConfig } from './types'
+import type { ActionCard } from './types'
 
 /**
  * O baralho de referência: as cartas como o código as conhece.
@@ -200,33 +200,8 @@ export const CARTAS_BASE: ActionCard[] = [
  */
 export const VERSAO_BARALHO_BASE = 2
 
-export const WEEKS: WeekConfig[] = [
-  { week: 1, dailyQuota: 3, weeklyGoal: 16, fullSalary: 400, reducedSalary: 250 },
-  { week: 2, dailyQuota: 3, weeklyGoal: 18, fullSalary: 400, reducedSalary: 250 },
-  { week: 3, dailyQuota: 4, weeklyGoal: 22, fullSalary: 450, reducedSalary: 280 },
-  { week: 4, dailyQuota: 4, weeklyGoal: 25, fullSalary: 450, reducedSalary: 280 },
-]
-
-export const DAYS_PER_WEEK = 5
-export const TOTAL_DAYS = WEEKS.length * DAYS_PER_WEEK
-export const WEEKLY_BILLS = 300
-export const STARTING_MONEY = 100
-export const MAX_STRESS = 10
-export const MAX_WARNINGS = 3
-export const BASE_ENERGY = 10
-export const HAND_SIZE = 5
-
-export const WEEKDAY_NAMES = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
-
-export function weekOfDay(day: number): WeekConfig {
-  const index = Math.min(Math.floor((day - 1) / DAYS_PER_WEEK), WEEKS.length - 1)
-  return WEEKS[index]
-}
-
-export function weekdayOf(day: number): string {
-  return WEEKDAY_NAMES[(day - 1) % DAYS_PER_WEEK]
-}
-
-export function isFriday(day: number): boolean {
-  return day % DAYS_PER_WEEK === 0
-}
+/**
+ * Os números do jogo (aluguel, cota, salário, energia base) NÃO moram mais
+ * aqui: viraram modo de jogo, em `regras.ts`, e vêm do banco como as cartas.
+ * Mexer no aluguel deixou de ser mexer no código.
+ */

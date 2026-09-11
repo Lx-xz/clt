@@ -20,6 +20,7 @@ import {
 } from '@/data/cartas'
 import { CARTAS_BASE } from '@/game/cards'
 import { EVENTOS_BASE } from '@/game/events'
+import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
 import type { Acao, Efeito, Recurso } from '@/game/acoes'
 import type { ActionCard, ClasseDaCarta } from '@/game/types'
@@ -139,7 +140,7 @@ export default function LabCartasPage() {
 
   async function semear() {
     setOcupado(true)
-    const r = await semearCatalogo(CARTAS_BASE, EVENTOS_BASE)
+    const r = await semearCatalogo(CARTAS_BASE, EVENTOS_BASE, [MODO_NORMAL])
     setOcupado(false)
     if (!r.ok) return setErro(r.erro ?? 'Não deu para semear.')
     recarregar()

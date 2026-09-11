@@ -8,7 +8,6 @@ import CardDetail from '@/components/CardDetail'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
 import Medidor from '@/components/Medidor'
 import { RESOURCE_ICONS } from '@/components/icons'
-import { MAX_STRESS, MAX_WARNINGS, WEEKLY_BILLS } from '@/game/cards'
 import { getCard, getEvent } from '@/game/catalogo'
 import {
   canPlay,
@@ -201,7 +200,7 @@ export default function JogarPage() {
             nome="Estresse"
             descricao="Acumula entre os dias e encolhe a energia de amanhã. Chegou a 10, é burnout."
             valor={state.stress}
-            total={MAX_STRESS}
+            total={state.modo.estresseMaximo}
             tom={styles.estresse}
             subirEhRuim
           />
@@ -233,7 +232,7 @@ export default function JogarPage() {
             nome="Advertências"
             descricao="Chegou a três, é demissão."
             valor={state.warnings}
-            total={MAX_WARNINGS}
+            total={state.modo.advertenciasMaximas}
             subirEhRuim
           />
         </div>
@@ -440,7 +439,7 @@ export default function JogarPage() {
               {state.fridayStep === 'descanso' ? (
                 <li className={`${styles.passo} ${styles.passoNovo}`}>
                   <span className={styles.passoRot}>Aluguel e mercado</span>
-                  <span className={`${styles.passoVal} ${styles.saida}`}>−R$ {WEEKLY_BILLS}</span>
+                  <span className={`${styles.passoVal} ${styles.saida}`}>−R$ {state.modo.contasSemanais}</span>
                 </li>
               ) : null}
             </ol>
@@ -526,7 +525,7 @@ export default function JogarPage() {
 
 function textoDaSexta(state: GameState): string {
   if (state.fridayStep === 'salario') return 'O chefe soma a produtividade dos cinco dias antes de liberar o pagamento.'
-  if (state.fridayStep === 'contas') return `Salário na conta. Agora o aluguel e o mercado: R$ ${WEEKLY_BILLS}. Você tem R$ ${state.money}.`
+  if (state.fridayStep === 'contas') return `Salário na conta. Agora o aluguel e o mercado: R$ ${state.modo.contasSemanais}. Você tem R$ ${state.money}.`
   return `Sobraram R$ ${state.money}. O fim de semana tira 3 de estresse antes da próxima segunda.`
 }
 

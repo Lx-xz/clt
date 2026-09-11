@@ -111,6 +111,16 @@ function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
         </span>
       </div>
 
+      {/* as regras daquele dia, e não as de hoje: esta partida pagou este
+          aluguel, e mudar o número agora não pode reescrever o que ela foi */}
+      {jogo.details?.modo ? (
+        <p className={styles.regrasDaRun}>
+          Jogada no modo <b>{jogo.details.modo.nome}</b>: contas de R${' '}
+          {jogo.details.modo.contasSemanais} por sexta, energia base{' '}
+          {jogo.details.modo.energiaBase}, burnout em {jogo.details.modo.estresseMaximo}.
+        </p>
+      ) : null}
+
       {historico.length === 0 ? (
         <p className={styles.empty}>
           Essa run é de antes de o replay existir — só o resumo acima foi guardado.

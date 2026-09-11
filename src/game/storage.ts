@@ -2,13 +2,13 @@ import { cartasDoJogo, cartasIniciais } from './catalogo'
 import type { CardId, Collection } from './types'
 
 const COLLECTION_KEY = 'clt:collection:v1'
-// v7: o descarte virou visível. O estado ganhou `ultimoDescarte` (o que a
-// mesa mostra) e `escolhaDeDescarte` (o dia parado esperando o jogador
-// escolher) — uma run da v6 não tem nenhum dos dois.
-const RUN_KEY = 'clt:run:v7'
+// v8: as regras do jogo viraram modo. O estado ganhou `modo`, a cópia das
+// regras com que ESTA run está sendo jogada — e o motor lê dali, então uma
+// run da v7 não teria aluguel, cota nem energia base para continuar.
+const RUN_KEY = 'clt:run:v8'
 const RUN_KEYS_ANTIGAS = [
-  'clt:run:v1', 'clt:run:v2', 'clt:run:v3',
-  'clt:run:v4', 'clt:run:v5', 'clt:run:v6',
+  'clt:run:v1', 'clt:run:v2', 'clt:run:v3', 'clt:run:v4',
+  'clt:run:v5', 'clt:run:v6', 'clt:run:v7',
 ]
 
 export function defaultCollection(): Collection {
@@ -57,7 +57,7 @@ export function saveCollection(collection: Collection) {
 
 /** Campos que a mesa lê direto; sem qualquer um deles a run é velha demais. */
 const CAMPOS_DA_RUN = [
-  'runId', 'baralho', 'usadasNaRun', 'maoDoDia', 'ultimoDescarte', 'escolhaDeDescarte',
+  'runId', 'baralho', 'modo', 'usadasNaRun', 'maoDoDia', 'ultimoDescarte', 'escolhaDeDescarte',
   'startedAt', 'maxCombo', 'cardsPlayed', 'daysNoRest', 'maxDaysNoRest',
   'day', 'phase', 'energy', 'stress', 'productivity', 'money',
   'deck', 'hand', 'discard', 'playedToday', 'eventRevealed', 'outcome', 'history',

@@ -1,3 +1,4 @@
+import type { Regras } from '@/game/regras'
 import type { CartaSnapshot, DayLog } from '@/game/types'
 import { supabase } from './supabase'
 
@@ -62,7 +63,13 @@ export interface DetalheDoJogo extends LinhaMeuJogo {
   /** `baralho` é o retrato das cartas como elas eram naquele dia; runs
    *  gravadas antes do versionamento não o têm, e aí o replay cai nas cartas
    *  de hoje. Veja `src/data/balanceamento.ts`. */
-  details: { history: DayLog[]; baralho?: { versao: number; cartas: CartaSnapshot[] } } | null
+  details: {
+    history: DayLog[]
+    baralho?: { versao: number; cartas: CartaSnapshot[] }
+    /** As regras com que esta partida foi jogada. O replay lê daqui, e não
+     *  das regras de hoje. */
+    modo?: Regras
+  } | null
 }
 
 /** Devolve null quando a run não existe ou não é deste jogador. */

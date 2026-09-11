@@ -7,15 +7,8 @@ import { RESOURCE_ICONS, iconeDaClasse } from './icons'
 /** O ícone de tarefa, citado no texto que explica o canto da carta. */
 const IconeDeTarefa = iconeDaClasse('tarefa')
 import {
-  BASE_ENERGY,
-  HAND_SIZE,
-  MAX_STRESS,
-  MAX_WARNINGS,
-  STARTING_MONEY,
-  TOTAL_DAYS,
-  WEEKLY_BILLS,
-  WEEKS,
 } from '@/game/cards'
+import { regras, totalDeDias, type Regras } from '@/game/regras'
 import { getCard } from '@/game/catalogo'
 import styles from './ComoJogar.module.sass'
 
@@ -26,14 +19,18 @@ import styles from './ComoJogar.module.sass'
  * ver na mesa — inclusive no desenho, porque são o componente `Card`.
  */
 
-const RECURSOS = [
+// RECURSOS e DERROTAS viraram funções porque agora leem as regras do modo,
+// e o modo vem do banco: um valor calculado no carregamento do módulo
+// congelaria o número de ontem.
+function recursos(jogo: Regras) {
+  return [
   {
     chave: 'energia',
     nome: 'Energia',
     tom: styles.energia,
     texto: (
       <>
-        Paga as cartas. Reinicia todo dia em <b>{BASE_ENERGY} − estresse</b>.
+        Paga as cartas. Reinicia todo dia em <b>{jogo.energiaBase} − estresse</b>.
       </>
     ),
   },
@@ -57,9 +54,10 @@ const RECURSOS = [
     chave: 'dinheiro',
     nome: 'Dinheiro',
     tom: styles.dinheiro,
-    texto: <>Começa em R$ {STARTING_MONEY}. Sai nas contas de sexta.</>,
+    texto: <>Começa em R$ {jogo.dinheiroInicial}. Sai nas contas de sexta.</>,
   },
-] as const
+  ] as const
+}
 
 const CLASSES = [
   { kind: 'tarefa', nome: 'Tarefa', bonus: '+ produtividade', tom: styles.produtividade },
@@ -68,18 +66,19 @@ const CLASSES = [
   { kind: 'social', nome: 'Social', bonus: '− estresse', tom: styles.destaque },
 ] as const
 
-const DERROTAS = [
+function derrotas(jogo: Regras) {
+  return [
   {
     chave: 'estresse',
     nome: 'Burnout',
     tom: styles.estresse,
-    texto: <>O estresse chegou a {MAX_STRESS}.</>,
+    texto: <>O estresse chegou a {jogo.estresseMaximo}.</>,
   },
   {
     chave: 'advertencias',
     nome: 'Demissão',
     tom: styles.estresse,
-    texto: <>{MAX_WARNINGS} advertências do chefe.</>,
+    texto: <>{jogo.advertenciasMaximas} advertências do chefe.</>,
   },
   {
     chave: 'dinheiro',
@@ -87,16 +86,22 @@ const DERROTAS = [
     tom: styles.estresse,
     texto: <>O dinheiro não cobriu as contas da sexta.</>,
   },
-] as const
+  ] as const
+}
 
 /** Três cartas do baralho inicial, para o desenho falar antes do texto. */
 const EXEMPLOS = ['tarefa-simples', 'cafe', 'hora-extra']
 
 export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
+  // as regras de HOJE: o tutorial explica o jogo, não uma partida específica
+  const jogo = regras()
+  const RECURSOS = recursos(jogo)
+  const DERROTAS = derrotas(jogo)
+
   return (
     <Dialogo titulo="Como jogar" onFechar={onFechar} largo>
       <p className={styles.abre}>
-        Um mês de trabalho: <b>{WEEKS.length} semanas</b>, <b>{TOTAL_DAYS} dias úteis</b>. Vence
+        Um mês de trabalho: <b>{jogo.semanas.length} semanas</b>, <b>{totalDeDias(jogo)} dias úteis</b>. Vence
         quem chega ao fim <b>empregado</b>, <b>inteiro</b> e com as <b>contas pagas</b>. A pontuação
         é o dinheiro que sobrou.
       </p>
@@ -116,7 +121,7 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
         })}
       </div>
       <p className={styles.regraForte}>
-        <RESOURCE_ICONS.energia size={15} aria-hidden /> Energia = {BASE_ENERGY} −{' '}
+        <RESOURCE_ICONS.energia size={15} aria-hidden /> Energia = {jogo.energiaBase} −{' '}
         <RESOURCE_ICONS.estresse size={15} aria-hidden /> Estresse
         <span>é esta linha que sustenta o jogo: um dia mal administrado encolhe todos os outros</span>
       </p>
@@ -156,7 +161,7 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
         </li>
         <li>
           <span className={styles.numero}>3</span>
-          Você compra {HAND_SIZE} cartas e joga quantas a energia aguentar.
+          Você compra {jogo.cartasNaMao} cartas e joga quantas a energia aguentar.
         </li>
         <li>
           <span className={styles.numero}>4</span>
@@ -194,7 +199,7 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
         </li>
         <li>
           <span className={styles.numero}>2</span>
-          <b>Contas</b> — saem R$ {WEEKLY_BILLS}. Não ter o dinheiro é despejo.
+          <b>Contas</b> — saem R$ {jogo.contasSemanais}. Não ter o dinheiro é despejo.
         </li>
         <li>
           <span className={styles.numero}>3</span>

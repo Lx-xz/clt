@@ -15,6 +15,7 @@ drop table if exists public.cartas_antigas       cascade;
 drop table if exists public.cartas_evento        cascade;
 drop table if exists public.cartas               cascade;
 drop table if exists public.baralho              cascade;
+drop table if exists public.modos                cascade;
 drop table if exists public.notificacoes        cascade;
 drop table if exists public.feedback_comentarios cascade;
 drop table if exists public.feedbacks           cascade;

@@ -106,6 +106,9 @@ alter table public.runs add column if not exists convidado boolean not null defa
 -- em `details.baralho`: é o que mantém o replay verdadeiro depois de a carta
 -- mudar ou sumir, e é a única parte que NÃO dá para preencher depois.
 alter table public.runs add column if not exists versao_baralho smallint not null default 0;
+-- em que modo de jogo a run foi jogada. Sem isto, comparar no mesmo gráfico
+-- uma run de aluguel 300 com uma de 380 mentiria sobre as duas.
+alter table public.runs add column if not exists modo text not null default 'normal';
 
 -- 'abandono' é o quinto desfecho: a run que o jogador reiniciou no meio. Não é
 -- derrota (ninguém foi demitido), mas é o dado que diz o que faz desistir.
@@ -245,7 +248,7 @@ create table if not exists public.cartas_antigas (
   o_que     text not null default '',
   porque    text not null default '',
   criada_em timestamptz not null default now(),
-  constraint antigas_familia_ok check (familia in ('acao', 'evento')),
+  constraint antigas_familia_ok check (familia in ('acao', 'evento', 'modo')),
   constraint antigas_tipo_ok    check (tipo in ('criada', 'ajustada', 'removida'))
 );
 
@@ -262,6 +265,32 @@ create table if not exists public.baralho (
 
 insert into public.baralho (unica, versao) values (true, 1)
 on conflict (unica) do nothing;
+
+-- Os NÚMEROS do jogo: aluguel, cota, salário, energia base, quantos dias tem
+-- o mês. Eles moravam soltos no código, o que queria dizer que mexer no
+-- aluguel era publicar o site inteiro. Como modo de jogo, mexer no aluguel é
+-- uma linha aqui.
+--
+-- As regras vão num `jsonb` só, e não em vinte colunas, de propósito:
+-- acrescentar um botão de balanceamento novo não pode exigir uma migração —
+-- e quem valida a forma é a leitura, no site, como no avatar.
+--
+-- Hoje existe só o `normal`. A estrutura é a mesma se um dia houver um
+-- "difícil" ou um "sem dinheiro"; é por isso que ela nasce como tabela e não
+-- como uma segunda linha da `baralho`.
+create table if not exists public.modos (
+  id            text primary key,
+  nome          text not null,
+  descricao     text not null default '',
+  regras        jsonb not null,
+  ativo         boolean not null default true,
+  -- o modo em que uma run nova começa quando o jogador não escolheu nada
+  padrao        boolean not null default false,
+  versao        smallint not null default 1,
+  criado_em     timestamptz not null default now(),
+  atualizado_em timestamptz not null default now(),
+  constraint modos_id_ok check (id ~ '^[a-z0-9-]{2,40}$')
+);
 
 -- ------------------------------------------------------------ quem é quem
 --
@@ -310,6 +339,7 @@ alter table public.cartas               enable row level security;
 alter table public.cartas_evento        enable row level security;
 alter table public.cartas_antigas       enable row level security;
 alter table public.baralho              enable row level security;
+alter table public.modos                enable row level security;
 
 -- As quatro tabelas do catálogo entram na mesma regra: nenhuma política.
 -- Ler o catálogo é público (todo mundo precisa das cartas para jogar, e
@@ -417,6 +447,8 @@ drop function if exists public.admin_salvar_carta(jsonb, text, text);
 drop function if exists public.admin_salvar_evento(jsonb, text, text);
 drop function if exists public.admin_excluir_carta(text, text, text);
 drop function if exists public.admin_semear_catalogo(jsonb, jsonb);
+drop function if exists public.admin_semear_catalogo(jsonb, jsonb, jsonb);
+drop function if exists public.admin_salvar_modo(jsonb, text, text);
 drop function if exists public.minhas_notificacoes();
 drop function if exists public.marcar_notificacoes_lidas();
 
@@ -1322,6 +1354,14 @@ as $$
       select jsonb_agg(to_jsonb(e) order by e.id)
       from public.cartas_evento e
     ), '[]'::jsonb),
+    'modos', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', m.id, 'nome', m.nome, 'descricao', m.descricao,
+        'versao', m.versao, 'padrao', m.padrao
+      ) || m.regras order by m.padrao desc, m.id)
+      from public.modos m
+      where m.ativo
+    ), '[]'::jsonb),
     -- o histórico sem o `dados`, que é grande e só interessa para a removida
     'mudancas', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -1363,6 +1403,8 @@ declare
 begin
   if p_familia = 'acao' then
     select to_jsonb(c), c.versao into v_dados, v_versao from public.cartas c where c.id = p_id;
+  elsif p_familia = 'modo' then
+    select to_jsonb(m), m.versao into v_dados, v_versao from public.modos m where m.id = p_id;
   else
     select to_jsonb(e), e.versao into v_dados, v_versao from public.cartas_evento e where e.id = p_id;
   end if;
@@ -1539,7 +1581,7 @@ $$;
 -- A ponte de mão única entre o código e o banco: pega as cartas que o site
 -- já traz embutidas e escreve as que ainda não existem. Roda uma vez, na
 -- estreia do catálogo no banco, e depois é inofensiva (nada é sobrescrito).
-create function public.admin_semear_catalogo(p_cartas jsonb, p_eventos jsonb)
+create function public.admin_semear_catalogo(p_cartas jsonb, p_eventos jsonb, p_modos jsonb)
 returns jsonb
 language plpgsql
 security definer
@@ -1571,6 +1613,19 @@ begin
     on conflict (id) do nothing;
   end loop;
 
+  for item in select * from jsonb_array_elements(coalesce(p_modos, '[]'::jsonb)) loop
+    insert into public.modos (id, nome, descricao, regras, padrao, versao)
+    values (
+      item ->> 'id',
+      coalesce(item ->> 'nome', 'Normal'),
+      coalesce(item ->> 'descricao', ''),
+      item - 'id' - 'nome' - 'descricao' - 'padrao',
+      coalesce((item ->> 'padrao')::boolean, false),
+      1
+    )
+    on conflict (id) do nothing;
+  end loop;
+
   for item in select * from jsonb_array_elements(p_eventos) loop
     insert into public.cartas_evento (id, nome, tom, texto, efeitos, escolhas, versao)
     values (
@@ -1589,10 +1644,75 @@ begin
 end;
 $$;
 
+-- Salvar um modo é mexer no aluguel de todo mundo. Pede motivo pelo mesmo
+-- motivo que a carta pede: quem estiver jogando vai sentir a diferença, e
+-- merece poder ler por quê.
+--
+-- Quem já está no meio de uma run NÃO é afetado: a run copia as regras na
+-- criação e joga com elas até o fim (`GameState.modo`). O preço novo vale
+-- para a próxima partida.
+create function public.admin_salvar_modo(p_modo jsonb, p_o_que text, p_porque text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_id      text := p_modo ->> 'id';
+  v_existia boolean;
+  v_regras  jsonb := p_modo - 'id' - 'nome' - 'descricao' - 'padrao';
+begin
+  if not public.sou_admin() then
+    raise exception 'Só admin mexe nas regras do jogo.';
+  end if;
+  if v_id is null or v_id !~ '^[a-z0-9-]{2,40}$' then
+    raise exception 'Id inválido: use minúsculas, números e hífen.';
+  end if;
+  if coalesce(btrim(p_porque), '') = '' then
+    raise exception 'Diga por que está mudando: quem joga vai sentir a diferença.';
+  end if;
+  if jsonb_array_length(coalesce(v_regras -> 'semanas', '[]'::jsonb)) = 0 then
+    raise exception 'Um modo sem semanas não tem como ser jogado.';
+  end if;
+
+  select true into v_existia from public.modos where id = v_id;
+  if v_existia then
+    perform public.arquivar_carta(v_id, 'modo', 'ajustada', p_o_que, p_porque);
+  end if;
+
+  insert into public.modos as m (id, nome, descricao, regras, padrao, versao)
+  values (
+    v_id,
+    coalesce(p_modo ->> 'nome', 'Sem nome'),
+    coalesce(p_modo ->> 'descricao', ''),
+    v_regras,
+    coalesce((p_modo ->> 'padrao')::boolean, false),
+    1
+  )
+  on conflict (id) do update set
+    nome = excluded.nome, descricao = excluded.descricao, regras = excluded.regras,
+    padrao = excluded.padrao, versao = m.versao + 1, ativo = true, atualizado_em = now();
+
+  if not coalesce(v_existia, false) then
+    insert into public.cartas_antigas (carta_id, familia, versao, dados, tipo, o_que, porque)
+    select v_id, 'modo', m.versao, to_jsonb(m), 'criada', coalesce(p_o_que, 'Modo novo'), p_porque
+    from public.modos m where m.id = v_id;
+  end if;
+
+  -- só pode haver um padrão
+  if coalesce((p_modo ->> 'padrao')::boolean, false) then
+    update public.modos set padrao = false where id <> v_id;
+  end if;
+
+  return public.catalogo();
+end;
+$$;
+
 grant execute on function public.admin_salvar_carta(jsonb, text, text)   to authenticated;
 grant execute on function public.admin_salvar_evento(jsonb, text, text)  to authenticated;
 grant execute on function public.admin_excluir_carta(text, text, text)   to authenticated;
-grant execute on function public.admin_semear_catalogo(jsonb, jsonb)     to authenticated;
+grant execute on function public.admin_salvar_modo(jsonb, text, text)    to authenticated;
+grant execute on function public.admin_semear_catalogo(jsonb, jsonb, jsonb) to authenticated;
 
 -- ------------------------------------------------------------------ admin
 -- Não existe tela para promover ninguém, e é de propósito: admin se dá aqui,

@@ -1,4 +1,5 @@
 import { carregarCatalogo, type CatalogoCarregado } from '@/game/catalogo'
+import { MODO_NORMAL, carregarModos, type Regras } from '@/game/regras'
 import type {
   ActionCard,
   CardId,
@@ -125,8 +126,23 @@ interface RespostaCatalogo {
   versao: number
   cartas: LinhaCarta[]
   eventos: LinhaEvento[]
+  /** O modo chega achatado: identidade e regras no mesmo objeto, porque é
+   *  assim que `Regras` é usado no motor. */
+  modos: (Regras & { padrao?: boolean })[]
   mudancas: MudancaDeCarta[]
   removidas: LinhaCarta[]
+}
+
+/** Um modo que veio do banco sem algum número cai no do modo normal: como no
+ *  avatar, quem valida é a LEITURA, e campo novo não pode derrubar a página
+ *  de quem tem uma linha gravada por uma versão anterior. */
+function paraRegras(bruto: Partial<Regras> & { id?: string }): Regras {
+  return {
+    ...MODO_NORMAL,
+    ...bruto,
+    id: bruto.id ?? MODO_NORMAL.id,
+    semanas: bruto.semanas?.length ? bruto.semanas : MODO_NORMAL.semanas,
+  }
 }
 
 function traduzir(bruto: RespostaCatalogo): CatalogoCarregado {
@@ -171,7 +187,9 @@ export async function carregarCatalogoDoBanco(): Promise<boolean> {
   try {
     const { data, error } = await supabase.rpc('catalogo')
     if (error || !data) return false
-    return carregarCatalogo(traduzir(data as RespostaCatalogo))
+    const resposta = data as RespostaCatalogo
+    carregarModos((resposta.modos ?? []).map(paraRegras))
+    return carregarCatalogo(traduzir(resposta))
   } catch {
     return false
   }
@@ -188,7 +206,11 @@ async function escrever(
   if (!supabase) return { ok: false, erro: 'Banco não configurado.' }
   const { data, error } = await supabase.rpc(fn, args)
   if (error) return { ok: false, erro: error.message }
-  if (data) carregarCatalogo(traduzir(data as RespostaCatalogo))
+  if (data) {
+    const resposta = data as RespostaCatalogo
+    carregarModos((resposta.modos ?? []).map(paraRegras))
+    carregarCatalogo(traduzir(resposta))
+  }
   return { ok: true }
 }
 
@@ -221,11 +243,18 @@ export function excluirDoCatalogo(id: CardId, familia: 'acao' | 'evento', porque
 
 /** A ponte de mão única: leva o baralho do código para o banco. Roda uma vez,
  *  na estreia; depois é inofensiva, porque nada existente é sobrescrito. */
-export function semearCatalogo(cartas: ActionCard[], eventos: EventCard[]) {
+export function semearCatalogo(cartas: ActionCard[], eventos: EventCard[], modos: Regras[]) {
   return escrever('admin_semear_catalogo', {
     p_cartas: cartas.map(cartaParaBanco),
     p_eventos: eventos.map(eventoParaBanco),
+    p_modos: modos.map((m, i) => ({ ...m, padrao: i === 0 })),
   })
+}
+
+/** As regras do jogo. Mexer aqui não afeta quem já está no meio de uma run:
+ *  a run copia o modo na criação e joga com ele até o fim. */
+export function salvarModo(modo: Regras, oQue: string, porque: string) {
+  return escrever('admin_salvar_modo', { p_modo: modo, p_o_que: oQue, p_porque: porque })
 }
 
 export type { Acao }

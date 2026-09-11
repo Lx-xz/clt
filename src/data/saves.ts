@@ -44,6 +44,9 @@ export interface RunRegistravel {
   /** A versão do baralho em que a run foi jogada, numa coluna própria para a
    *  análise poder separar "antes e depois do ajuste" sem abrir o jsonb. */
   versao_baralho: number
+  /** Em que modo de jogo a run foi jogada. Sem isto, comparar duas runs de
+   *  aluguéis diferentes no mesmo gráfico mentiria. */
+  modo: string
   /** Falso na run abandonada sem permissão: conta para a análise, mas não
    *  aparece em "meus jogos" nem no ranking. */
   visivel: boolean
@@ -53,7 +56,7 @@ export interface RunRegistravel {
   /** O dia a dia da run e o retrato do baralho usado nela. O retrato é o que
    *  mantém a partida legível depois de a carta mudar de custo ou sumir —
    *  veja `src/data/balanceamento.ts`. */
-  details: { history: GameState['history']; baralho?: GameState['baralho'] }
+  details: { history: GameState['history']; baralho?: GameState['baralho']; modo?: GameState['modo'] }
 }
 
 export function montarRun(
@@ -76,9 +79,10 @@ export function montarRun(
     warnings: run.warnings,
     max_dias_sem_descanso: run.maxDaysNoRest,
     versao_baralho: run.baralho?.versao ?? 0,
+    modo: run.modo?.id ?? 'normal',
     visivel,
     convidado,
-    details: { history: run.history, baralho: run.baralho },
+    details: { history: run.history, baralho: run.baralho, modo: run.modo },
   }
 }
 

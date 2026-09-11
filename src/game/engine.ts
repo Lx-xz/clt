@@ -1,16 +1,11 @@
 import {
-  BASE_ENERGY,
-  DAYS_PER_WEEK,
-  HAND_SIZE,
-  MAX_STRESS,
-  MAX_WARNINGS,
-  STARTING_MONEY,
-  TOTAL_DAYS,
-  WEEKLY_BILLS,
-  isFriday,
-  weekOfDay,
-  weekdayOf,
-} from './cards'
+  diaDaSemana,
+  ehSexta,
+  numeroDaSemana,
+  regras,
+  semanaDoDia,
+  totalDeDias,
+} from './regras'
 // as cartas vêm do catálogo, não de um array importado: desde a v0.10 elas
 // moram no banco e podem mudar entre uma abertura do site e a próxima
 import {
@@ -98,15 +93,15 @@ function contexto(cartaId?: CardId): Contexto {
 // ------------------------------------------------------------------ leitura
 
 export function currentWeek(state: GameState) {
-  return weekOfDay(state.day)
+  return semanaDoDia(state.modo, state.day)
 }
 
 export function weekNumber(state: GameState) {
-  return Math.min(Math.floor((state.day - 1) / DAYS_PER_WEEK) + 1, 4)
+  return numeroDaSemana(state.modo, state.day)
 }
 
 export function dayLabel(state: GameState) {
-  return `Semana ${weekNumber(state)} · ${weekdayOf(state.day)}`
+  return `Semana ${weekNumber(state)} · ${diaDaSemana(state.modo, state.day)}`
 }
 
 export function effectiveCost(state: GameState, cardId: CardId) {
@@ -168,6 +163,9 @@ function anunciarDescarte(state: GameState, cartas: CardId[], porque: string) {
 // ------------------------------------------------------------ início da run
 
 export function createRun(equipped: CardId[]): GameState {
+  // as regras são COPIADAS aqui, uma vez. Daqui em diante esta run joga com
+  // elas, mesmo que o aluguel mude no banco no meio da partida
+  const modo = structuredClone(regras())
   const deck = equipped.flatMap((id) => {
     const card = getCard(id)
     const copies = card.starter ? (card.copies ?? 1) : 1
@@ -179,6 +177,7 @@ export function createRun(equipped: CardId[]): GameState {
     // o retrato do baralho é tirado AQUI, uma vez só: é a única parte do
     // versionamento que não dá para acrescentar depois
     baralho: { versao: versaoDoBaralho(), cartas: fotografarBaralho(equipped) },
+    modo,
     startedAt: new Date().toISOString(),
     maxCombo: 0,
     cardsPlayed: 0,
@@ -189,7 +188,7 @@ export function createRun(equipped: CardId[]): GameState {
     energy: 0,
     stress: 0,
     productivity: 0,
-    money: STARTING_MONEY,
+    money: modo.dinheiroInicial,
     warnings: 0,
     informalWarnings: 0,
     weekProductivity: 0,
@@ -209,7 +208,7 @@ export function createRun(equipped: CardId[]): GameState {
     lastCombo: null,
     fridayStep: null,
     fridayResult: null,
-    maoDoDia: HAND_SIZE,
+    maoDoDia: modo.cartasNaMao,
     blockedKinds: [],
     costModifier: 0,
     currentEvent: null,
@@ -231,11 +230,11 @@ function startDay(input: GameState): GameState {
   const state = clone(input)
   state.day += 1
   state.phase = 'evento'
-  state.energy = Math.max(0, BASE_ENERGY - state.stress + state.tomorrow.energy)
+  state.energy = Math.max(0, state.modo.energiaBase - state.stress + state.tomorrow.energy)
   state.productivity = state.passiveProductivity
   state.dailyQuota = currentWeek(state).dailyQuota + state.tomorrow.quota
   state.tomorrow = { energy: 0, quota: 0 }
-  state.maoDoDia = HAND_SIZE
+  state.maoDoDia = state.modo.cartasNaMao
   state.blockedKinds = []
   state.costModifier = 0
   state.pendingEventChoice = false
@@ -493,7 +492,7 @@ export function endDay(input: GameState): GameState {
 
   if (state.outcome !== 'jogando') return state
 
-  if (isFriday(state.day)) {
+  if (ehSexta(state.modo, state.day)) {
     state.phase = 'sexta'
     state.fridayStep = 'salario'
     state.fridayResult = null
@@ -534,8 +533,9 @@ export function payBills(input: GameState): GameState {
   const state = clone(input)
   if (state.phase !== 'sexta' || state.fridayStep !== 'contas') return input
 
-  state.money -= WEEKLY_BILLS
-  log(state, `Contas do mês: −R$ ${WEEKLY_BILLS}.`)
+  const contas = state.modo.contasSemanais
+  state.money -= contas
+  log(state, `Contas do mês: −R$ ${contas}.`)
 
   if (state.money < 0) {
     state.outcome = 'despejo'
@@ -552,15 +552,16 @@ export function restWeekend(input: GameState): GameState {
   let state = clone(input)
   if (state.phase !== 'sexta' || state.fridayStep !== 'descanso') return input
 
-  state.stress = Math.max(0, state.stress - 3)
+  const alivio = state.modo.descansoDoFimDeSemana
+  state.stress = Math.max(0, state.stress - alivio)
   state.weekProductivity = 0
   state.fridayStep = null
-  log(state, 'Fim de semana: −3 estresse.')
+  log(state, `Fim de semana: −${alivio} estresse.`)
 
   state = checkDefeat(state)
   if (state.outcome !== 'jogando') return state
 
-  if (state.day >= TOTAL_DAYS) {
+  if (state.day >= totalDeDias(state.modo)) {
     state.outcome = 'vitoria'
     state.phase = 'fim'
     log(state, `Mês sobrevivido com R$ ${state.money}.`)
@@ -591,15 +592,15 @@ export function chooseReward(input: GameState, cardId: CardId): GameState {
 
 function checkDefeat(state: GameState): GameState {
   if (state.outcome !== 'jogando') return state
-  if (state.stress >= MAX_STRESS) {
-    state.stress = MAX_STRESS
+  if (state.stress >= state.modo.estresseMaximo) {
+    state.stress = state.modo.estresseMaximo
     state.outcome = 'burnout'
     state.phase = 'fim'
-    log(state, 'Estresse chegou a 10. Burnout.')
-  } else if (state.warnings >= MAX_WARNINGS) {
+    log(state, `Estresse chegou a ${state.modo.estresseMaximo}. Burnout.`)
+  } else if (state.warnings >= state.modo.advertenciasMaximas) {
     state.outcome = 'demissao'
     state.phase = 'fim'
-    log(state, 'Três advertências. Demissão.')
+    log(state, `${state.modo.advertenciasMaximas} advertências. Demissão.`)
   }
   return state
 }
