@@ -101,8 +101,6 @@ export interface DadosCadastro {
   senha: string
   nome: string
   nick: string
-  /** Vira o avatar de boas-vindas; o gênero só escolhe o corpo. */
-  avatar: Avatar
 }
 
 /**
@@ -122,10 +120,7 @@ export async function cadastrar(d: DadosCadastro): Promise<{ precisaConfirmar: b
     email: d.email.trim(),
     password: d.senha,
     options: {
-      // o avatar viaja como metadado e é o gatilho do banco que o grava:
-      // com confirmação de e-mail ligada não há sessão logo após o signUp,
-      // e uma chamada do site neste momento seria recusada
-      data: { nick: d.nick, nome: d.nome.trim(), termos: 'true', avatar: d.avatar },
+      data: { nick: d.nick, nome: d.nome.trim(), termos: 'true' },
       emailRedirectTo: enderecoDeVolta(),
     },
   })
@@ -148,11 +143,29 @@ export async function entrarComGoogle() {
   if (error) throw new Error(traduzir(error.message))
 }
 
+/**
+ * Manda o e-mail de recuperação. O link volta para `/nova-senha`, que troca a
+ * senha — e esse endereço precisa estar na lista de Redirect URLs do painel
+ * do Supabase, senão o link cai no lugar errado sem erro nenhum.
+ */
 export async function recuperarSenha(email: string) {
   const sb = exigirBanco()
   const { error } = await sb.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: enderecoDeVolta(),
+    redirectTo: enderecoDeVolta('nova-senha'),
   })
+  if (error) throw new Error(traduzir(error.message))
+}
+
+/** Se já existe sessão neste navegador — o link de recuperação cria uma. */
+export async function temSessao(): Promise<boolean> {
+  if (!supabase) return false
+  const { data } = await supabase.auth.getSession()
+  return Boolean(data.session)
+}
+
+export async function definirNovaSenha(senha: string) {
+  const sb = exigirBanco()
+  const { error } = await sb.auth.updateUser({ password: senha })
   if (error) throw new Error(traduzir(error.message))
 }
 
@@ -162,12 +175,7 @@ export async function recuperarSenha(email: string) {
  * quem veio do Google já entra pelo Google, e só precisa dela se quiser
  * também entrar por e-mail.
  */
-export async function completarPerfil(
-  nick: string,
-  nome: string,
-  avatar: Avatar,
-  senha?: string,
-) {
+export async function completarPerfil(nick: string, nome: string, senha?: string) {
   const sb = exigirBanco()
   const { error } = await sb.rpc('completar_perfil', {
     p_nick: nick,
@@ -175,10 +183,6 @@ export async function completarPerfil(
     p_termos: true,
   })
   if (error) throw new Error(error.message)
-  // aqui, ao contrário do cadastro por e-mail, já existe sessão (a pessoa
-  // acabou de voltar do Google), então dá para gravar direto
-  const { salvarAvatar } = await import('./avatar')
-  await salvarAvatar(avatar)
   if (senha) {
     const { error: falha } = await sb.auth.updateUser({ password: senha })
     if (falha) throw new Error(traduzir(falha.message))
@@ -249,9 +253,11 @@ export async function entrarComoConvidado(): Promise<Sessao> {
  * Este endereço precisa estar na lista de "Redirect URLs" do painel do
  * Supabase, senão o login volta para o site errado.
  */
-function enderecoDeVolta(): string {
+function enderecoDeVolta(rota = ''): string {
   if (typeof window === 'undefined') return ''
-  return window.location.origin + window.location.pathname
+  const base = window.location.origin + window.location.pathname
+  if (!rota) return base
+  return `${base.replace(/\/$/, '')}/${rota}/`
 }
 
 /** As mensagens do Auth chegam em inglês; as comuns viram português aqui. */

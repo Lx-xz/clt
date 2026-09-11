@@ -1,0 +1,154 @@
+.voltar
+  display: inline-block
+  margin-bottom: 14px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-decoration: none
+
+  &:hover
+    color: var(--tinta)
+
+.titulo
+  font-size: clamp(24px, 5vw, 32px)
+
+.intro
+  max-width: 64ch
+  margin: 6px 0 18px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.6
+
+  code
+    font-family: var(--mono)
+
+.acoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+  margin-bottom: 22px
+
+.grade
+  display: flex
+  flex-wrap: wrap
+  gap: 14px
+  padding-bottom: 40px
+
+.celula
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 6px
+  padding: 0
+  background: none
+  border: none
+  cursor: pointer
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 4px
+
+.carta
+  --carta-w: 118px
+  --carta-h: 178px
+
+.rotulo
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 3px
+  color: var(--tinta-fraca)
+  font-size: 11px
+
+.marcaEspecial
+  padding: 1px 7px
+  background: color-mix(in srgb, var(--destaque) 26%, transparent)
+  border-radius: 999px
+  color: var(--destaque)
+  font-family: var(--mono)
+  font-size: 9px
+  letter-spacing: .04em
+  text-transform: uppercase
+
+.previa
+  display: flex
+  justify-content: center
+
+.especial
+  margin: 0
+  padding: 10px 12px
+  background: var(--papel)
+  border-left: 3px solid var(--destaque)
+  border-radius: 0 var(--raio) var(--raio) 0
+  font-size: 13px
+  line-height: 1.5
+
+  code
+    font-family: var(--mono)
+    font-size: 12px
+
+.campos
+  display: grid
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr))
+  gap: 10px
+
+  label
+    display: flex
+    flex-direction: column
+    gap: 4px
+    color: var(--tinta-fraca)
+    font-size: 12px
+
+  input,
+  select
+    padding: 7px 9px
+    background: var(--papel)
+    border: 1px solid var(--linha)
+    border-radius: var(--raio)
+    color: var(--tinta)
+    font: inherit
+    // 16px ou o Safari do iPhone dá zoom ao focar e não desfaz
+    font-size: 16px
+
+.texto
+  display: flex
+  flex-direction: column
+  gap: 4px
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+  textarea
+    padding: 8px 10px
+    background: var(--papel)
+    border: 1px solid var(--linha)
+    border-radius: var(--raio)
+    color: var(--tinta)
+    font: inherit
+    font-size: 16px
+    resize: vertical
+
+.dica
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.5
+
+  code
+    font-family: var(--mono)
+
+.excluir
+  align-self: flex-start
+  border-color: var(--estresse)
+  color: var(--estresse)
+  box-shadow: 2px 2px 0 var(--estresse)
+
+.codigo
+  margin: 0
+  padding: 12px
+  max-height: 46vh
+  overflow: auto
+  background: var(--papel)
+  border-radius: var(--raio)
+  font-family: var(--mono)
+  font-size: 11px
+  line-height: 1.5
+  white-space: pre

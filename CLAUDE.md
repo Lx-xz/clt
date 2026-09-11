@@ -39,15 +39,14 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
-| `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral. No celular a linha mostra só nick/V/D e abre no toque com o resto |
-| `/meus-jogos` | Toda run terminada do jogador da sessão. Link na barra lateral |
-| `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro). Chega-se clicando numa run em `/meus-jogos` |
-| `/perfil` | Avatar, nick, nome, e-mail, tipo de conta, pontos, e o botão de sair |
-| `/perfil/editar` | O editor do avatar: corpo, cabelo, pele e cor |
-| `/avatar-lab` | Bancada de quem desenha os avatares. **Só admin** — o link na barra e a página conferem `sou_admin()` |
-| `/feedback` | Bugs e sugestões de todo mundo, com estado, conversa e os controles de admin |
-| `/changelog` | O que já entrou no jogo e o que está sendo feito ("Novidades" no menu) |
-| `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). Link na barra lateral, como "Análise" |
+| `/ranking` | Placar público. O nick leva ao perfil daquela pessoa. No celular a linha mostra só nick/V/D e abre no toque com o resto |
+| `/perfil` | O seu: avatar, posição no ranking, dados, **suas partidas** e o botão de sair |
+| `/perfil/editar` | O editor do avatar |
+| `/jogador?nick=` | O perfil de outra pessoa: avatar, placar e partidas. **Sem nome, e-mail ou pontos** |
+| `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run. Chega-se clicando numa partida no seu perfil |
+| `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
+| `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **20 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 12
 desbloqueáveis) e **20 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -115,6 +114,20 @@ componente.
 
 O README original foi escrito antes de qualquer código. Duas coisas mudaram:
 
+### O efeito da carta é dado, a exceção é código
+
+`ActionCard.efeito` (`types.ts`) guarda a soma simples que a carta faz:
+produtividade, energia, estresse, dinheiro. `playCard` aplica isso primeiro e
+só então entra num `switch` que sobrou com **cinco** casos — os que não cabem
+numa tabela: a segunda reunião do dia, o descarte do Foco Total, o passivo do
+Automatizar, o sorteio do Pedir Aumento e a advertência cancelada pelo Puxar o
+Saco. Essas cinco levam `especial: true`.
+
+Isso é o que permite rebalancear trocando um número (e o que permite o
+`/lab/cartas` existir). **Carta nova sem `especial` não precisa de uma linha
+de motor.** A refatoração foi conferida rodando o mesmo bot nos dois motores
+com sorteio determinístico: os agregados bateram exatamente.
+
 ### Embalo
 
 Cartas seguidas da **mesma classe** no mesmo dia rendem bônus crescente: a 2ª
@@ -181,11 +194,16 @@ opções. O que ele escolheu, e que deve ser preservado:
   carta já usa esse mesmo gesto para ser jogada — sem essa exclusão, jogar uma
   carta no celular abriria o menu.
   Muda de página fecha o gaveteiro sozinho. "Reiniciar run" mora aqui agora,
-  com confirmação — saiu do HUD da mesa. No fim da barra ficam "Como jogar"
-  (o popup de regras, que também está na home), "Avisos" (o sininho das
-  notificações, escondido para convidado), "Perfil", "Configurações" e
-  "Sair" (com confirmação, e com texto diferente para convidado, que perde
-  o progresso ao sair).
+  com confirmação — saiu do HUD da mesa. No fim da barra ficam "Lab" (só
+  admin), "Perfil", "Avisos" (o sininho, escondido para convidado),
+  "Configurações" e "Sair" (com confirmação, e com texto diferente para
+  convidado, que perde o progresso ao sair).
+  **O menu encolheu de propósito:** "Meus jogos" virou parte do perfil (o
+  seu e o dos outros), e Análise/Feedbacks/Novidades viraram abas de
+  `/comunidade` — eram três entradas para o mesmo assunto, "o que está
+  acontecendo com o jogo". "Como jogar" saiu daqui e foi para a mesa, no
+  canto oposto ao "Próximo dia": é lá que a dúvida aparece, e abrir o menu
+  no meio da partida é atravessar o jogo inteiro.
   Enquanto houver popup aberto o arraste do menu é ignorado — veja `Dialogo`
   abaixo.
 - **O tutorial (`ComoJogar.tsx`) monta as cartas de verdade.** Ele renderiza o
@@ -247,7 +265,16 @@ opções. O que ele escolheu, e que deve ser preservado:
     mesmos números — é o que deixa o homem ser maior e de queixo reto sem
     nada desencaixar. `cantoY`/`cantoX` são o raio do canto do rosto: iguais
     a `larg`, o queixo vira ponta. Mexer nisso é o assunto do `/avatar-lab`.
-- **`/avatar-lab` produz código, não salva nada.** O site é export estático:
+- **`/lab` é a oficina, e nenhuma bancada dela grava no jogo.** A trava é o
+  layout de `/lab` (`GuardaAdmin`), que pergunta ao banco — mas ela é
+  conveniência, não segurança: o código vai no mesmo bundle para todo mundo,
+  porque o site é estático. O que protege de verdade é o Postgres recusar as
+  ações de admin. Não ponha ali dentro nada que dependa de esconder.
+  Os dois atalhos de teste da porta (**desbloquear tudo**, **resetar**) são a
+  exceção que mexe na conta de quem clica — e são de admin porque uma coleção
+  inteira desbloqueada estraga qualquer leitura de dificuldade que venha
+  daquela conta.
+- **`/lab/avatar` produz código, não salva nada.** O site é export estático:
   não há servidor para escrever arquivo, então a bancada devolve a linha de
   `MEDIDAS` para colar em `Avatar.tsx`. Ela desenha com o **mesmo** componente
   do jogo (pela prop `ajustes`), nunca com uma cópia — laboratório que desenha
@@ -260,6 +287,12 @@ opções. O que ele escolheu, e que deve ser preservado:
   medição do botão ativo (`offsetLeft`/`offsetWidth`) e não por fração da
   largura — as opções têm textos de tamanhos diferentes, e dividir o espaço
   igualmente deixaria o retângulo fora do texto em metade dos casos.
+- **A música toca no site inteiro, baixinha fora da mesa.** Cortar de vez ao
+  sair de `/jogar` fazia o som entrar e sair a cada clique, o que é pior do
+  que os dois estados. `volumeDaMusica(v, naMesa)` multiplica por
+  `FATOR_FORA` fora da mesa, e a transição é uma rampa no GainNode — trocar
+  o ganho de uma vez estala. O efeito que dá `play()` **não** depende de
+  `naMesa`, senão trocar de página reiniciaria a trilha.
 - **Slider e checkbox são desenhados, não nativos** (`Slider.tsx`,
   `Check.tsx`). O `input[type=range]` é irregular entre navegadores e no
   celular disputa o gesto de arrastar com o menu; o slider daqui é uma trilha
@@ -521,6 +554,12 @@ antes, no perfil, e na página de feedbacks.
 **Admin se dá no SQL Editor**, com o e-mail na mão
 (`update public.players set admin = true where email = '...'`), depois de a
 conta existir. Não há tela para promover ninguém, de propósito.
+
+**Perfil de outra pessoa mostra só o que já era público.** `perfil_publico()`
+e `jogos_do_jogador()` devolvem nick, avatar, placar e partidas — o mesmo que
+o ranking já mostrava, mais o desenho. Nome, e-mail e pontos **não passam por
+lá**: quem devolve esses é `meu_perfil()`, filtrado por `auth.uid()`. A
+decisão de o que é público mora na função do banco, não na tela.
 
 **A urgência tem duas línguas, e uma coluna só.** "Urgência crítica" não quer
 dizer nada numa sugestão — sugestão não é urgente, ela entra antes ou depois.

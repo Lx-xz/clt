@@ -1,25 +1,13 @@
 'use client'
 
-import {
-  BookOpen,
-  ChartColumn,
-  History,
-  Layers,
-  LogIn,
-  MessageSquareWarning,
-  Play,
-  Sparkles,
-  Trophy,
-  User,
-  UserRound,
-} from 'lucide-react'
+import { BookOpen, Layers, LogIn, MessageSquareWarning, Play, Trophy, User, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import Check from '@/components/Check'
 import ComoJogar from '@/components/ComoJogar'
 import Segmentado from '@/components/Segmentado'
 import Dialogo from '@/components/Dialogo'
-import { avatarAleatorio, type Corpo } from '@/data/avatar'
+import Termos from '@/components/Termos'
 import { validarNick } from '@/data/nick'
 import {
   aoMudarConta,
@@ -44,11 +32,8 @@ type Aba = 'entrar' | 'criar'
 /** Os mesmos destinos da barra lateral, na porta de entrada. */
 const ATALHOS = [
   { href: '/perfil', label: 'Perfil', Icon: User },
-  { href: '/meus-jogos', label: 'Meus jogos', Icon: History },
   { href: '/ranking', label: 'Ranking', Icon: Trophy },
-  { href: '/feedback', label: 'Feedbacks', Icon: MessageSquareWarning },
-  { href: '/changelog', label: 'Novidades', Icon: Sparkles },
-  { href: '/analytics', label: 'Análise', Icon: ChartColumn },
+  { href: '/comunidade', label: 'Comunidade', Icon: MessageSquareWarning },
 ]
 
 export default function Home() {
@@ -66,9 +51,7 @@ export default function Home() {
   const [nome, setNome] = useState('')
   const [nick, setNick] = useState('')
   const [termos, setTermos] = useState(false)
-  // o gênero não é guardado: ele só escolhe o corpo do avatar de boas-vindas,
-  // que a pessoa troca à vontade depois. "Tanto faz" sorteia.
-  const [genero, setGenero] = useState<Corpo | 'aleatorio'>('aleatorio')
+  const [vendoTermos, setVendoTermos] = useState(false)
 
   const recarregar = useCallback(() => {
     lerConta()
@@ -114,10 +97,29 @@ export default function Home() {
       return
     }
     if (aba === 'entrar') {
-      void tentar(async () => {
-        await entrar(email, senha)
-        recarregar()
-      })
+      setErro(null)
+      setRecado(null)
+      setOcupado(true)
+      entrar(email, senha)
+        .then(recarregar)
+        .catch((falha: unknown) => {
+          const motivo = falha instanceof Error ? falha.message : 'Não deu certo.'
+          // O Supabase responde a mesma coisa para "não existe conta" e para
+          // "senha errada" — de propósito, para ninguém descobrir quem tem
+          // conta aqui testando e-mails. Então não dá para saber qual dos
+          // dois foi: o que dá é abrir o cadastro já preenchido e dizer as
+          // duas possibilidades, deixando a volta a um clique.
+          if (motivo.includes('não conferem')) {
+            setAba('criar')
+            setRecado(
+              'Não encontramos uma conta com esse e-mail e essa senha. Se você é novo por aqui, ' +
+                'termine o cadastro abaixo; se só errou a senha, volte em "Entrar".',
+            )
+          } else {
+            setErro(motivo)
+          }
+        })
+        .finally(() => setOcupado(false))
       return
     }
 
@@ -135,15 +137,10 @@ export default function Home() {
       return
     }
     void tentar(async () => {
-      const corpo: Corpo =
-        genero === 'aleatorio' ? (Math.random() < 0.5 ? 'homem' : 'mulher') : genero
-      const { precisaConfirmar } = await cadastrar({
-        email,
-        senha,
-        nome,
-        nick,
-        avatar: avatarAleatorio(corpo),
-      })
+      // sem avatar: quem não escolheu é manequim, e escolher é uma visita ao
+      // perfil. Perguntar o gênero para sortear um desenho era pedir um dado
+      // pessoal para resolver um problema que o manequim já resolve.
+      const { precisaConfirmar } = await cadastrar({ email, senha, nome, nick })
       if (precisaConfirmar) {
         setRecado(
           'Conta criada. Confira a caixa de entrada de ' +
@@ -169,9 +166,7 @@ export default function Home() {
       return
     }
     void tentar(async () => {
-      const corpo: Corpo =
-        genero === 'aleatorio' ? (Math.random() < 0.5 ? 'homem' : 'mulher') : genero
-      await completarPerfil(nick, nome, avatarAleatorio(corpo), senha || undefined)
+      await completarPerfil(nick, nome, senha || undefined)
       recarregar()
     })
   }
@@ -209,16 +204,21 @@ export default function Home() {
 
   return (
     <main className={styles.home}>
-      <span className={styles.stamp}>Registro em carteira</span>
-      <h1 className={styles.title}>
-        CLT
-        <br />
-        Coffee, Labor
-        <br />
-        and Tears
-      </h1>
-      <p className={styles.sub}>Sobreviva ao mês. Depois a gente vê.</p>
+      {/* no computador a marca fica à esquerda e o que se faz aqui à direita;
+          no celular as duas viram uma coluna só, na mesma ordem */}
+      <div className={styles.marca}>
+        <span className={styles.stamp}>Registro em carteira</span>
+        <h1 className={styles.title}>
+          CLT
+          <br />
+          Coffee, Labor
+          <br />
+          and Tears
+        </h1>
+        <p className={styles.sub}>Sobreviva ao mês. Depois a gente vê.</p>
+      </div>
 
+      <div className={styles.painel}>
       {conta === null ? <p className={styles.aviso}>Batendo o ponto…</p> : null}
 
       {dentro && conta ? (
@@ -307,21 +307,12 @@ export default function Home() {
             A senha só é necessária se você também quiser entrar sem o Google. Dá para deixar em
             branco.
           </p>
-          <div className={styles.genero}>
-            <span className={styles.generoRotulo}>Seu avatar começa como</span>
-            <Segmentado
-              rotulo="Corpo do avatar"
-              valor={genero}
-              onChange={setGenero}
-              opcoes={[
-                { valor: 'homem', rotulo: 'Homem' },
-                { valor: 'mulher', rotulo: 'Mulher' },
-                { valor: 'aleatorio', rotulo: 'Tanto faz' },
-              ]}
-            />
-          </div>
           <Check marcado={termos} onChange={setTermos}>
-            Li e aceito os <Link href="/termos">termos de uso</Link>.
+            Li e aceito os{' '}
+            <button type="button" className={styles.linkTexto} onClick={() => setVendoTermos(true)}>
+              termos de uso
+            </button>
+            .
           </Check>
           <button
             type="submit"
@@ -401,22 +392,6 @@ export default function Home() {
             />
             {aba === 'criar' ? (
               <>
-              <div className={styles.genero}>
-                <span className={styles.generoRotulo}>Seu avatar começa como</span>
-                <Segmentado
-                  rotulo="Corpo do avatar"
-                  valor={genero}
-                  onChange={setGenero}
-                  opcoes={[
-                    { valor: 'homem', rotulo: 'Homem' },
-                    { valor: 'mulher', rotulo: 'Mulher' },
-                    { valor: 'aleatorio', rotulo: 'Tanto faz' },
-                  ]}
-                />
-                <span className={styles.generoDica}>
-                  Só escolhe o desenho inicial — dá para trocar tudo depois, no perfil.
-                </span>
-              </div>
               <Check marcado={termos} onChange={setTermos}>
                 Li e aceito os <Link href="/termos">termos de uso</Link>.
               </Check>
@@ -480,7 +455,13 @@ export default function Home() {
       {erro ? <p className={styles.erro}>{erro}</p> : null}
       {recado ? <p className={styles.recado}>{recado}</p> : null}
 
-      <p className={styles.foot}>4 semanas · 20 dias úteis · 1 baralho</p>
+      </div>
+
+      {vendoTermos ? (
+        <Dialogo titulo="Termos de uso" largo onFechar={() => setVendoTermos(false)}>
+          <Termos />
+        </Dialogo>
+      ) : null}
 
       {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
 

@@ -14,7 +14,7 @@ import {
   weekdayOf,
 } from './cards'
 import { EVENT_CARDS, getEvent } from './events'
-import type { CardId, CardInstance, CardKind, DayLog, GameState } from './types'
+import type { CardId, CardInstance, CardKind, DayLog, EfeitoCarta, GameState } from './types'
 
 // ---------------------------------------------------------------- utilidades
 
@@ -315,6 +315,15 @@ export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
 
 // ------------------------------------------------------------ jogar cartas
 
+/** Soma os recursos que a carta declara. Estresse nunca passa de zero. */
+function aplicarEfeito(state: GameState, efeito: EfeitoCarta | undefined) {
+  if (!efeito) return
+  if (efeito.produtividade) state.productivity += efeito.produtividade
+  if (efeito.energia) state.energy += efeito.energia
+  if (efeito.dinheiro) state.money += efeito.dinheiro
+  if (efeito.estresse) state.stress = Math.max(0, state.stress + efeito.estresse)
+}
+
 export function playCard(input: GameState, uid: string): GameState {
   const state = clone(input)
   const instance = state.hand.find((c) => c.uid === uid)
@@ -325,13 +334,14 @@ export function playCard(input: GameState, uid: string): GameState {
   state.hand = state.hand.filter((c) => c.uid !== uid)
   state.discard.push(instance)
 
+  // a soma simples vem do DADO da carta (`efeito`), não de código: é o que
+  // deixa 15 das 20 cartas serem editadas numa tabela sem tocar no motor
+  aplicarEfeito(state, card.efeito)
+
+  // e aqui embaixo sobra só o que não é soma: a segunda reunião do dia, o
+  // descarte do Foco Total, o passivo do Automatizar e o sorteio do aumento.
+  // Carta nova sem `especial` não precisa de nada disto.
   switch (card.id) {
-    case 'tarefa-simples':
-      state.productivity += 2
-      break
-    case 'planilha-infinita':
-      state.productivity += 1
-      break
     case 'reuniao':
       state.meetingsToday += 1
       if (state.meetingsToday >= 2) {
@@ -341,46 +351,7 @@ export function playCard(input: GameState, uid: string): GameState {
         state.productivity += 1
       }
       break
-    case 'cafe':
-      state.energy += 3
-      state.stress += 1
-      break
-    case 'hora-extra':
-      state.money += 30
-      state.stress += 2
-      break
-    case 'freela':
-      state.money += 50
-      break
-    case 'enrolar-no-corredor':
-      state.stress = Math.max(0, state.stress - 1)
-      break
-    case 'almoco-decente':
-      state.energy += 2
-      break
-    case 'atalho-no-sistema':
-      state.productivity += 3
-      break
-    case 'delegar':
-      state.productivity += 2
-      state.stress += 1
-      break
-    case 'cafe-duplo':
-      state.energy += 5
-      state.stress += 2
-      break
-    case 'terapia':
-      state.stress = Math.max(0, state.stress - 3)
-      break
-    case 'vale-refeicao':
-      state.money += 20
-      break
-    case 'home-office':
-      state.productivity += 2
-      state.stress = Math.max(0, state.stress - 1)
-      break
     case 'foco-total':
-      state.productivity += 4
       discardHand(state)
       log(state, 'Foco Total: o resto da mão foi descartado.')
       break
@@ -388,16 +359,7 @@ export function playCard(input: GameState, uid: string): GameState {
       state.warnings = Math.max(0, state.warnings - 1)
       state.usedPuxarOSaco = true
       break
-    case 'freela-grande':
-      state.money += 90
-      state.stress += 2
-      break
-    case 'soneca-no-banheiro':
-      state.energy += 2
-      state.stress = Math.max(0, state.stress - 1)
-      break
     case 'automatizar':
-      state.productivity += 2
       state.passiveProductivity += 1
       break
     case 'pedir-aumento':

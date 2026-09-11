@@ -1,0 +1,46 @@
+.pagina
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  gap: 16px
+  min-height: 100dvh
+  padding: 24px
+  text-align: center
+
+.titulo
+  font-size: clamp(26px, 6vw, 38px)
+
+.texto
+  max-width: 42ch
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.55
+
+.forma
+  display: flex
+  flex-direction: column
+  gap: 10px
+  width: 100%
+  max-width: 340px
+
+.campo
+  width: 100%
+  padding: 9px 13px
+  background: var(--papel-alto)
+  border: 1px solid var(--tinta)
+  border-radius: var(--raio)
+  color: var(--tinta)
+  font-family: var(--mono)
+  // 16px ou o Safari do iPhone dá zoom ao focar e não desfaz
+  font-size: 16px
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.erro
+  margin: 0
+  color: var(--estresse)
+  font-size: 13px

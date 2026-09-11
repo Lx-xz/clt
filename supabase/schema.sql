@@ -296,6 +296,8 @@ drop function if exists public.cartas_encalhadas();
 drop function if exists public.estatisticas_nerds();
 drop function if exists public.ranking();
 drop function if exists public.meus_jogos(uuid);
+drop function if exists public.perfil_publico(text);
+drop function if exists public.jogos_do_jogador(text);
 drop function if exists public.jogo_detalhe(bigint, uuid);
 drop function if exists public.listar_feedbacks(text, text);
 drop function if exists public.comentarios_do_feedback(bigint);
@@ -748,6 +750,72 @@ as $$
 $$;
 
 grant execute on function public.meus_jogos(uuid) to anon, authenticated;
+
+-- ------------------------------------------------------- perfil de outro
+--
+-- Clicar num nick no ranking abre o perfil daquela pessoa. O que ele mostra
+-- é o que o ranking já mostrava (nick, vitórias, derrotas) mais o avatar e o
+-- histórico de partidas — ou seja, **nada que já não fosse público**. E-mail,
+-- nome e pontos ficam de fora de propósito: eles só aparecem para o dono, em
+-- `meu_perfil()`.
+create function public.perfil_publico(p_nick text)
+returns table (
+  nick       text,
+  avatar     jsonb,
+  desde      timestamptz,
+  vitorias   bigint,
+  derrotas   bigint,
+  total_runs bigint,
+  melhor_dinheiro integer,
+  ultima_partida  timestamptz
+)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select
+    p.nick,
+    p.avatar,
+    p.created_at as desde,
+    count(r.id) filter (where r.outcome = 'vitoria')  as vitorias,
+    count(r.id) filter (where r.outcome <> 'vitoria' and r.outcome <> 'abandono') as derrotas,
+    count(r.id) filter (where r.outcome <> 'abandono') as total_runs,
+    max(r.money) filter (where r.outcome <> 'abandono') as melhor_dinheiro,
+    max(r.ended_at) filter (where r.outcome <> 'abandono') as ultima_partida
+  from public.players p
+  left join public.runs r on r.player_id = p.id and r.visivel
+  where p.nick = lower(trim(p_nick))
+  group by p.nick, p.avatar, p.created_at;
+$$;
+
+grant execute on function public.perfil_publico(text) to anon, authenticated;
+
+-- as partidas guardadas de um jogador, por nick. Mesma regra de visibilidade
+-- de `meus_jogos`: run largada sem permissão não aparece para ninguém.
+create function public.jogos_do_jogador(p_nick text)
+returns table (
+  id           bigint,
+  ended_at     timestamptz,
+  outcome      text,
+  day          smallint,
+  money        integer,
+  week_reached smallint
+)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached
+  from public.runs r
+  join public.players p on p.id = r.player_id
+  where p.nick = lower(trim(p_nick)) and r.visivel
+  order by r.ended_at desc
+  limit 200;
+$$;
+
+grant execute on function public.jogos_do_jogador(text) to anon, authenticated;
 
 -- o replay de uma run específica, incluindo o dia-a-dia (details). Confere
 -- o dono: pedir o run_id de outra pessoa devolve zero linhas

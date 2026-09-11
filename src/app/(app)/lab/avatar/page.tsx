@@ -1,9 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import Avatar, { MEDIDAS, type Ajustes, type Medidas } from '@/components/Avatar'
 import Segmentado from '@/components/Segmentado'
-import { useSessao } from '@/components/SessaoGuard'
 import {
   CORES,
   CORPOS,
@@ -15,7 +15,6 @@ import {
   type Avatar as Receita,
   type Corpo,
 } from '@/data/avatar'
-import { souAdmin } from '@/data/feedback'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './lab.module.sass'
 
@@ -62,21 +61,8 @@ function inicial(corpo: Corpo): Estado {
 }
 
 export default function AvatarLabPage() {
-  const sessao = useSessao()
-  const [admin, setAdmin] = useState<boolean | null>(null)
   const [e, setE] = useState<Estado>(() => inicial('homem'))
   const [copiado, setCopiado] = useState(false)
-
-  // a trava de verdade é esta, e não o link escondido na barra: quem diz se
-  // você é admin é o banco. Não há dado sensível aqui — é só que a página
-  // não faz sentido nenhum para quem não mexe no código.
-  useEffect(() => {
-    if (sessao.convidado) {
-      setAdmin(false)
-      return
-    }
-    void souAdmin().then(setAdmin)
-  }, [sessao.convidado])
 
   // o trabalho do lab sobrevive a recarregar a página: mexer em oito números
   // e perder tudo num F5 é o jeito mais rápido de abandonar a ferramenta
@@ -119,21 +105,11 @@ export default function AvatarLabPage() {
     .map((k) => `${k}: ${e.medidas[k]}`)
     .join(', ')} },`
 
-  if (admin === null) return <main className="page">Conferindo…</main>
-  if (!admin) {
-    return (
-      <main className="page">
-        <h1 className={styles.titulo}>Lab do avatar</h1>
-        <p className={styles.intro}>
-          Esta página é a bancada de quem desenha os avatares, e só o admin abre. Nada aqui muda o
-          seu avatar — para isso é o perfil.
-        </p>
-      </main>
-    )
-  }
-
   return (
     <main className="page">
+      <Link className={styles.voltar} href="/lab">
+        ← voltar ao lab
+      </Link>
       <h1 className={styles.titulo}>Lab do avatar</h1>
       <p className={styles.intro}>
         Bancada. Nada daqui é salvo no banco nem muda o avatar de ninguém: o resultado é o

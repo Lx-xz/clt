@@ -69,8 +69,8 @@ function Detalhe() {
   return (
     <main className="page">
       <div className={styles.top}>
-        <Link className={styles.voltar} href="/meus-jogos">
-          ← Meus jogos
+        <Link className={styles.voltar} href="/perfil">
+          ← Meu perfil
         </Link>
       </div>
       <h1 className={styles.title}>Replay da partida</h1>

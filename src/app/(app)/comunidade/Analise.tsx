@@ -19,7 +19,7 @@ import {
 import { getCard } from '@/game/cards'
 import { getEvent } from '@/game/events'
 import buttons from '@/styles/buttons.module.sass'
-import styles from './analytics.module.sass'
+import styles from './analise.module.sass'
 
 /**
  * Página de análise: contagens agregadas de todo mundo, para acompanhar
@@ -49,7 +49,7 @@ const DERROTAS = [
   { chave: 'despejos' as const, rotulo: 'Despejo', cor: 'var(--tinta-fraca)' },
 ]
 
-export default function AnalyticsPage() {
+export default function Analise() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' })
 
   function carregar() {
@@ -77,7 +77,7 @@ export default function AnalyticsPage() {
   useEffect(carregar, [])
 
   return (
-    <main className="page">
+    <>
       <div className={styles.top}>
         <h1 className={styles.title}>Análise</h1>
       </div>
@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
       ) : null}
 
       {estado.tipo === 'pronto' ? <Conteudo dados={estado.dados} /> : null}
-    </main>
+    </>
   )
 }
 

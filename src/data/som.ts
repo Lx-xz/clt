@@ -9,11 +9,16 @@ export interface Volumes {
   geral: number
   musica: number
   mudo: boolean
+  /** Fora da mesa a trilha toca baixinho, para não competir com a leitura. */
+  baixaFora: boolean
 }
 
 const CHAVE = 'clt:som:v1'
 
-export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5, mudo: false }
+export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5, mudo: false, baixaFora: true }
+
+/** Quanto do volume normal sobra fora da mesa. */
+export const FATOR_FORA = 0.3
 
 function limitar(n: unknown, padrao: number): number {
   return typeof n === 'number' && Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : padrao
@@ -29,6 +34,9 @@ export function lerVolumes(): Volumes {
       geral: limitar(v.geral, VOLUMES_PADRAO.geral),
       musica: limitar(v.musica, VOLUMES_PADRAO.musica),
       mudo: v.mudo === true,
+      // ausente no save antigo: o padrão é abaixar, que é o comportamento
+      // que a pessoa esperaria sem nunca ter mexido no ajuste
+      baixaFora: v.baixaFora !== false,
     }
   } catch {
     return VOLUMES_PADRAO
@@ -48,6 +56,14 @@ export function gravarVolumes(v: Volumes) {
 /** A música escuta isto para mudar de volume enquanto o jogador arrasta. */
 export const EVENTO_VOLUME = 'clt:volumes'
 
-export function volumeDaMusica(v: Volumes): number {
-  return v.mudo ? 0 : v.geral * v.musica
+/**
+ * A trilha agora toca no site inteiro, e não só na mesa. Fora dela ela cai
+ * para uma fração do volume: música em cima de texto atrapalha a leitura, e
+ * quem está lendo o ranking não pediu trilha sonora — mas cortar de vez fazia
+ * o som entrar e sair a cada clique, o que é pior que os dois.
+ */
+export function volumeDaMusica(v: Volumes, naMesa: boolean): number {
+  if (v.mudo) return 0
+  const base = v.geral * v.musica
+  return naMesa || !v.baixaFora ? base : base * FATOR_FORA
 }

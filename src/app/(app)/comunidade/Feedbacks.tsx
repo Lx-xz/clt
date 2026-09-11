@@ -46,7 +46,7 @@ function dataCurta(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
-export default function FeedbackPage() {
+export default function Feedbacks() {
   const sessao = useSessao()
   const [lista, setLista] = useState<Feedback[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -140,7 +140,7 @@ export default function FeedbackPage() {
   async function salvar() {
     if (!rascunho) return
     const { id, tipo, titulo, corpo } = rascunho
-    if (id === null) await criarFeedback(tipo, titulo.trim(), corpo.trim(), '/feedback')
+    if (id === null) await criarFeedback(tipo, titulo.trim(), corpo.trim(), '/comunidade')
     else await editarFeedback(id, tipo, titulo.trim(), corpo.trim())
     setRascunho(null)
     setParecidos(null)
@@ -152,16 +152,13 @@ export default function FeedbackPage() {
   )
 
   return (
-    <main className="page">
+    <>
       <header className={styles.topo}>
         <div>
-          <h1 className={styles.titulo}>
-            Feedbacks
-            {admin ? <span className={styles.seloModoAdmin}>modo admin</span> : null}
-          </h1>
           <p className={styles.intro}>
             Todo bug relatado e toda sugestão ficam aqui, à vista, com o que aconteceu com cada um.
-            O que já foi entregue vive em <Link href="/changelog">Novidades</Link>.
+            O que já foi entregue vive na aba <b>Novidades</b>.
+            {admin ? <span className={styles.seloModoAdmin}>modo admin</span> : null}
           </p>
         </div>
         <div className={styles.topoAcoes}>
@@ -511,7 +508,7 @@ export default function FeedbackPage() {
           </ul>
         </Dialogo>
       ) : null}
-    </main>
+    </>
   )
 }
 

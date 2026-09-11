@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Fragment, useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { buscarRanking, type LinhaRanking } from '@/data/analytics'
@@ -88,7 +89,16 @@ export default function RankingPage() {
                   >
                     <td className={styles.posicao}>{i + 1}</td>
                     <td>
-                      <span className={styles.nick}>{linha.nick}</span>
+                      {/* o nick abre o perfil daquela pessoa; o resto da
+                          linha continua servindo para expandir no celular,
+                          então o clique do link não pode subir para a <tr> */}
+                      <Link
+                        className={styles.nick}
+                        href={`/jogador?nick=${encodeURIComponent(linha.nick)}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {linha.nick}
+                      </Link>
                       {euMesmo ? <span className={styles.voce}>você</span> : null}
                       <ChevronDown
                         className={`${styles.seta} ${expandida ? styles.setaAberta : ''}`}

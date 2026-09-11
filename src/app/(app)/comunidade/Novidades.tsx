@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { EM_ANDAMENTO, ROTULO_TIPO, VERSOES } from '@/data/changelog'
 import styles from './changelog.module.sass'
 
@@ -9,13 +8,12 @@ function dataCurta(iso: string): string {
   return `${dia}/${mes}/${ano}`
 }
 
-export default function ChangelogPage() {
+export default function Novidades() {
   return (
-    <main className="page">
-      <h1 className={styles.titulo}>Novidades</h1>
+    <>
       <p className={styles.intro}>
         O que já entrou no jogo, e o que está sendo feito agora. Sentiu falta de alguma coisa? A
-        página de <Link href="/feedback">feedbacks</Link> é o caminho — o que entra aqui costuma ter
+        página de <b>Feedbacks</b> é o caminho — o que entra aqui costuma ter
         começado lá.
       </p>
 
@@ -49,6 +47,6 @@ export default function ChangelogPage() {
           </ul>
         </section>
       ))}
-    </main>
+    </>
   )
 }

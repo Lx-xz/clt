@@ -5,7 +5,8 @@ import { useEffect, useRef } from 'react'
 import { EVENTO_VOLUME, lerVolumes, volumeDaMusica, type Volumes } from '@/data/som'
 
 /**
- * Música de fundo, em loop, só na mesa. O `src` vem de fora porque o Next não
+ * Música de fundo, em loop, no site inteiro — baixinha fora da mesa (é um
+ * ajuste em Configurações; veja `volumeDaMusica`). O `src` vem de fora porque o Next não
  * prefixa o basePath em `src` de mídia — só nos links que ele mesmo gera —,
  * então quem monta o caminho é o layout, que roda no servidor e enxerga
  * DEPLOY_TARGET.
@@ -29,26 +30,32 @@ export default function Musica({ src }: { src: string }) {
   const pathname = usePathname()
   const naMesa = pathname.startsWith('/jogar')
 
-  // volume: vale para o ganho (quando já existe) e para o elemento
+  // volume: vale para o ganho (quando já existe) e para o elemento. Depende
+  // de `naMesa` porque a mesma trilha toca mais baixo fora do jogo — e a
+  // transição é feita pelo próprio GainNode, para não haver salto de som ao
+  // trocar de página.
   useEffect(() => {
     function aplicar(v: Volumes) {
-      const alvo = volumeDaMusica(v)
-      if (ganho.current) ganho.current.gain.value = alvo
+      const alvo = volumeDaMusica(v, naMesa)
+      const ctx = contexto.current
+      if (ganho.current && ctx) {
+        // rampa curta: cortar seco de um volume para o outro estala
+        ganho.current.gain.cancelScheduledValues(ctx.currentTime)
+        ganho.current.gain.setTargetAtTime(alvo, ctx.currentTime, 0.15)
+      } else if (ganho.current) {
+        ganho.current.gain.value = alvo
+      }
       if (ref.current) ref.current.volume = alvo
     }
     aplicar(lerVolumes())
     const aoMudar = (e: Event) => aplicar((e as CustomEvent<Volumes>).detail ?? lerVolumes())
     window.addEventListener(EVENTO_VOLUME, aoMudar)
     return () => window.removeEventListener(EVENTO_VOLUME, aoMudar)
-  }, [])
+  }, [naMesa])
 
   useEffect(() => {
     const audio = ref.current
     if (!audio) return
-    if (!naMesa) {
-      audio.pause()
-      return
-    }
 
     // o contexto só pode nascer depois de uma interação, e `createMediaElement
     // Source` só pode ser chamado uma vez por elemento — daí a preguiça e a
@@ -61,7 +68,7 @@ export default function Musica({ src }: { src: string }) {
       try {
         const ctx = new Contexto()
         const no = ctx.createGain()
-        no.gain.value = volumeDaMusica(lerVolumes())
+        no.gain.value = volumeDaMusica(lerVolumes(), naMesa)
         ctx.createMediaElementSource(audio).connect(no)
         no.connect(ctx.destination)
         contexto.current = ctx
@@ -88,8 +95,12 @@ export default function Musica({ src }: { src: string }) {
       window.removeEventListener('keydown', comecar)
       window.removeEventListener('touchstart', comecar)
     }
-  }, [naMesa])
+    // de propósito sem `naMesa`: trocar de página não pode reiniciar a
+    // trilha, só mudar o volume — quem faz isso é o efeito de cima
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  // `preload="none"`: são 3,7 MB, e fora da mesa a música nem toca
+  // `preload="none"`: são 3,7 MB, e não vale baixar antes de a pessoa
+  // interagir — sem interação o navegador nem deixa tocar
   return <audio ref={ref} src={src} loop preload="none" aria-hidden />
 }

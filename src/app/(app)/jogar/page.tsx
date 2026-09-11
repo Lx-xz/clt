@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Check, CloudOff, Loader } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, CloudOff, Loader } from 'lucide-react'
 import Card from '@/components/Card'
+import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import Medidor from '@/components/Medidor'
 import { RESOURCE_ICONS } from '@/components/icons'
@@ -62,6 +63,10 @@ export default function JogarPage() {
   // mensagem do Postgres junto: engolir isso foi o bug de "joguei até o fim e
   // não salvou", e no iPhone não há console para ler o motivo
   const [registroFalhou, setRegistroFalhou] = useState<string | null>(null)
+  // as regras saíram da barra lateral e vieram para a mesa: é aqui que a
+  // dúvida aparece, e no meio da partida abrir o menu para consultá-las é
+  // atravessar o jogo inteiro
+  const [tutorial, setTutorial] = useState(false)
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -231,6 +236,17 @@ export default function JogarPage() {
           {status === 'salvo' ? <Check size={13} aria-label="salvo" /> : null}
           {status === 'erro' ? <CloudOff size={13} aria-label="sem conexão" /> : null}
         </span>
+        <button
+          type="button"
+          className={styles.comoJogar}
+          onClick={() => setTutorial(true)}
+          aria-label="Como jogar"
+          title="Como jogar"
+        >
+          <BookOpen size={15} aria-hidden />
+          <span className={styles.comoJogarTexto}>Como jogar</span>
+        </button>
+
         {state.phase === 'dia' ? (
           <button
             type="button"
@@ -457,6 +473,7 @@ export default function JogarPage() {
           </div>
         </div>
       ) : null}
+      {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
     </main>
   )
 }

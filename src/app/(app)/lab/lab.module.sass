@@ -1,0 +1,81 @@
+.titulo
+  font-size: clamp(24px, 5vw, 32px)
+
+.intro
+  max-width: 62ch
+  margin: 6px 0 24px
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.6
+
+.bancadas
+  display: flex
+  flex-wrap: wrap
+  gap: 12px
+
+.bancada
+  display: grid
+  grid-template-columns: auto 1fr
+  align-items: center
+  gap: 4px 12px
+  flex: 1 1 280px
+  padding: 16px 18px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  color: var(--tinta)
+  text-decoration: none
+
+  svg
+    grid-row: span 2
+    color: var(--destaque)
+
+  b
+    font-size: 16px
+
+  span
+    color: var(--tinta-fraca)
+    font-size: 12px
+    line-height: 1.45
+
+  &:hover
+    border-color: var(--tinta)
+
+.secao
+  margin: 32px 0 8px
+  font-size: 13px
+  letter-spacing: .1em
+  text-transform: uppercase
+  color: var(--tinta-fraca)
+
+.aviso
+  max-width: 58ch
+  margin: 0 0 12px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+
+.acoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+.recado
+  display: flex
+  align-items: center
+  gap: 7px
+  margin: 14px 0 0
+  padding: 10px 14px
+  background: var(--papel-alto)
+  border-left: 3px solid var(--produtividade)
+  border-radius: 0 var(--raio) var(--raio) 0
+  font-size: 13px
+
+  svg
+    color: var(--produtividade)
+
+.dialogoTexto
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.55

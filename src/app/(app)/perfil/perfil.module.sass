@@ -71,7 +71,45 @@
   font-size: 13px
   line-height: 1.55
 
+// a posição no ranking: um número grande, porque é o que a pessoa procura
+.posto
+  display: flex
+  align-items: center
+  gap: 12px
+  max-width: 520px
+  margin-bottom: 22px
+  padding: 14px 18px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  color: var(--tinta)
+  text-decoration: none
+
+  svg
+    color: var(--destaque)
+
+  &:hover
+    border-color: var(--tinta)
+
+.postoNumero
+  font-family: var(--mono)
+  font-size: 24px
+  font-weight: 700
+
+.postoTexto
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.4
+
+.secao
+  margin: 28px 0 12px
+  font-size: 13px
+  letter-spacing: .1em
+  text-transform: uppercase
+  color: var(--tinta-fraca)
+
 .acoes
   display: flex
   flex-wrap: wrap
   gap: 8px
+  margin-top: 28px

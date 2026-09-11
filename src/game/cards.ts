@@ -2,28 +2,28 @@ import type { ActionCard, WeekConfig } from './types'
 
 export const ACTION_CARDS: ActionCard[] = [
   // --- baralho inicial (15 cartas) ---
-  { id: 'tarefa-simples', name: 'Tarefa Simples', cost: 3, kind: 'tarefa', text: '+2 produtividade', starter: true, copies: 4 },
-  { id: 'planilha-infinita', name: 'Planilha Infinita', cost: 2, kind: 'tarefa', text: '+1 produtividade', starter: true, copies: 2 },
-  { id: 'reuniao', name: 'Reunião', cost: 2, kind: 'social', text: '+1 produtividade. Se for a 2ª reunião do dia: +1 estresse e nenhuma produtividade.', starter: true, copies: 2 },
-  { id: 'cafe', name: 'Café', cost: 0, kind: 'descanso', text: '+3 energia, +1 estresse', starter: true, copies: 2 },
-  { id: 'hora-extra', name: 'Hora Extra', cost: 4, kind: 'grana', text: '+R$ 30, +2 estresse', starter: true, copies: 2 },
-  { id: 'freela', name: 'Freela', cost: 5, kind: 'grana', text: '+R$ 50', starter: true, copies: 1 },
-  { id: 'enrolar-no-corredor', name: 'Enrolar no Corredor', cost: 1, kind: 'descanso', text: '−1 estresse', starter: true, copies: 1 },
-  { id: 'almoco-decente', name: 'Almoço Decente', cost: 1, kind: 'descanso', text: '+2 energia', starter: true, copies: 1 },
+  { id: 'tarefa-simples', name: 'Tarefa Simples', cost: 3, kind: 'tarefa', text: '+2 produtividade', efeito: { produtividade: 2 }, starter: true, copies: 4 },
+  { id: 'planilha-infinita', name: 'Planilha Infinita', cost: 2, kind: 'tarefa', text: '+1 produtividade', efeito: { produtividade: 1 }, starter: true, copies: 2 },
+  { id: 'reuniao', name: 'Reunião', cost: 2, kind: 'social', text: '+1 produtividade. Se for a 2ª reunião do dia: +1 estresse e nenhuma produtividade.', efeito: {}, especial: true, starter: true, copies: 2 },
+  { id: 'cafe', name: 'Café', cost: 0, kind: 'descanso', text: '+3 energia, +1 estresse', efeito: { energia: 3, estresse: 1 }, starter: true, copies: 2 },
+  { id: 'hora-extra', name: 'Hora Extra', cost: 4, kind: 'grana', text: '+R$ 30, +2 estresse', efeito: { dinheiro: 30, estresse: 2 }, starter: true, copies: 2 },
+  { id: 'freela', name: 'Freela', cost: 5, kind: 'grana', text: '+R$ 50', efeito: { dinheiro: 50 }, starter: true, copies: 1 },
+  { id: 'enrolar-no-corredor', name: 'Enrolar no Corredor', cost: 1, kind: 'descanso', text: '−1 estresse', efeito: { estresse: -1 }, starter: true, copies: 1 },
+  { id: 'almoco-decente', name: 'Almoço Decente', cost: 1, kind: 'descanso', text: '+2 energia', efeito: { energia: 2 }, starter: true, copies: 1 },
 
   // --- desbloqueáveis (recompensa semanal) ---
-  { id: 'atalho-no-sistema', name: 'Atalho no Sistema', cost: 3, kind: 'tarefa', text: '+3 produtividade', starter: false },
-  { id: 'delegar', name: 'Delegar', cost: 1, kind: 'social', text: '+2 produtividade, +1 estresse (alguém vai reclamar)', starter: false },
-  { id: 'cafe-duplo', name: 'Café Duplo', cost: 0, kind: 'descanso', text: '+5 energia, +2 estresse', starter: false },
-  { id: 'terapia', name: 'Terapia', cost: 2, kind: 'descanso', text: '−3 estresse', starter: false },
-  { id: 'vale-refeicao', name: 'Vale-Refeição', cost: 0, kind: 'grana', text: '+R$ 20', starter: false },
-  { id: 'home-office', name: 'Home Office', cost: 2, kind: 'tarefa', text: '+2 produtividade, −1 estresse', starter: false },
-  { id: 'foco-total', name: 'Foco Total', cost: 4, kind: 'tarefa', text: '+4 produtividade, mas descarta o resto da mão', starter: false },
-  { id: 'puxar-o-saco', name: 'Puxar o Saco', cost: 2, kind: 'social', text: 'Cancela 1 advertência (uma vez por run)', starter: false },
-  { id: 'freela-grande', name: 'Freela Grande', cost: 6, kind: 'grana', text: '+R$ 90, +2 estresse', starter: false },
-  { id: 'soneca-no-banheiro', name: 'Soneca no Banheiro', cost: 1, kind: 'descanso', text: '+2 energia, −1 estresse', starter: false },
-  { id: 'automatizar', name: 'Automatizar', cost: 5, kind: 'tarefa', text: '+2 produtividade agora e +1 produtividade em todos os dias seguintes', starter: false },
-  { id: 'pedir-aumento', name: 'Pedir Aumento', cost: 3, kind: 'social', text: '50%: salário +R$ 100 pelo resto da run. 50%: +3 estresse.', starter: false },
+  { id: 'atalho-no-sistema', name: 'Atalho no Sistema', cost: 3, kind: 'tarefa', text: '+3 produtividade', efeito: { produtividade: 3 }, starter: false },
+  { id: 'delegar', name: 'Delegar', cost: 1, kind: 'social', text: '+2 produtividade, +1 estresse (alguém vai reclamar)', efeito: { produtividade: 2, estresse: 1 }, starter: false },
+  { id: 'cafe-duplo', name: 'Café Duplo', cost: 0, kind: 'descanso', text: '+5 energia, +2 estresse', efeito: { energia: 5, estresse: 2 }, starter: false },
+  { id: 'terapia', name: 'Terapia', cost: 2, kind: 'descanso', text: '−3 estresse', efeito: { estresse: -3 }, starter: false },
+  { id: 'vale-refeicao', name: 'Vale-Refeição', cost: 0, kind: 'grana', text: '+R$ 20', efeito: { dinheiro: 20 }, starter: false },
+  { id: 'home-office', name: 'Home Office', cost: 2, kind: 'tarefa', text: '+2 produtividade, −1 estresse', efeito: { produtividade: 2, estresse: -1 }, starter: false },
+  { id: 'foco-total', name: 'Foco Total', cost: 4, kind: 'tarefa', text: '+4 produtividade, mas descarta o resto da mão', efeito: { produtividade: 4 }, especial: true, starter: false },
+  { id: 'puxar-o-saco', name: 'Puxar o Saco', cost: 2, kind: 'social', text: 'Cancela 1 advertência (uma vez por run)', efeito: {}, especial: true, starter: false },
+  { id: 'freela-grande', name: 'Freela Grande', cost: 6, kind: 'grana', text: '+R$ 90, +2 estresse', efeito: { dinheiro: 90, estresse: 2 }, starter: false },
+  { id: 'soneca-no-banheiro', name: 'Soneca no Banheiro', cost: 1, kind: 'descanso', text: '+2 energia, −1 estresse', efeito: { energia: 2, estresse: -1 }, starter: false },
+  { id: 'automatizar', name: 'Automatizar', cost: 5, kind: 'tarefa', text: '+2 produtividade agora e +1 produtividade em todos os dias seguintes', efeito: { produtividade: 2 }, especial: true, starter: false },
+  { id: 'pedir-aumento', name: 'Pedir Aumento', cost: 3, kind: 'social', text: '50%: salário +R$ 100 pelo resto da run. 50%: +3 estresse.', efeito: {}, especial: true, starter: false },
 ]
 
 export const CARDS_BY_ID: Record<string, ActionCard> = Object.fromEntries(

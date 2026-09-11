@@ -42,6 +42,34 @@
   letter-spacing: .04em
   text-transform: uppercase
 
+// as regras, ancoradas abaixo do header no canto OPOSTO ao "Próximo dia":
+// os dois botões flutuam sobre a mesa e brigariam pelo mesmo canto
+.comoJogar
+  position: absolute
+  top: 100%
+  left: 10px
+  z-index: 30
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  margin-top: 8px
+  padding: 7px 12px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 12px
+  cursor: pointer
+  box-shadow: 0 6px 16px rgba(30, 28, 24, .16)
+
+  &:hover
+    border-color: var(--tinta)
+    color: var(--tinta)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
 // botão de avançar o dia: ancorado logo abaixo do header, à direita
 .proximoDia
   position: absolute
@@ -546,6 +574,16 @@
 
     > button
       width: 100%
+
+  // no celular o botão das regras fica só com o ícone: o espaço embaixo do
+  // header é disputado, e o "Próx. dia" é quem precisa da palavra
+  .comoJogar
+    left: 8px
+    margin-top: 6px
+    padding: 6px 8px
+
+  .comoJogarTexto
+    display: none
 
   // "Próx. dia" no celular
   .proximoDia

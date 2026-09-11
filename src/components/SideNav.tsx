@@ -6,12 +6,9 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
   Bell,
-  BookOpen,
-  ChartColumn,
   Coffee,
   Droplet,
   Hammer,
-  History,
   House,
   Layers,
   LogOut,
@@ -19,13 +16,11 @@ import {
   Play,
   RotateCcw,
   Settings,
-  Sparkles,
   TestTube,
   Trophy,
   User,
 } from 'lucide-react'
 import Check from './Check'
-import ComoJogar from './ComoJogar'
 import Slider from './Slider'
 import Dialogo, { popupAberto } from './Dialogo'
 import Segmentado from './Segmentado'
@@ -40,15 +35,15 @@ import { marcarNotificacoesLidas, minhasNotificacoes, type Notificacao } from '@
 import buttons from '@/styles/buttons.module.sass'
 import styles from './SideNav.module.sass'
 
+// "Meus jogos" saiu daqui e virou parte do perfil (o seu e o dos outros).
+// Análise, Feedbacks e Novidades viraram abas de /comunidade: eram três
+// entradas para o mesmo assunto — o que está acontecendo com o jogo.
 const LINKS = [
   { href: '/', label: 'Início', Icon: House },
   { href: '/jogar', label: 'Jogar', Icon: Play },
   { href: '/baralho', label: 'Baralho', Icon: Layers },
-  { href: '/meus-jogos', label: 'Meus jogos', Icon: History },
   { href: '/ranking', label: 'Ranking', Icon: Trophy },
-  { href: '/analytics', label: 'Análise', Icon: ChartColumn },
-  { href: '/feedback', label: 'Feedbacks', Icon: MessageSquareWarning },
-  { href: '/changelog', label: 'Novidades', Icon: Sparkles },
+  { href: '/comunidade', label: 'Comunidade', Icon: MessageSquareWarning },
 ]
 
 /** Disparado ao confirmar o reinício; a mesa escuta e começa uma run nova. */
@@ -59,7 +54,6 @@ export default function SideNav() {
   const [aberta, setAberta] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [configurando, setConfigurando] = useState(false)
-  const [tutorial, setTutorial] = useState(false)
   const [avisos, setAvisos] = useState<(Notificacao & { novo: boolean })[] | null>(null)
   const [naoLidosNaAbertura, setNaoLidosNaAbertura] = useState(0)
   const [naoLidas, setNaoLidas] = useState(0)
@@ -84,7 +78,6 @@ export default function SideNav() {
     setAberta(false)
     setConfirmando(false)
     setConfigurando(false)
-    setTutorial(false)
     setAvisos(null)
     setConfirmandoSaida(false)
   }, [pathname])
@@ -282,18 +275,21 @@ export default function SideNav() {
 
             {admin ? (
               <Link
-                className={`${styles.link} ${pathname.startsWith('/avatar-lab') ? styles.ativo : ''}`}
-                href="/avatar-lab"
+                className={`${styles.link} ${pathname.startsWith('/lab') ? styles.ativo : ''}`}
+                href="/lab"
               >
                 <TestTube size={18} aria-hidden />
-                <span className={styles.rotulo}>Lab do avatar</span>
+                <span className={styles.rotulo}>Lab</span>
               </Link>
             ) : null}
 
-            <button type="button" className={styles.link} onClick={() => setTutorial(true)}>
-              <BookOpen size={18} aria-hidden />
-              <span className={styles.rotulo}>Como jogar</span>
-            </button>
+            <Link
+              className={`${styles.link} ${pathname.startsWith('/perfil') ? styles.ativo : ''}`}
+              href="/perfil"
+            >
+              <User size={18} aria-hidden />
+              <span className={styles.rotulo}>Perfil</span>
+            </Link>
 
             {sessao.convidado ? null : (
               <button type="button" className={styles.link} onClick={abrirAvisos}>
@@ -306,14 +302,6 @@ export default function SideNav() {
                 </span>
               </button>
             )}
-
-            <Link
-              className={`${styles.link} ${pathname.startsWith('/perfil') ? styles.ativo : ''}`}
-              href="/perfil"
-            >
-              <User size={18} aria-hidden />
-              <span className={styles.rotulo}>Perfil</span>
-            </Link>
 
             <button type="button" className={styles.link} onClick={() => setConfigurando(true)}>
               <Settings size={18} aria-hidden />
@@ -331,12 +319,9 @@ export default function SideNav() {
               </span>
             </button>
 
-            <span className={styles.rodape}>4 semanas · 20 dias</span>
           </div>
         </div>
       </nav>
-
-      {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
 
       {avisos ? (
         <Dialogo titulo="Avisos" onFechar={() => setAvisos(null)}>
@@ -408,6 +393,13 @@ export default function SideNav() {
             <span className={styles.grupoTitulo}>Som</span>
             <Check marcado={volumes.mudo} onChange={(v) => mudarVolume('mudo', v)}>
               Mudo — desliga tudo de uma vez
+            </Check>
+            <Check
+              marcado={volumes.baixaFora}
+              desabilitado={volumes.mudo}
+              onChange={(v) => mudarVolume('baixaFora', v)}
+            >
+              Música baixa fora do jogo
             </Check>
             <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
               <span className={styles.controleRotulo}>

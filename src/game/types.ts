@@ -3,12 +3,33 @@ export type CardId = string
 /** Categoria usada por eventos que bloqueiam um tipo de jogada (ex.: Sistema Fora do Ar). */
 export type CardKind = 'tarefa' | 'descanso' | 'grana' | 'social'
 
+/**
+ * A soma simples que uma carta faz ao ser jogada. Fica como DADO, e não como
+ * código, para 15 das 20 cartas caberem numa tabela editável (veja
+ * `/lab/cartas`) — e para rebalancear ser trocar um número, não mexer no
+ * motor. O que não cabe aqui (segunda reunião do dia, descartar a mão,
+ * sorteio do aumento) continua no `switch` de `playCard`, e é só isso que
+ * sobrou lá.
+ */
+export interface EfeitoCarta {
+  produtividade?: number
+  energia?: number
+  /** Positivo sobe o estresse, negativo desce. Nunca passa de zero. */
+  estresse?: number
+  dinheiro?: number
+}
+
 export interface ActionCard {
   id: CardId
   name: string
   cost: number
   kind: CardKind
   text: string
+  /** A parte da carta que é só somar recurso. Veja `EfeitoCarta`. */
+  efeito?: EfeitoCarta
+  /** Marca a carta cuja regra NÃO cabe em `efeito` — ela tem código no motor
+   *  (`playCard`) e o editor de cartas não mexe nessa parte. */
+  especial?: boolean
   /** Cartas iniciais já vêm desbloqueadas; as demais entram como recompensa semanal. */
   starter: boolean
   /** Quantas cópias entram no baralho inicial. */

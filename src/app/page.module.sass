@@ -284,3 +284,56 @@
   &:hover
     border-color: var(--tinta)
     color: var(--tinta)
+
+// ------------------------------------------------------- duas colunas
+// No computador a marca fica parada à esquerda e tudo que se FAZ aqui vai
+// para a direita: o título é decoração, o formulário é o assunto, e empilhar
+// os dois no meio da tela empurrava o botão para baixo da dobra.
+.marca
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 18px
+
+.painel
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 18px
+  width: 100%
+  max-width: 420px
+
+// botão que parece link, para o check dos termos abrir o popup sem sair da
+// página (sair perderia o formulário preenchido)
+.linkTexto
+  padding: 0
+  background: none
+  border: none
+  color: inherit
+  font: inherit
+  text-decoration: underline
+  cursor: pointer
+
+  &:hover
+    color: var(--tinta)
+
+@media (min-width: 900px)
+  .home
+    flex-direction: row
+    align-items: center
+    justify-content: center
+    gap: 64px
+    text-align: left
+
+  .marca
+    align-items: flex-start
+    flex: 0 1 480px
+
+  .title
+    text-align: left
+
+  .sub
+    text-align: left
+
+  .painel
+    flex: 0 0 380px

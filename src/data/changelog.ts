@@ -23,6 +23,7 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
+  'Cartas com habilidade especial editáveis sem mexer no motor do jogo.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
   'Mais peças de avatar (óculos, barba) e o avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
@@ -33,6 +34,23 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.8',
+    data: '2026-09-11',
+    titulo: 'Menu enxuto, perfis públicos e a oficina',
+    itens: [
+      { tipo: 'novo', texto: 'Dá para abrir o perfil de qualquer pessoa clicando no nick do ranking: avatar, placar e partidas. Nome e e-mail continuam sendo só de quem é dono.' },
+      { tipo: 'novo', texto: 'Suas partidas e sua posição no ranking agora ficam no seu perfil.' },
+      { tipo: 'novo', texto: 'Novidades, Feedbacks e Análise viraram abas de uma página só: Comunidade.' },
+      { tipo: 'novo', texto: 'A música toca no site inteiro, baixinha fora do jogo — e dá para desligar essa parte nas configurações.' },
+      { tipo: 'novo', texto: 'Esqueci a senha agora leva a uma página que troca a senha de verdade.' },
+      { tipo: 'melhor', texto: '"Como jogar" saiu do menu e foi para a mesa, no canto oposto ao "Próximo dia".' },
+      { tipo: 'melhor', texto: 'Os termos de uso abrem num popup, sem fazer você perder o cadastro pela metade.' },
+      { tipo: 'melhor', texto: 'Entrar com um e-mail que não tem conta leva direto para o cadastro, já preenchido.' },
+      { tipo: 'melhor', texto: 'O cadastro parou de perguntar gênero: quem não escolheu avatar é o manequim, e escolher leva dez segundos no perfil.' },
+      { tipo: 'melhor', texto: 'Na entrada, no computador, o título ficou à esquerda e o que se faz à direita.' },
+    ],
+  },
   {
     versao: '0.7',
     data: '2026-09-11',
