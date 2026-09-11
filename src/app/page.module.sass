@@ -61,7 +61,10 @@
   border-radius: var(--raio)
   color: var(--tinta)
   font-family: var(--mono)
-  font-size: 15px
+  // 16px não é escolha estética: abaixo disso o Safari do iPhone dá zoom
+  // sozinho ao focar o campo, e não desfaz o zoom depois — a página fica
+  // maior que a tela pelo resto da visita. Não baixe este valor.
+  font-size: 16px
 
   &::placeholder
     color: var(--tinta-fraca)

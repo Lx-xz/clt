@@ -95,12 +95,99 @@
   color: var(--tinta-fraca)
   font-size: 12px
 
+// no desktop as colunas todas estão à vista: nada de seta, nada de expandir.
+// Estas três regras precisam vir ANTES da media query — mesma especificidade,
+// então quem vier por último ganha, media query ou não.
+.seta
+  display: none
+
+.curto
+  display: none
+
+.detalhe
+  display: none
+
+  td
+    padding-top: 0
+    background: var(--papel-alto)
+
+// ------------------------------------------------------------------ celular
+// Cabem três informações por linha e só. O resto (partidas, melhor R$, última
+// vez) sai das colunas e passa a viver numa linha que abre no toque — em vez
+// de uma tabela mais larga que a tela, que obrigaria a arrastar de lado.
 @media (max-width: 640px)
   .tabela
     font-size: 12.5px
+    table-layout: fixed
 
     th, td
       padding: 8px 6px
+      // a seta tem que ficar na mesma linha do nick; quem encolhe é o nick
+      white-space: nowrap
+
+    // sobra tudo que puder para a coluna do jogador
+    th:first-child, td:first-child
+      width: 26px
+      padding-right: 0
+
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(4), td:nth-child(4)
+      width: 34px
 
   .colOculta
     display: none
+
+  .nick
+    display: inline-block
+    max-width: calc(100% - 22px)
+    overflow: hidden
+    text-overflow: ellipsis
+    vertical-align: bottom
+
+  // a linha de quem está jogando já vem destacada em cor; o selo só roubaria
+  // o espaço do nick
+  .voce
+    display: none
+
+  .longo
+    display: none
+
+  .curto
+    display: inline
+
+  .linha
+    cursor: pointer
+
+  .seta
+    display: inline-block
+    margin-left: 4px
+    color: var(--tinta-fraca)
+    vertical-align: -2px
+    transition: transform .15s ease
+
+  .setaAberta
+    transform: rotate(180deg)
+
+  .detalhe
+    display: table-row
+
+    // o nowrap acima é para o nick; aqui a data precisa poder quebrar
+    td
+      white-space: normal
+
+  .campos
+    display: grid
+    grid-template-columns: repeat(3, 1fr)
+    gap: 8px
+    margin: 0
+
+    dt
+      color: var(--tinta-fraca)
+      font-size: 10px
+      letter-spacing: .04em
+      text-transform: uppercase
+
+    dd
+      margin: 2px 0 0
+      font-family: var(--mono)
+      font-size: 12px

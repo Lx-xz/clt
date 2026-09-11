@@ -38,7 +38,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/` | Entrada: pede um nick, procura no banco, oferece criar se não existir |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
-| `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral |
+| `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral. No celular a linha mostra só nick/V/D e abre no toque com o resto |
 | `/meus-jogos` | Toda run terminada do jogador da sessão. Link na barra lateral |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro). Chega-se clicando numa run em `/meus-jogos` |
 | `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). Link na barra lateral, como "Análise" |
@@ -245,6 +245,21 @@ E cuidado com o basePath: o Next prefixa o `<link>` para o manifest, mas
 **não** prefixa o conteúdo de dentro dele — `start_url`, `scope` e `icons`
 em `src/app/manifest.ts` levam o `/clt` na mão, senão o atalho instalado
 abre na raiz do domínio.
+
+**Campo com fonte menor que 16px dá zoom no iPhone — e não desfaz.** O Safari
+do iOS dá zoom sozinho ao focar qualquer `input` com `font-size` abaixo de
+16px, e ao desfocar **não volta**: a página fica maior que a tela pelo resto
+da visita. Não existe jeito confiável de pedir o zoom-out por JS, e a saída
+comum (`maximum-scale=1`) é hostil a quem precisa ampliar. A regra é só ter
+fonte de 16px ou mais em campo de formulário — hoje, `.campo` em
+`page.module.sass`, o único input do site.
+
+**Regra depois de `@media` ganha da regra dentro dele.** Com a mesma
+especificidade, quem vem por último na folha vence — estar dentro de uma
+media query não conta como mais específico. Em `ranking.module.sass` as
+regras base (`.seta`, `.curto`, `.detalhe` em `display: none`) ficam **antes**
+do `@media (max-width: 640px)` de propósito; movê-las para baixo apagaria o
+comportamento do celular sem erro nenhum aparecer.
 
 **`create policy` não tem "if not exists".** Rodar `schema.sql` de novo num
 banco que já o rodou antes (para pegar funções/colunas novas) falha em
