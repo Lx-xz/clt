@@ -274,8 +274,9 @@ grava na hora, fora do timer, e o que falhar entra numa fila em
 nada que só acontece uma vez naquele timer.
 E o erro do banco não pode mais ser engolido: `registrarRunAgora()` devolve
 o motivo, escreve `console.error` com a mensagem do PostgREST inteira
-(`message · details · hint · code`) e a mesa mostra um aviso no painel de
-fim. Foi por não ter nada disso que "joguei até o fim e não salvou" levou
+(`message · details · hint · code`) e a mesa mostra essa mesma mensagem
+crua no painel de fim — no iPhone não há console para abrir sem um Mac por
+perto, então o erro tem que caber na tela. Foi por não ter nada disso que "joguei até o fim e não salvou" levou
 duas rodadas para ser diagnosticado.
 
 **`create policy` não tem "if not exists".** Rodar `schema.sql` de novo num

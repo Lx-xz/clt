@@ -58,9 +58,10 @@ export default function JogarPage() {
   const [sobreTapete, setSobreTapete] = useState(false)
   const [status, setStatus] = useState<StatusSync>('ocioso')
   const [falha, setFalha] = useState<string | null>(null)
-  // o banco recusar o registro da run precisa aparecer na tela: engolir isso
-  // foi o bug de "joguei até o fim e não salvou"
-  const [registroFalhou, setRegistroFalhou] = useState(false)
+  // o banco recusar o registro da run precisa aparecer na tela, com a
+  // mensagem do Postgres junto: engolir isso foi o bug de "joguei até o fim e
+  // não salvou", e no iPhone não há console para ler o motivo
+  const [registroFalhou, setRegistroFalhou] = useState<string | null>(null)
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -96,7 +97,7 @@ export default function JogarPage() {
     // o timer é cancelado por qualquer jogada seguinte, e era assim que uma
     // derrota sumia se o jogador clicasse em "nova run" rápido demais
     if (next.outcome !== 'jogando') {
-      void registrarRunAgora(sessao.id, next, next.outcome).then((erro) => setRegistroFalhou(Boolean(erro)))
+      void registrarRunAgora(sessao.id, next, next.outcome).then(setRegistroFalhou)
     }
   }
 
@@ -436,10 +437,13 @@ export default function JogarPage() {
               {FIM[state.outcome as keyof typeof FIM].text} Pontuação final: R$ {state.money}.
             </p>
             {registroFalhou ? (
-              <p className={styles.painelAviso}>
-                Esta partida não chegou ao banco agora — ela ficou guardada aqui e sobe sozinha da
-                próxima vez que você abrir a mesa. O console do navegador tem o motivo.
-              </p>
+              <div className={styles.painelAviso}>
+                <p>
+                  Esta partida não chegou ao banco. Ela ficou guardada aqui e sobe sozinha da
+                  próxima vez que você abrir a mesa.
+                </p>
+                <p className={styles.painelMotivo}>{registroFalhou}</p>
+              </div>
             ) : null}
             <div className={styles.acoes}>
               <button
