@@ -74,21 +74,26 @@ export function montarRun(
  * Registro append-only de uma run terminada, para balanceamento e para as
  * páginas de ranking/análise/meus-jogos.
  *
- * run_id identifica a run de verdade (gerado uma vez em createRun): o upsert
- * com ignoreDuplicates faz de conta que nunca houve conflito quando a mesma
- * run já foi registrada — evita duplicar a linha se duas abas terminarem a
- * mesma run, ou se a sincronização repetir por uma falha de rede.
+ * É um `insert` cru de propósito, e não um upsert: o upsert vira
+ * `on conflict do nothing` no Postgres, e o Postgres cobra SELECT na tabela
+ * por causa da cláusula `on conflict` — o que exigiria `grant select on runs
+ * to anon` e abriria a telemetria de todo mundo para leitura. `runs` é só de
+ * escrita pelo site (veja CLAUDE.md, seção Banco), então o caminho é inserir
+ * direto e tratar o conflito quando ele vier.
+ *
+ * O índice único em run_id é quem impede a duplicata: se a mesma run for
+ * enviada duas vezes (duas abas, uma retentativa depois de a resposta se
+ * perder), a segunda volta com 23505 — unique_violation — e isso aqui é
+ * sucesso, não erro. A run já está gravada, que é tudo que importa.
  */
 export async function enviarRun(linha: RunRegistravel) {
   if (!supabase) throw new Error('Banco não configurado.')
-  const { error } = await supabase
-    .from('runs')
-    .upsert(linha, { onConflict: 'run_id', ignoreDuplicates: true })
+  const { error } = await supabase.from('runs').insert(linha)
+  if (!error) return
+  if (error.code === '23505') return
   // o postgrest manda a causa em details/hint/code, e só a `message` costuma
   // ser vaga demais para achar o problema ("column ... does not exist" vem em
   // `message`, mas "permission denied" vem quase só no `code`)
-  if (error) {
-    const partes = [error.message, error.details, error.hint, error.code].filter(Boolean)
-    throw new Error(partes.join(' · '))
-  }
+  const partes = [error.message, error.details, error.hint, error.code].filter(Boolean)
+  throw new Error(partes.join(' · '))
 }

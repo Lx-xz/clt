@@ -352,10 +352,17 @@ SQL Editor do projeto.
 `runs` tem uma coluna `run_id` (uuid, gerado com `crypto.randomUUID()` na
 criação da run, em `createRun()`) com índice único, e uma coluna `details`
 (`jsonb`) com o dia-a-dia da partida (`GameState.history`, ver
-`src/game/types.ts` — `DayLog`). `registrarRun()` (`src/data/saves.ts`) grava
-com `upsert(..., { onConflict: 'run_id', ignoreDuplicates: true })`: se a
-mesma run for enviada duas vezes (duas abas, uma retentativa de rede), a
-segunda vira no-op em vez de duplicar a linha. `run_id` é nulo nas linhas
+`src/game/types.ts` — `DayLog`). `enviarRun()` (`src/data/saves.ts`) grava com um
+`insert` cru e trata `23505` (unique_violation) como sucesso: se a mesma run
+for enviada duas vezes (duas abas, uma retentativa depois de a resposta se
+perder), a segunda esbarra no índice único e isso é exatamente o resultado
+desejado. **Não troque por `upsert`** — foi o que estava aqui e quebrou em
+produção: o upsert vira `on conflict do nothing`, e o Postgres cobra SELECT
+na tabela por causa da cláusula `on conflict`, então toda gravação voltava
+com `permission denied for table runs · GRANT SELECT ON public.runs TO anon
+· 42501`. Seguir a dica da mensagem daria leitura da telemetria de todo
+mundo para o `anon`, que é justamente o que a seção de segurança abaixo
+proíbe. `run_id` é nulo nas linhas
 gravadas antes desta mudança — nulo nunca colide com nulo num índice único do
 Postgres, então convivem sem problema.
 
