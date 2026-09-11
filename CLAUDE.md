@@ -277,6 +277,15 @@ mesmo que todo o resto do arquivo seja `create or replace`/`if not exists`.
 A saída é um `drop policy if exists` logo antes de cada `create policy`.
 Qualquer política nova que entrar no arquivo precisa do mesmo par.
 
+**`create or replace function` não muda o tipo de retorno.** O irmão da
+armadilha acima: se uma função `returns table (...)` ganha coluna nova,
+rodar o arquivo num banco que já tem a versão antiga falha em "cannot
+change return type of existing function". Por isso `schema.sql` derruba
+todas as funções (`drop function if exists`, com a assinatura completa)
+num bloco só, antes de recriá-las. Função nova entra nesse bloco também —
+e o `grant execute` tem que vir depois do `create`, porque o drop leva o
+grant junto.
+
 **Gesto de arraste em `window` disputando com o arraste da carta.** A barra
 lateral no celular ouve `touchstart/touchmove` em `window` para abrir com
 arraste de qualquer ponto da tela. Sem cuidado, isso também dispara ao começar

@@ -104,6 +104,23 @@ grant insert on public.runs to anon;
 -- players mesmo sem grant para anon. search_path fixo evita sequestro por
 -- schema no caminho.
 
+-- `create or replace function` não consegue mudar o tipo de retorno de uma
+-- função que já existe ("cannot change return type of existing function"):
+-- toda vez que uma destas ganha coluna nova, rodar o arquivo de novo falha.
+-- Derrubar antes resolve, e os grants vêm logo depois de cada create.
+drop function if exists public.find_player(text);
+drop function if exists public.create_player(text);
+drop function if exists public.estatisticas_gerais();
+drop function if exists public.cartas_jogadas();
+drop function if exists public.cartas_fatais();
+drop function if exists public.escolhas_de_evento();
+drop function if exists public.estresse_por_dia();
+drop function if exists public.cartas_encalhadas();
+drop function if exists public.estatisticas_nerds();
+drop function if exists public.ranking();
+drop function if exists public.meus_jogos(uuid);
+drop function if exists public.jogo_detalhe(bigint, uuid);
+
 create or replace function public.find_player(p_nick text)
 returns uuid
 language sql
