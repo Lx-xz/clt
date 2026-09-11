@@ -22,9 +22,9 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#e9e4d9',
     theme_color: '#e9e4d9',
     icons: [
-      { src: `${base}/apple-icon.png`, sizes: '180x180', type: 'image/png' },
+      { src: `${base}/apple-touch-icon.png`, sizes: '180x180', type: 'image/png' },
       // purpose "maskable" é para o Android recortar sem comer o desenho
-      { src: `${base}/apple-icon.png`, sizes: '180x180', type: 'image/png', purpose: 'maskable' },
+      { src: `${base}/apple-touch-icon.png`, sizes: '180x180', type: 'image/png', purpose: 'maskable' },
     ],
   }
 }
