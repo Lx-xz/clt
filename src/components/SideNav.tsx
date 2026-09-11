@@ -120,10 +120,10 @@ export default function SideNav() {
 
   const naMesa = pathname.startsWith('/jogar')
 
-  function confirmarReinicio() {
+  function confirmarReinicio(guardar: boolean) {
     setConfirmando(false)
     setAberta(false)
-    window.dispatchEvent(new CustomEvent(EVENTO_REINICIAR))
+    window.dispatchEvent(new CustomEvent(EVENTO_REINICIAR, { detail: { guardar } }))
   }
 
   return (
@@ -192,15 +192,19 @@ export default function SideNav() {
               Reiniciar a run?
             </h2>
             <p className={styles.dialogoTexto}>
-              O mês atual é descartado e um novo começa do dia 1. Não dá para desfazer.
+              O mês atual é descartado e um novo começa do dia 1. Não dá para desfazer. Quer
+              guardar este mês no seu histórico antes?
             </p>
             <div className={styles.dialogoAcoes}>
               <button
                 type="button"
                 className={`${buttons.button} ${buttons.primary}`}
-                onClick={confirmarReinicio}
+                onClick={() => confirmarReinicio(true)}
               >
-                Reiniciar
+                Guardar e reiniciar
+              </button>
+              <button type="button" className={buttons.button} onClick={() => confirmarReinicio(false)}>
+                Reiniciar sem guardar
               </button>
               <button type="button" className={buttons.button} onClick={() => setConfirmando(false)}>
                 Cancelar

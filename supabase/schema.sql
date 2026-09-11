@@ -47,6 +47,21 @@ create table if not exists public.runs (
 alter table public.runs add column if not exists run_id uuid;
 alter table public.runs add column if not exists details jsonb;
 
+-- estatísticas que o histórico não deduz sozinho, e a marca de visibilidade
+alter table public.runs add column if not exists started_at   timestamptz;
+alter table public.runs add column if not exists max_combo    smallint;
+alter table public.runs add column if not exists cards_played smallint;
+alter table public.runs add column if not exists warnings     smallint;
+-- falso na run largada no meio sem permissão: conta para a análise, mas não
+-- aparece em "meus jogos" nem no ranking
+alter table public.runs add column if not exists visivel boolean not null default true;
+
+-- 'abandono' é o quinto desfecho: a run que o jogador reiniciou no meio. Não é
+-- derrota (ninguém foi demitido), mas é o dado que diz o que faz desistir.
+alter table public.runs drop constraint if exists runs_outcome_check;
+alter table public.runs add constraint runs_outcome_check
+  check (outcome in ('vitoria', 'burnout', 'demissao', 'despejo', 'abandono'));
+
 -- nulo nunca colide com nulo num índice único do Postgres, então linhas
 -- antigas (sem run_id) convivem em paz com as novas
 create unique index if not exists runs_run_id_idx on public.runs (run_id);
@@ -128,7 +143,8 @@ grant execute on function public.create_player(text) to anon;
 -- a tabela crua. /ranking é a exceção deliberada de "nick vira público": ele
 -- já não protegia nada (não é senha), e agora vira uma lista intencional.
 
--- contagens gerais, para a página de análise
+-- contagens gerais, para a página de análise. A run abandonada não entra em
+-- total_runs nem no dia médio: ela não terminou, entraria como derrota falsa.
 create or replace function public.estatisticas_gerais()
 returns table (
   jogadores             bigint,
@@ -138,6 +154,7 @@ returns table (
   burnouts              bigint,
   demissoes             bigint,
   despejos              bigint,
+  abandonos             bigint,
   dia_medio             numeric
 )
 language sql
@@ -147,15 +164,156 @@ as $$
   select
     (select count(*) from public.players)                        as jogadores,
     (select count(distinct player_id) from public.runs)          as jogadores_que_jogaram,
-    (select count(*) from public.runs)                            as total_runs,
+    (select count(*) from public.runs where outcome <> 'abandono') as total_runs,
     (select count(*) from public.runs where outcome = 'vitoria')  as vitorias,
     (select count(*) from public.runs where outcome = 'burnout')  as burnouts,
     (select count(*) from public.runs where outcome = 'demissao') as demissoes,
     (select count(*) from public.runs where outcome = 'despejo')  as despejos,
-    (select round(avg(day), 1) from public.runs)                  as dia_medio;
+    (select count(*) from public.runs where outcome = 'abandono') as abandonos,
+    (select round(avg(day), 1) from public.runs where outcome <> 'abandono') as dia_medio;
 $$;
 
 grant execute on function public.estatisticas_gerais() to anon;
+
+-- ------------------------------------------------------ estatísticas nerds
+--
+-- Tudo abaixo sai do que já é gravado. `details` guarda o dia-a-dia com as
+-- cartas jogadas em ordem, então "quantos cafés" e "a carta que mais mata"
+-- não precisam de contador novo no jogo — é só somar aqui.
+
+-- quantas vezes cada carta foi jogada, somando todo mundo
+create or replace function public.cartas_jogadas()
+returns table (card_id text, vezes bigint)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select carta.valor as card_id, count(*) as vezes
+  from public.runs r
+  cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+  cross join lateral jsonb_array_elements_text(coalesce(dia.valor -> 'cardsPlayed', '[]'::jsonb)) as carta(valor)
+  group by carta.valor
+  order by vezes desc;
+$$;
+
+grant execute on function public.cartas_jogadas() to anon;
+
+-- a última carta jogada antes de cada derrota: "a carta que mais mata"
+create or replace function public.cartas_fatais()
+returns table (outcome text, card_id text, vezes bigint)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  -- o índice -1 do jsonb é o último item do array: a carta que o jogador
+  -- jogou logo antes de a run acabar
+  with ultima_carta as (
+    select
+      r.outcome,
+      (
+        select dia.valor
+        from jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+        order by (dia.valor ->> 'day')::int desc
+        limit 1
+      ) -> 'cardsPlayed' ->> -1 as card_id
+    from public.runs r
+    where r.outcome in ('burnout', 'demissao', 'despejo')
+  )
+  select u.outcome, u.card_id, count(*) as vezes
+  from ultima_carta u
+  where u.card_id is not null
+  group by 1, 2
+  order by vezes desc;
+$$;
+
+grant execute on function public.cartas_fatais() to anon;
+
+-- nos eventos ambíguos, qual lado o pessoal escolhe
+create or replace function public.escolhas_de_evento()
+returns table (event_id text, escolha smallint, vezes bigint)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select
+    dia.valor ->> 'eventId'                as event_id,
+    (dia.valor ->> 'eventChoice')::smallint as escolha,
+    count(*)                                as vezes
+  from public.runs r
+  cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+  where dia.valor ->> 'eventChoice' is not null
+    and dia.valor ->> 'eventId' is not null
+  group by 1, 2
+  order by event_id, escolha;
+$$;
+
+grant execute on function public.escolhas_de_evento() to anon;
+
+-- o estresse médio em cada dia do mês: o desenho da curva de desgaste
+create or replace function public.estresse_por_dia()
+returns table (day smallint, estresse_medio numeric, amostras bigint)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select
+    (dia.valor ->> 'day')::smallint         as day,
+    round(avg((dia.valor ->> 'stress')::numeric), 2) as estresse_medio,
+    count(*)                                as amostras
+  from public.runs r
+  cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+  where dia.valor ->> 'day' is not null
+  group by 1
+  order by 1;
+$$;
+
+grant execute on function public.estresse_por_dia() to anon;
+
+-- os números soltos que ficam bem numa fileira de placas
+create or replace function public.estatisticas_nerds()
+returns table (
+  total_cartas_jogadas bigint,
+  total_dias_vividos   bigint,
+  maior_embalo         smallint,
+  total_advertencias   bigint,
+  dinheiro_total       bigint,
+  runs_abandonadas     bigint,
+  duracao_media_min    numeric,
+  run_mais_rapida_min  numeric
+)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select
+    (
+      select count(*)
+      from public.runs r
+      cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+      cross join lateral jsonb_array_elements_text(coalesce(dia.valor -> 'cardsPlayed', '[]'::jsonb)) as carta(valor)
+    ) as total_cartas_jogadas,
+    (
+      select count(*)
+      from public.runs r
+      cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+    ) as total_dias_vividos,
+    (select max(max_combo) from public.runs)                     as maior_embalo,
+    (select coalesce(sum(warnings), 0) from public.runs)         as total_advertencias,
+    (select coalesce(sum(money), 0) from public.runs where outcome <> 'abandono') as dinheiro_total,
+    (select count(*) from public.runs where outcome = 'abandono') as runs_abandonadas,
+    (
+      select round(avg(extract(epoch from (ended_at - started_at)) / 60)::numeric, 1)
+      from public.runs
+      where started_at is not null and ended_at > started_at and outcome <> 'abandono'
+    ) as duracao_media_min,
+    (
+      select round(min(extract(epoch from (ended_at - started_at)) / 60)::numeric, 1)
+      from public.runs
+      where started_at is not null and ended_at > started_at and outcome = 'vitoria'
+    ) as run_mais_rapida_min;
+$$;
+
+grant execute on function public.estatisticas_nerds() to anon;
 
 -- placar público: só quem já terminou pelo menos uma run aparece
 create or replace function public.ranking()
@@ -180,6 +338,9 @@ as $$
     max(r.ended_at)                                as ultima_partida
   from public.players p
   join public.runs r on r.player_id = p.id
+  -- o placar é de partida terminada e guardada: abandono não conta como
+  -- derrota, e a run que o jogador pediu para não guardar não aparece
+  where r.visivel and r.outcome <> 'abandono'
   group by p.nick
   order by vitorias desc, total_runs desc;
 $$;
@@ -202,7 +363,7 @@ set search_path = public, pg_temp
 as $$
   select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached
   from public.runs r
-  where r.player_id = p_player_id
+  where r.player_id = p_player_id and r.visivel
   order by r.ended_at desc;
 $$;
 
@@ -226,7 +387,7 @@ set search_path = public, pg_temp
 as $$
   select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached, r.details
   from public.runs r
-  where r.id = p_run_id and r.player_id = p_player_id;
+  where r.id = p_run_id and r.player_id = p_player_id and r.visivel;
 $$;
 
 grant execute on function public.jogo_detalhe(bigint, uuid) to anon;

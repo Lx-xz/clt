@@ -103,6 +103,9 @@ export function createRun(equipped: CardId[]): GameState {
 
   const state: GameState = {
     runId: crypto.randomUUID(),
+    startedAt: new Date().toISOString(),
+    maxCombo: 0,
+    cardsPlayed: 0,
     day: 0,
     phase: 'evento',
     energy: 0,
@@ -409,6 +412,7 @@ export function playCard(input: GameState, uid: string): GameState {
   }
 
   state.playedToday.push(card.id)
+  state.cardsPlayed += 1
   log(state, `Jogou ${card.name}.`)
   aplicarEmbalo(state, card.kind)
   return checkDefeat(state)
@@ -459,6 +463,8 @@ function aplicarEmbalo(state: GameState, kind: CardKind) {
     state.streakKind = kind
     state.streakCount = 1
   }
+
+  state.maxCombo = Math.max(state.maxCombo, state.streakCount)
 
   if (state.streakCount < 2) {
     state.lastCombo = null

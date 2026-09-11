@@ -23,7 +23,13 @@ import {
   revealEvent,
 } from '@/game/engine'
 import { getEvent } from '@/game/events'
-import { carregarDoBanco, sincronizar, type StatusSync } from '@/data/sync'
+import {
+  carregarDoBanco,
+  enviarRunsPendentes,
+  registrarRunAgora,
+  sincronizar,
+  type StatusSync,
+} from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
 import { EVENTO_REINICIAR } from '@/components/SideNav'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
@@ -57,6 +63,8 @@ export default function JogarPage() {
 
   useEffect(() => {
     let vivo = true
+    // o que não conseguiu subir da última vez sobe agora
+    void enviarRunsPendentes()
     carregarDoBanco(sessao.id)
       .then(({ run, collection }) => {
         if (!vivo) return
@@ -81,9 +89,23 @@ export default function JogarPage() {
   function update(next: GameState) {
     setState(next)
     sincronizar(sessao.id, next, loadCollection(), setStatus)
+    // a run terminada vai para o banco na hora, fora do timer do sincronizar:
+    // o timer é cancelado por qualquer jogada seguinte, e era assim que uma
+    // derrota sumia se o jogador clicasse em "nova run" rápido demais
+    if (next.outcome !== 'jogando') {
+      void registrarRunAgora(sessao.id, next, next.outcome)
+    }
   }
 
-  function recomecar() {
+  /**
+   * `guardar` é a resposta do jogador à pergunta do menu. Dizer não tira a run
+   * de "meus jogos" e do ranking — ela ainda é registrada, invisível, porque
+   * quantas runs são largadas no meio é justamente um dado de balanceamento.
+   */
+  function recomecar(guardar = true) {
+    if (state && state.outcome === 'jogando' && state.day >= 1) {
+      void registrarRunAgora(sessao.id, state, 'abandono', guardar)
+    }
     clearRun()
     setAberta(null)
     update(createRun(loadCollection().equipped))
@@ -94,7 +116,10 @@ export default function JogarPage() {
   const recomecarRef = useRef(recomecar)
   recomecarRef.current = recomecar
   useEffect(() => {
-    const aoReiniciar = () => recomecarRef.current()
+    const aoReiniciar = (e: Event) => {
+      const guardar = (e as CustomEvent<{ guardar?: boolean }>).detail?.guardar ?? true
+      recomecarRef.current(guardar)
+    }
     window.addEventListener(EVENTO_REINICIAR, aoReiniciar)
     return () => window.removeEventListener(EVENTO_REINICIAR, aoReiniciar)
   }, [])
@@ -405,7 +430,11 @@ export default function JogarPage() {
               {FIM[state.outcome as keyof typeof FIM].text} Pontuação final: R$ {state.money}.
             </p>
             <div className={styles.acoes}>
-              <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={recomecar}>
+              <button
+                type="button"
+                className={`${buttons.button} ${buttons.primary}`}
+                onClick={() => recomecar()}
+              >
                 Nova run
               </button>
             </div>

@@ -65,6 +65,12 @@ export interface GameState {
    *  run duas vezes (duas abas, uma retentativa de rede). Não aparece na
    *  interface. */
   runId: string
+  /** Quando a run começou (ISO). Com o `ended_at` do banco dá a duração. */
+  startedAt: string
+  /** Maior embalo alcançado em qualquer dia da run. */
+  maxCombo: number
+  /** Quantas cartas foram jogadas na run inteira, somando todos os dias. */
+  cardsPlayed: number
   day: number // 1..20
   phase: Phase
   energy: number

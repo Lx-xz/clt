@@ -261,6 +261,15 @@ regras base (`.seta`, `.curto`, `.detalhe` em `display: none`) ficam **antes**
 do `@media (max-width: 640px)` de propósito; movê-las para baixo apagaria o
 comportamento do celular sem erro nenhum aparecer.
 
+**Run terminada não pode ser gravada por timer com debounce.** Foi bug em
+produção: o registro da run terminada morava no mesmo `setTimeout` de 900ms
+que sobe o save, e qualquer sincronização seguinte dava `clearTimeout`.
+Começar uma run nova logo depois de perder cancelava a gravação da derrota,
+que sumia sem erro nenhum na tela. Hoje `registrarRunAgora()` (`sync.ts`)
+grava na hora, fora do timer, e o que falhar entra numa fila em
+`clt:runs-pendentes:v1` que sobe na próxima abertura da mesa. Não pendure
+nada que só acontece uma vez naquele timer.
+
 **`create policy` não tem "if not exists".** Rodar `schema.sql` de novo num
 banco que já o rodou antes (para pegar funções/colunas novas) falha em
 "policy ... already exists" na primeira `create policy` que encontrar,
@@ -312,6 +321,21 @@ mesma run for enviada duas vezes (duas abas, uma retentativa de rede), a
 segunda vira no-op em vez de duplicar a linha. `run_id` é nulo nas linhas
 gravadas antes desta mudança — nulo nunca colide com nulo num índice único do
 Postgres, então convivem sem problema.
+
+`runs` tem ainda `started_at`, `max_combo`, `cards_played`, `warnings` (o que
+o histórico não deduz sozinho) e `visivel`. **`visivel = false` é a run largada
+no meio sem permissão do jogador:** ao reiniciar, o menu pergunta se quer
+guardar; dizendo não, a run é gravada assim mesmo, com `outcome = 'abandono'`,
+mas fora de `meus_jogos()`, `ranking()` e `jogo_detalhe()` — quantas runs são
+largadas, e em que dia, é dado de balanceamento. `'abandono'` é o quinto valor
+do check de `outcome` e **não conta** como derrota em lugar nenhum.
+
+As estatísticas de carta saem todas de `details`, que já guarda as cartas de
+cada dia na ordem jogada: `cartas_jogadas()`, `cartas_fatais()` (a última carta
+antes de a run acabar mal, via índice `-1` do jsonb), `escolhas_de_evento()`,
+`estresse_por_dia()` e `estatisticas_nerds()`. Nenhuma delas precisou de
+contador novo no motor — antes de criar campo em `GameState` para uma
+estatística, veja se ela não sai do histórico.
 
 Duas decisões de segurança que não devem ser desfeitas:
 

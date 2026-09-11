@@ -36,6 +36,7 @@ const ROTULO: Record<DetalheDoJogo['outcome'], string> = {
   burnout: 'Burnout',
   demissao: 'Demissão',
   despejo: 'Despejo',
+  abandono: 'Largada no meio',
 }
 
 function formatarData(iso: string): string {
