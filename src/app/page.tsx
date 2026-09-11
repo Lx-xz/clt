@@ -1,6 +1,18 @@
 'use client'
 
-import { BookOpen, LogIn, Layers, Play, UserRound } from 'lucide-react'
+import {
+  BookOpen,
+  ChartColumn,
+  History,
+  Layers,
+  LogIn,
+  MessageSquareWarning,
+  Play,
+  Sparkles,
+  Trophy,
+  User,
+  UserRound,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import ComoJogar from '@/components/ComoJogar'
@@ -25,6 +37,16 @@ import buttons from '@/styles/buttons.module.sass'
 import styles from './page.module.sass'
 
 type Aba = 'entrar' | 'criar'
+
+/** Os mesmos destinos da barra lateral, na porta de entrada. */
+const ATALHOS = [
+  { href: '/perfil', label: 'Perfil', Icon: User },
+  { href: '/meus-jogos', label: 'Meus jogos', Icon: History },
+  { href: '/ranking', label: 'Ranking', Icon: Trophy },
+  { href: '/feedback', label: 'Feedbacks', Icon: MessageSquareWarning },
+  { href: '/changelog', label: 'Novidades', Icon: Sparkles },
+  { href: '/analytics', label: 'Análise', Icon: ChartColumn },
+]
 
 export default function Home() {
   const [conta, setConta] = useState<Conta | null>(null)
@@ -210,11 +232,24 @@ export default function Home() {
               <Layers size={16} aria-hidden />
               Baralho
             </Link>
-            <button type="button" className={buttons.button} onClick={() => setTutorial(true)}>
-              <BookOpen size={16} aria-hidden />
-              Como jogar
-            </button>
           </div>
+
+          <button type="button" className={styles.tutorial} onClick={() => setTutorial(true)}>
+            <BookOpen size={20} aria-hidden />
+            <span>
+              <b>Como jogar</b>
+              Regras, cartas e o que faz perder — em um minuto
+            </span>
+          </button>
+
+          <nav className={styles.atalhos} aria-label="Atalhos">
+            {ATALHOS.map(({ href, label, Icon }) => (
+              <Link key={href} className={styles.atalho} href={href}>
+                <Icon size={15} aria-hidden />
+                {label}
+              </Link>
+            ))}
+          </nav>
         </>
       ) : null}
 
@@ -408,9 +443,12 @@ export default function Home() {
             ) : null}
           </div>
 
-          <button type="button" className={buttons.button} onClick={() => setTutorial(true)}>
-            <BookOpen size={16} aria-hidden />
-            Como jogar
+          <button type="button" className={styles.tutorial} onClick={() => setTutorial(true)}>
+            <BookOpen size={20} aria-hidden />
+            <span>
+              <b>Como jogar</b>
+              Regras, cartas e o que faz perder — em um minuto
+            </span>
           </button>
         </>
       ) : null}

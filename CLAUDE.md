@@ -184,6 +184,12 @@ opções. O que ele escolheu, e que deve ser preservado:
   notificações, escondido para convidado), "Perfil" e "Configurações".
   Enquanto houver popup aberto o arraste do menu é ignorado — veja `Dialogo`
   abaixo.
+- **O tutorial (`ComoJogar.tsx`) monta as cartas de verdade.** Ele renderiza o
+  componente `Card` com cartas tiradas de `cards.ts`, e os números (energia
+  base, contas, estresse máximo) saem das constantes — rebalancear o jogo não
+  pode deixar o tutorial mentindo. As cores dos recursos são as mesmas do HUD:
+  o jogador reconhece o medidor pela cor antes de ler o nome, e o tutorial não
+  pode falar outra língua.
 - **Todo popup é o `Dialogo`** (`src/components/Dialogo.tsx`). Ele fecha ao
   clicar fora e no Esc, e trava a página atrás marcando `data-popup` no
   `<html>` (a regra que congela a rolagem está em `shell.module.sass`). Não
@@ -428,6 +434,18 @@ antes, no perfil, e na página de feedbacks.
 (`update public.players set admin = true where email = '...'`), depois de a
 conta existir. Não há tela para promover ninguém, de propósito.
 
+**A urgência tem duas línguas, e uma coluna só.** "Urgência crítica" não quer
+dizer nada numa sugestão — sugestão não é urgente, ela entra antes ou depois.
+Os quatro valores no Postgres continuam `baixa/media/alta/critica`; o que muda
+é o rótulo, conforme o tipo do relato (`escalaDe()` em `src/data/feedback.ts`):
+bug fala em gravidade (Cosmético → Quebra o jogo), ideia fala em quando entra
+(Algum dia → Entra já). Não crie coluna nova para isso.
+
+**Comentário de admin faz a triagem sozinho.** `comentar_feedback()` move o
+relato de `novo` para `triado` quando quem comenta é admin: responder já é ter
+lido, e deixar o relato dizendo "ainda não foi lido com calma" depois de uma
+resposta é mentira na cara do autor.
+
 `runs` tem uma coluna `run_id` (uuid, gerado com `crypto.randomUUID()` na
 criação da run, em `createRun()`) com índice único, e uma coluna `details`
 (`jsonb`) com o dia-a-dia da partida (`GameState.history`, ver
@@ -469,6 +487,11 @@ Decisões de segurança que não devem ser desfeitas:
   `meu_perfil()`, que filtra por `auth.uid()`. E-mail e nome **nunca** saem
   para outra pessoa — o que aparece em ranking, feedback e comentário é só o
   nick.
+- **Quem é admin, quem pergunta é o banco.** A página de feedbacks chama
+  `sou_admin()` ao abrir, em vez de confiar no `admin` do perfil guardado no
+  navegador: virar admin é um `update` no banco, não uma ação do site, e o
+  espelho local pode estar velho. O selo "modo admin" no título existe para
+  isso ser visível — se ele não aparece, a conta não é admin, ponto.
 - **`feedbacks`, `feedback_comentarios` e `notificacoes` também não têm
   política nem grant.** Tudo passa por função `security definer` que confere
   `auth.uid()` por dentro: `criar_feedback` recusa quem não tem conta,

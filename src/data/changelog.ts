@@ -33,6 +33,19 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.5',
+    data: '2026-09-11',
+    titulo: 'Tutorial ilustrado e feedback mais claro',
+    itens: [
+      { tipo: 'melhor', texto: '"Como jogar" agora mostra as cartas de verdade, os ícones e as cores dos recursos, em vez de só texto.' },
+      { tipo: 'melhor', texto: 'O botão do tutorial ficou destacado na entrada, e a home ganhou atalhos para perfil, ranking, feedbacks e novidades.' },
+      { tipo: 'melhor', texto: 'Bug agora tem gravidade (de "cosmético" a "quebra o jogo") e sugestão tem prioridade (de "algum dia" a "entra já") — cada um na sua língua.' },
+      { tipo: 'melhor', texto: 'Relato comentado pelo admin sai sozinho de "novo" para "na fila": responder já é ter lido.' },
+      { tipo: 'correcao', texto: 'Os controles de admin não apareciam quando o perfil guardado no navegador estava desatualizado; agora quem responde é o banco.' },
+      { tipo: 'correcao', texto: 'Campos de texto altos demais em todo o site.' },
+    ],
+  },
+  {
     versao: '0.4',
     data: '2026-09-11',
     titulo: 'Contas, feedbacks e tutorial',

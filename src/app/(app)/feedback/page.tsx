@@ -8,7 +8,6 @@ import { useSessao } from '@/components/SessaoGuard'
 import {
   STATUS,
   TIPOS,
-  URGENCIAS,
   adminAtualizarFeedback,
   comentarFeedback,
   comentariosDoFeedback,
@@ -16,8 +15,12 @@ import {
   editarFeedback,
   excluirFeedback,
   feedbacksParecidos,
+  escalaDe,
   listarFeedbacks,
+  nomeDaEscala,
   rotuloDe,
+  rotuloUrgencia,
+  souAdmin,
   type Comentario,
   type Feedback,
   type Parecido,
@@ -53,6 +56,13 @@ export default function FeedbackPage() {
   const [comentando, setComentando] = useState('')
   const [ocupado, setOcupado] = useState(false)
   const [comoFunciona, setComoFunciona] = useState(false)
+  // o perfil guardado no navegador pode estar velho (virar admin é um update
+  // no banco, não uma ação do site): quem responde de verdade é o `sou_admin()`
+  const [admin, setAdmin] = useState(sessao.admin)
+
+  useEffect(() => {
+    void souAdmin().then(setAdmin)
+  }, [])
 
   // o relato sendo escrito, e a etapa em que ele está
   const [rascunho, setRascunho] = useState<Rascunho | null>(null)
@@ -144,7 +154,10 @@ export default function FeedbackPage() {
     <main className="page">
       <header className={styles.topo}>
         <div>
-          <h1 className={styles.titulo}>Feedbacks</h1>
+          <h1 className={styles.titulo}>
+            Feedbacks
+            {admin ? <span className={styles.seloModoAdmin}>modo admin</span> : null}
+          </h1>
           <p className={styles.intro}>
             Todo bug relatado e toda sugestão ficam aqui, à vista, com o que aconteceu com cada um.
             O que já foi entregue vive em <Link href="/changelog">Novidades</Link>.
@@ -237,15 +250,15 @@ export default function FeedbackPage() {
               <div className={styles.corpo}>
                 <p className={styles.texto}>{f.corpo}</p>
                 <p className={styles.rodapeCard}>
-                  por <b>{f.autor_nick}</b> em {dataCurta(f.criado_em)} · urgência{' '}
-                  {rotuloDe(URGENCIAS, f.urgencia)}
+                  por <b>{f.autor_nick}</b> em {dataCurta(f.criado_em)} ·{' '}
+                  {nomeDaEscala(f.tipo).toLowerCase()}: {rotuloUrgencia(f.tipo, f.urgencia)}
                   {f.nota !== null ? ` · nota do admin ${f.nota}/5` : ''}
                 </p>
                 <p className={styles.explicaStatus}>
                   {STATUS.find((s) => s.valor === f.status)?.explica}
                 </p>
 
-                {f.meu || sessao.admin ? (
+                {f.meu || admin ? (
                   <div className={styles.acoesDono}>
                     <button
                       type="button"
@@ -276,7 +289,7 @@ export default function FeedbackPage() {
                   </div>
                 ) : null}
 
-                {sessao.admin ? <PainelAdmin feedback={f} aoSalvar={recarregar} /> : null}
+                {admin ? <PainelAdmin feedback={f} aoSalvar={recarregar} /> : null}
 
                 <div className={styles.conversa}>
                   {(comentarios[f.id] ?? []).map((c) => (
@@ -317,7 +330,7 @@ export default function FeedbackPage() {
                       value={comentando}
                       onChange={(e) => setComentando(e.target.value)}
                       placeholder={
-                        sessao.admin ? 'Responder como admin…' : 'Acrescentar alguma coisa…'
+                        admin ? 'Responder como admin…' : 'Acrescentar alguma coisa…'
                       }
                     />
                     <button type="submit" className={buttons.button} disabled={ocupado}>
@@ -355,7 +368,7 @@ export default function FeedbackPage() {
           <label className={styles.rotulo}>
             Tipo
             <select
-              className={styles.campo}
+              className={`${styles.campo} ${styles.campoCurto}`}
               value={rascunho.tipo}
               onChange={(e) => setRascunho({ ...rascunho, tipo: e.target.value as TipoFeedback })}
             >
@@ -380,7 +393,7 @@ export default function FeedbackPage() {
             O caso
             <textarea
               className={styles.campoTexto}
-              rows={6}
+              rows={5}
               maxLength={4000}
               value={rascunho.corpo}
               placeholder={
@@ -501,6 +514,11 @@ export default function FeedbackPage() {
 }
 
 /** Os controles que só o admin vê. O banco recusa estas chamadas de outros. */
+/**
+ * Os controles que só o admin vê — e que o banco confere de novo antes de
+ * gravar: `admin_atualizar_feedback` recusa quem não é admin, então esconder
+ * o painel é conveniência, não segurança.
+ */
 function PainelAdmin({ feedback, aoSalvar }: { feedback: Feedback; aoSalvar: () => void }) {
   const [status, setStatus] = useState<StatusFeedback>(feedback.status)
   const [urgencia, setUrgencia] = useState<Urgencia>(feedback.urgencia)
@@ -508,14 +526,29 @@ function PainelAdmin({ feedback, aoSalvar }: { feedback: Feedback; aoSalvar: () 
   const [salvando, setSalvando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
 
+  const escala = escalaDe(feedback.tipo)
   const mudou =
     status !== feedback.status ||
     urgencia !== feedback.urgencia ||
     nota !== (feedback.nota === null ? '' : String(feedback.nota))
 
+  function aplicar() {
+    setSalvando(true)
+    setFalha(null)
+    adminAtualizarFeedback(feedback.id, {
+      status,
+      urgencia,
+      nota: nota === '' ? undefined : Number(nota),
+    })
+      .then(aoSalvar)
+      .catch((e: unknown) => setFalha(e instanceof Error ? e.message : 'Não deu certo.'))
+      .finally(() => setSalvando(false))
+  }
+
   return (
     <div className={styles.painelAdmin}>
-      <span className={styles.painelTitulo}>Admin</span>
+      <span className={styles.painelTitulo}>Controles de admin</span>
+
       <label className={styles.rotuloCurto}>
         Estado
         <select value={status} onChange={(e) => setStatus(e.target.value as StatusFeedback)}>
@@ -526,16 +559,18 @@ function PainelAdmin({ feedback, aoSalvar }: { feedback: Feedback; aoSalvar: () 
           ))}
         </select>
       </label>
+
       <label className={styles.rotuloCurto}>
-        Urgência
+        {nomeDaEscala(feedback.tipo)}
         <select value={urgencia} onChange={(e) => setUrgencia(e.target.value as Urgencia)}>
-          {URGENCIAS.map((u) => (
-            <option key={u.valor} value={u.valor}>
+          {escala.map((u) => (
+            <option key={u.valor} value={u.valor} title={u.explica}>
               {u.rotulo}
             </option>
           ))}
         </select>
       </label>
+
       <label className={styles.rotuloCurto}>
         Nota
         <select value={nota} onChange={(e) => setNota(e.target.value)}>
@@ -547,25 +582,20 @@ function PainelAdmin({ feedback, aoSalvar }: { feedback: Feedback; aoSalvar: () 
           ))}
         </select>
       </label>
+
       <button
         type="button"
-        className={buttons.button}
+        className={`${buttons.button} ${mudou ? buttons.primary : ''}`}
         disabled={!mudou || salvando}
-        onClick={() => {
-          setSalvando(true)
-          setFalha(null)
-          adminAtualizarFeedback(feedback.id, {
-            status,
-            urgencia,
-            nota: nota === '' ? undefined : Number(nota),
-          })
-            .then(aoSalvar)
-            .catch((e: unknown) => setFalha(e instanceof Error ? e.message : 'Não deu certo.'))
-            .finally(() => setSalvando(false))
-        }}
+        onClick={aplicar}
       >
-        {salvando ? 'Salvando…' : 'Aplicar'}
+        {salvando ? 'Salvando…' : mudou ? 'Aplicar' : 'Sem mudanças'}
       </button>
+
+      <p className={styles.painelDica}>
+        {escala.find((u) => u.valor === urgencia)?.explica} A nota vira ponto para quem relatou, e
+        o autor é avisado da mudança.
+      </p>
       {falha ? <span className={styles.erro}>{falha}</span> : null}
     </div>
   )

@@ -29,12 +29,38 @@ export const STATUS: { valor: StatusFeedback; rotulo: string; explica: string }[
   { valor: 'duplicado', rotulo: 'Repetido', explica: 'Já existe outro relato sobre isto.' },
 ]
 
-export const URGENCIAS: { valor: Urgencia; rotulo: string }[] = [
-  { valor: 'baixa', rotulo: 'Baixa' },
-  { valor: 'media', rotulo: 'Média' },
-  { valor: 'alta', rotulo: 'Alta' },
-  { valor: 'critica', rotulo: 'Crítica' },
+/**
+ * A mesma coluna do banco, lida em duas línguas. "Urgência crítica" não quer
+ * dizer nada numa sugestão — sugestão não é urgente, ela entra antes ou
+ * depois. Os quatro valores continuam sendo os mesmos quatro no Postgres; o
+ * que muda é o nome que aparece, conforme o tipo do relato.
+ */
+export const URGENCIAS_BUG: { valor: Urgencia; rotulo: string; explica: string }[] = [
+  { valor: 'baixa', rotulo: 'Cosmético', explica: 'Feio ou estranho, mas dá para jogar.' },
+  { valor: 'media', rotulo: 'Atrapalha', explica: 'Incomoda no meio da partida.' },
+  { valor: 'alta', rotulo: 'Trava o fluxo', explica: 'Impede de terminar alguma coisa.' },
+  { valor: 'critica', rotulo: 'Quebra o jogo', explica: 'Perde progresso, ou não dá para jogar.' },
 ]
+
+export const URGENCIAS_IDEIA: { valor: Urgencia; rotulo: string; explica: string }[] = [
+  { valor: 'baixa', rotulo: 'Algum dia', explica: 'Boa ideia, sem data — fica anotada.' },
+  { valor: 'media', rotulo: 'Quando der', explica: 'Entra na fila normal.' },
+  { valor: 'alta', rotulo: 'Próxima leva', explica: 'Vem no próximo pacote de mudanças.' },
+  { valor: 'critica', rotulo: 'Entra já', explica: 'Furou a fila: é a próxima coisa a ser feita.' },
+]
+
+/** Bug fala em gravidade; ideia, dúvida e "outro" falam em quando entra. */
+export function escalaDe(tipo: TipoFeedback) {
+  return tipo === 'bug' ? URGENCIAS_BUG : URGENCIAS_IDEIA
+}
+
+export function nomeDaEscala(tipo: TipoFeedback): string {
+  return tipo === 'bug' ? 'Gravidade' : 'Prioridade'
+}
+
+export function rotuloUrgencia(tipo: TipoFeedback, valor: Urgencia): string {
+  return escalaDe(tipo).find((u) => u.valor === valor)?.rotulo ?? valor
+}
 
 export function rotuloDe<T extends string>(lista: { valor: T; rotulo: string }[], valor: T): string {
   return lista.find((i) => i.valor === valor)?.rotulo ?? valor
@@ -88,6 +114,19 @@ async function chamar<T>(nome: string, args: Record<string, unknown> = {}): Prom
     throw new Error(error.message)
   }
   return data as T
+}
+
+/**
+ * Pergunta ao banco, e não ao perfil guardado, se quem está aqui é admin. É a
+ * mesma função que autoriza as chamadas de admin do outro lado, então a tela
+ * nunca mostra controle que o banco vai recusar — nem esconde controle que
+ * ele aceitaria porque o espelho local do perfil estava velho.
+ */
+export async function souAdmin(): Promise<boolean> {
+  if (!supabase) return false
+  const { data, error } = await supabase.rpc('sou_admin')
+  if (error) return false
+  return data === true
 }
 
 export const listarFeedbacks = (status?: StatusFeedback, tipo?: TipoFeedback) =>

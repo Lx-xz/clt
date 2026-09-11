@@ -7,7 +7,24 @@
   margin-bottom: 18px
 
 .titulo
+  display: flex
+  align-items: center
+  flex-wrap: wrap
+  gap: 10px
   font-size: clamp(26px, 5vw, 36px)
+
+// a ausência deste selo é a resposta para "por que não vejo os controles":
+// ele sai do `sou_admin()` do banco, não do perfil guardado no navegador
+.seloModoAdmin
+  padding: 3px 10px
+  background: var(--destaque)
+  border-radius: 999px
+  color: #17150f
+  font-family: var(--mono)
+  font-size: 10px
+  font-weight: 700
+  letter-spacing: .1em
+  text-transform: uppercase
 
 .intro
   max-width: 58ch
@@ -214,16 +231,24 @@
   gap: 10px
   padding: 12px
   background: var(--papel)
-  border: 1px dashed var(--linha)
+  border: 1px solid var(--destaque)
   border-radius: var(--raio)
 
 .painelTitulo
   width: 100%
-  color: var(--tinta-fraca)
+  color: var(--destaque)
   font-family: var(--mono)
   font-size: 10px
+  font-weight: 700
   letter-spacing: .1em
   text-transform: uppercase
+
+.painelDica
+  width: 100%
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.45
 
 .rotuloCurto
   display: flex
@@ -233,7 +258,7 @@
   font-size: 12px
 
   select
-    padding: 6px 8px
+    padding: 5px 7px
     background: var(--papel-alto)
     border: 1px solid var(--linha)
     border-radius: var(--raio)
@@ -290,7 +315,9 @@
 .campo,
 .campoTexto
   width: 100%
-  padding: 9px 12px
+  // o padding é o que se aperta aqui: a fonte tem que ficar em 16px ou o
+  // Safari do iPhone dá zoom ao focar e não desfaz (veja CLAUDE.md)
+  padding: 7px 10px
   background: var(--papel-alto)
   border: 1px solid var(--linha)
   border-radius: var(--raio)
@@ -367,3 +394,10 @@
   margin: 0
   color: var(--tinta-fraca)
   font-size: 13px
+
+// o seletor de tipo tem quatro opções curtas: esticar até a largura do
+// diálogo só fazia a caixa parecer um campo de texto vazio
+.campoCurto
+  width: auto
+  min-width: 180px
+  max-width: 100%

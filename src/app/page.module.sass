@@ -64,7 +64,9 @@
 .campo
   flex: 1 1 200px
   min-width: 0
-  padding: 10px 14px
+  // o padding é o que aperta o campo: a fonte precisa ficar em 16px ou o
+  // Safari do iPhone dá zoom ao focar e não desfaz (veja CLAUDE.md)
+  padding: 8px 12px
   background: var(--papel-alto)
   border: 1px solid var(--tinta)
   border-radius: var(--raio)
@@ -212,3 +214,73 @@
   margin: 0
   padding-left: 20px
   line-height: 1.5
+
+// ------------------------------------------------------------- tutorial
+// O "como jogar" não é mais um botão igual aos outros: quem chega sem saber
+// o que é o jogo precisa achar isto antes de achar o "Jogar".
+.tutorial
+  display: flex
+  align-items: center
+  gap: 12px
+  width: 100%
+  max-width: 380px
+  padding: 12px 16px
+  background: var(--papel-alto)
+  border: 1px dashed var(--destaque)
+  border-radius: 8px
+  color: var(--tinta)
+  text-align: left
+  cursor: pointer
+  transition: background .12s ease, transform .1s ease
+
+  svg
+    flex: none
+    color: var(--destaque)
+
+  span
+    display: flex
+    flex-direction: column
+    gap: 1px
+    font-size: 12px
+    color: var(--tinta-fraca)
+
+  b
+    color: var(--tinta)
+    font-size: 15px
+
+  &:hover
+    background: var(--papel-baixo)
+
+  &:active
+    transform: translateY(1px)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+// --------------------------------------------------------------- atalhos
+.atalhos
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 6px
+  max-width: 420px
+
+.atalho
+  display: inline-flex
+  align-items: center
+  gap: 6px
+  padding: 6px 12px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-decoration: none
+
+  svg
+    color: var(--tinta-fraca)
+
+  &:hover
+    border-color: var(--tinta)
+    color: var(--tinta)

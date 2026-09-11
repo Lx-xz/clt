@@ -963,7 +963,12 @@ begin
   values (p_id, auth.uid(), trim(p_corpo), v_admin)
   returning id into v_id;
 
-  update public.feedbacks set atualizado_em = now() where id = p_id;
+  -- responder JÁ É a triagem: um relato que o admin comentou não pode
+  -- continuar dizendo "chegou e ainda não foi lido com calma"
+  update public.feedbacks
+  set atualizado_em = now(),
+      status = case when v_admin and status = 'novo' then 'triado' else status end
+  where id = p_id;
 
   if v_admin then
     -- resposta do admin: avisa o autor

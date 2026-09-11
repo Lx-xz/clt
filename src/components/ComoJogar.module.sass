@@ -1,25 +1,205 @@
-.bloco
-  display: flex
-  flex-direction: column
-  gap: 6px
+// O tutorial é o único lugar do site onde a explicação compete com a mesa:
+// ícone, cor e a carta de verdade primeiro, texto depois.
+
+.abre
+  margin: 0
+  font-size: 15px
+  line-height: 1.55
 
 .titulo
-  font-size: 14px
-  letter-spacing: .04em
-  text-transform: uppercase
+  margin-top: 6px
+  padding-bottom: 5px
+  border-bottom: 1px solid var(--linha)
   color: var(--tinta-fraca)
+  font-size: 12px
+  letter-spacing: .1em
+  text-transform: uppercase
 
 .linha
   margin: 0
   line-height: 1.55
 
-.lista
+// --------------------------------------------------------------- recursos
+.recursos
+  display: grid
+  grid-template-columns: repeat(2, minmax(0, 1fr))
+  gap: 8px
+
+.recurso,
+.derrota
+  display: grid
+  grid-template-columns: auto 1fr
+  align-items: center
+  gap: 2px 9px
+  padding: 10px 12px
+  background: var(--papel)
+  border-left: 3px solid currentColor
+  border-radius: 0 var(--raio) var(--raio) 0
+
+  svg
+    grid-row: span 2
+    color: currentColor
+
+.recursoNome
+  color: var(--tinta)
+  font-size: 14px
+  font-weight: 650
+
+.recursoTexto
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.45
+
+// as cores são as mesmas do HUD da mesa: o jogador reconhece o medidor pela
+// cor antes de ler o nome, e o tutorial não pode falar outra língua
+.energia
+  color: var(--energia)
+
+.estresse
+  color: var(--estresse)
+
+.produtividade
+  color: var(--produtividade)
+
+.dinheiro
+  color: var(--dinheiro)
+
+.destaque
+  color: var(--destaque)
+
+.regraForte
   display: flex
-  flex-direction: column
+  flex-wrap: wrap
+  align-items: center
   gap: 6px
   margin: 0
-  padding-left: 20px
+  padding: 12px 14px
+  background: var(--papel-baixo)
+  border-radius: var(--raio)
+  font-family: var(--mono)
+  font-size: 15px
+  font-weight: 600
+
+  svg:first-of-type
+    color: var(--energia)
+
+  svg:last-of-type
+    color: var(--estresse)
+
+  span
+    flex: 100%
+    color: var(--tinta-fraca)
+    font-family: var(--fonte)
+    font-size: 12px
+    font-weight: 400
+    line-height: 1.45
+
+// ----------------------------------------------------------------- cartas
+.cartas
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 12px
+  padding: 4px 0
+
+// carta menor que a da mesa: aqui ela é ilustração, não alvo de arraste
+.exemplo
+  --carta-w: 118px
+  --carta-h: 178px
+
+.legenda
+  display: flex
+  flex-direction: column
+  gap: 7px
+  margin: 0
+  padding: 0
+  list-style: none
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.45
+
+  li
+    display: flex
+    align-items: center
+    flex-wrap: wrap
+    gap: 6px
+
+  b
+    color: var(--tinta)
+
+// o mesmo carimbo de custo que a carta usa, em miniatura
+.marcaCusto
+  display: grid
+  place-items: center
+  width: 20px
+  height: 20px
+  background: var(--estresse)
+  border-radius: 3px
+  color: #fff
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 700
+
+// ------------------------------------------------------------- passo a passo
+.passos
+  display: flex
+  flex-direction: column
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+  font-size: 14px
   line-height: 1.5
+
+  li
+    display: grid
+    grid-template-columns: auto 1fr
+    align-items: baseline
+    gap: 10px
+
+.numero
+  display: grid
+  place-items: center
+  width: 21px
+  height: 21px
+  background: var(--tinta)
+  border-radius: 999px
+  color: var(--papel-alto)
+  font-family: var(--mono)
+  font-size: 11px
+  font-weight: 700
+  line-height: 1
+
+// ---------------------------------------------------------------- classes
+.classes
+  display: grid
+  grid-template-columns: repeat(2, minmax(0, 1fr))
+  gap: 8px
+
+.classe
+  display: flex
+  align-items: center
+  gap: 7px
+  padding: 8px 11px
+  background: var(--papel)
+  border: 1px solid currentColor
+  border-radius: 999px
+  font-size: 13px
+  font-weight: 600
+
+  b
+    margin-left: auto
+    color: var(--tinta-fraca)
+    font-family: var(--mono)
+    font-size: 11px
+    font-weight: 600
+    white-space: nowrap
+
+// ---------------------------------------------------------------- derrotas
+.derrotas
+  display: flex
+  flex-direction: column
+  gap: 8px
 
 .dica
   margin: 0
@@ -30,3 +210,12 @@
   color: var(--tinta-fraca)
   font-size: 13px
   line-height: 1.5
+
+@media (max-width: 520px)
+  .recursos,
+  .classes
+    grid-template-columns: 1fr
+
+  .exemplo
+    --carta-w: 104px
+    --carta-h: 158px
