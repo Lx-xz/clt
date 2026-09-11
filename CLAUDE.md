@@ -308,6 +308,14 @@ assim mesmo (quem chegou navegando por dentro do site traz a interação
 junto) e, se for recusado, espera o primeiro `pointerdown`/`keydown`/
 `touchstart`. Qualquer som novo precisa da mesma rede de proteção.
 
+**No iOS `audio.volume` é somente leitura.** Escrever nele não dá erro e não
+muda nada — no iPhone só os botões do aparelho mexem no som. Foi por isso
+que os controles de volume não funcionavam. A saída é passar o elemento por
+um `GainNode` da Web Audio (`createMediaElementSource` → gain → destination)
+e mexer no ganho; o iPhone respeita. `createMediaElementSource` só pode ser
+chamado **uma vez por elemento**, e o `AudioContext` precisa nascer depois
+de uma interação — daí a criação preguiçosa dentro do primeiro `play()`.
+
 **Coluna nova e o cache do PostgREST.** A API que a `supabase-js` chama
 guarda o formato das tabelas em cache. Logo depois de um `alter table add
 column`, um insert com a coluna nova pode falhar com "column ... does not

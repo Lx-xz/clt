@@ -52,7 +52,7 @@ export default function SideNav() {
 
   useEffect(() => setVolumes(lerVolumes()), [])
 
-  function mudarVolume(campo: keyof Volumes, valor: number) {
+  function mudarVolume<C extends keyof Volumes>(campo: C, valor: Volumes[C]) {
     const novo = { ...volumes, [campo]: valor }
     setVolumes(novo)
     gravarVolumes(novo)
@@ -220,7 +220,15 @@ export default function SideNav() {
             <h2 className={styles.dialogoTitulo} id="titulo-config">
               Configurações
             </h2>
-            <label className={styles.controle}>
+            <label className={styles.caixa}>
+              <input
+                type="checkbox"
+                checked={volumes.mudo}
+                onChange={(e) => mudarVolume('mudo', e.target.checked)}
+              />
+              <span>Mudo</span>
+            </label>
+            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
               <span className={styles.controleRotulo}>
                 Volume geral <b>{Math.round(volumes.geral * 100)}%</b>
               </span>
@@ -232,7 +240,7 @@ export default function SideNav() {
                 onChange={(e) => mudarVolume('geral', Number(e.target.value) / 100)}
               />
             </label>
-            <label className={styles.controle}>
+            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
               <span className={styles.controleRotulo}>
                 Volume da música <b>{Math.round(volumes.musica * 100)}%</b>
               </span>

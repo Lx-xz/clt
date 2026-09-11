@@ -8,11 +8,12 @@
 export interface Volumes {
   geral: number
   musica: number
+  mudo: boolean
 }
 
 const CHAVE = 'clt:som:v1'
 
-export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5 }
+export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5, mudo: false }
 
 function limitar(n: unknown, padrao: number): number {
   return typeof n === 'number' && Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : padrao
@@ -24,7 +25,11 @@ export function lerVolumes(): Volumes {
     const bruto = window.localStorage.getItem(CHAVE)
     if (!bruto) return VOLUMES_PADRAO
     const v = JSON.parse(bruto) as Partial<Volumes>
-    return { geral: limitar(v.geral, VOLUMES_PADRAO.geral), musica: limitar(v.musica, VOLUMES_PADRAO.musica) }
+    return {
+      geral: limitar(v.geral, VOLUMES_PADRAO.geral),
+      musica: limitar(v.musica, VOLUMES_PADRAO.musica),
+      mudo: v.mudo === true,
+    }
   } catch {
     return VOLUMES_PADRAO
   }
@@ -44,5 +49,5 @@ export function gravarVolumes(v: Volumes) {
 export const EVENTO_VOLUME = 'clt:volumes'
 
 export function volumeDaMusica(v: Volumes): number {
-  return v.geral * v.musica
+  return v.mudo ? 0 : v.geral * v.musica
 }

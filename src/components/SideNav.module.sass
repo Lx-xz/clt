@@ -193,6 +193,24 @@ $painel-largo: 216px
     accent-color: var(--tinta)
     cursor: pointer
 
+// "mudo" desliga tudo: os dois sliders continuam mexíveis, mas esmaecidos,
+// para ficar claro que o silêncio vem do check e não de um volume zerado
+.desligado
+  opacity: .45
+
+.caixa
+  display: flex
+  align-items: center
+  gap: 8px
+  font-size: 13px
+  cursor: pointer
+
+  input
+    width: 16px
+    height: 16px
+    accent-color: var(--tinta)
+    cursor: pointer
+
 .controleRotulo
   display: flex
   justify-content: space-between
