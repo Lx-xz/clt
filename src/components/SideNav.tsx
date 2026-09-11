@@ -13,8 +13,11 @@ import {
   Layers,
   Play,
   RotateCcw,
+  Settings,
   Trophy,
+  User,
 } from 'lucide-react'
+import { gravarVolumes, lerVolumes, VOLUMES_PADRAO, type Volumes } from '@/data/som'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './SideNav.module.sass'
 
@@ -34,13 +37,26 @@ export default function SideNav() {
   const pathname = usePathname()
   const [aberta, setAberta] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
+  const [configurando, setConfigurando] = useState(false)
+  // o padrão é o do servidor: ler o localStorage na montagem evita a
+  // divergência entre o HTML gerado no build e o primeiro render no navegador
+  const [volumes, setVolumes] = useState<Volumes>(VOLUMES_PADRAO)
   const painelRef = useRef<HTMLDivElement>(null)
 
   // ao mudar de página o gaveteiro do celular se fecha sozinho
   useEffect(() => {
     setAberta(false)
     setConfirmando(false)
+    setConfigurando(false)
   }, [pathname])
+
+  useEffect(() => setVolumes(lerVolumes()), [])
+
+  function mudarVolume(campo: keyof Volumes, valor: number) {
+    const novo = { ...volumes, [campo]: valor }
+    setVolumes(novo)
+    gravarVolumes(novo)
+  }
 
   // no celular a barra fica escondida: arrastar da esquerda para a direita em
   // qualquer ponto da tela abre, e o painel acompanha o dedo em tempo real —
@@ -180,10 +196,66 @@ export default function SideNav() {
               </button>
             ) : null}
 
+            <Link
+              className={`${styles.link} ${pathname.startsWith('/perfil') ? styles.ativo : ''}`}
+              href="/perfil"
+            >
+              <User size={18} aria-hidden />
+              <span className={styles.rotulo}>Perfil</span>
+            </Link>
+
+            <button type="button" className={styles.link} onClick={() => setConfigurando(true)}>
+              <Settings size={18} aria-hidden />
+              <span className={styles.rotulo}>Configurações</span>
+            </button>
+
             <span className={styles.rodape}>4 semanas · 20 dias</span>
           </div>
         </div>
       </nav>
+
+      {configurando ? (
+        <div className={styles.fundo} role="dialog" aria-modal="true" aria-labelledby="titulo-config">
+          <div className={styles.dialogo}>
+            <h2 className={styles.dialogoTitulo} id="titulo-config">
+              Configurações
+            </h2>
+            <label className={styles.controle}>
+              <span className={styles.controleRotulo}>
+                Volume geral <b>{Math.round(volumes.geral * 100)}%</b>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(volumes.geral * 100)}
+                onChange={(e) => mudarVolume('geral', Number(e.target.value) / 100)}
+              />
+            </label>
+            <label className={styles.controle}>
+              <span className={styles.controleRotulo}>
+                Volume da música <b>{Math.round(volumes.musica * 100)}%</b>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(volumes.musica * 100)}
+                onChange={(e) => mudarVolume('musica', Number(e.target.value) / 100)}
+              />
+            </label>
+            <div className={styles.dialogoAcoes}>
+              <button
+                type="button"
+                className={`${buttons.button} ${buttons.primary}`}
+                onClick={() => setConfigurando(false)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {confirmando ? (
         <div className={styles.fundo} role="dialog" aria-modal="true" aria-labelledby="titulo-reiniciar">

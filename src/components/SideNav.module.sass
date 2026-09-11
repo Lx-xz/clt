@@ -182,6 +182,29 @@ $painel-largo: 216px
   gap: 8px
   margin-top: 4px
 
+// controle de volume do diálogo de configurações
+.controle
+  display: flex
+  flex-direction: column
+  gap: 6px
+
+  input[type='range']
+    width: 100%
+    accent-color: var(--tinta)
+    cursor: pointer
+
+.controleRotulo
+  display: flex
+  justify-content: space-between
+  gap: 10px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+  b
+    font-family: var(--mono)
+    font-variant-numeric: tabular-nums
+    font-weight: 600
+
 @keyframes cortina-entra
   from
     opacity: 0

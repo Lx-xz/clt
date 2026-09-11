@@ -41,6 +41,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral. No celular a linha mostra só nick/V/D e abre no toque com o resto |
 | `/meus-jogos` | Toda run terminada do jogador da sessão. Link na barra lateral |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro). Chega-se clicando numa run em `/meus-jogos` |
+| `/perfil` | Só o nick de quem está jogando. Link no fim da barra lateral |
 | `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). Link na barra lateral, como "Análise" |
 
 **20 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 12
@@ -169,7 +170,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   carta já usa esse mesmo gesto para ser jogada — sem essa exclusão, jogar uma
   carta no celular abriria o menu.
   Muda de página fecha o gaveteiro sozinho. "Reiniciar run" mora aqui agora,
-  com confirmação — saiu do HUD da mesa.
+  com confirmação — saiu do HUD da mesa. No fim da barra ficam "Perfil" (a
+  rota `/perfil`) e "Configurações", que abre um diálogo com os dois volumes
+  (geral e música) — o mesmo `.fundo`/`.dialogo` da confirmação de reinício.
 - **HUD do celular:** header colado nas bordas, dia à esquerda e nick à
   direita, "Próx. dia" ancorado abaixo do header, status de sync vira ícone
   (girando / check / sem conexão) em vez de texto. Baralho e descarte somem da
@@ -290,6 +293,19 @@ todas as funções (`drop function if exists`, com a assinatura completa)
 num bloco só, antes de recriá-las. Função nova entra nesse bloco também —
 e o `grant execute` tem que vir depois do `create`, porque o drop leva o
 grant junto.
+
+**`src` de mídia não ganha o basePath.** O Next prefixa os links que ele
+mesmo gera, não o `src` de uma tag `<audio>`/`<img>` escrita à mão. O
+caminho do mp3 é montado no `(app)/layout.tsx`, que roda no servidor e
+enxerga `DEPLOY_TARGET` — mesmo remendo do manifest e do apple-touch-icon.
+Componente cliente não serve para isso: o Next só embute `process.env` no
+bundle do navegador para variáveis `NEXT_PUBLIC_`.
+
+**Áudio não toca antes de o visitante interagir.** Chamar `play()` na
+montagem é recusado em silêncio numa aba recém-aberta. `Musica.tsx` tenta
+assim mesmo (quem chegou navegando por dentro do site traz a interação
+junto) e, se for recusado, espera o primeiro `pointerdown`/`keydown`/
+`touchstart`. Qualquer som novo precisa da mesma rede de proteção.
 
 **Coluna nova e o cache do PostgREST.** A API que a `supabase-js` chama
 guarda o formato das tabelas em cache. Logo depois de um `alter table add
@@ -448,10 +464,14 @@ antes de usá-los para decidir qualquer coisa.
 - **Código morto:** `embaloAtual()` e `weekNumber()` em `engine.ts` não têm uso
   fora do próprio arquivo.
 - **Rebalancear depois do Embalo**, especialmente a classe `grana`.
-- **Música e efeitos sonoros.** Decidido que o autor vai separar os arquivos;
-  falta a parte de código (um `<audio>` por efeito, pré-carregado, com botão
-  de mudo lembrado no localStorage — e o primeiro som só depois de um clique,
-  porque navegador nenhum deixa tocar áudio antes de interação).
+- **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica.tsx`,
+  `public/som/`), com os dois volumes em `src/data/som.ts`. Falta o resto: um
+  som por evento do jogo (carta jogada, cota batida, advertência, vitória,
+  derrota). Quando entrarem, o volume deles é mais um multiplicador em
+  `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
+- **O mp3 da trilha tem 3,7 MB.** Vai inteiro para o GitHub Pages em toda
+  visita (o navegador cacheia depois). Se a trilha crescer, vale reencodar
+  em bitrate menor ou cortar um loop curto.
 
 ---
 
