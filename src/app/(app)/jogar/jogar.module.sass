@@ -404,6 +404,18 @@
   color: var(--tinta-fraca)
   font-size: 14px
 
+// a run que o banco recusou: não é erro fatal (ela fica na fila), mas tem que
+// ser visível — o jogador precisa saber que não sumiu
+.painelAviso
+  margin: 0
+  padding: 10px 12px
+  background: var(--papel-baixo)
+  border: 1px dashed var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 12.5px
+  line-height: 1.45
+
 .passos
   display: flex
   flex-direction: column

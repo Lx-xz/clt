@@ -269,6 +269,11 @@ que sumia sem erro nenhum na tela. Hoje `registrarRunAgora()` (`sync.ts`)
 grava na hora, fora do timer, e o que falhar entra numa fila em
 `clt:runs-pendentes:v1` que sobe na próxima abertura da mesa. Não pendure
 nada que só acontece uma vez naquele timer.
+E o erro do banco não pode mais ser engolido: `registrarRunAgora()` devolve
+o motivo, escreve `console.error` com a mensagem do PostgREST inteira
+(`message · details · hint · code`) e a mesa mostra um aviso no painel de
+fim. Foi por não ter nada disso que "joguei até o fim e não salvou" levou
+duas rodadas para ser diagnosticado.
 
 **`create policy` não tem "if not exists".** Rodar `schema.sql` de novo num
 banco que já o rodou antes (para pegar funções/colunas novas) falha em
@@ -285,6 +290,12 @@ todas as funções (`drop function if exists`, com a assinatura completa)
 num bloco só, antes de recriá-las. Função nova entra nesse bloco também —
 e o `grant execute` tem que vir depois do `create`, porque o drop leva o
 grant junto.
+
+**Coluna nova e o cache do PostgREST.** A API que a `supabase-js` chama
+guarda o formato das tabelas em cache. Logo depois de um `alter table add
+column`, um insert com a coluna nova pode falhar com "column ... does not
+exist" mesmo com a coluna criada. `schema.sql` termina com
+`notify pgrst, 'reload schema';` por isso.
 
 **Gesto de arraste em `window` disputando com o arraste da carta.** A barra
 lateral no celular ouve `touchstart/touchmove` em `window` para abrir com

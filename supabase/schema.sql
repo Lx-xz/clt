@@ -443,3 +443,10 @@ as $$
 $$;
 
 grant execute on function public.jogo_detalhe(bigint, uuid) to anon;
+
+-- ------------------------------------------------------------ cache da API
+-- O PostgREST (a API que a supabase-js chama) guarda o formato das tabelas em
+-- cache. Coluna recém-criada que ele ainda não enxergou faz o insert falhar
+-- com "column ... does not exist" mesmo estando lá no banco. Normalmente o
+-- Supabase recarrega sozinho; este aviso garante.
+notify pgrst, 'reload schema';

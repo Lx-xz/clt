@@ -84,5 +84,11 @@ export async function enviarRun(linha: RunRegistravel) {
   const { error } = await supabase
     .from('runs')
     .upsert(linha, { onConflict: 'run_id', ignoreDuplicates: true })
-  if (error) throw new Error(error.message)
+  // o postgrest manda a causa em details/hint/code, e só a `message` costuma
+  // ser vaga demais para achar o problema ("column ... does not exist" vem em
+  // `message`, mas "permission denied" vem quase só no `code`)
+  if (error) {
+    const partes = [error.message, error.details, error.hint, error.code].filter(Boolean)
+    throw new Error(partes.join(' · '))
+  }
 }

@@ -119,26 +119,40 @@ export async function registrarRunAgora(
   run: GameState,
   outcome: DesfechoRegistrado,
   visivel = true,
-) {
+): Promise<string | null> {
   const linha = montarRun(playerId, run, outcome, visivel)
   try {
     await enviarRun(linha)
-  } catch {
+    return null
+  } catch (e) {
+    const motivo = e instanceof Error ? e.message : String(e)
+    // engolir o erro aqui já custou caro: a run sumia e ninguém — nem o
+    // jogador, nem o console — sabia por quê. O banco recusar a linha (coluna
+    // que falta, política de RLS, esquema desatualizado) tem que aparecer.
+    console.error('CLT: o banco recusou o registro da run —', motivo, linha)
     enfileirar(linha)
+    return motivo
   }
 }
 
 /** Tenta subir o que ficou para trás. Chamado ao abrir a mesa. */
-export async function enviarRunsPendentes() {
+export async function enviarRunsPendentes(): Promise<number> {
   const fila = lerFila()
-  if (fila.length === 0) return
+  if (fila.length === 0) return 0
   const sobraram: RunRegistravel[] = []
   for (const linha of fila) {
     try {
       await enviarRun(linha)
-    } catch {
+    } catch (e) {
+      console.error('CLT: run da fila continua sem subir —', e, linha)
       sobraram.push(linha)
     }
   }
   escreverFila(sobraram)
+  return fila.length - sobraram.length
+}
+
+/** Quantas runs terminadas ainda não chegaram ao banco. */
+export function runsPendentes(): number {
+  return lerFila().length
 }
