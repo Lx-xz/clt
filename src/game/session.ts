@@ -1,5 +1,7 @@
 'use client'
 
+import { AVATAR_PADRAO, lerAvatar, type Avatar } from '@/data/avatar'
+
 /**
  * Quem está jogando agora.
  *
@@ -16,6 +18,7 @@ export interface Sessao {
   convidado: boolean
   admin: boolean
   pontos: number
+  avatar: Avatar
 }
 
 /** O convidado não tem conta no Auth: a identidade dele é esta linha aqui. */
@@ -42,6 +45,9 @@ function ler(chave: string): Sessao | null {
       convidado: s.convidado === true,
       admin: s.admin === true,
       pontos: typeof s.pontos === 'number' ? s.pontos : 0,
+      // vindo do espelho local, o avatar pode ser de uma versão antiga:
+      // `lerAvatar` derruba peça desconhecida no padrão em vez de quebrar
+      avatar: lerAvatar(s.avatar),
     }
   } catch {
     return null
@@ -65,6 +71,9 @@ function apagar(chave: string) {
     // ignorado
   }
 }
+
+/** O avatar de quem nunca escolheu um. */
+export const AVATAR_INICIAL = AVATAR_PADRAO
 
 export const lerConvidado = () => ler(CHAVE_CONVIDADO)
 export const gravarConvidado = (s: Sessao) => gravar(CHAVE_CONVIDADO, s)

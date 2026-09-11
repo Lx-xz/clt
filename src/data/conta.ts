@@ -1,5 +1,6 @@
 'use client'
 
+import { AVATAR_PADRAO, lerAvatar, type Avatar } from './avatar'
 import { supabase } from './supabase'
 import {
   gravarConvidado,
@@ -38,6 +39,7 @@ interface LinhaPerfil {
   admin: boolean
   termos_em: string | null
   pontos: number
+  avatar: unknown
 }
 
 /**
@@ -64,6 +66,7 @@ export async function lerConta(): Promise<Conta> {
       convidado: false,
       admin: linha?.admin === true,
       pontos: linha?.pontos ?? 0,
+      avatar: lerAvatar(linha?.avatar),
     }
     // sem nick ou sem termos o cadastro não terminou: o site pede o resto
     // antes de deixar jogar, senão o ranking ficaria cheio de gente sem nome
@@ -168,6 +171,22 @@ export async function completarPerfil(nick: string, nome: string, senha?: string
   }
 }
 
+/**
+ * Troca o avatar. Quem tem conta grava no banco; o convidado grava só no
+ * espelho local deste navegador, porque é lá que ele inteiro mora.
+ */
+export async function trocarAvatar(sessao: Sessao, avatar: Avatar): Promise<Sessao> {
+  const novo = { ...sessao, avatar }
+  if (sessao.convidado) {
+    gravarConvidado(novo)
+    return novo
+  }
+  const { salvarAvatar } = await import('./avatar')
+  await salvarAvatar(avatar)
+  gravarPerfilLocal(novo)
+  return novo
+}
+
 export async function sair() {
   limparPerfilLocal()
   limparConvidado()
@@ -195,6 +214,7 @@ export async function entrarComoConvidado(): Promise<Sessao> {
         convidado: true,
         admin: false,
         pontos: 0,
+        avatar: AVATAR_PADRAO,
       }
       gravarConvidado(perfil)
       return perfil

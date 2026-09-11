@@ -1,0 +1,112 @@
+.voltar
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  margin-bottom: 16px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-decoration: none
+
+  &:hover
+    color: var(--tinta)
+
+.topo
+  display: flex
+  align-items: flex-start
+  gap: 20px
+  margin-bottom: 26px
+
+.previa
+  flex: none
+  border-radius: 16px
+  box-shadow: var(--sombra)
+
+.titulo
+  font-size: clamp(24px, 5vw, 32px)
+
+.intro
+  max-width: 52ch
+  margin: 6px 0 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.55
+
+.aviso
+  max-width: 52ch
+  margin: 8px 0 0
+  padding: 8px 12px
+  background: var(--papel-alto)
+  border-left: 3px solid var(--destaque)
+  border-radius: 0 var(--raio) var(--raio) 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.5
+
+.grupo
+  margin-bottom: 22px
+
+.grupoTitulo
+  margin-bottom: 8px
+  color: var(--tinta-fraca)
+  font-size: 11px
+  letter-spacing: .1em
+  text-transform: uppercase
+
+.opcoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+.opcao
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 4px
+  padding: 8px 8px 6px
+  background: var(--papel-alto)
+  border: 2px solid var(--linha)
+  border-radius: 10px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  cursor: pointer
+  transition: border-color .12s ease, color .12s ease
+
+  &:hover
+    border-color: var(--tinta-fraca)
+    color: var(--tinta)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.opcaoAtiva
+  border-color: var(--tinta)
+  color: var(--tinta)
+  font-weight: 600
+
+// só a cabeça: é onde a diferença está, e o ombro só ocuparia espaço
+.recorte
+  display: block
+  width: 72px
+  height: 54px
+  overflow: hidden
+  border-radius: 8px
+
+.opcaoRotulo
+  line-height: 1
+
+.erro
+  margin: 0 0 12px
+  color: var(--estresse)
+  font-size: 13px
+
+.acoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+  padding-top: 4px
+
+@media (max-width: 520px)
+  .topo
+    flex-direction: column
+    gap: 14px

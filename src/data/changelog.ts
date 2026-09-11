@@ -24,6 +24,7 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
+  'Mais peças de avatar (óculos, barba) e o avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
   'Notificação de verdade (e-mail ou aviso no aparelho) quando o seu relato mudar de estado.',
   'Rebalancear o jogo depois do Embalo, em especial as cartas de grana.',
@@ -32,6 +33,15 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.7',
+    data: '2026-09-11',
+    titulo: 'Avatares',
+    itens: [
+      { tipo: 'novo', texto: 'Avatar no perfil: corpo, cabelo, tom de pele e cor do cabelo — 60 combinações.' },
+      { tipo: 'novo', texto: 'Página própria para editar o avatar, com cada opção já desenhada em vez de escrita.' },
+    ],
+  },
   {
     versao: '0.6',
     data: '2026-09-11',

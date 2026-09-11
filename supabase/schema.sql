@@ -49,6 +49,10 @@ alter table public.players add column if not exists termos_em timestamptz;
 -- moeda dos feedbacks bem escritos. Ninguém gasta ainda; existe desde já
 -- para a recompensa futura não precisar de migração no meio do caminho.
 alter table public.players add column if not exists pontos    integer not null default 0;
+-- o avatar é uma RECEITA, não uma imagem: quatro escolhas que o site
+-- desenha em SVG na hora. Nulo quer dizer "ainda não escolheu" e o site
+-- mostra o padrão. Não existe imagem para moderar porque ninguém sobe uma.
+alter table public.players add column if not exists avatar    jsonb;
 
 -- o nick é guardado já normalizado, então o unique simples basta. Nulo não
 -- colide com nulo: quem entra pelo Google fica sem nick até completar o
@@ -278,6 +282,7 @@ drop function if exists public.ao_criar_usuario();
 drop function if exists public.meu_perfil();
 drop function if exists public.nick_livre(text);
 drop function if exists public.completar_perfil(text, text, boolean);
+drop function if exists public.salvar_avatar(jsonb);
 drop function if exists public.criar_convidado(text);
 -- entrada por nick, sem senha: não existe mais
 drop function if exists public.find_player(text);
@@ -355,14 +360,15 @@ returns table (
   convidado boolean,
   admin     boolean,
   termos_em timestamptz,
-  pontos    integer
+  pontos    integer,
+  avatar    jsonb
 )
 language sql
 security definer
 stable
 set search_path = public, pg_temp
 as $$
-  select p.id, p.nick, p.nome, p.email, p.convidado, p.admin, p.termos_em, p.pontos
+  select p.id, p.nick, p.nome, p.email, p.convidado, p.admin, p.termos_em, p.pontos, p.avatar
   from public.players p
   where p.id = auth.uid();
 $$;
@@ -418,6 +424,27 @@ end;
 $$;
 
 grant execute on function public.completar_perfil(text, text, boolean) to authenticated;
+
+-- Guarda o avatar de quem está logado. O conteúdo não é validado aqui de
+-- propósito: quem valida é `lerAvatar()` no site, na LEITURA, e peça
+-- desconhecida cai no padrão. Assim acrescentar um cabelo novo não exige
+-- mexer no banco, e um avatar gravado por uma versão antiga nunca derruba
+-- a página de ninguém.
+create function public.salvar_avatar(p_avatar jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Entre na sua conta antes.' using errcode = '42501';
+  end if;
+  update public.players set avatar = p_avatar where id = auth.uid();
+end;
+$$;
+
+grant execute on function public.salvar_avatar(jsonb) to authenticated;
 
 -- O convidado. Sem conta, sem e-mail, sem senha: só um id sorteado no
 -- navegador e um nick descartável. Ele joga e as partidas dele contam para a

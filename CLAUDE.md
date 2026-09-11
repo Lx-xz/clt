@@ -42,7 +42,8 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral. No celular a linha mostra só nick/V/D e abre no toque com o resto |
 | `/meus-jogos` | Toda run terminada do jogador da sessão. Link na barra lateral |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro). Chega-se clicando numa run em `/meus-jogos` |
-| `/perfil` | Nick, nome, e-mail, tipo de conta, pontos, e o botão de sair |
+| `/perfil` | Avatar, nick, nome, e-mail, tipo de conta, pontos, e o botão de sair |
+| `/perfil/editar` | O editor do avatar: corpo, cabelo, pele e cor |
 | `/feedback` | Bugs e sugestões de todo mundo, com estado, conversa e os controles de admin |
 | `/changelog` | O que já entrou no jogo e o que está sendo feito ("Novidades" no menu) |
 | `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). Link na barra lateral, como "Análise" |
@@ -216,6 +217,23 @@ opções. O que ele escolheu, e que deve ser preservado:
   `+escuras`. O tema é aplicado por um **script em linha no `<head>`**
   (`SCRIPT_TEMA`): sem ele o site abre claro e pisca para escuro quando o
   React monta — justamente no tema que a pessoa não quer ver.
+- **O avatar é uma receita, não uma imagem** (`src/components/Avatar.tsx` +
+  `src/data/avatar.ts`). O que vai para o banco são quatro palavras (corpo,
+  cabelo, pele, cor) num `jsonb`; o SVG é montado na hora. Trocar de avatar
+  é um `update` numa linha, o desenho é nítido em qualquer tamanho, e não
+  existe imagem imprópria para moderar porque ninguém sobe imagem.
+  **Por enquanto ele só aparece no perfil** — pôr no ranking e nos
+  feedbacks é decisão do autor, não consequência automática.
+  A construção do cabelo custou três tentativas e está comentada no
+  componente; o resumo é: silhueta fechada ATRÁS do rosto (o miolo some
+  debaixo dele, então não há encaixe para errar), franja por cima com a
+  borda de fora sendo um arco da MESMA elipse da silhueta, e as mechas do
+  comprido subindo acima da linha do cabelo. Cada uma dessas três regras
+  conserta um defeito que apareceu no zoom: tiara, corte reto na têmpora e
+  faixa de pele. **O cabelo é de uma cor só de propósito** — com dois tons,
+  toda emenda entre as peças virava um retângulo visível. E o `useId` para
+  o `clipPath` precisa ser limpo de pontuação: dentro de `url(#...)`, que é
+  lido como CSS, o `«r0»` do React 19 não sobrevive.
 - **Slider e checkbox são desenhados, não nativos** (`Slider.tsx`,
   `Check.tsx`). O `input[type=range]` é irregular entre navegadores e no
   celular disputa o gesto de arrastar com o menu; o slider daqui é uma trilha
@@ -442,7 +460,7 @@ SQL Editor do projeto.
 
 | Tabela | Guarda |
 |---|---|
-| `players` | o perfil: nick, nome, e-mail, se é convidado, se é admin, pontos. **O site nunca lê esta tabela direto** |
+| `players` | o perfil: nick, nome, e-mail, se é convidado, se é admin, pontos, avatar. **O site nunca lê esta tabela direto** |
 | `saves` | run em andamento e coleção, em `jsonb` |
 | `runs` | registro append-only de runs terminadas, para balanceamento |
 | `feedbacks` | bugs e sugestões, com estado, urgência e nota |
@@ -484,6 +502,12 @@ Os quatro valores no Postgres continuam `baixa/media/alta/critica`; o que muda
 é o rótulo, conforme o tipo do relato (`escalaDe()` em `src/data/feedback.ts`):
 bug fala em gravidade (Cosmético → Quebra o jogo), ideia fala em quando entra
 (Algum dia → Entra já). Não crie coluna nova para isso.
+
+**`salvar_avatar()` não valida o conteúdo, e é de propósito.** Quem valida é
+`lerAvatar()` no site, na LEITURA: peça desconhecida cai no padrão. Assim
+acrescentar um cabelo novo não exige mexer no banco, e um avatar gravado por
+uma versão antiga nunca derruba a página de ninguém. O convidado não passa
+por aqui — o avatar dele mora no localStorage, junto com o resto dele.
 
 **Comentário de admin faz a triagem sozinho.** `comentar_feedback()` move o
 relato de `novo` para `triado` quando quem comenta é admin: responder já é ter

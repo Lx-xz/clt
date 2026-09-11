@@ -1,8 +1,10 @@
 'use client'
 
+import { Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import Avatar from '@/components/Avatar'
 import { useSessao } from '@/components/SessaoGuard'
 import { sair } from '@/data/conta'
 import { cancelarSync } from '@/data/sync'
@@ -27,11 +29,18 @@ export default function PerfilPage() {
     <main className="page">
       <h1 className={styles.titulo}>Perfil</h1>
 
-      <dl className={styles.dados}>
-        <div>
-          <dt>Nick</dt>
-          <dd className={styles.destaque}>{sessao.nick}</dd>
+      <div className={styles.cabecalho}>
+        <Avatar avatar={sessao.avatar} tamanho={112} className={styles.retrato} />
+        <div className={styles.quem}>
+          <span className={styles.destaque}>{sessao.nick}</span>
+          <Link className={`${buttons.button} ${styles.editar}`} href="/perfil/editar">
+            <Pencil size={14} aria-hidden />
+            Editar avatar
+          </Link>
         </div>
+      </div>
+
+      <dl className={styles.dados}>
         {sessao.nome ? (
           <div>
             <dt>Nome</dt>

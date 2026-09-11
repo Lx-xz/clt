@@ -7,12 +7,24 @@ import { lerSessao, type Sessao } from '@/game/session'
 import styles from './SessaoGuard.module.sass'
 
 const Contexto = createContext<Sessao | null>(null)
+const ContextoDefinir = createContext<((s: Sessao) => void) | null>(null)
 
 /** Quem está jogando. Só pode ser chamado dentro do guarda. */
 export function useSessao(): Sessao {
   const sessao = useContext(Contexto)
   if (!sessao) throw new Error('useSessao precisa estar dentro de SessaoGuard.')
   return sessao
+}
+
+/**
+ * Troca a sessão em memória sem ida ao banco. A guarda vive no layout, que
+ * não remonta ao navegar entre páginas — sem isto, trocar o avatar só
+ * apareceria depois de recarregar o site inteiro.
+ */
+export function useDefinirSessao(): (s: Sessao) => void {
+  const definir = useContext(ContextoDefinir)
+  if (!definir) throw new Error('useDefinirSessao precisa estar dentro de SessaoGuard.')
+  return definir
 }
 
 /**
@@ -56,5 +68,9 @@ export default function SessaoGuard({ children }: { children: React.ReactNode })
     return <div className={styles.espera}>Batendo o ponto…</div>
   }
 
-  return <Contexto.Provider value={sessao}>{children}</Contexto.Provider>
+  return (
+    <Contexto.Provider value={sessao}>
+      <ContextoDefinir.Provider value={setSessao}>{children}</ContextoDefinir.Provider>
+    </Contexto.Provider>
+  )
 }
