@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
+  Bell,
+  BookOpen,
   ChartColumn,
   Coffee,
   Droplet,
@@ -11,13 +13,19 @@ import {
   History,
   House,
   Layers,
+  MessageSquareWarning,
   Play,
   RotateCcw,
   Settings,
+  Sparkles,
   Trophy,
   User,
 } from 'lucide-react'
+import ComoJogar from './ComoJogar'
+import Dialogo, { popupAberto } from './Dialogo'
+import { useSessao } from './SessaoGuard'
 import { gravarVolumes, lerVolumes, VOLUMES_PADRAO, type Volumes } from '@/data/som'
+import { marcarNotificacoesLidas, minhasNotificacoes, type Notificacao } from '@/data/notificacoes'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './SideNav.module.sass'
 
@@ -28,6 +36,8 @@ const LINKS = [
   { href: '/meus-jogos', label: 'Meus jogos', Icon: History },
   { href: '/ranking', label: 'Ranking', Icon: Trophy },
   { href: '/analytics', label: 'Análise', Icon: ChartColumn },
+  { href: '/feedback', label: 'Feedbacks', Icon: MessageSquareWarning },
+  { href: '/changelog', label: 'Novidades', Icon: Sparkles },
 ]
 
 /** Disparado ao confirmar o reinício; a mesa escuta e começa uma run nova. */
@@ -38,6 +48,10 @@ export default function SideNav() {
   const [aberta, setAberta] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [configurando, setConfigurando] = useState(false)
+  const [tutorial, setTutorial] = useState(false)
+  const [avisos, setAvisos] = useState<Notificacao[] | null>(null)
+  const [naoLidas, setNaoLidas] = useState(0)
+  const sessao = useSessao()
   // o padrão é o do servidor: ler o localStorage na montagem evita a
   // divergência entre o HTML gerado no build e o primeiro render no navegador
   const [volumes, setVolumes] = useState<Volumes>(VOLUMES_PADRAO)
@@ -48,9 +62,28 @@ export default function SideNav() {
     setAberta(false)
     setConfirmando(false)
     setConfigurando(false)
+    setTutorial(false)
+    setAvisos(null)
   }, [pathname])
 
   useEffect(() => setVolumes(lerVolumes()), [])
+
+  // o sininho: quantas respostas e mudanças de estado chegaram desde a
+  // última olhada. Convidado não tem notificação, e a função devolve vazio
+  useEffect(() => {
+    if (sessao.convidado) return
+    void minhasNotificacoes().then((lista) =>
+      setNaoLidas(lista.filter((n) => n.lida_em === null).length),
+    )
+  }, [sessao.convidado, pathname])
+
+  function abrirAvisos() {
+    void minhasNotificacoes().then((lista) => {
+      setAvisos(lista)
+      setNaoLidas(0)
+      if (lista.some((n) => n.lida_em === null)) void marcarNotificacoesLidas()
+    })
+  }
 
   function mudarVolume<C extends keyof Volumes>(campo: C, valor: Volumes[C]) {
     const novo = { ...volumes, [campo]: valor }
@@ -77,7 +110,9 @@ export default function SideNav() {
 
     function inicio(e: TouchEvent) {
       const alvo = e.target as Element | null
-      if (alvo?.closest('[data-carta]')) {
+      // com popup aberto o arraste é do popup (ou de ninguém): abrir o menu
+      // por baixo dele deixava as duas coisas empilhadas na tela
+      if (popupAberto() || alvo?.closest('[data-carta]')) {
         fase = 'ignorando'
         return
       }
@@ -196,6 +231,23 @@ export default function SideNav() {
               </button>
             ) : null}
 
+            <button type="button" className={styles.link} onClick={() => setTutorial(true)}>
+              <BookOpen size={18} aria-hidden />
+              <span className={styles.rotulo}>Como jogar</span>
+            </button>
+
+            {sessao.convidado ? null : (
+              <button type="button" className={styles.link} onClick={abrirAvisos}>
+                <span className={styles.comSino}>
+                  <Bell size={18} aria-hidden />
+                  {naoLidas > 0 ? <span className={styles.bolinha}>{naoLidas}</span> : null}
+                </span>
+                <span className={styles.rotulo}>
+                  Avisos{naoLidas > 0 ? ` (${naoLidas})` : ''}
+                </span>
+              </button>
+            )}
+
             <Link
               className={`${styles.link} ${pathname.startsWith('/perfil') ? styles.ativo : ''}`}
               href="/perfil"
@@ -214,68 +266,87 @@ export default function SideNav() {
         </div>
       </nav>
 
+      {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
+
+      {avisos ? (
+        <Dialogo titulo="Avisos" onFechar={() => setAvisos(null)}>
+          {avisos.length === 0 ? (
+            <p className={styles.dialogoTexto}>
+              Nada ainda. Aqui aparece quando responderem o seu relato ou quando ele mudar de
+              estado.
+            </p>
+          ) : (
+            <ul className={styles.avisos}>
+              {avisos.map((n) => (
+                <li key={n.id} className={n.lida_em ? '' : styles.avisoNovo}>
+                  <b>{n.titulo}</b>
+                  {n.corpo ? <p className={styles.dialogoTexto}>{n.corpo}</p> : null}
+                  <span className={styles.avisoData}>
+                    {new Date(n.criado_em).toLocaleDateString('pt-BR')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Dialogo>
+      ) : null}
+
       {configurando ? (
-        <div className={styles.fundo} role="dialog" aria-modal="true" aria-labelledby="titulo-config">
-          <div className={styles.dialogo}>
-            <h2 className={styles.dialogoTitulo} id="titulo-config">
-              Configurações
-            </h2>
-            <label className={styles.caixa}>
-              <input
-                type="checkbox"
-                checked={volumes.mudo}
-                onChange={(e) => mudarVolume('mudo', e.target.checked)}
-              />
-              <span>Mudo</span>
-            </label>
-            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
-              <span className={styles.controleRotulo}>
-                Volume geral <b>{Math.round(volumes.geral * 100)}%</b>
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={Math.round(volumes.geral * 100)}
-                onChange={(e) => mudarVolume('geral', Number(e.target.value) / 100)}
-              />
-            </label>
-            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
-              <span className={styles.controleRotulo}>
-                Volume da música <b>{Math.round(volumes.musica * 100)}%</b>
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={Math.round(volumes.musica * 100)}
-                onChange={(e) => mudarVolume('musica', Number(e.target.value) / 100)}
-              />
-            </label>
-            <div className={styles.dialogoAcoes}>
-              <button
-                type="button"
-                className={`${buttons.button} ${buttons.primary}`}
-                onClick={() => setConfigurando(false)}
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
+        <Dialogo
+          titulo="Configurações"
+          largo
+          onFechar={() => setConfigurando(false)}
+          acoes={
+            <button
+              type="button"
+              className={`${buttons.button} ${buttons.primary}`}
+              onClick={() => setConfigurando(false)}
+            >
+              Fechar
+            </button>
+          }
+        >
+          <label className={styles.caixa}>
+            <input
+              type="checkbox"
+              checked={volumes.mudo}
+              onChange={(e) => mudarVolume('mudo', e.target.checked)}
+            />
+            <span>Mudo</span>
+          </label>
+          <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
+            <span className={styles.controleRotulo}>
+              Volume geral <b>{Math.round(volumes.geral * 100)}%</b>
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(volumes.geral * 100)}
+              onChange={(e) => mudarVolume('geral', Number(e.target.value) / 100)}
+            />
+          </label>
+          <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
+            <span className={styles.controleRotulo}>
+              Volume da música <b>{Math.round(volumes.musica * 100)}%</b>
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(volumes.musica * 100)}
+              onChange={(e) => mudarVolume('musica', Number(e.target.value) / 100)}
+            />
+          </label>
+        </Dialogo>
       ) : null}
 
       {confirmando ? (
-        <div className={styles.fundo} role="dialog" aria-modal="true" aria-labelledby="titulo-reiniciar">
-          <div className={styles.dialogo}>
-            <h2 className={styles.dialogoTitulo} id="titulo-reiniciar">
-              Reiniciar a run?
-            </h2>
-            <p className={styles.dialogoTexto}>
-              O mês atual é descartado e um novo começa do dia 1. Não dá para desfazer. Quer
-              guardar este mês no seu histórico antes?
-            </p>
-            <div className={styles.dialogoAcoes}>
+        <Dialogo
+          titulo="Reiniciar a run?"
+          onFechar={() => setConfirmando(false)}
+          acoes={
+            <>
               <button
                 type="button"
                 className={`${buttons.button} ${buttons.primary}`}
@@ -283,15 +354,28 @@ export default function SideNav() {
               >
                 Guardar e reiniciar
               </button>
-              <button type="button" className={buttons.button} onClick={() => confirmarReinicio(false)}>
+              <button
+                type="button"
+                className={buttons.button}
+                onClick={() => confirmarReinicio(false)}
+              >
                 Reiniciar sem guardar
               </button>
-              <button type="button" className={buttons.button} onClick={() => setConfirmando(false)}>
+              <button
+                type="button"
+                className={buttons.button}
+                onClick={() => setConfirmando(false)}
+              >
                 Cancelar
               </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <p className={styles.dialogoTexto}>
+            O mês atual é descartado e um novo começa do dia 1. Não dá para desfazer. Quer guardar
+            este mês no seu histórico antes?
+          </p>
+        </Dialogo>
       ) : null}
     </>
   )

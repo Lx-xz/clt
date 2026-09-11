@@ -35,13 +35,16 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 
 | Rota | O que é |
 |---|---|
-| `/` | Entrada: pede um nick, procura no banco, oferece criar se não existir |
+| `/` | Entrada: entrar, criar conta (e-mail/senha ou Google), ou jogar como convidado. Também abre o popup "Como jogar" |
+| `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
 | `/ranking` | Placar público: todo nick já salvo, vitórias/derrotas. Link na barra lateral. No celular a linha mostra só nick/V/D e abre no toque com o resto |
 | `/meus-jogos` | Toda run terminada do jogador da sessão. Link na barra lateral |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro). Chega-se clicando numa run em `/meus-jogos` |
-| `/perfil` | Só o nick de quem está jogando. Link no fim da barra lateral |
+| `/perfil` | Nick, nome, e-mail, tipo de conta, pontos, e o botão de sair |
+| `/feedback` | Bugs e sugestões de todo mundo, com estado, conversa e os controles de admin |
+| `/changelog` | O que já entrou no jogo e o que está sendo feito ("Novidades" no menu) |
 | `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). Link na barra lateral, como "Análise" |
 
 **20 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 12
@@ -76,20 +79,26 @@ src/game/     regras puras — nenhum import de React
   events.ts     20 cartas de evento
   engine.ts     o motor: funções puras GameState -> GameState
   storage.ts    localStorage (espelho), validação de formato do save
-  session.ts    quem está jogando (id + nick)
+  session.ts    quem está jogando (perfil da conta, ou o convidado)
 src/data/     tudo que fala com o Supabase
   supabase.ts   cliente, normalização da URL
+  conta.ts      contas: entrar, cadastrar, Google, convidado, sair
   nick.ts       regras do nick, espelhando as constraints da tabela
-  players.ts    acharJogador / criarJogador, via RPC
   saves.ts      baixar/subir save, registrar run terminada
   sync.ts       banco como fonte da verdade, localStorage como espelho
-src/components/  Card, CardDetail, Medidor, SideNav, SessaoGuard, icons
+  feedback.ts   bugs e sugestões, tudo por RPC
+  notificacoes.ts  o sininho da barra lateral
+  changelog.ts  o histórico de versões, escrito à mão
+src/components/  Card, CardDetail, Medidor, SideNav, SessaoGuard, Dialogo,
+                 ComoJogar, icons
 src/app/
-  page.tsx           entrada por nick
+  page.tsx           entrada: entrar, cadastrar, Google ou convidado
+  termos/            termos de uso, fora da guarda de sessão
   (app)/layout.tsx   guarda de sessão + barra lateral
   (app)/jogar/       a mesa
   (app)/baralho/     montagem do baralho
 supabase/schema.sql  o banco inteiro, para rodar no SQL Editor
+supabase/reset.sql   apaga tudo (contas inclusive) para recomeçar do zero
 ```
 
 **O princípio que sustenta tudo:** `src/game/` não importa React. O motor é um
@@ -170,9 +179,16 @@ opções. O que ele escolheu, e que deve ser preservado:
   carta já usa esse mesmo gesto para ser jogada — sem essa exclusão, jogar uma
   carta no celular abriria o menu.
   Muda de página fecha o gaveteiro sozinho. "Reiniciar run" mora aqui agora,
-  com confirmação — saiu do HUD da mesa. No fim da barra ficam "Perfil" (a
-  rota `/perfil`) e "Configurações", que abre um diálogo com os dois volumes
-  (geral e música) — o mesmo `.fundo`/`.dialogo` da confirmação de reinício.
+  com confirmação — saiu do HUD da mesa. No fim da barra ficam "Como jogar"
+  (o popup de regras, que também está na home), "Avisos" (o sininho das
+  notificações, escondido para convidado), "Perfil" e "Configurações".
+  Enquanto houver popup aberto o arraste do menu é ignorado — veja `Dialogo`
+  abaixo.
+- **Todo popup é o `Dialogo`** (`src/components/Dialogo.tsx`). Ele fecha ao
+  clicar fora e no Esc, e trava a página atrás marcando `data-popup` no
+  `<html>` (a regra que congela a rolagem está em `shell.module.sass`). Não
+  escreva popup novo à mão: os três que existiam antes erravam cada um uma
+  dessas coisas. `largo` só muda a largura.
 - **HUD do celular:** header colado nas bordas, dia à esquerda e nick à
   direita, "Próx. dia" ancorado abaixo do header, status de sync vira ícone
   (girando / check / sem conexão) em vez de texto. Baralho e descarte somem da
@@ -188,10 +204,11 @@ O detalhe da carta no clique **resolve o problema do texto longo** (a Reunião �
 texto mais comprido do baralho): a carta corta e o texto inteiro vive no modal.
 Não encurte os textos em `cards.ts` por causa de espaço.
 
-**Trocar de conta limpa o localStorage do jogo.** `limparLocalDoJogo()`
-(`storage.ts`) + `cancelarSync()` (`sync.ts`) rodam ao clicar em "trocar" na
-home. Sem isso o save de um nick vazava para o próximo jogador que entrasse
-no mesmo navegador — o espelho local não sabe de quem é.
+**Sair (ou entrar como convidado) limpa o localStorage do jogo.**
+`limparLocalDoJogo()` (`storage.ts`) + `cancelarSync()` (`sync.ts`) rodam ao
+sair, na home e no perfil, e também ao entrar como convidado. Sem isso o save
+de um jogador vazava para o próximo que entrasse no mesmo navegador — o
+espelho local não sabe de quem é.
 
 ---
 
@@ -254,8 +271,8 @@ do iOS dá zoom sozinho ao focar qualquer `input` com `font-size` abaixo de
 16px, e ao desfocar **não volta**: a página fica maior que a tela pelo resto
 da visita. Não existe jeito confiável de pedir o zoom-out por JS, e a saída
 comum (`maximum-scale=1`) é hostil a quem precisa ampliar. A regra é só ter
-fonte de 16px ou mais em campo de formulário — hoje, `.campo` em
-`page.module.sass`, o único input do site.
+fonte de 16px ou mais em campo de formulário — hoje `.campo` em
+`page.module.sass` e `.campo`/`.campoTexto` em `feedback.module.sass`.
 
 **Regra depois de `@media` ganha da regra dentro dele.** Com a mesma
 especificidade, quem vem por último na folha vence — estar dentro de uma
@@ -316,6 +333,28 @@ e mexer no ganho; o iPhone respeita. `createMediaElementSource` só pode ser
 chamado **uma vez por elemento**, e o `AudioContext` precisa nascer depois
 de uma interação — daí a criação preguiçosa dentro do primeiro `play()`.
 
+**Gatilho em `auth.users` some se você derrubar a função dele.** O perfil
+nasce de `ao_criar_usuario`, um gatilho `after insert` em `auth.users` — uma
+tabela de OUTRO schema, que o `reset.sql` não apaga. Por isso o bloco de drop
+do `schema.sql` derruba o gatilho ANTES da função (`drop trigger ... on
+auth.users`): dropar só a função deixaria um gatilho quebrado, e todo cadastro
+novo passaria a falhar com erro do Postgres na cara de quem está se
+inscrevendo.
+
+**"Confirm email" ligado significa cadastro sem sessão.** Com a confirmação de
+e-mail ligada no painel (é o padrão), `signUp()` devolve `data.session === null`
+e insistir em entrar logo depois só dá erro. `cadastrar()` devolve
+`precisaConfirmar` justamente para a tela dizer "confira a caixa de entrada"
+em vez de fingir que deu certo. Para testar rápido, desligue a confirmação em
+Authentication > Providers > Email.
+
+**O endereço de volta do Google precisa estar na lista do Supabase.**
+`redirectTo` é `window.location.origin + window.location.pathname` — a própria
+home, com o `/clt` do GitHub Pages incluso, sem remontar basePath à mão. Só que
+o Supabase recusa qualquer redirect que não esteja em Authentication > URL
+Configuration > Redirect URLs, e o sintoma é voltar para o site errado, sem
+erro nenhum. `localhost:3000/` e `lx-xz.github.io/clt/` precisam estar lá.
+
 **Coluna nova e o cache do PostgREST.** A API que a `supabase-js` chama
 guarda o formato das tabelas em cache. Logo depois de um `alter table add
 column`, um insert com a coluna nova pode falhar com "column ... does not
@@ -353,9 +392,41 @@ SQL Editor do projeto.
 
 | Tabela | Guarda |
 |---|---|
-| `players` | nick e id. **O site nunca lê esta tabela direto** |
+| `players` | o perfil: nick, nome, e-mail, se é convidado, se é admin, pontos. **O site nunca lê esta tabela direto** |
 | `saves` | run em andamento e coleção, em `jsonb` |
 | `runs` | registro append-only de runs terminadas, para balanceamento |
+| `feedbacks` | bugs e sugestões, com estado, urgência e nota |
+| `feedback_comentarios` | a conversa de cada relato |
+| `notificacoes` | o que aconteceu com o relato de cada um |
+
+Para apagar tudo e recomeçar do zero existe [`supabase/reset.sql`](supabase/reset.sql)
+— ele derruba as tabelas **e as contas do Auth**, e não tem desfazer.
+
+### Contas
+
+Quem identifica o jogador é o **Supabase Auth**: e-mail e senha, ou Google. O
+`players.id` é o **mesmo id do `auth.users`**, e é isso que deixa
+`auth.uid() = player_id` funcionar direto nas políticas de `saves` e `runs`,
+sem tabela de ligação. O perfil nasce por um **gatilho em `auth.users`**
+(`ao_criar_usuario`), não pelo site: assim nunca existe conta sem perfil, nem
+que o navegador feche no meio do cadastro.
+
+Quem entra pelo Google chega **sem nick** (o Google não tem como saber um), e
+o mesmo acontece quando o nick é tomado entre a checagem na tela e o cadastro.
+Nos dois casos o perfil fica com `nick = null`, `lerConta()` devolve
+`{ tipo: 'incompleto' }` e a home pede o resto antes de deixar jogar. Nick nulo
+não colide com nick nulo no índice único, então isso não trava ninguém.
+
+**O convidado** não tem conta no Auth: `criar_convidado()` cria uma linha em
+`players` com `convidado = true` e um nick sorteado (`convidado-a3f2`), e a
+identidade mora no localStorage deste navegador. Ele joga tudo, e as partidas
+dele são gravadas com `runs.convidado = true` — mas não relata bug (não há
+como responder a ninguém) e perde o progresso ao sair, o que a tela avisa
+antes, no perfil, e na página de feedbacks.
+
+**Admin se dá no SQL Editor**, com o e-mail na mão
+(`update public.players set admin = true where email = '...'`), depois de a
+conta existir. Não há tela para promover ninguém, de propósito.
 
 `runs` tem uma coluna `run_id` (uuid, gerado com `crypto.randomUUID()` na
 criação da run, em `createRun()`) com índice único, e uma coluna `details`
@@ -391,11 +462,25 @@ antes de a run acabar mal, via índice `-1` do jsonb), `escolhas_de_evento()`,
 contador novo no motor — antes de criar campo em `GameState` para uma
 estatística, veja se ela não sai do histórico.
 
-Duas decisões de segurança que não devem ser desfeitas:
+Decisões de segurança que não devem ser desfeitas:
 
-- **A busca de nick passa por função `security definer`** (`find_player`,
-  `create_player`), não por `select`. Com `select`, o site precisaria de leitura
-  em `players` e qualquer pessoa baixaria a lista de nicks de todo mundo.
+- **`players` não tem política nenhuma.** Com o RLS ligado e zero políticas, a
+  tabela é invisível para o site: o que se sabe do próprio perfil vem de
+  `meu_perfil()`, que filtra por `auth.uid()`. E-mail e nome **nunca** saem
+  para outra pessoa — o que aparece em ranking, feedback e comentário é só o
+  nick.
+- **`feedbacks`, `feedback_comentarios` e `notificacoes` também não têm
+  política nem grant.** Tudo passa por função `security definer` que confere
+  `auth.uid()` por dentro: `criar_feedback` recusa quem não tem conta,
+  `editar_feedback`/`excluir_feedback` só aceitam o autor ou o admin, e
+  `admin_atualizar_feedback` só o admin. Quem decide é o banco, não a tela —
+  esconder o botão no React não é permissão.
+- **`eh_convidado()` é `security definer` porque as POLÍTICAS a chamam.** A
+  expressão de uma política roda com os privilégios de quem consulta, e o
+  `anon` não tem select em `players`: sem `security definer` a política
+  falharia com "permission denied for table players". Pelo mesmo motivo ela é
+  criada **antes** das políticas e fica **fora** do bloco de drop — derrubar
+  função de que uma política depende é erro.
 - **`runs` só aceita `insert` direto.** Toda leitura agregada ou por jogador
   passa por função `security definer`, nunca por `select` cru:
   - `estatisticas_gerais()` — agregados globais, usada por `/analytics`.
@@ -412,12 +497,12 @@ Duas decisões de segurança que não devem ser desfeitas:
   Nenhuma delas dá `grant select` em `players` ou `runs` para `anon` — o
   acesso continua só pela função.
 
-### O nick não é autenticação
+### O nick agora é só um nome
 
-Entrar só com um nick **identifica**, não autentica. Quem digitar o nick de outra
-pessoa joga no save dela. É uma escolha consciente para a fase de teste, dita na
-própria tela e no README. O caminho para valer é Supabase Auth (magic link ou
-login anônimo). Não trate isso como bug até que alguém decida trocar.
+Até a v0.3 entrar era digitar um nick, e quem digitasse o nick de outra pessoa
+jogava no save dela. **Isso acabou**: o nick virou apenas o nome público
+(ranking, feedbacks, comentários) e quem identifica é o Auth. A única entrada
+sem senha é o convidado, que por definição não tem nada a proteger.
 
 ### Variáveis
 
@@ -431,8 +516,12 @@ chave `service_role` (= secret) **nunca** pode entrar no projeto — ela ignora 
 RLS.
 
 Sem as variáveis o site continua de pé e avisa que o banco não está configurado.
-Mas o gate de nick bloqueia `/jogar` e `/baralho`, então **na prática não dá para
-jogar localmente sem credencial** — é uma pendência aberta (veja abaixo).
+Mas sem conta (e sem convidado, que também precisa do banco) a guarda bloqueia
+`/jogar` e `/baralho`, então **na prática não dá para jogar localmente sem
+credencial** — é uma pendência aberta (veja abaixo).
+
+O login por e-mail e por Google se liga no painel do Supabase, não em variável
+nenhuma: o `.env.example` lista o que precisa estar configurado lá.
 
 ---
 
@@ -485,6 +574,18 @@ antes de usá-los para decidir qualquer coisa.
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,
   derrota). Quando entrarem, o volume deles é mais um multiplicador em
   `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
+- **Recompensa por feedback.** A nota que o admin dá já vira `players.pontos`
+  (nota × 10, recalculado a cada mudança) e aparece no perfil. Falta decidir o
+  que se compra com ela — carta, tema, nada disso.
+- **Notificação de verdade.** A tabela `notificacoes` já é preenchida a cada
+  resposta do admin, mudança de estado e comentário novo, e o sininho da barra
+  lateral já lê e marca como lida. Falta o aviso sair do site: e-mail, ou push.
+  Foi feito assim de propósito — quando isso chegar, o histórico já existe.
+- **O changelog é escrito à mão** (`src/data/changelog.ts`). Ao entregar coisa
+  nova, acrescente a versão no topo e tire o item de `EM_ANDAMENTO`.
+- **Convidado é criável à vontade pelo `anon`.** `criar_convidado()` não tem
+  limite: dá para encher a tabela de perfis de convidado. Para um trabalho de
+  faculdade tudo bem; se virar problema, o caminho é rate limit no Supabase.
 - **O mp3 da trilha tem 3,7 MB.** Vai inteiro para o GitHub Pages em toda
   visita (o navegador cacheia depois). Se a trilha crescer, vale reencodar
   em bitrate menor ou cortar um loop curto.

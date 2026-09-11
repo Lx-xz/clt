@@ -16,6 +16,13 @@
     overflow-y: auto
     overflow-x: hidden
 
+// com popup aberto a página atrás congela: a marca `data-popup` no <html> é
+// posta pelo componente Dialogo. Sem isso, rolar dentro do popup no celular
+// rola a lista de trás quando o popup chega ao fim
+:global(html[data-popup]) .conteudo,
+:global(html[data-popup]) .conteudo:has(:global(.page))
+  overflow: hidden
+
 @media (max-width: 760px)
   .shell
     flex-direction: column

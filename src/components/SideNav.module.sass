@@ -35,6 +35,9 @@ $painel-largo: 216px
   width: $painel-largo
   height: 100%
   padding: 16px 12px
+  // a lista cresceu (feedbacks, novidades, avisos, como jogar): em tela
+  // baixa ela passa da altura da barra, e aí é ela quem rola
+  overflow-y: auto
 
 .marca
   display: flex
@@ -145,42 +148,15 @@ $painel-largo: 216px
 .backdrop
   display: none
 
-// --------------------------------------------------------------- confirmação
-.fundo
-  position: fixed
-  inset: 0
-  z-index: 260
-  display: grid
-  place-items: center
-  padding: 20px
-  background: color-mix(in srgb, var(--tinta) 55%, transparent)
-  animation: cortina-entra .16s ease
-
-.dialogo
-  display: flex
-  flex-direction: column
-  gap: 12px
-  max-width: 400px
-  padding: 22px
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: 8px
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
-  animation: dialogo-entra .2s cubic-bezier(.2, .8, .25, 1)
-
-.dialogoTitulo
-  font-size: 20px
+// ------------------------------------------------- conteúdo dos diálogos
+// (a moldura — fundo, largura, fechar no Esc e no clique fora — mora no
+// componente Dialogo; aqui fica só o que é desta barra)
 
 .dialogoTexto
   margin: 0
   color: var(--tinta-fraca)
   font-size: 14px
-
-.dialogoAcoes
-  display: flex
-  flex-wrap: wrap
-  gap: 8px
-  margin-top: 4px
+  line-height: 1.5
 
 // controle de volume do diálogo de configurações
 .controle
@@ -219,23 +195,57 @@ $painel-largo: 216px
   font-size: 13px
 
   b
+    // largura fixa para o número: sem ela o rótulo empurrava o diálogo
+    // inteiro ao passar de "99%" para "100%"
+    min-width: 4.5ch
     font-family: var(--mono)
     font-variant-numeric: tabular-nums
     font-weight: 600
+    text-align: right
 
-@keyframes cortina-entra
-  from
-    opacity: 0
-  to
-    opacity: 1
+// ------------------------------------------------------------------ avisos
+.comSino
+  position: relative
+  flex: none
+  display: grid
+  place-items: center
 
-@keyframes dialogo-entra
-  from
-    opacity: 0
-    transform: translateY(8px) scale(.97)
-  to
-    opacity: 1
-    transform: none
+.bolinha
+  position: absolute
+  top: -5px
+  right: -7px
+  min-width: 15px
+  padding: 0 4px
+  background: var(--estresse)
+  border-radius: 999px
+  color: #fff
+  font-family: var(--mono)
+  font-size: 9px
+  font-weight: 700
+  line-height: 15px
+  text-align: center
+
+.avisos
+  display: flex
+  flex-direction: column
+  gap: 10px
+  margin: 0
+  padding: 0
+  list-style: none
+  font-size: 14px
+
+  li
+    padding: 10px 12px
+    background: var(--papel)
+    border-radius: var(--raio)
+
+.avisoNovo
+  border-left: 3px solid var(--destaque)
+
+.avisoData
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 11px
 
 // ------------------------------------------------------------------- celular
 @media (max-width: 760px)
@@ -307,7 +317,3 @@ $painel-largo: 216px
   .painel,
   .backdrop
     transition: none
-
-  .fundo,
-  .dialogo
-    animation: none

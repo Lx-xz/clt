@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { aoMudarConta, lerConta } from '@/data/conta'
 import { lerSessao, type Sessao } from '@/game/session'
 import styles from './SessaoGuard.module.sass'
 
@@ -14,21 +15,42 @@ export function useSessao(): Sessao {
   return sessao
 }
 
-/** Sem nick não há save: manda escolher um antes de abrir mesa ou baralho. */
+/**
+ * Sem conta (ou sem convidado) não há save: manda voltar para a entrada.
+ *
+ * O espelho local do perfil serve para a mesa abrir sem piscar "carregando" a
+ * cada navegação; a confirmação com o banco vem logo atrás e corrige o que
+ * estiver velho — inclusive mandar embora quem saiu da conta em outra aba.
+ */
 export default function SessaoGuard({ children }: { children: React.ReactNode }) {
-  const [sessao, setSessao] = useState<Sessao | null>(null)
+  const [sessao, setSessao] = useState<Sessao | null>(() => lerSessao())
   const [pronto, setPronto] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    const s = lerSessao()
-    if (!s) {
-      router.replace('/')
-      return
-    }
-    setSessao(s)
-    setPronto(true)
+  const conferir = useCallback(() => {
+    lerConta()
+      .then((conta) => {
+        if (conta.tipo === 'conta' || conta.tipo === 'convidado') {
+          setSessao(conta.perfil)
+          setPronto(true)
+          return
+        }
+        // fora, ou cadastro pela metade: as duas coisas se resolvem na home
+        setSessao(null)
+        router.replace('/')
+      })
+      .catch(() => {
+        // banco fora do ar: quem já tem espelho local continua jogando (o
+        // save local segura a run), quem não tem volta para a entrada
+        if (lerSessao()) setPronto(true)
+        else router.replace('/')
+      })
   }, [router])
+
+  useEffect(() => {
+    conferir()
+    return aoMudarConta(conferir)
+  }, [conferir])
 
   if (!pronto || !sessao) {
     return <div className={styles.espera}>Batendo o ponto…</div>

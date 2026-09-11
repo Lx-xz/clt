@@ -44,6 +44,9 @@ export interface RunRegistravel {
   /** Falso na run abandonada sem permissão: conta para a análise, mas não
    *  aparece em "meus jogos" nem no ranking. */
   visivel: boolean
+  /** Partida jogada sem conta. Fica na própria linha porque o perfil de
+   *  convidado é descartável e a run não. */
+  convidado: boolean
   details: { history: GameState['history'] }
 }
 
@@ -52,6 +55,7 @@ export function montarRun(
   run: GameState,
   outcome: DesfechoRegistrado,
   visivel: boolean,
+  convidado: boolean,
 ): RunRegistravel {
   return {
     run_id: run.runId,
@@ -66,6 +70,7 @@ export function montarRun(
     warnings: run.warnings,
     max_dias_sem_descanso: run.maxDaysNoRest,
     visivel,
+    convidado,
     details: { history: run.history },
   }
 }

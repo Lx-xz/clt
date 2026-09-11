@@ -3,8 +3,16 @@
   flex-direction: column
   align-items: center
   justify-content: center
-  gap: 26px
+  gap: 22px
   min-height: 100dvh
+  // a página em si não rola (global.sass), então quem rola é a home: sem
+  // isto o formulário de cadastro no celular fica com o botão fora da tela.
+  // `safe center` centraliza quando cabe e encosta no topo quando não cabe —
+  // `center` puro cortaria o começo do conteúdo sem deixar rolar até ele.
+  max-height: 100dvh
+  overflow-y: auto
+  justify-content: center
+  justify-content: safe center
   padding-block: 40px
   padding-left: 20px
   padding-right: 20px
@@ -46,11 +54,12 @@
 // ------------------------------------------------------------- entrada
 .forma
   display: flex
-  flex-wrap: wrap
-  justify-content: center
+  flex-direction: column
+  align-items: stretch
   gap: 8px
   width: 100%
   max-width: 380px
+  text-align: left
 
 .campo
   flex: 1 1 200px
@@ -109,59 +118,97 @@
   &:hover
     color: var(--tinta)
 
-// --------------------------------------------------------------- popup
-.fundo
-  position: fixed
-  inset: 0
-  z-index: 200
-  display: grid
-  place-items: center
-  padding: 20px
-  background: color-mix(in srgb, var(--tinta) 55%, transparent)
-  animation: fundo-entra .18s ease
+// ------------------------------------------------------------- entrada 2
+// (o popup da home virou o componente Dialogo, com trava de rolagem e
+// fechamento ao clicar fora — veja src/components/Dialogo.tsx)
 
-.painel
+.abas
   display: flex
-  flex-direction: column
-  gap: 12px
-  max-width: 420px
-  padding: 24px
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: 8px
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
-  text-align: left
-  animation: painel-entra .24s cubic-bezier(.2, .8, .25, 1)
+  gap: 4px
+  padding: 3px
+  background: var(--papel-baixo)
+  border-radius: var(--raio)
 
-@keyframes fundo-entra
-  from
-    opacity: 0
-  to
-    opacity: 1
-
-@keyframes painel-entra
-  from
-    opacity: 0
-    transform: translateY(10px) scale(.97)
-  to
-    opacity: 1
-    transform: none
-
-@media (prefers-reduced-motion: reduce)
-  .fundo,
-  .painel
-    animation: none
-
-.painelTitulo
-  font-size: 20px
-
-.painelTexto
-  margin: 0
+.aba
+  padding: 7px 18px
+  background: none
+  border: none
+  border-radius: var(--raio)
   color: var(--tinta-fraca)
   font-size: 14px
+  font-weight: 600
+  cursor: pointer
 
-.painelAcoes
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.abaAtiva
+  background: var(--papel-alto)
+  box-shadow: var(--sombra)
+  color: var(--tinta)
+
+.largo
+  width: 100%
+
+.outras
   display: flex
-  flex-wrap: wrap
+  flex-direction: column
+  align-items: center
   gap: 8px
-  margin-top: 4px
+  width: 100%
+  max-width: 380px
+
+.caixa
+  display: flex
+  align-items: flex-start
+  gap: 8px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.4
+  text-align: left
+  cursor: pointer
+
+  input
+    flex: none
+    width: 16px
+    height: 16px
+    margin-top: 1px
+    accent-color: var(--tinta)
+    cursor: pointer
+
+.dica
+  margin: -2px 0 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+  text-align: left
+
+.recado
+  max-width: 42ch
+  margin: 0
+  padding: 10px 14px
+  background: var(--papel-alto)
+  border-left: 3px solid var(--produtividade)
+  color: var(--tinta)
+  font-size: 13px
+  text-align: left
+
+.avisoForte
+  max-width: 46ch
+  margin: 0
+  padding: 12px 14px
+  background: var(--papel-alto)
+  border-left: 3px solid var(--destaque)
+  border-radius: 0 var(--raio) var(--raio) 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+  text-align: left
+
+.listaAviso
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 0
+  padding-left: 20px
+  line-height: 1.5

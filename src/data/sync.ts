@@ -118,9 +118,10 @@ export async function registrarRunAgora(
   playerId: string,
   run: GameState,
   outcome: DesfechoRegistrado,
+  convidado: boolean,
   visivel = true,
 ): Promise<string | null> {
-  const linha = montarRun(playerId, run, outcome, visivel)
+  const linha = montarRun(playerId, run, outcome, visivel, convidado)
   try {
     await enviarRun(linha)
     return null

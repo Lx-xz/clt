@@ -1,0 +1,95 @@
+.fundo
+  position: fixed
+  inset: 0
+  z-index: 260
+  display: grid
+  place-items: center
+  padding: 16px
+  overflow-y: auto
+  background: color-mix(in srgb, var(--tinta) 55%, transparent)
+  animation: cortina-entra .16s ease
+
+.dialogo
+  display: flex
+  flex-direction: column
+  gap: 14px
+  // `width` junto de `max-width` para o painel não encolher e crescer
+  // conforme o texto de dentro muda — era o que fazia o diálogo de volume
+  // pular de tamanho quando o número passava de "99%" para "100%"
+  width: min(100%, 420px)
+  max-height: calc(100dvh - 32px)
+  padding: 20px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
+  animation: dialogo-entra .2s cubic-bezier(.2, .8, .25, 1)
+
+.largo
+  width: min(100%, 560px)
+
+.cabecalho
+  display: flex
+  align-items: flex-start
+  justify-content: space-between
+  gap: 12px
+
+.titulo
+  font-size: 20px
+
+.fechar
+  flex: none
+  display: grid
+  place-items: center
+  width: 30px
+  height: 30px
+  margin: -4px -4px 0 0
+  padding: 0
+  background: none
+  border: none
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  cursor: pointer
+
+  &:hover
+    background: var(--papel)
+    color: var(--tinta)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+// o corpo é quem rola quando o conteúdo passa da altura da tela — o fundo
+// continua parado, e a página atrás não rola de jeito nenhum
+.corpo
+  display: flex
+  flex-direction: column
+  gap: 12px
+  min-height: 0
+  overflow-y: auto
+  color: var(--tinta)
+  font-size: 14px
+
+.acoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+@keyframes cortina-entra
+  from
+    opacity: 0
+  to
+    opacity: 1
+
+@keyframes dialogo-entra
+  from
+    opacity: 0
+    transform: translateY(8px) scale(.97)
+  to
+    opacity: 1
+    transform: none
+
+@media (prefers-reduced-motion: reduce)
+  .fundo,
+  .dialogo
+    animation: none

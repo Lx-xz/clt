@@ -97,7 +97,7 @@ export default function JogarPage() {
     // o timer é cancelado por qualquer jogada seguinte, e era assim que uma
     // derrota sumia se o jogador clicasse em "nova run" rápido demais
     if (next.outcome !== 'jogando') {
-      void registrarRunAgora(sessao.id, next, next.outcome).then(setRegistroFalhou)
+      void registrarRunAgora(sessao.id, next, next.outcome, sessao.convidado).then(setRegistroFalhou)
     }
   }
 
@@ -111,7 +111,7 @@ export default function JogarPage() {
     // "ainda estou escolhendo o baralho", não desistência — e encheria a
     // análise de abandono que não diz nada
     if (state && state.outcome === 'jogando' && state.day >= 3) {
-      void registrarRunAgora(sessao.id, state, 'abandono', guardar)
+      void registrarRunAgora(sessao.id, state, 'abandono', sessao.convidado, guardar)
     }
     clearRun()
     setAberta(null)

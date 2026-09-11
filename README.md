@@ -232,15 +232,24 @@ src/styles/    tokens de cor e botões
 O motor é um conjunto de funções puras sobre `GameState`, então dá para simular
 runs fora do navegador para checar balanceamento sem passar pela interface.
 
-### Entrar com um nick
+### Entrar
 
-Para testar com várias pessoas, o jogo pede um nick na página inicial e procura
-esse jogador no banco. Se não existir, abre um aviso de primeira vez com a opção
-de criar ou de fechar e tentar outro nick.
+A página inicial pede **conta**: e-mail e senha, ou Google. Nos dois casos o
+cadastro pergunta nome completo, nick e o aceite dos termos de uso — quem vem
+pelo Google completa o que falta na volta. O nick é só o nome público (ranking,
+feedbacks, comentários); e-mail e nome não aparecem para mais ninguém.
 
-> **O nick identifica, não autentica.** Não há senha: quem digitar o nick de
-> outra pessoa joga no save dela. É uma escolha consciente para a fase de teste,
-> já que nada guardado aqui é sensível. Para valer, troque por Supabase Auth.
+Dá também para **jogar como convidado**, sem conta. Nesse caso a identidade é
+sorteada e fica só naquele navegador: as partidas e as cartas ganhas se perdem
+ao sair, e não dá para relatar bug — o que a tela avisa antes de entrar.
+
+### Feedbacks e novidades
+
+`/feedback` lista todo bug e toda sugestão, com o estado de cada um. Antes de
+gravar um relato novo, o sistema procura relatos parecidos e mostra o que
+achou: dá para abrir o que já existe, desistir, ou mandar o seu assim mesmo.
+Quem escreveu pode editar e apagar; o admin muda estado, urgência, dá nota e
+responde nos comentários. O que vira entrega aparece em `/changelog`.
 
 ### Banco (Supabase)
 
@@ -249,17 +258,26 @@ Editor do projeto. Ele cria três tabelas:
 
 | Tabela | O que guarda |
 |---|---|
-| `players` | nick e id. O site nunca lê essa tabela direto |
+| `players` | o perfil: nick, nome, e-mail, convidado, admin, pontos. O site nunca lê essa tabela direto |
 | `saves` | a run em andamento e a coleção, em `jsonb` |
 | `runs` | registro append-only de runs terminadas, para balanceamento |
+| `feedbacks` + `feedback_comentarios` | os relatos e a conversa de cada um |
+| `notificacoes` | o que aconteceu com o relato de cada pessoa |
 
-Duas decisões que valem explicação:
+Para recomeçar os testes do zero existe
+[`supabase/reset.sql`](supabase/reset.sql), que apaga as tabelas **e as contas**.
 
-- **A busca de nick passa por função `security definer`**, não por `select` na
-  tabela. Sem isso, o site precisaria de acesso de leitura a `players` e
-  qualquer pessoa poderia baixar a lista de nicks de todo mundo.
+Decisões que valem explicação:
+
+- **`players`, `feedbacks`, `feedback_comentarios` e `notificacoes` não têm
+  política nem grant.** Com o RLS ligado e nenhuma política, o site não enxerga
+  a tabela: tudo passa por função `security definer` que confere `auth.uid()`
+  por dentro e devolve só o que a página mostra. Quem decide quem pode o quê é
+  o banco, não o React.
 - **`runs` só aceita `insert`**, nunca `select`. A telemetria é escrita pelo
   site e lida por você no painel do Supabase.
+- **O perfil nasce por gatilho em `auth.users`**, não pelo site: assim nunca
+  existe conta sem perfil.
 
 A `NEXT_PUBLIC_SUPABASE_URL` é a **URL do projeto**, sem caminho
 (`https://xxxx.supabase.co`). O painel também mostra uma "API URL" terminada
@@ -287,7 +305,8 @@ abrir instantânea e o jogo não morrer se a conexão cair no meio do dia; a
 subida para o banco é adiada em 900 ms, senão cada carta jogada viraria uma
 escrita na rede.
 
-- `clt:sessao:v1` — quem está jogando (id e nick)
+- `clt:perfil:v1` — espelho do perfil de quem tem conta (a verdade é o banco)
+- `clt:convidado:v1` — a identidade do convidado, que só existe aqui
 - `clt:collection:v1` — espelho da coleção
 - `clt:run:v2` — espelho da run em andamento
 

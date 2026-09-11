@@ -1,0 +1,369 @@
+.topo
+  display: flex
+  flex-wrap: wrap
+  align-items: flex-start
+  justify-content: space-between
+  gap: 16px
+  margin-bottom: 18px
+
+.titulo
+  font-size: clamp(26px, 5vw, 36px)
+
+.intro
+  max-width: 58ch
+  margin: 6px 0 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.55
+
+.topoAcoes
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+.avisoConvidado
+  margin: 0 0 16px
+  padding: 12px 14px
+  background: var(--papel-alto)
+  border-left: 3px solid var(--destaque)
+  border-radius: 0 var(--raio) var(--raio) 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+
+// ------------------------------------------------------------------ filtros
+.filtros
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 6px
+  margin-bottom: 16px
+
+.pilula
+  padding: 5px 12px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  cursor: pointer
+
+  &:hover
+    color: var(--tinta)
+
+.pilulaAtiva
+  background: var(--tinta)
+  border-color: var(--tinta)
+  color: var(--papel-alto)
+
+.caixa
+  display: flex
+  align-items: center
+  gap: 6px
+  margin-left: auto
+  color: var(--tinta-fraca)
+  font-size: 12px
+  cursor: pointer
+
+  input
+    width: 15px
+    height: 15px
+    accent-color: var(--tinta)
+    cursor: pointer
+
+// -------------------------------------------------------------------- lista
+.lista
+  display: flex
+  flex-direction: column
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.card
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  overflow: hidden
+
+.cardAberto
+  border-color: var(--tinta)
+  box-shadow: var(--sombra)
+
+.cabecalho
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 10px
+  width: 100%
+  padding: 12px 14px
+  background: none
+  border: none
+  text-align: left
+  cursor: pointer
+
+  &:hover
+    background: var(--papel)
+
+.cardTitulo
+  flex: 1
+  min-width: 180px
+  font-size: 15px
+  font-weight: 600
+
+.meta
+  display: flex
+  align-items: center
+  gap: 10px
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.tipo
+  letter-spacing: .04em
+  text-transform: uppercase
+
+.mono
+  display: inline-flex
+  align-items: center
+  gap: 3px
+  font-family: var(--mono)
+  font-size: 11px
+
+.seuSelo
+  padding: 1px 6px
+  background: var(--papel-baixo)
+  border-radius: 3px
+  font-family: var(--mono)
+  font-size: 10px
+  text-transform: uppercase
+
+// o selo de estado: a cor é a mesma da pilula do filtro, para dar liga
+.selo
+  flex: none
+  padding: 2px 9px
+  border-radius: 999px
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: .02em
+
+.novo
+  background: color-mix(in srgb, var(--linha) 45%, transparent)
+  color: var(--tinta-fraca)
+
+.triado
+  background: color-mix(in srgb, var(--energia) 20%, transparent)
+  color: var(--energia)
+
+.em_andamento
+  background: color-mix(in srgb, var(--destaque) 26%, transparent)
+  color: var(--destaque)
+
+.feito
+  background: color-mix(in srgb, var(--produtividade) 22%, transparent)
+  color: var(--produtividade)
+
+.recusado
+  background: color-mix(in srgb, var(--estresse) 18%, transparent)
+  color: var(--estresse)
+
+.duplicado
+  background: color-mix(in srgb, var(--linha) 45%, transparent)
+  color: var(--tinta-fraca)
+
+// -------------------------------------------------------------- aberto
+.corpo
+  display: flex
+  flex-direction: column
+  gap: 12px
+  padding: 0 14px 14px
+  border-top: 1px solid var(--linha)
+  padding-top: 14px
+
+.texto
+  margin: 0
+  font-size: 14px
+  line-height: 1.55
+  // o relato vem digitado pelo jogador: quebra de linha dele é para valer,
+  // e link comprido não pode estourar a largura do celular
+  white-space: pre-wrap
+  overflow-wrap: anywhere
+
+.rodapeCard
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.explicaStatus
+  margin: 0
+  padding: 8px 12px
+  background: var(--papel)
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.acoesDono
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+// ------------------------------------------------------------ painel admin
+.painelAdmin
+  display: flex
+  flex-wrap: wrap
+  align-items: flex-end
+  gap: 10px
+  padding: 12px
+  background: var(--papel)
+  border: 1px dashed var(--linha)
+  border-radius: var(--raio)
+
+.painelTitulo
+  width: 100%
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 10px
+  letter-spacing: .1em
+  text-transform: uppercase
+
+.rotuloCurto
+  display: flex
+  flex-direction: column
+  gap: 4px
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+  select
+    padding: 6px 8px
+    background: var(--papel-alto)
+    border: 1px solid var(--linha)
+    border-radius: var(--raio)
+    color: var(--tinta)
+    font: inherit
+    font-size: 13px
+
+// ----------------------------------------------------------------- conversa
+.conversa
+  display: flex
+  flex-direction: column
+  gap: 8px
+
+.comentario
+  padding: 10px 12px
+  background: var(--papel)
+  border-radius: var(--raio)
+
+.deAdmin
+  border-left: 3px solid var(--destaque)
+
+.comentarioQuem
+  display: flex
+  align-items: center
+  gap: 8px
+  margin-bottom: 4px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  font-weight: 600
+
+.seloAdmin
+  padding: 1px 6px
+  background: var(--destaque)
+  border-radius: 3px
+  color: #17150f
+  font-family: var(--mono)
+  font-size: 9px
+  letter-spacing: .06em
+  text-transform: uppercase
+
+.responder
+  display: flex
+  align-items: flex-start
+  gap: 8px
+
+// ----------------------------------------------------------------- campos
+.rotulo
+  display: flex
+  flex-direction: column
+  gap: 5px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.campo,
+.campoTexto
+  width: 100%
+  padding: 9px 12px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta)
+  font: inherit
+  // 16px: abaixo disso o Safari do iPhone dá zoom ao focar e não desfaz
+  font-size: 16px
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 1px
+
+.campoTexto
+  flex: 1
+  resize: vertical
+  font-family: inherit
+  line-height: 1.5
+
+.dica
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+
+.subtitulo
+  margin-top: 4px
+  font-size: 13px
+  letter-spacing: .05em
+  text-transform: uppercase
+  color: var(--tinta-fraca)
+
+.listaExplica
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 0
+  padding-left: 20px
+  font-size: 14px
+  line-height: 1.5
+
+.parecidos
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.parecido
+  display: flex
+  align-items: center
+  gap: 10px
+  width: 100%
+  padding: 10px 12px
+  background: var(--papel)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  font-size: 14px
+  text-align: left
+  cursor: pointer
+
+  &:hover
+    border-color: var(--tinta)
+
+  span:nth-child(2)
+    flex: 1
+
+.erro
+  margin: 0
+  color: var(--estresse)
+  font-size: 13px
+
+.vazio
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px

@@ -24,6 +24,18 @@ const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
  * A chave service_role nunca pode aparecer aqui.
  */
 export const supabase: SupabaseClient | null =
-  url && anonKey ? createClient(url, anonKey, { auth: { persistSession: false } }) : null
+  url && anonKey
+    ? createClient(url, anonKey, {
+        auth: {
+          // a sessão precisa sobreviver a recarregar a página e a fechar a
+          // aba: é ela que identifica o jogador agora, no lugar do nick
+          persistSession: true,
+          autoRefreshToken: true,
+          // o Google devolve o visitante para a home com o token no endereço;
+          // é isto que transforma esse endereço em sessão e limpa a barra
+          detectSessionInUrl: true,
+        },
+      })
+    : null
 
 export const bancoConfigurado = Boolean(url && anonKey)

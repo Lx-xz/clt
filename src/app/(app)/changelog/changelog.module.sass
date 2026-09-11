@@ -1,0 +1,112 @@
+.titulo
+  font-size: clamp(26px, 5vw, 36px)
+
+.intro
+  max-width: 62ch
+  margin: 8px 0 26px
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.6
+
+.andamento
+  margin-bottom: 32px
+  padding: 16px 18px
+  background: var(--papel-alto)
+  border: 1px dashed var(--linha)
+  border-radius: 8px
+
+.andamentoTitulo
+  margin-bottom: 8px
+  font-size: 13px
+  letter-spacing: .08em
+  text-transform: uppercase
+  color: var(--destaque)
+
+.lista
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 0
+  padding-left: 20px
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.5
+
+.versao
+  padding-bottom: 24px
+  margin-bottom: 24px
+  border-bottom: 1px solid var(--linha)
+
+  &:last-child
+    border-bottom: none
+
+.cabecalho
+  display: flex
+  flex-wrap: wrap
+  align-items: baseline
+  gap: 10px
+  margin-bottom: 12px
+
+.numero
+  padding: 2px 8px
+  background: var(--tinta)
+  border-radius: 3px
+  color: var(--papel-alto)
+  font-family: var(--mono)
+  font-size: 11px
+  font-weight: 700
+
+.nome
+  font-size: 19px
+
+.data
+  margin-left: auto
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px
+
+.itens
+  display: flex
+  flex-direction: column
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.item
+  display: flex
+  align-items: baseline
+  gap: 10px
+  font-size: 14px
+  line-height: 1.5
+
+.marca
+  flex: none
+  width: 76px
+  padding: 1px 0
+  border-radius: 3px
+  font-family: var(--mono)
+  font-size: 10px
+  letter-spacing: .06em
+  text-align: center
+  text-transform: uppercase
+
+.novo
+  background: color-mix(in srgb, var(--produtividade) 22%, transparent)
+  color: var(--produtividade)
+
+.melhor
+  background: color-mix(in srgb, var(--energia) 22%, transparent)
+  color: var(--energia)
+
+.correcao
+  background: color-mix(in srgb, var(--estresse) 20%, transparent)
+  color: var(--estresse)
+
+@media (max-width: 560px)
+  .item
+    flex-direction: column
+    gap: 2px
+
+  .marca
+    text-align: left
