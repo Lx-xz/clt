@@ -1,5 +1,12 @@
 // Paleta "papelada de escritório": papel manila, tinta de caneta, carimbo.
-html
+//
+// O tema tem três estados, e é por isso que o bloco escuro aparece duas
+// vezes: `sistema` (o padrão, que obedece o aparelho), `claro` e `escuro`
+// (escolha explícita, marcada em `data-tema` no <html> por `src/data/tema.ts`).
+// A escolha explícita precisa ganhar do `prefers-color-scheme` nos dois
+// sentidos — daí a regra do media query excluir `[data-tema="claro"]`.
+
+=claras
   --papel: #e9e4d9
   --papel-alto: #f6f2e8
   --papel-baixo: #ddd6c6
@@ -12,21 +19,38 @@ html
   --dinheiro: #3f6b33
   --destaque: #c8971f
   --sombra: 0 1px 0 rgba(30, 28, 24, .18), 0 6px 14px rgba(30, 28, 24, .08)
+  // usado pelos controles nativos que sobraram (teclado, barra de rolagem)
+  color-scheme: light
+
+=escuras
+  --papel: #171613
+  --papel-alto: #211f1b
+  --papel-baixo: #100f0d
+  --tinta: #ece7da
+  --tinta-fraca: #9a9384
+  --linha: #3a362e
+  --energia: #6fb0dd
+  --estresse: #e0685e
+  --produtividade: #6fc08b
+  --dinheiro: #8fc47a
+  --destaque: #e0b544
+  --sombra: 0 1px 0 rgba(0, 0, 0, .4), 0 6px 14px rgba(0, 0, 0, .35)
+  color-scheme: dark
+
+html
+  +claras
   --raio: 4px
   --fonte: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif
   --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace
 
+// sem escolha explícita, manda o aparelho
 @media (prefers-color-scheme: dark)
-  html
-    --papel: #171613
-    --papel-alto: #211f1b
-    --papel-baixo: #100f0d
-    --tinta: #ece7da
-    --tinta-fraca: #9a9384
-    --linha: #3a362e
-    --energia: #6fb0dd
-    --estresse: #e0685e
-    --produtividade: #6fc08b
-    --dinheiro: #8fc47a
-    --destaque: #e0b544
-    --sombra: 0 1px 0 rgba(0, 0, 0, .4), 0 6px 14px rgba(0, 0, 0, .35)
+  html:not([data-tema='claro'])
+    +escuras
+
+// escolha explícita ganha do aparelho, nos dois sentidos
+html[data-tema='escuro']
+  +escuras
+
+html[data-tema='claro']
+  +claras

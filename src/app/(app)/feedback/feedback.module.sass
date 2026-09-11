@@ -73,20 +73,8 @@
   border-color: var(--tinta)
   color: var(--papel-alto)
 
-.caixa
-  display: flex
-  align-items: center
-  gap: 6px
+.soMeus
   margin-left: auto
-  color: var(--tinta-fraca)
-  font-size: 12px
-  cursor: pointer
-
-  input
-    width: 15px
-    height: 15px
-    accent-color: var(--tinta)
-    cursor: pointer
 
 // -------------------------------------------------------------------- lista
 .lista
@@ -304,6 +292,12 @@
   align-items: flex-start
   gap: 8px
 
+  // só aqui o campo divide a linha com o botão; dentro de um rótulo em
+  // coluna, `flex` viraria altura — foi assim que os campos da home ficaram
+  // com 200px de alto
+  .campoTexto
+    flex: 1
+
 // ----------------------------------------------------------------- campos
 .rotulo
   display: flex
@@ -331,7 +325,6 @@
     outline-offset: 1px
 
 .campoTexto
-  flex: 1
   resize: vertical
   font-family: inherit
   line-height: 1.5

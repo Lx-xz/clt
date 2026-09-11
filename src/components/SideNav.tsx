@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
   Bell,
@@ -13,6 +14,7 @@ import {
   History,
   House,
   Layers,
+  LogOut,
   MessageSquareWarning,
   Play,
   RotateCcw,
@@ -21,10 +23,16 @@ import {
   Trophy,
   User,
 } from 'lucide-react'
+import Check from './Check'
 import ComoJogar from './ComoJogar'
+import Slider from './Slider'
 import Dialogo, { popupAberto } from './Dialogo'
 import { useSessao } from './SessaoGuard'
 import { gravarVolumes, lerVolumes, VOLUMES_PADRAO, type Volumes } from '@/data/som'
+import { gravarTema, lerTema, TEMAS, type Tema } from '@/data/tema'
+import { sair } from '@/data/conta'
+import { cancelarSync } from '@/data/sync'
+import { limparLocalDoJogo } from '@/game/storage'
 import { marcarNotificacoesLidas, minhasNotificacoes, type Notificacao } from '@/data/notificacoes'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './SideNav.module.sass'
@@ -55,7 +63,13 @@ export default function SideNav() {
   // o padrão é o do servidor: ler o localStorage na montagem evita a
   // divergência entre o HTML gerado no build e o primeiro render no navegador
   const [volumes, setVolumes] = useState<Volumes>(VOLUMES_PADRAO)
+  // mesmo motivo do volume: ler o localStorage só depois de montar evita a
+  // divergência entre o HTML do build e o primeiro render do navegador
+  const [tema, setTema] = useState<Tema>('sistema')
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false)
+  const [saindo, setSaindo] = useState(false)
   const painelRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   // ao mudar de página o gaveteiro do celular se fecha sozinho
   useEffect(() => {
@@ -64,9 +78,13 @@ export default function SideNav() {
     setConfigurando(false)
     setTutorial(false)
     setAvisos(null)
+    setConfirmandoSaida(false)
   }, [pathname])
 
-  useEffect(() => setVolumes(lerVolumes()), [])
+  useEffect(() => {
+    setVolumes(lerVolumes())
+    setTema(lerTema())
+  }, [])
 
   // o sininho: quantas respostas e mudanças de estado chegaram desde a
   // última olhada. Convidado não tem notificação, e a função devolve vazio
@@ -89,6 +107,19 @@ export default function SideNav() {
     const novo = { ...volumes, [campo]: valor }
     setVolumes(novo)
     gravarVolumes(novo)
+  }
+
+  function mudarTema(novo: Tema) {
+    setTema(novo)
+    gravarTema(novo)
+  }
+
+  function sairDaConta() {
+    setSaindo(true)
+    // o espelho local do jogo não pode sobrar para o próximo que entrar
+    cancelarSync()
+    limparLocalDoJogo()
+    void sair().finally(() => router.replace('/'))
   }
 
   // no celular a barra fica escondida: arrastar da esquerda para a direita em
@@ -261,6 +292,17 @@ export default function SideNav() {
               <span className={styles.rotulo}>Configurações</span>
             </button>
 
+            <button
+              type="button"
+              className={`${styles.link} ${styles.sair}`}
+              onClick={() => setConfirmandoSaida(true)}
+            >
+              <LogOut size={18} aria-hidden />
+              <span className={styles.rotulo}>
+                {sessao.convidado ? 'Sair (e criar conta)' : 'Sair'}
+              </span>
+            </button>
+
             <span className={styles.rodape}>4 semanas · 20 dias</span>
           </div>
         </div>
@@ -306,38 +348,88 @@ export default function SideNav() {
             </button>
           }
         >
-          <label className={styles.caixa}>
-            <input
-              type="checkbox"
-              checked={volumes.mudo}
-              onChange={(e) => mudarVolume('mudo', e.target.checked)}
-            />
-            <span>Mudo</span>
-          </label>
-          <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
-            <span className={styles.controleRotulo}>
-              Volume geral <b>{Math.round(volumes.geral * 100)}%</b>
+          <div className={styles.grupo}>
+            <span className={styles.grupoTitulo}>Tema</span>
+            <div className={styles.opcoes} role="radiogroup" aria-label="Tema">
+              {TEMAS.map((t) => (
+                <button
+                  key={t.valor}
+                  type="button"
+                  role="radio"
+                  aria-checked={tema === t.valor}
+                  className={`${styles.opcao} ${tema === t.valor ? styles.opcaoAtiva : ''}`}
+                  onClick={() => mudarTema(t.valor)}
+                >
+                  {t.rotulo}
+                </button>
+              ))}
+            </div>
+            <span className={styles.grupoDica}>
+              &ldquo;Sistema&rdquo; acompanha o aparelho, inclusive quando ele troca sozinho de
+              noite.
             </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(volumes.geral * 100)}
-              onChange={(e) => mudarVolume('geral', Number(e.target.value) / 100)}
-            />
-          </label>
-          <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
-            <span className={styles.controleRotulo}>
-              Volume da música <b>{Math.round(volumes.musica * 100)}%</b>
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(volumes.musica * 100)}
-              onChange={(e) => mudarVolume('musica', Number(e.target.value) / 100)}
-            />
-          </label>
+          </div>
+
+          <div className={styles.grupo}>
+            <span className={styles.grupoTitulo}>Som</span>
+            <Check marcado={volumes.mudo} onChange={(v) => mudarVolume('mudo', v)}>
+              Mudo — desliga tudo de uma vez
+            </Check>
+            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
+              <span className={styles.controleRotulo}>
+                Volume geral <b>{Math.round(volumes.geral * 100)}%</b>
+              </span>
+              <Slider
+                rotulo="Volume geral"
+                valor={Math.round(volumes.geral * 100)}
+                desabilitado={volumes.mudo}
+                onChange={(v) => mudarVolume('geral', v / 100)}
+              />
+            </label>
+            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
+              <span className={styles.controleRotulo}>
+                Volume da música <b>{Math.round(volumes.musica * 100)}%</b>
+              </span>
+              <Slider
+                rotulo="Volume da música"
+                valor={Math.round(volumes.musica * 100)}
+                desabilitado={volumes.mudo}
+                onChange={(v) => mudarVolume('musica', v / 100)}
+              />
+            </label>
+          </div>
+        </Dialogo>
+      ) : null}
+
+      {confirmandoSaida ? (
+        <Dialogo
+          titulo={sessao.convidado ? 'Sair como convidado?' : 'Sair da conta?'}
+          onFechar={() => setConfirmandoSaida(false)}
+          acoes={
+            <>
+              <button
+                type="button"
+                className={`${buttons.button} ${buttons.primary}`}
+                disabled={saindo}
+                onClick={sairDaConta}
+              >
+                {saindo ? 'Saindo…' : 'Sair'}
+              </button>
+              <button
+                type="button"
+                className={buttons.button}
+                onClick={() => setConfirmandoSaida(false)}
+              >
+                Ficar
+              </button>
+            </>
+          }
+        >
+          <p className={styles.dialogoTexto}>
+            {sessao.convidado
+              ? 'Você está sem conta: a partida em andamento e as cartas ganhas ficam para trás, e não há como recuperá-las. Criar conta agora leva um minuto e guarda tudo daqui para a frente.'
+              : 'Sua partida está salva no banco e volta quando você entrar de novo. Este navegador é que fica limpo.'}
+          </p>
         </Dialogo>
       ) : null}
 

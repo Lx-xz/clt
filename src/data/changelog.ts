@@ -33,6 +33,19 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.6',
+    data: '2026-09-11',
+    titulo: 'Tema, controles desenhados e a dica que não fechava',
+    itens: [
+      { tipo: 'novo', texto: 'Tema claro, escuro ou o do aparelho, em Configurações.' },
+      { tipo: 'novo', texto: 'Sair direto pela barra lateral, com confirmação.' },
+      { tipo: 'melhor', texto: 'Os controles de volume viraram sliders desenhados, com botões de − e +; as caixas de marcar também são nossas agora.' },
+      { tipo: 'correcao', texto: 'No celular, a dica dos medidores (energia, estresse…) não fechava mais depois do primeiro toque.' },
+      { tipo: 'correcao', texto: 'Essa mesma dica era cortada quando o medidor ficava perto da borda da tela.' },
+      { tipo: 'correcao', texto: 'Os campos de cadastro abriam com 200px de altura cada um.' },
+    ],
+  },
+  {
     versao: '0.5',
     data: '2026-09-11',
     titulo: 'Tutorial ilustrado e feedback mais claro',

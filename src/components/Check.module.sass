@@ -1,0 +1,53 @@
+.rotulo
+  display: flex
+  align-items: flex-start
+  gap: 9px
+  font-size: 13px
+  line-height: 1.45
+  text-align: left
+  cursor: pointer
+
+// o input continua no DOM (teclado, leitor de tela, rótulo clicável); só não
+// é ele que aparece. `opacity: 0` e não `display: none`, senão ele deixa de
+// receber foco e a caixa desenhada nunca saberia mostrar o anel
+.nativo
+  position: absolute
+  width: 1px
+  height: 1px
+  opacity: 0
+  pointer-events: none
+
+.caixa
+  flex: none
+  display: grid
+  place-items: center
+  width: 19px
+  height: 19px
+  margin-top: 1px
+  background: var(--papel-alto)
+  border: 1.5px solid var(--linha)
+  border-radius: 5px
+  color: transparent
+  transition: background .12s ease, border-color .12s ease, color .12s ease
+
+.rotulo:hover .caixa
+  border-color: var(--tinta)
+
+.nativo:checked + .caixa
+  background: var(--tinta)
+  border-color: var(--tinta)
+  color: var(--papel-alto)
+
+.nativo:focus-visible + .caixa
+  outline: 2px solid var(--destaque)
+  outline-offset: 2px
+
+.texto
+  color: var(--tinta-fraca)
+
+.nativo:checked ~ .texto
+  color: var(--tinta)
+
+.desligado
+  opacity: .45
+  cursor: not-allowed

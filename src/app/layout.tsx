@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { SCRIPT_TEMA } from '@/data/tema'
 import './global.sass'
 
 // o mesmo prefixo que o manifest precisa: `icons` declarado à mão não passa
@@ -34,6 +35,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
+      <head>
+        {/* antes de qualquer pintura: senão o site abre claro e pisca para
+            escuro quando o React monta — no tema que a pessoa não quer ver */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body>{children}</body>
     </html>
   )

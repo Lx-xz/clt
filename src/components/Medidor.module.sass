@@ -80,12 +80,12 @@
     transform: translateY(-18px)
 
 .dica
-  position: absolute
-  top: calc(100% + 6px)
-  left: 50%
-  z-index: 120
+  // fixed, e não absolute: presa ao chip ela era cortada pelos medidores das
+  // pontas. Quem escreve `left`/`top` é o componente, já limitado à janela.
+  position: fixed
+  z-index: 300
   width: max-content
-  max-width: 230px
+  max-width: min(230px, calc(100vw - 16px))
   padding: 7px 10px
   background: var(--tinta)
   border-radius: var(--raio)
@@ -99,6 +99,7 @@
   letter-spacing: 0
   transform: translateX(-50%)
   pointer-events: none
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3)
 
 @media (prefers-reduced-motion: reduce)
   .subiu, .desceu, .delta

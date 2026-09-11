@@ -158,34 +158,71 @@ $painel-largo: 216px
   font-size: 14px
   line-height: 1.5
 
-// controle de volume do diálogo de configurações
+// --------------------------------------------------------- configurações
+.grupo
+  display: flex
+  flex-direction: column
+  gap: 10px
+  padding: 14px
+  background: var(--papel)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+
+.grupoTitulo
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 10px
+  font-weight: 700
+  letter-spacing: .12em
+  text-transform: uppercase
+
+.grupoDica
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.4
+
+// escolha de três, no estilo das abas da home
+.opcoes
+  display: flex
+  gap: 4px
+  padding: 3px
+  background: var(--papel-baixo)
+  border-radius: var(--raio)
+
+.opcao
+  flex: 1
+  padding: 8px 10px
+  background: none
+  border: none
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-weight: 600
+  cursor: pointer
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.opcaoAtiva
+  background: var(--papel-alto)
+  box-shadow: var(--sombra)
+  color: var(--tinta)
+
 .controle
   display: flex
   flex-direction: column
   gap: 6px
-
-  input[type='range']
-    width: 100%
-    accent-color: var(--tinta)
-    cursor: pointer
 
 // "mudo" desliga tudo: os dois sliders continuam mexíveis, mas esmaecidos,
 // para ficar claro que o silêncio vem do check e não de um volume zerado
 .desligado
   opacity: .45
 
-.caixa
-  display: flex
-  align-items: center
-  gap: 8px
-  font-size: 13px
-  cursor: pointer
-
-  input
-    width: 16px
-    height: 16px
-    accent-color: var(--tinta)
-    cursor: pointer
+// sair fica com a cor de alerta, para não ser clicado junto com o de cima
+.sair:hover
+  background: color-mix(in srgb, var(--estresse) 14%, transparent)
+  color: var(--estresse)
 
 .controleRotulo
   display: flex

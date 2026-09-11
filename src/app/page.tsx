@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import Check from '@/components/Check'
 import ComoJogar from '@/components/ComoJogar'
 import Dialogo from '@/components/Dialogo'
 import { validarNick } from '@/data/nick'
@@ -291,12 +292,9 @@ export default function Home() {
             A senha só é necessária se você também quiser entrar sem o Google. Dá para deixar em
             branco.
           </p>
-          <label className={styles.caixa}>
-            <input type="checkbox" checked={termos} onChange={(e) => setTermos(e.target.checked)} />
-            <span>
-              Li e aceito os <Link href="/termos">termos de uso</Link>.
-            </span>
-          </label>
+          <Check marcado={termos} onChange={setTermos}>
+            Li e aceito os <Link href="/termos">termos de uso</Link>.
+          </Check>
           <button
             type="submit"
             className={`${buttons.button} ${buttons.primary} ${styles.largo}`}
@@ -387,16 +385,9 @@ export default function Home() {
               disabled={ocupado}
             />
             {aba === 'criar' ? (
-              <label className={styles.caixa}>
-                <input
-                  type="checkbox"
-                  checked={termos}
-                  onChange={(e) => setTermos(e.target.checked)}
-                />
-                <span>
-                  Li e aceito os <Link href="/termos">termos de uso</Link>.
-                </span>
-              </label>
+              <Check marcado={termos} onChange={setTermos}>
+                Li e aceito os <Link href="/termos">termos de uso</Link>.
+              </Check>
             ) : null}
             <button
               type="submit"

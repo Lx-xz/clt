@@ -62,7 +62,12 @@
   text-align: left
 
 .campo
-  flex: 1 1 200px
+  // `flex: 1 1 200px` morava aqui de quando o formulário era uma linha. O
+  // formulário virou coluna, e o 200px passou a ser ALTURA: cada campo
+  // abria com 200px de alto e ainda crescia para preencher a sobra. É por
+  // isso que campo de formulário não leva `flex` com base em px.
+  flex: none
+  width: 100%
   min-width: 0
   // o padding é o que aperta o campo: a fonte precisa ficar em 16px ou o
   // Safari do iPhone dá zoom ao focar e não desfaz (veja CLAUDE.md)

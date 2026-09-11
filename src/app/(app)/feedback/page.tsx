@@ -3,6 +3,7 @@
 import { CircleHelp, MessageSquare, Pencil, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import Check from '@/components/Check'
 import Dialogo from '@/components/Dialogo'
 import { useSessao } from '@/components/SessaoGuard'
 import {
@@ -213,10 +214,11 @@ export default function FeedbackPage() {
           </button>
         ))}
         {sessao.convidado ? null : (
-          <label className={styles.caixa}>
-            <input type="checkbox" checked={soMeus} onChange={(e) => setSoMeus(e.target.checked)} />
-            <span>só os meus</span>
-          </label>
+          <span className={styles.soMeus}>
+            <Check marcado={soMeus} onChange={setSoMeus}>
+              só os meus
+            </Check>
+          </span>
         )}
       </div>
 

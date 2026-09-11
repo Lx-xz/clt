@@ -1,0 +1,78 @@
+.linha
+  display: flex
+  align-items: center
+  gap: 10px
+
+.passo
+  flex: none
+  display: grid
+  place-items: center
+  width: 30px
+  height: 30px
+  padding: 0
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta)
+  cursor: pointer
+  transition: border-color .12s ease, background .12s ease
+
+  &:hover
+    border-color: var(--tinta)
+
+  &:active
+    background: var(--papel-baixo)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.trilha
+  position: relative
+  flex: 1
+  height: 30px
+  cursor: pointer
+  // o arraste é do controle, não da página: sem isto o celular rola junto
+  touch-action: none
+
+  &::before
+    content: ''
+    position: absolute
+    left: 0
+    right: 0
+    top: 50%
+    height: 6px
+    background: var(--papel-baixo)
+    border: 1px solid var(--linha)
+    border-radius: 999px
+    transform: translateY(-50%)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+    border-radius: var(--raio)
+
+.preenchida
+  position: absolute
+  left: 0
+  top: 50%
+  height: 6px
+  background: var(--tinta)
+  border-radius: 999px
+  transform: translateY(-50%)
+  pointer-events: none
+
+.bolinha
+  position: absolute
+  top: 50%
+  width: 17px
+  height: 17px
+  background: var(--papel-alto)
+  border: 2px solid var(--tinta)
+  border-radius: 50%
+  box-shadow: var(--sombra)
+  transform: translate(-50%, -50%)
+  pointer-events: none
+
+.desligado
+  opacity: .45

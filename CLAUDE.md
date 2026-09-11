@@ -181,7 +181,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   Muda de página fecha o gaveteiro sozinho. "Reiniciar run" mora aqui agora,
   com confirmação — saiu do HUD da mesa. No fim da barra ficam "Como jogar"
   (o popup de regras, que também está na home), "Avisos" (o sininho das
-  notificações, escondido para convidado), "Perfil" e "Configurações".
+  notificações, escondido para convidado), "Perfil", "Configurações" e
+  "Sair" (com confirmação, e com texto diferente para convidado, que perde
+  o progresso ao sair).
   Enquanto houver popup aberto o arraste do menu é ignorado — veja `Dialogo`
   abaixo.
 - **O tutorial (`ComoJogar.tsx`) monta as cartas de verdade.** Ele renderiza o
@@ -204,7 +206,24 @@ opções. O que ele escolheu, e que deve ser preservado:
   mesa — é a carta que o jogador mais precisa ler no celular, e não deve
   encolher só porque o resto da mesa encolheu.
 - **Paleta "papelada de escritório"** em `src/styles/_tokens.sass`: papel manila,
-  tinta de caneta, custo como carimbo. Tem variante escura.
+  tinta de caneta, custo como carimbo.
+- **Tema com três estados**, em Configurações: claro, escuro e sistema.
+  `src/data/tema.ts` escreve `data-tema` no `<html>` e o CSS faz o resto —
+  nenhum componente conhece cor. "Sistema" é a **ausência** do atributo, que
+  é o que deixa o `prefers-color-scheme` mandar; por isso o bloco escuro
+  aparece duas vezes em `_tokens.sass` (uma no media query, excluindo
+  `[data-tema="claro"]`, e outra em `[data-tema="escuro"]`), via o mixin
+  `+escuras`. O tema é aplicado por um **script em linha no `<head>`**
+  (`SCRIPT_TEMA`): sem ele o site abre claro e pisca para escuro quando o
+  React monta — justamente no tema que a pessoa não quer ver.
+- **Slider e checkbox são desenhados, não nativos** (`Slider.tsx`,
+  `Check.tsx`). O `input[type=range]` é irregular entre navegadores e no
+  celular disputa o gesto de arrastar com o menu; o slider daqui é uma trilha
+  com Pointer Events e captura do ponteiro, com botões de − e + (acertar 5%
+  arrastando num celular é loteria) e teclas de seta. O check mantém o
+  `input` nativo invisível — é ele que dá teclado, leitor de tela e rótulo
+  clicável de graça; `opacity: 0`, nunca `display: none`, senão ele perde o
+  foco.
 
 O detalhe da carta no clique **resolve o problema do texto longo** (a Reunião é o
 texto mais comprido do baralho): a carta corta e o texto inteiro vive no modal.
@@ -279,6 +298,31 @@ da visita. Não existe jeito confiável de pedir o zoom-out por JS, e a saída
 comum (`maximum-scale=1`) é hostil a quem precisa ampliar. A regra é só ter
 fonte de 16px ou mais em campo de formulário — hoje `.campo` em
 `page.module.sass` e `.campo`/`.campoTexto` em `feedback.module.sass`.
+
+**`flex` com base em px num container que virou coluna.** `.campo` na home
+tinha `flex: 1 1 200px` de quando o formulário era uma linha. O formulário
+virou coluna (login, cadastro), e aquele `200px` deixou de ser largura e
+passou a ser **altura**: cada campo abria com 200px de alto e ainda crescia
+para preencher a sobra. Campo de formulário não leva `flex` com base em px —
+e, ao virar um flex container de linha para coluna, confira TODO `flex` dos
+filhos. Mesmo cuidado em `feedback.module.sass`, onde `.campoTexto` só recebe
+`flex: 1` dentro de `.responder`, que é a única linha de verdade.
+
+**No toque, `pointerenter` dispara junto com o clique.** A dica dos medidores
+abria com `onPointerEnter` e alternava no `onClick`. No dedo os dois eventos
+acontecem na mesma batida, em ordem que varia, e o resultado era a dica
+presa aberta para sempre. A regra: passar o mouse é do mouse
+(`e.pointerType === 'mouse'`), tocar é só o clique — e, no toque, é preciso
+fechar explicitamente (clique fora, Esc), porque não existe "tirar o mouse
+de cima".
+
+**Dica presa ao elemento é cortada nas pontas.** A mesma dica era
+`position: absolute` dentro do chip: nos medidores das bordas ela saía da
+tela, e no celular, com seis tijolos numa grade 3×2, "as bordas" é metade
+deles. Hoje ela é `position: fixed` e o componente calcula `left`/`top` a
+partir do `getBoundingClientRect()` do chip, limitando à janela e virando
+para cima quando não cabe embaixo. Vale para qualquer balão futuro: ou é
+fixed com limite, ou vai ser cortado em algum lugar.
 
 **Regra depois de `@media` ganha da regra dentro dele.** Com a mesma
 especificidade, quem vem por último na folha vence — estar dentro de uma
