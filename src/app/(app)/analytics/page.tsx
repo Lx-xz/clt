@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import {
+  buscarCartasEncalhadas,
   buscarCartasFatais,
   buscarCartasJogadas,
   buscarEscolhasDeEvento,
@@ -29,10 +30,13 @@ interface Dados {
   gerais: EstatisticasGerais
   nerds: EstatisticasNerds
   cartas: CartaJogada[]
+  encalhadas: CartaJogada[]
   fatais: CartaFatal[]
   escolhas: EscolhaDeEvento[]
   estresse: EstressePorDia[]
 }
+
+type Aba = 'normal' | 'nerds'
 
 type Estado =
   | { tipo: 'carregando' }
@@ -54,12 +58,16 @@ export default function AnalyticsPage() {
       buscarEstatisticasGerais(),
       buscarEstatisticasNerds(),
       buscarCartasJogadas(),
+      buscarCartasEncalhadas(),
       buscarCartasFatais(),
       buscarEscolhasDeEvento(),
       buscarEstressePorDia(),
     ])
-      .then(([gerais, nerds, cartas, fatais, escolhas, estresse]) =>
-        setEstado({ tipo: 'pronto', dados: { gerais, nerds, cartas, fatais, escolhas, estresse } }),
+      .then(([gerais, nerds, cartas, encalhadas, fatais, escolhas, estresse]) =>
+        setEstado({
+          tipo: 'pronto',
+          dados: { gerais, nerds, cartas, encalhadas, fatais, escolhas, estresse },
+        }),
       )
       .catch((e: unknown) =>
         setEstado({ tipo: 'erro', mensagem: e instanceof Error ? e.message : 'Não deu para falar com o banco.' }),
@@ -103,13 +111,86 @@ function nomeDaCarta(id: string): string {
 }
 
 function Conteudo({ dados }: { dados: Dados }) {
-  const { gerais, nerds, cartas, fatais, escolhas, estresse } = dados
+  const [aba, setAba] = useState<Aba>('normal')
+  const { gerais, nerds, cartas, encalhadas, fatais, escolhas, estresse } = dados
   const totalDerrotas = gerais.burnouts + gerais.demissoes + gerais.despejos
   const taxaVitoria = gerais.total_runs > 0 ? Math.round((gerais.vitorias / gerais.total_runs) * 100) : 0
   const maisJogadas = cartas.slice(0, 10)
   const tetoCartas = maisJogadas[0]?.vezes ?? 0
   const picoEstresse = estresse.reduce((a, b) => (b.estresse_medio > a ? b.estresse_medio : a), 0)
+  const favorita = cartas[0]
+  const assassina = fatais[0]
 
+  return (
+    <>
+      {/* o cabeçalho fica igual nas duas abas: é o resumo que vale de relance */}
+      <div className={styles.destaques}>
+        <Destaque rotulo="Partidas" valor={gerais.total_runs} />
+        <Destaque rotulo="Taxa de vitória" valor={`${taxaVitoria}%`} />
+        <Destaque rotulo="Cartas jogadas" valor={nerds.total_cartas_jogadas} />
+        <Destaque rotulo="Carta favorita" valor={favorita ? nomeDaCarta(favorita.card_id) : '—'} />
+        <Destaque
+          rotulo="Mais mata"
+          valor={assassina ? nomeDaCarta(assassina.card_id) : '—'}
+        />
+      </div>
+
+      <div className={styles.abas} role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={aba === 'normal'}
+          className={`${styles.aba} ${aba === 'normal' ? styles.abaAtiva : ''}`}
+          onClick={() => setAba('normal')}
+        >
+          Normal
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={aba === 'nerds'}
+          className={`${styles.aba} ${aba === 'nerds' ? styles.abaAtiva : ''}`}
+          onClick={() => setAba('nerds')}
+        >
+          Nerds
+        </button>
+      </div>
+
+      {aba === 'normal' ? (
+        <Normal
+          gerais={gerais}
+          totalDerrotas={totalDerrotas}
+          taxaVitoria={taxaVitoria}
+          estresse={estresse}
+          picoEstresse={picoEstresse}
+        />
+      ) : (
+        <Nerds
+          nerds={nerds}
+          maisJogadas={maisJogadas}
+          tetoCartas={tetoCartas}
+          encalhadas={encalhadas}
+          fatais={fatais}
+          escolhas={escolhas}
+        />
+      )}
+    </>
+  )
+}
+
+function Normal({
+  gerais,
+  totalDerrotas,
+  taxaVitoria,
+  estresse,
+  picoEstresse,
+}: {
+  gerais: EstatisticasGerais
+  totalDerrotas: number
+  taxaVitoria: number
+  estresse: EstressePorDia[]
+  picoEstresse: number
+}) {
   return (
     <>
       <div className={styles.grade}>
@@ -150,21 +231,74 @@ function Conteudo({ dados }: { dados: Dados }) {
 
       <section className={styles.section}>
         <div className={styles.head}>
-          <h2>Estatísticas para nerds</h2>
+          <h2>Curva do estresse</h2>
         </div>
-        <div className={styles.grade}>
-          <Ladrilho rotulo="Cartas jogadas" valor={nerds.total_cartas_jogadas} sub="somando todo mundo" />
-          <Ladrilho rotulo="Dias vividos" valor={nerds.total_dias_vividos} />
-          <Ladrilho rotulo="Maior embalo" valor={nerds.maior_embalo ?? '—'} sub="cartas seguidas" />
-          <Ladrilho rotulo="Advertências" valor={nerds.total_advertencias} />
-          <Ladrilho rotulo="Dinheiro somado" valor={`R$ ${nerds.dinheiro_total}`} />
-          <Ladrilho
-            rotulo="Duração média"
-            valor={nerds.duracao_media_min != null ? `${nerds.duracao_media_min} min` : '—'}
-            sub={nerds.run_mais_rapida_min != null ? `vitória mais rápida: ${nerds.run_mais_rapida_min} min` : undefined}
-          />
-        </div>
+        <p className={styles.hint}>Estresse médio no fim de cada dia do mês.</p>
+        {estresse.length === 0 ? (
+          <p className={styles.empty}>Sem dias registrados ainda.</p>
+        ) : (
+          <div className={styles.barras}>
+            {estresse.map((d) => (
+              <div className={styles.barraLinha} key={d.day}>
+                <span>Dia {d.day}</span>
+                <span className={styles.barraFundo}>
+                  <span
+                    className={styles.barraPreenchida}
+                    style={{
+                      width: `${picoEstresse > 0 ? (d.estresse_medio / picoEstresse) * 100 : 0}%`,
+                      background: 'var(--estresse)',
+                    }}
+                  />
+                </span>
+                <span className={styles.numBarra}>{d.estresse_medio}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
+    </>
+  )
+}
+
+function Nerds({
+  nerds,
+  maisJogadas,
+  tetoCartas,
+  encalhadas,
+  fatais,
+  escolhas,
+}: {
+  nerds: EstatisticasNerds
+  maisJogadas: CartaJogada[]
+  tetoCartas: number
+  encalhadas: CartaJogada[]
+  fatais: CartaFatal[]
+  escolhas: EscolhaDeEvento[]
+}) {
+  return (
+    <>
+      <div className={styles.grade}>
+        <Ladrilho rotulo="Cartas jogadas" valor={nerds.total_cartas_jogadas} sub="somando todo mundo" />
+        <Ladrilho rotulo="Dias vividos" valor={nerds.total_dias_vividos} />
+        <Ladrilho rotulo="Maior embalo" valor={nerds.maior_embalo ?? '—'} sub="cartas seguidas" />
+        <Ladrilho rotulo="Advertências" valor={nerds.total_advertencias} />
+        <Ladrilho rotulo="Dinheiro somado" valor={`R$ ${nerds.dinheiro_total}`} />
+        <Ladrilho
+          rotulo="Energia desperdiçada"
+          valor={nerds.energia_desperdicada}
+          sub={nerds.energia_media_sobra != null ? `${nerds.energia_media_sobra} por dia` : undefined}
+        />
+        <Ladrilho
+          rotulo="Sem descansar"
+          valor={nerds.recorde_sem_descanso ?? '—'}
+          sub="dias seguidos, recorde"
+        />
+        <Ladrilho
+          rotulo="Duração média"
+          valor={nerds.duracao_media_min != null ? `${nerds.duracao_media_min} min` : '—'}
+          sub={nerds.run_mais_rapida_min != null ? `vitória mais rápida: ${nerds.run_mais_rapida_min} min` : undefined}
+        />
+      </div>
 
       <section className={styles.section}>
         <div className={styles.head}>
@@ -190,6 +324,25 @@ function Conteudo({ dados }: { dados: Dados }) {
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.head}>
+          <h2>Cartas encalhadas</h2>
+        </div>
+        <p className={styles.hint}>As que mais ficaram na mão e foram descartadas sem jogar.</p>
+        {encalhadas.length === 0 ? (
+          <p className={styles.empty}>Nada descartado ainda.</p>
+        ) : (
+          <ul className={styles.lista}>
+            {encalhadas.slice(0, 8).map((c) => (
+              <li key={c.card_id}>
+                <span className={styles.chave}>{nomeDaCarta(c.card_id)}</span>
+                <span className={styles.numBarra}>{c.vezes}×</span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
@@ -231,34 +384,6 @@ function Conteudo({ dados }: { dados: Dados }) {
           </ul>
         )}
       </section>
-
-      <section className={styles.section}>
-        <div className={styles.head}>
-          <h2>Curva do estresse</h2>
-        </div>
-        <p className={styles.hint}>Estresse médio no fim de cada dia do mês.</p>
-        {estresse.length === 0 ? (
-          <p className={styles.empty}>Sem dias registrados ainda.</p>
-        ) : (
-          <div className={styles.barras}>
-            {estresse.map((d) => (
-              <div className={styles.barraLinha} key={d.day}>
-                <span>Dia {d.day}</span>
-                <span className={styles.barraFundo}>
-                  <span
-                    className={styles.barraPreenchida}
-                    style={{
-                      width: `${picoEstresse > 0 ? (d.estresse_medio / picoEstresse) * 100 : 0}%`,
-                      background: 'var(--estresse)',
-                    }}
-                  />
-                </span>
-                <span className={styles.numBarra}>{d.estresse_medio}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
     </>
   )
 }
@@ -272,6 +397,15 @@ function rotuloDoEvento(id: string, escolha: 0 | 1): string {
   } catch {
     return `${id} — opção ${escolha + 1}`
   }
+}
+
+function Destaque({ rotulo, valor }: { rotulo: string; valor: number | string }) {
+  return (
+    <div className={styles.destaque}>
+      <span className={styles.rotulo}>{rotulo}</span>
+      <span className={styles.destaqueValor}>{valor}</span>
+    </div>
+  )
 }
 
 function Ladrilho({ rotulo, valor, sub }: { rotulo: string; valor: number | string; sub?: string }) {

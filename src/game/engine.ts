@@ -106,6 +106,8 @@ export function createRun(equipped: CardId[]): GameState {
     startedAt: new Date().toISOString(),
     maxCombo: 0,
     cardsPlayed: 0,
+    daysNoRest: 0,
+    maxDaysNoRest: 0,
     day: 0,
     phase: 'evento',
     energy: 0,
@@ -502,6 +504,17 @@ export function endDay(input: GameState): GameState {
   }
 
   state.weekProductivity += state.productivity
+
+  // medido ANTES de descartar: a energia que sobrou sem uso e as cartas que
+  // ficaram na mão sem serem jogadas. As duas dizem o que o jogador deixou na
+  // mesa, e nenhuma delas dá para deduzir depois
+  const energiaSobrando = state.energy
+  const naoJogadas = state.hand.map((i) => i.cardId)
+
+  const descansouHoje = state.playedToday.some((id) => getCard(id).kind === 'descanso')
+  state.daysNoRest = descansouHoje ? 0 : state.daysNoRest + 1
+  state.maxDaysNoRest = Math.max(state.maxDaysNoRest, state.daysNoRest)
+
   discardHand(state)
 
   state = checkDefeat(state)
@@ -513,6 +526,8 @@ export function endDay(input: GameState): GameState {
     eventId: state.currentEvent,
     eventChoice: state.lastEventChoice,
     cardsPlayed: [...state.playedToday],
+    notPlayed: naoJogadas,
+    energyLeft: energiaSobrando,
     productivity: state.productivity,
     quota: state.dailyQuota,
     metQuota,

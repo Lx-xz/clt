@@ -52,6 +52,7 @@ alter table public.runs add column if not exists started_at   timestamptz;
 alter table public.runs add column if not exists max_combo    smallint;
 alter table public.runs add column if not exists cards_played smallint;
 alter table public.runs add column if not exists warnings     smallint;
+alter table public.runs add column if not exists max_dias_sem_descanso smallint;
 -- falso na run largada no meio sem permissão: conta para a análise, mas não
 -- aparece em "meus jogos" nem no ranking
 alter table public.runs add column if not exists visivel boolean not null default true;
@@ -269,6 +270,24 @@ $$;
 
 grant execute on function public.estresse_por_dia() to anon;
 
+-- as cartas que mais ficam na mão sem serem jogadas: candidata a mudança é a
+-- carta que ninguém quer
+create or replace function public.cartas_encalhadas()
+returns table (card_id text, vezes bigint)
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  select carta.valor as card_id, count(*) as vezes
+  from public.runs r
+  cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+  cross join lateral jsonb_array_elements_text(coalesce(dia.valor -> 'notPlayed', '[]'::jsonb)) as carta(valor)
+  group by carta.valor
+  order by vezes desc;
+$$;
+
+grant execute on function public.cartas_encalhadas() to anon;
+
 -- os números soltos que ficam bem numa fileira de placas
 create or replace function public.estatisticas_nerds()
 returns table (
@@ -279,7 +298,10 @@ returns table (
   dinheiro_total       bigint,
   runs_abandonadas     bigint,
   duracao_media_min    numeric,
-  run_mais_rapida_min  numeric
+  run_mais_rapida_min  numeric,
+  energia_desperdicada bigint,
+  energia_media_sobra  numeric,
+  recorde_sem_descanso smallint
 )
 language sql
 security definer
@@ -310,7 +332,20 @@ as $$
       select round(min(extract(epoch from (ended_at - started_at)) / 60)::numeric, 1)
       from public.runs
       where started_at is not null and ended_at > started_at and outcome = 'vitoria'
-    ) as run_mais_rapida_min;
+    ) as run_mais_rapida_min,
+    (
+      select coalesce(sum((dia.valor ->> 'energyLeft')::int), 0)
+      from public.runs r
+      cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+      where dia.valor ->> 'energyLeft' is not null
+    ) as energia_desperdicada,
+    (
+      select round(avg((dia.valor ->> 'energyLeft')::numeric), 2)
+      from public.runs r
+      cross join lateral jsonb_array_elements(coalesce(r.details -> 'history', '[]'::jsonb)) as dia(valor)
+      where dia.valor ->> 'energyLeft' is not null
+    ) as energia_media_sobra,
+    (select max(max_dias_sem_descanso) from public.runs) as recorde_sem_descanso;
 $$;
 
 grant execute on function public.estatisticas_nerds() to anon;

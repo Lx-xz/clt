@@ -65,6 +65,52 @@
   color: var(--tinta-fraca)
   font-size: 12px
 
+// ------------------------------------------------- cabeçalho e alternância
+// fica igual nas duas abas: é o resumo que vale de relance
+.destaques
+  display: flex
+  flex-wrap: wrap
+  gap: 20px 28px
+  margin-bottom: 20px
+  padding: 14px 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+
+.destaque
+  display: flex
+  flex-direction: column
+  gap: 2px
+  min-width: 0
+
+.destaqueValor
+  font-size: 18px
+  font-weight: 700
+  font-variant-numeric: tabular-nums
+
+.abas
+  display: flex
+  gap: 6px
+  margin-bottom: 24px
+
+.aba
+  padding: 7px 16px
+  background: transparent
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font: inherit
+  font-size: 13px
+  cursor: pointer
+
+  &:hover
+    border-color: var(--tinta-fraca)
+
+.abaAtiva
+  background: var(--tinta)
+  border-color: var(--tinta)
+  color: var(--papel)
+
 // --------------------------------------------------------------- derrotas
 .section
   margin-bottom: 32px

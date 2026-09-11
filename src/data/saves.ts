@@ -40,6 +40,7 @@ export interface RunRegistravel {
   max_combo: number
   cards_played: number
   warnings: number
+  max_dias_sem_descanso: number
   /** Falso na run abandonada sem permissão: conta para a análise, mas não
    *  aparece em "meus jogos" nem no ranking. */
   visivel: boolean
@@ -63,6 +64,7 @@ export function montarRun(
     max_combo: run.maxCombo,
     cards_played: run.cardsPlayed,
     warnings: run.warnings,
+    max_dias_sem_descanso: run.maxDaysNoRest,
     visivel,
     details: { history: run.history },
   }

@@ -85,6 +85,9 @@ export interface EstatisticasNerds {
   runs_abandonadas: number
   duracao_media_min: number | null
   run_mais_rapida_min: number | null
+  energia_desperdicada: number
+  energia_media_sobra: number | null
+  recorde_sem_descanso: number | null
 }
 
 export async function buscarEstatisticasNerds(): Promise<EstatisticasNerds> {
@@ -102,6 +105,14 @@ export interface CartaJogada {
 export async function buscarCartasJogadas(): Promise<CartaJogada[]> {
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase.rpc('cartas_jogadas')
+  if (error) throw new Error(error.message)
+  return (data as CartaJogada[]) ?? []
+}
+
+/** As que mais ficaram na mão sem ser jogadas. Mesmo formato de CartaJogada. */
+export async function buscarCartasEncalhadas(): Promise<CartaJogada[]> {
+  if (!supabase) throw new Error('Banco não configurado.')
+  const { data, error } = await supabase.rpc('cartas_encalhadas')
   if (error) throw new Error(error.message)
   return (data as CartaJogada[]) ?? []
 }

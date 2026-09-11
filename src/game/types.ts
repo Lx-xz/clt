@@ -48,6 +48,10 @@ export interface DayLog {
   eventChoice: 0 | 1 | null
   /** As cartas jogadas naquele dia, na ordem em que foram jogadas. */
   cardsPlayed: CardId[]
+  /** As que ficaram na mão e foram descartadas sem jogar. */
+  notPlayed: CardId[]
+  /** Energia que sobrou sem uso quando o dia fechou. */
+  energyLeft: number
   productivity: number
   quota: number
   metQuota: boolean
@@ -71,6 +75,9 @@ export interface GameState {
   maxCombo: number
   /** Quantas cartas foram jogadas na run inteira, somando todos os dias. */
   cardsPlayed: number
+  /** Dias seguidos sem jogar carta de descanso — o atual e o recorde da run. */
+  daysNoRest: number
+  maxDaysNoRest: number
   day: number // 1..20
   phase: Phase
   energy: number

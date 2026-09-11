@@ -103,7 +103,10 @@ export default function JogarPage() {
    * quantas runs são largadas no meio é justamente um dado de balanceamento.
    */
   function recomecar(guardar = true) {
-    if (state && state.outcome === 'jogando' && state.day >= 1) {
+    // abaixo do dia 3 não registra nada: reiniciar no primeiro minuto é
+    // "ainda estou escolhendo o baralho", não desistência — e encheria a
+    // análise de abandono que não diz nada
+    if (state && state.outcome === 'jogando' && state.day >= 3) {
       void registrarRunAgora(sessao.id, state, 'abandono', guardar)
     }
     clearRun()

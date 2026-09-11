@@ -2,10 +2,10 @@ import { ACTION_CARDS, STARTER_CARDS } from './cards'
 import type { CardId, Collection } from './types'
 
 const COLLECTION_KEY = 'clt:collection:v1'
-// v4: o estado ganhou startedAt, maxCombo e cardsPlayed (as estatísticas que
-// não dá para deduzir do histórico depois).
-const RUN_KEY = 'clt:run:v4'
-const RUN_KEYS_ANTIGAS = ['clt:run:v1', 'clt:run:v2', 'clt:run:v3']
+// v5: o estado ganhou startedAt, maxCombo, cardsPlayed e o contador de dias
+// sem descansar; o resumo do dia ganhou notPlayed e energyLeft.
+const RUN_KEY = 'clt:run:v5'
+const RUN_KEYS_ANTIGAS = ['clt:run:v1', 'clt:run:v2', 'clt:run:v3', 'clt:run:v4']
 
 export function defaultCollection(): Collection {
   return { equipped: STARTER_CARDS.map((c) => c.id), unequipped: [] }
@@ -51,7 +51,7 @@ export function saveCollection(collection: Collection) {
 
 /** Campos que a mesa lê direto; sem qualquer um deles a run é velha demais. */
 const CAMPOS_DA_RUN = [
-  'runId', 'startedAt', 'maxCombo', 'cardsPlayed',
+  'runId', 'startedAt', 'maxCombo', 'cardsPlayed', 'daysNoRest', 'maxDaysNoRest',
   'day', 'phase', 'energy', 'stress', 'productivity', 'money',
   'deck', 'hand', 'discard', 'playedToday', 'eventRevealed', 'outcome', 'history',
 ] as const

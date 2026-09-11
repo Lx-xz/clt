@@ -328,7 +328,9 @@ no meio sem permissão do jogador:** ao reiniciar, o menu pergunta se quer
 guardar; dizendo não, a run é gravada assim mesmo, com `outcome = 'abandono'`,
 mas fora de `meus_jogos()`, `ranking()` e `jogo_detalhe()` — quantas runs são
 largadas, e em que dia, é dado de balanceamento. `'abandono'` é o quinto valor
-do check de `outcome` e **não conta** como derrota em lugar nenhum.
+do check de `outcome` e **não conta** como derrota em lugar nenhum. **Só é
+gravado do dia 3 em diante:** reiniciar no primeiro minuto é "ainda estou
+escolhendo o baralho", não desistência.
 
 As estatísticas de carta saem todas de `details`, que já guarda as cartas de
 cada dia na ordem jogada: `cartas_jogadas()`, `cartas_fatais()` (a última carta
@@ -426,6 +428,10 @@ antes de usá-los para decidir qualquer coisa.
 - **Código morto:** `embaloAtual()` e `weekNumber()` em `engine.ts` não têm uso
   fora do próprio arquivo.
 - **Rebalancear depois do Embalo**, especialmente a classe `grana`.
+- **Música e efeitos sonoros.** Decidido que o autor vai separar os arquivos;
+  falta a parte de código (um `<audio>` por efeito, pré-carregado, com botão
+  de mudo lembrado no localStorage — e o primeiro som só depois de um clique,
+  porque navegador nenhum deixa tocar áudio antes de interação).
 
 ---
 
