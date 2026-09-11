@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Settings,
   Sparkles,
+  TestTube,
   Trophy,
   User,
 } from 'lucide-react'
@@ -27,9 +28,11 @@ import Check from './Check'
 import ComoJogar from './ComoJogar'
 import Slider from './Slider'
 import Dialogo, { popupAberto } from './Dialogo'
+import Segmentado from './Segmentado'
 import { useSessao } from './SessaoGuard'
 import { gravarVolumes, lerVolumes, VOLUMES_PADRAO, type Volumes } from '@/data/som'
 import { gravarTema, lerTema, TEMAS, type Tema } from '@/data/tema'
+import { souAdmin } from '@/data/feedback'
 import { sair } from '@/data/conta'
 import { cancelarSync } from '@/data/sync'
 import { limparLocalDoJogo } from '@/game/storage'
@@ -57,7 +60,8 @@ export default function SideNav() {
   const [confirmando, setConfirmando] = useState(false)
   const [configurando, setConfigurando] = useState(false)
   const [tutorial, setTutorial] = useState(false)
-  const [avisos, setAvisos] = useState<Notificacao[] | null>(null)
+  const [avisos, setAvisos] = useState<(Notificacao & { novo: boolean })[] | null>(null)
+  const [naoLidosNaAbertura, setNaoLidosNaAbertura] = useState(0)
   const [naoLidas, setNaoLidas] = useState(0)
   const sessao = useSessao()
   // o padrão é o do servidor: ler o localStorage na montagem evita a
@@ -67,6 +71,10 @@ export default function SideNav() {
   // divergência entre o HTML do build e o primeiro render do navegador
   const [tema, setTema] = useState<Tema>('sistema')
   const [confirmandoSaida, setConfirmandoSaida] = useState(false)
+  // o laboratório do avatar é ferramenta de dono do jogo: quem diz se você é
+  // admin é o banco, não o perfil espelhado no navegador
+  const [admin, setAdmin] = useState(sessao.admin)
+  const [abaAvisos, setAbaAvisos] = useState<'novos' | 'todos'>('novos')
   const [saindo, setSaindo] = useState(false)
   const painelRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -86,6 +94,11 @@ export default function SideNav() {
     setTema(lerTema())
   }, [])
 
+  useEffect(() => {
+    if (sessao.convidado) return
+    void souAdmin().then(setAdmin)
+  }, [sessao.convidado])
+
   // o sininho: quantas respostas e mudanças de estado chegaram desde a
   // última olhada. Convidado não tem notificação, e a função devolve vazio
   useEffect(() => {
@@ -97,9 +110,14 @@ export default function SideNav() {
 
   function abrirAvisos() {
     void minhasNotificacoes().then((lista) => {
-      setAvisos(lista)
+      // congela "novo" no momento da abertura: logo abaixo tudo vira lido no
+      // banco, e sem essa cópia a aba "Novos" esvaziaria na frente do jogador
+      const marcados = lista.map((n) => ({ ...n, novo: n.lida_em === null }))
+      setNaoLidosNaAbertura(marcados.filter((n) => n.novo).length)
+      setAbaAvisos(marcados.some((n) => n.novo) ? 'novos' : 'todos')
+      setAvisos(marcados)
       setNaoLidas(0)
-      if (lista.some((n) => n.lida_em === null)) void marcarNotificacoesLidas()
+      if (marcados.some((n) => n.novo)) void marcarNotificacoesLidas()
     })
   }
 
@@ -262,6 +280,16 @@ export default function SideNav() {
               </button>
             ) : null}
 
+            {admin ? (
+              <Link
+                className={`${styles.link} ${pathname.startsWith('/avatar-lab') ? styles.ativo : ''}`}
+                href="/avatar-lab"
+              >
+                <TestTube size={18} aria-hidden />
+                <span className={styles.rotulo}>Lab do avatar</span>
+              </Link>
+            ) : null}
+
             <button type="button" className={styles.link} onClick={() => setTutorial(true)}>
               <BookOpen size={18} aria-hidden />
               <span className={styles.rotulo}>Como jogar</span>
@@ -312,24 +340,43 @@ export default function SideNav() {
 
       {avisos ? (
         <Dialogo titulo="Avisos" onFechar={() => setAvisos(null)}>
-          {avisos.length === 0 ? (
-            <p className={styles.dialogoTexto}>
-              Nada ainda. Aqui aparece quando responderem o seu relato ou quando ele mudar de
-              estado.
-            </p>
-          ) : (
-            <ul className={styles.avisos}>
-              {avisos.map((n) => (
-                <li key={n.id} className={n.lida_em ? '' : styles.avisoNovo}>
-                  <b>{n.titulo}</b>
-                  {n.corpo ? <p className={styles.dialogoTexto}>{n.corpo}</p> : null}
-                  <span className={styles.avisoData}>
-                    {new Date(n.criado_em).toLocaleDateString('pt-BR')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <Segmentado
+            rotulo="Quais avisos"
+            valor={abaAvisos}
+            onChange={setAbaAvisos}
+            opcoes={[
+              { valor: 'novos', rotulo: `Novos${naoLidosNaAbertura > 0 ? ` (${naoLidosNaAbertura})` : ''}` },
+              { valor: 'todos', rotulo: 'Todos' },
+            ]}
+          />
+          {(() => {
+            // "novos" é o que estava por ler QUANDO o painel abriu: marcar
+            // como lido na abertura é o certo (você acabou de ver), mas se a
+            // aba lesse `lida_em` agora ela esvaziaria na frente do jogador
+            const lista = abaAvisos === 'novos' ? avisos.filter((n) => n.novo) : avisos
+            if (lista.length === 0) {
+              return (
+                <p className={styles.dialogoTexto}>
+                  {abaAvisos === 'novos'
+                    ? 'Nada novo desde a última vez.'
+                    : 'Nada ainda. Aqui aparece quando responderem o seu relato ou quando ele mudar de estado.'}
+                </p>
+              )
+            }
+            return (
+              <ul className={styles.avisos}>
+                {lista.map((n) => (
+                  <li key={n.id} className={n.novo ? styles.avisoNovo : ''}>
+                    <b>{n.titulo}</b>
+                    {n.corpo ? <p className={styles.dialogoTexto}>{n.corpo}</p> : null}
+                    <span className={styles.avisoData}>
+                      {new Date(n.criado_em).toLocaleDateString('pt-BR')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )
+          })()}
         </Dialogo>
       ) : null}
 
@@ -350,20 +397,7 @@ export default function SideNav() {
         >
           <div className={styles.grupo}>
             <span className={styles.grupoTitulo}>Tema</span>
-            <div className={styles.opcoes} role="radiogroup" aria-label="Tema">
-              {TEMAS.map((t) => (
-                <button
-                  key={t.valor}
-                  type="button"
-                  role="radio"
-                  aria-checked={tema === t.valor}
-                  className={`${styles.opcao} ${tema === t.valor ? styles.opcaoAtiva : ''}`}
-                  onClick={() => mudarTema(t.valor)}
-                >
-                  {t.rotulo}
-                </button>
-              ))}
-            </div>
+            <Segmentado rotulo="Tema" valor={tema} onChange={mudarTema} opcoes={TEMAS} />
             <span className={styles.grupoDica}>
               &ldquo;Sistema&rdquo; acompanha o aparelho, inclusive quando ele troca sozinho de
               noite.

@@ -38,8 +38,12 @@ export const VERSOES: Versao[] = [
     data: '2026-09-11',
     titulo: 'Avatares',
     itens: [
-      { tipo: 'novo', texto: 'Avatar no perfil: corpo, cabelo, tom de pele e cor do cabelo — 60 combinações.' },
+      { tipo: 'novo', texto: 'Avatar no perfil: corpo, cabelo, tom de pele, cor do cabelo, cor da roupa e cor do fundo — 1500 combinações.' },
       { tipo: 'novo', texto: 'Página própria para editar o avatar, com cada opção já desenhada em vez de escrita.' },
+      { tipo: 'novo', texto: 'Quem ainda não escolheu aparece como um manequim de madeira — inclusive quem joga como convidado.' },
+      { tipo: 'novo', texto: 'O cadastro pergunta o gênero e já entrega um avatar sorteado a partir dele.' },
+      { tipo: 'novo', texto: 'Avisos agora têm duas abas: novos e todos.' },
+      { tipo: 'melhor', texto: 'As escolhas de poucas opções (tema, abas) ganharam um fundo que desliza de uma para a outra.' },
     ],
   },
   {

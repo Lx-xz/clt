@@ -333,10 +333,15 @@ begin
     v_nick := null;
   end if;
 
-  insert into public.players (id, nick, nome, email, termos_em)
+  -- o avatar vem junto do cadastro (sorteado a partir do gênero que a pessoa
+  -- respondeu) e entra por aqui, e não por uma chamada do site depois: com a
+  -- confirmação de e-mail ligada não existe sessão logo após o `signUp`, e
+  -- uma chamada nesse momento seria recusada. Nulo é o manequim.
+  insert into public.players (id, nick, nome, email, termos_em, avatar)
   values (
     new.id, v_nick, nullif(trim(coalesce(v_nome, '')), ''), new.email,
-    case when (new.raw_user_meta_data ->> 'termos') = 'true' then now() end
+    case when (new.raw_user_meta_data ->> 'termos') = 'true' then now() end,
+    new.raw_user_meta_data -> 'avatar'
   )
   on conflict (id) do nothing;
 

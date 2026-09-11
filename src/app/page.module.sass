@@ -129,31 +129,26 @@
 // (o popup da home virou o componente Dialogo, com trava de rolagem e
 // fechamento ao clicar fora — veja src/components/Dialogo.tsx)
 
+// a moldura e o retângulo que desliza vivem no componente Segmentado; aqui
+// só a largura, para as abas acompanharem o formulário
 .abas
+  width: 100%
+  max-width: 380px
+
+.genero
   display: flex
-  gap: 4px
-  padding: 3px
-  background: var(--papel-baixo)
-  border-radius: var(--raio)
+  flex-direction: column
+  gap: 6px
+  margin-top: 2px
 
-.aba
-  padding: 7px 18px
-  background: none
-  border: none
-  border-radius: var(--raio)
+.generoRotulo
   color: var(--tinta-fraca)
-  font-size: 14px
-  font-weight: 600
-  cursor: pointer
+  font-size: 12px
 
-  &:focus-visible
-    outline: 2px solid var(--destaque)
-    outline-offset: 2px
-
-.abaAtiva
-  background: var(--papel-alto)
-  box-shadow: var(--sombra)
-  color: var(--tinta)
+.generoDica
+  color: var(--tinta-fraca)
+  font-size: 11px
+  line-height: 1.4
 
 .largo
   width: 100%

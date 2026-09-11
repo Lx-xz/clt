@@ -44,6 +44,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run (evento, cartas jogadas, produtividade/estresse/dinheiro). Chega-se clicando numa run em `/meus-jogos` |
 | `/perfil` | Avatar, nick, nome, e-mail, tipo de conta, pontos, e o botão de sair |
 | `/perfil/editar` | O editor do avatar: corpo, cabelo, pele e cor |
+| `/avatar-lab` | Bancada de quem desenha os avatares. **Só admin** — o link na barra e a página conferem `sou_admin()` |
 | `/feedback` | Bugs e sugestões de todo mundo, com estado, conversa e os controles de admin |
 | `/changelog` | O que já entrou no jogo e o que está sendo feito ("Novidades" no menu) |
 | `/analytics` | Agregados de todo mundo (jogadores, vitórias, tipo de derrota). Link na barra lateral, como "Análise" |
@@ -218,22 +219,47 @@ opções. O que ele escolheu, e que deve ser preservado:
   (`SCRIPT_TEMA`): sem ele o site abre claro e pisca para escuro quando o
   React monta — justamente no tema que a pessoa não quer ver.
 - **O avatar é uma receita, não uma imagem** (`src/components/Avatar.tsx` +
-  `src/data/avatar.ts`). O que vai para o banco são quatro palavras (corpo,
-  cabelo, pele, cor) num `jsonb`; o SVG é montado na hora. Trocar de avatar
-  é um `update` numa linha, o desenho é nítido em qualquer tamanho, e não
-  existe imagem imprópria para moderar porque ninguém sobe imagem.
-  **Por enquanto ele só aparece no perfil** — pôr no ranking e nos
-  feedbacks é decisão do autor, não consequência automática.
-  A construção do cabelo custou três tentativas e está comentada no
-  componente; o resumo é: silhueta fechada ATRÁS do rosto (o miolo some
-  debaixo dele, então não há encaixe para errar), franja por cima com a
-  borda de fora sendo um arco da MESMA elipse da silhueta, e as mechas do
-  comprido subindo acima da linha do cabelo. Cada uma dessas três regras
-  conserta um defeito que apareceu no zoom: tiara, corte reto na têmpora e
-  faixa de pele. **O cabelo é de uma cor só de propósito** — com dois tons,
-  toda emenda entre as peças virava um retângulo visível. E o `useId` para
-  o `clipPath` precisa ser limpo de pontuação: dentro de `url(#...)`, que é
-  lido como CSS, o `«r0»` do React 19 não sobrevive.
+  `src/data/avatar.ts`). O que vai para o banco são seis palavras (corpo,
+  cabelo, pele, cor do cabelo, roupa, fundo) num `jsonb`; o SVG é montado na
+  hora. Trocar de avatar é um `update` numa linha, o desenho é nítido em
+  qualquer tamanho, e não existe imagem imprópria para moderar porque
+  ninguém sobe imagem. **Por enquanto ele só aparece no perfil** — pôr no
+  ranking e nos feedbacks é decisão do autor, não consequência automática.
+  - **O fundo e a borda são CSS, não SVG.** Eram um `rect` dentro de um
+    `clipPath` e outro `rect` com `stroke` por cima; o stroke de um retângulo
+    colado na borda do viewBox é **cortado ao meio pela própria caixa**, e
+    saía uma linha irregular. Hoje quem faz fundo, canto e borda é o `<span>`
+    em volta (`Avatar.module.sass`), e com isso sumiu o `clipPath` — e o id
+    único que ele exigia. Regra geral: moldura é CSS, desenho é SVG.
+  - **O manequim é o padrão de quem não escolheu**: a figura de madeira sem
+    rosto. É o avatar do convidado e de quem chegou pelo Google, e ele diz
+    "ainda não escolhi" sem fingir ser ninguém. Quem se cadastra por e-mail
+    responde o gênero e já ganha um avatar sorteado a partir dele.
+  - **O cabelo custou três tentativas** e está comentado no componente:
+    silhueta fechada ATRÁS do rosto (o miolo some debaixo dele, então não há
+    encaixe para errar), franja por cima com a borda de fora sendo um arco da
+    MESMA elipse da silhueta, e as mechas do comprido subindo acima da linha
+    do cabelo. Cada regra conserta um defeito que só apareceu no zoom: tiara,
+    corte reto na têmpora e faixa de pele. **O cabelo é de uma cor só de
+    propósito** — com dois tons, toda emenda entre as peças virava um
+    retângulo visível.
+  - **O rosto é paramétrico** (`MEDIDAS`), e a silhueta e a franja saem dos
+    mesmos números — é o que deixa o homem ser maior e de queixo reto sem
+    nada desencaixar. `cantoY`/`cantoX` são o raio do canto do rosto: iguais
+    a `larg`, o queixo vira ponta. Mexer nisso é o assunto do `/avatar-lab`.
+- **`/avatar-lab` produz código, não salva nada.** O site é export estático:
+  não há servidor para escrever arquivo, então a bancada devolve a linha de
+  `MEDIDAS` para colar em `Avatar.tsx`. Ela desenha com o **mesmo** componente
+  do jogo (pela prop `ajustes`), nunca com uma cópia — laboratório que desenha
+  diferente do jogo mente sobre o resultado. A grade com todas as combinações
+  no rodapé existe porque é lá que o estrago aparece: ajuste que fica bom num
+  caso costuma abrir buraco em outro.
+- **Escolha curta e excludente é o `Segmentado`** (`src/components/Segmentado.tsx`):
+  tema, abas de entrar/criar, gênero no cadastro, novos/todos nos avisos. O
+  fundo do selecionado é **um elemento só que desliza**, posicionado por
+  medição do botão ativo (`offsetLeft`/`offsetWidth`) e não por fração da
+  largura — as opções têm textos de tamanhos diferentes, e dividir o espaço
+  igualmente deixaria o retângulo fora do texto em metade dos casos.
 - **Slider e checkbox são desenhados, não nativos** (`Slider.tsx`,
   `Check.tsx`). O `input[type=range]` é irregular entre navegadores e no
   celular disputa o gesto de arrastar com o menu; o slider daqui é uma trilha
@@ -504,10 +530,18 @@ bug fala em gravidade (Cosmético → Quebra o jogo), ideia fala em quando entra
 (Algum dia → Entra já). Não crie coluna nova para isso.
 
 **`salvar_avatar()` não valida o conteúdo, e é de propósito.** Quem valida é
-`lerAvatar()` no site, na LEITURA: peça desconhecida cai no padrão. Assim
-acrescentar um cabelo novo não exige mexer no banco, e um avatar gravado por
-uma versão antiga nunca derruba a página de ninguém. O convidado não passa
-por aqui — o avatar dele mora no localStorage, junto com o resto dele.
+`lerAvatar()` no site, na LEITURA: peça desconhecida cai no padrão (o
+manequim). Assim acrescentar um cabelo novo não exige mexer no banco, e um
+avatar gravado por uma versão antiga nunca derruba a página de ninguém. O
+convidado não passa por aqui — o avatar dele mora no localStorage, junto com
+o resto dele.
+
+**O avatar do cadastro entra pelo GATILHO, não por uma chamada do site.** Com
+"Confirm email" ligado não existe sessão logo depois do `signUp`, e um
+`salvar_avatar()` nesse momento seria recusado — então o avatar sorteado
+viaja como metadado (`options.data.avatar`) e `ao_criar_usuario` o grava
+junto com o perfil. Quem vem do Google é o caso oposto: ali já há sessão, e
+`completarPerfil()` grava direto.
 
 **Comentário de admin faz a triagem sozinho.** `comentar_feedback()` move o
 relato de `novo` para `triado` quando quem comenta é admin: responder já é ter
@@ -665,6 +699,10 @@ antes de usá-los para decidir qualquer coisa.
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,
   derrota). Quando entrarem, o volume deles é mais um multiplicador em
   `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
+- **Mais peças de avatar.** Óculos e barba são as próximas que rendem muito
+  por pouco: peças soltas por cima de tudo, sem encaixe para errar — o
+  oposto do cabelo. O `/avatar-lab` aceita colar o `d=` de uma peça nova
+  para testar antes de virar código.
 - **Recompensa por feedback.** A nota que o admin dá já vira `players.pontos`
   (nota × 10, recalculado a cada mudança) e aparece no perfil. Falta decidir o
   que se compra com ela — carta, tema, nada disso.

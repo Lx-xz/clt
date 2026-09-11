@@ -1,0 +1,14 @@
+// O fundo, o canto redondo e a borda moram AQUI, não no SVG: um `stroke` de
+// retângulo colado na borda do viewBox é cortado ao meio pela própria caixa e
+// sai irregular. Em CSS a borda é nítida em qualquer tamanho, e o recorte
+// (`overflow: hidden`) dispensa o `clipPath` — e o id único que ele exigia.
+.moldura
+  display: block
+  flex: none
+  overflow: hidden
+  border: 1px solid var(--linha)
+  border-radius: 16%
+  line-height: 0
+
+  svg
+    display: block

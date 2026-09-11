@@ -101,6 +101,8 @@ export interface DadosCadastro {
   senha: string
   nome: string
   nick: string
+  /** Vira o avatar de boas-vindas; o gênero só escolhe o corpo. */
+  avatar: Avatar
 }
 
 /**
@@ -120,7 +122,10 @@ export async function cadastrar(d: DadosCadastro): Promise<{ precisaConfirmar: b
     email: d.email.trim(),
     password: d.senha,
     options: {
-      data: { nick: d.nick, nome: d.nome.trim(), termos: 'true' },
+      // o avatar viaja como metadado e é o gatilho do banco que o grava:
+      // com confirmação de e-mail ligada não há sessão logo após o signUp,
+      // e uma chamada do site neste momento seria recusada
+      data: { nick: d.nick, nome: d.nome.trim(), termos: 'true', avatar: d.avatar },
       emailRedirectTo: enderecoDeVolta(),
     },
   })
@@ -157,7 +162,12 @@ export async function recuperarSenha(email: string) {
  * quem veio do Google já entra pelo Google, e só precisa dela se quiser
  * também entrar por e-mail.
  */
-export async function completarPerfil(nick: string, nome: string, senha?: string) {
+export async function completarPerfil(
+  nick: string,
+  nome: string,
+  avatar: Avatar,
+  senha?: string,
+) {
   const sb = exigirBanco()
   const { error } = await sb.rpc('completar_perfil', {
     p_nick: nick,
@@ -165,6 +175,10 @@ export async function completarPerfil(nick: string, nome: string, senha?: string
     p_termos: true,
   })
   if (error) throw new Error(error.message)
+  // aqui, ao contrário do cadastro por e-mail, já existe sessão (a pessoa
+  // acabou de voltar do Google), então dá para gravar direto
+  const { salvarAvatar } = await import('./avatar')
+  await salvarAvatar(avatar)
   if (senha) {
     const { error: falha } = await sb.auth.updateUser({ password: senha })
     if (falha) throw new Error(traduzir(falha.message))

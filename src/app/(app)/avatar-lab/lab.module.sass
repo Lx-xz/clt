@@ -1,0 +1,150 @@
+.titulo
+  font-size: clamp(24px, 5vw, 32px)
+
+.intro
+  max-width: 66ch
+  margin: 6px 0 22px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.6
+
+  code
+    font-family: var(--mono)
+    font-size: 12px
+
+.mesa
+  display: flex
+  flex-wrap: wrap
+  align-items: flex-start
+  gap: 24px
+  margin-bottom: 28px
+
+// a prévia acompanha a rolagem: mexer num slider lá embaixo sem ver o
+// desenho é o mesmo que mexer no escuro
+.palco
+  position: sticky
+  top: 16px
+  display: flex
+  flex-direction: column
+  gap: 10px
+  width: 200px
+
+.miniaturas
+  display: flex
+  align-items: flex-end
+  gap: 8px
+
+.controles
+  flex: 1
+  min-width: 280px
+  display: flex
+  flex-direction: column
+  gap: 16px
+
+.bloco
+  display: flex
+  flex-direction: column
+  gap: 8px
+  padding: 14px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+
+.blocoTitulo
+  color: var(--tinta-fraca)
+  font-size: 11px
+  letter-spacing: .1em
+  text-transform: uppercase
+
+.blocoDica
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.5
+
+  code
+    font-family: var(--mono)
+
+.numero
+  display: grid
+  grid-template-columns: 1fr 130px 44px
+  align-items: center
+  gap: 10px
+  font-size: 12px
+
+  b
+    font-family: var(--mono)
+    font-weight: 600
+
+  i
+    color: var(--tinta-fraca)
+    font-style: normal
+
+  // aqui o range nativo serve: é bancada, não interface de jogador
+  input
+    width: 100%
+
+  output
+    font-family: var(--mono)
+    font-variant-numeric: tabular-nums
+    text-align: right
+
+.cor
+  display: grid
+  grid-template-columns: 70px 48px 1fr
+  align-items: center
+  gap: 10px
+  font-size: 12px
+
+  input
+    width: 48px
+    height: 28px
+    padding: 0
+    border: 1px solid var(--linha)
+    border-radius: var(--raio)
+    background: none
+
+  code
+    font-family: var(--mono)
+    color: var(--tinta-fraca)
+
+.peca
+  display: flex
+  flex-direction: column
+  gap: 4px
+  font-size: 12px
+
+  textarea
+    width: 100%
+    padding: 8px
+    background: var(--papel)
+    border: 1px solid var(--linha)
+    border-radius: var(--raio)
+    color: var(--tinta)
+    font-family: var(--mono)
+    font-size: 12px
+    resize: vertical
+
+.codigo
+  margin: 0
+  padding: 10px
+  overflow-x: auto
+  background: var(--papel)
+  border-radius: var(--raio)
+  font-family: var(--mono)
+  font-size: 11px
+  line-height: 1.5
+
+.grade
+  display: flex
+  flex-wrap: wrap
+  gap: 6px
+  padding-bottom: 40px
+
+@media (max-width: 700px)
+  .palco
+    position: static
+    width: 100%
+
+  .numero
+    grid-template-columns: 1fr 100px 40px

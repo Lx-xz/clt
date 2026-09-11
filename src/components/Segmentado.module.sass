@@ -1,0 +1,46 @@
+.caixa
+  position: relative
+  display: flex
+  gap: 2px
+  padding: 3px
+  background: var(--papel-baixo)
+  border-radius: var(--raio)
+
+// o retângulo que desliza. `left: 3px` é o padding da caixa: o translateX
+// vem do offsetLeft do botão, que já é relativo à caixa inteira.
+.marca
+  position: absolute
+  left: 0
+  top: 3px
+  bottom: 3px
+  background: var(--papel-alto)
+  border-radius: var(--raio)
+  box-shadow: var(--sombra)
+  transition: transform .22s cubic-bezier(.2, .8, .25, 1), width .22s cubic-bezier(.2, .8, .25, 1)
+  pointer-events: none
+
+.opcao
+  position: relative
+  z-index: 1
+  flex: 1
+  padding: 8px 14px
+  background: none
+  border: none
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-weight: 600
+  white-space: nowrap
+  cursor: pointer
+  transition: color .16s ease
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.opcaoAtiva
+  color: var(--tinta)
+
+@media (prefers-reduced-motion: reduce)
+  .marca
+    transition: none

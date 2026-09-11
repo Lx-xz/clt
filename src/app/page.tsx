@@ -17,7 +17,9 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import Check from '@/components/Check'
 import ComoJogar from '@/components/ComoJogar'
+import Segmentado from '@/components/Segmentado'
 import Dialogo from '@/components/Dialogo'
+import { avatarAleatorio, type Corpo } from '@/data/avatar'
 import { validarNick } from '@/data/nick'
 import {
   aoMudarConta,
@@ -64,6 +66,9 @@ export default function Home() {
   const [nome, setNome] = useState('')
   const [nick, setNick] = useState('')
   const [termos, setTermos] = useState(false)
+  // o gênero não é guardado: ele só escolhe o corpo do avatar de boas-vindas,
+  // que a pessoa troca à vontade depois. "Tanto faz" sorteia.
+  const [genero, setGenero] = useState<Corpo | 'aleatorio'>('aleatorio')
 
   const recarregar = useCallback(() => {
     lerConta()
@@ -130,7 +135,15 @@ export default function Home() {
       return
     }
     void tentar(async () => {
-      const { precisaConfirmar } = await cadastrar({ email, senha, nome, nick })
+      const corpo: Corpo =
+        genero === 'aleatorio' ? (Math.random() < 0.5 ? 'homem' : 'mulher') : genero
+      const { precisaConfirmar } = await cadastrar({
+        email,
+        senha,
+        nome,
+        nick,
+        avatar: avatarAleatorio(corpo),
+      })
       if (precisaConfirmar) {
         setRecado(
           'Conta criada. Confira a caixa de entrada de ' +
@@ -156,7 +169,9 @@ export default function Home() {
       return
     }
     void tentar(async () => {
-      await completarPerfil(nick, nome, senha || undefined)
+      const corpo: Corpo =
+        genero === 'aleatorio' ? (Math.random() < 0.5 ? 'homem' : 'mulher') : genero
+      await completarPerfil(nick, nome, avatarAleatorio(corpo), senha || undefined)
       recarregar()
     })
   }
@@ -292,6 +307,19 @@ export default function Home() {
             A senha só é necessária se você também quiser entrar sem o Google. Dá para deixar em
             branco.
           </p>
+          <div className={styles.genero}>
+            <span className={styles.generoRotulo}>Seu avatar começa como</span>
+            <Segmentado
+              rotulo="Corpo do avatar"
+              valor={genero}
+              onChange={setGenero}
+              opcoes={[
+                { valor: 'homem', rotulo: 'Homem' },
+                { valor: 'mulher', rotulo: 'Mulher' },
+                { valor: 'aleatorio', rotulo: 'Tanto faz' },
+              ]}
+            />
+          </div>
           <Check marcado={termos} onChange={setTermos}>
             Li e aceito os <Link href="/termos">termos de uso</Link>.
           </Check>
@@ -310,32 +338,19 @@ export default function Home() {
 
       {conta?.tipo === 'fora' ? (
         <>
-          <div className={styles.abas} role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={aba === 'entrar'}
-              className={`${styles.aba} ${aba === 'entrar' ? styles.abaAtiva : ''}`}
-              onClick={() => {
-                setAba('entrar')
-                setErro(null)
-              }}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={aba === 'criar'}
-              className={`${styles.aba} ${aba === 'criar' ? styles.abaAtiva : ''}`}
-              onClick={() => {
-                setAba('criar')
-                setErro(null)
-              }}
-            >
-              Criar conta
-            </button>
-          </div>
+          <Segmentado
+            className={styles.abas}
+            rotulo="Entrar ou criar conta"
+            valor={aba}
+            onChange={(v) => {
+              setAba(v)
+              setErro(null)
+            }}
+            opcoes={[
+              { valor: 'entrar', rotulo: 'Entrar' },
+              { valor: 'criar', rotulo: 'Criar conta' },
+            ]}
+          />
 
           <form className={styles.forma} onSubmit={aoEnviar}>
             {aba === 'criar' ? (
@@ -385,9 +400,27 @@ export default function Home() {
               disabled={ocupado}
             />
             {aba === 'criar' ? (
+              <>
+              <div className={styles.genero}>
+                <span className={styles.generoRotulo}>Seu avatar começa como</span>
+                <Segmentado
+                  rotulo="Corpo do avatar"
+                  valor={genero}
+                  onChange={setGenero}
+                  opcoes={[
+                    { valor: 'homem', rotulo: 'Homem' },
+                    { valor: 'mulher', rotulo: 'Mulher' },
+                    { valor: 'aleatorio', rotulo: 'Tanto faz' },
+                  ]}
+                />
+                <span className={styles.generoDica}>
+                  Só escolhe o desenho inicial — dá para trocar tudo depois, no perfil.
+                </span>
+              </div>
               <Check marcado={termos} onChange={setTermos}>
                 Li e aceito os <Link href="/termos">termos de uso</Link>.
               </Check>
+              </>
             ) : null}
             <button
               type="submit"

@@ -10,7 +10,9 @@ import {
   CORES,
   CORPOS,
   CORTES,
+  FUNDOS,
   PELES,
+  ROUPAS,
   type Avatar as Receita,
 } from '@/data/avatar'
 import { trocarAvatar } from '@/data/conta'
@@ -107,9 +109,24 @@ export default function EditarAvatarPage() {
       </div>
 
       <Grupo titulo="Corpo" campo="corpo" opcoes={CORPOS} />
-      <Grupo titulo="Cabelo" campo="cabelo" opcoes={CORTES} />
-      <Grupo titulo="Pele" campo="pele" opcoes={PELES} />
-      <Grupo titulo="Cor do cabelo" campo="cor" opcoes={CORES} />
+
+      {/* no manequim não há cabelo, pele nem roupa para escolher: mostrar os
+          grupos assim mesmo seria oferecer botão que não muda nada */}
+      {receita.corpo === 'manequim' ? (
+        <p className={styles.nota}>
+          O manequim é o avatar de quem ainda não escolheu — de propósito ele não tem rosto nem
+          cabelo. Escolha Homem ou Mulher acima para abrir o resto das opções.
+        </p>
+      ) : (
+        <>
+          <Grupo titulo="Cabelo" campo="cabelo" opcoes={CORTES} />
+          <Grupo titulo="Pele" campo="pele" opcoes={PELES} />
+          <Grupo titulo="Cor do cabelo" campo="cor" opcoes={CORES} />
+          <Grupo titulo="Roupa" campo="roupa" opcoes={ROUPAS} />
+        </>
+      )}
+
+      <Grupo titulo="Fundo" campo="fundo" opcoes={FUNDOS} />
 
       {erro ? <p className={styles.erro}>{erro}</p> : null}
 
