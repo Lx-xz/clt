@@ -275,7 +275,8 @@ funcionam, em desktop e celular.
   celular. Junto, o `/lab/avatar` ganhou 7 medidas novas (pescoço, borda do
   ombro, tamanho da cabeça, nariz, sobrancelha, olho), o corte de cabelo virou
   TABELA (`CABELOS_FORMA`) em vez de `if`, e entraram peças de teste marcadas
-  com frasco: cabelo quadrado, careca, degradê, boné, chapéu e olho detalhado
+  com frasco: cabelo quadrado, careca, degradê, boné, chapéu e quatro olhos de
+  desenho (Desenho, Surpreso, De lado, Feliz)
   — desenhadas de verdade, mas fora do alcance do jogador.
 
 ### Dois passos manuais que o autor ainda deve, e que travam coisas
@@ -310,7 +311,8 @@ funcionam, em desktop e celular.
 - **Animação de compra** (cartas voando do baralho para a mão), do protótipo.
 - **Efeitos sonoros** — a música já toca; falta um som por evento do jogo.
 - **Mais peças de avatar** — cabelo quadrado, careca, degradê, boné, chapéu e
-  olho detalhado já estão DESENHADOS e marcados como teste no `/lab/avatar`,
+  e quatro olhos de desenho já estão DESENHADOS e marcados como teste no
+  `/lab/avatar`,
   esperando a decisão de promover. Promover cabelo e olho é barato (tipo +
   rótulo, sem migração); o acessório é o que custa, porque a receita ainda não
   tem campo para ele. Óculos e barba são da mesma família do acessório.

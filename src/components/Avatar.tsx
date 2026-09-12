@@ -309,30 +309,110 @@ export const ACESSORIOS: Record<Acessorio, {
 
 // ------------------------------------------------------------------- olhos
 
-/** Os olhos também viraram tabela, para o "com mais detalhe" não ser um `if`. */
-export type Olhos = 'simples' | 'detalhado'
+/**
+ * Os olhos, como tabela — para "com mais expressão" não ser um `if`.
+ *
+ * **A régua aqui é desenho, não anatomia.** A primeira tentativa foi
+ * realista (branco, íris, pupila e um brilho) e ficou pior: em 24px o brilho
+ * some, a pupila vira um ponto, e o rosto inteiro fica parecendo um decalque
+ * de outro jogo. O que dá expressão num rosto chapado como este é:
+ *
+ *  1. **Forma grande e sólida.** Branco largo, íris de uma cor só, sem pupila
+ *     e sem brilho — duas formas, e acabou.
+ *  2. **Inclinação espelhada.** É o ângulo do olho, não o que tem dentro dele,
+ *     que diz se o rosto está curioso, desconfiado ou surpreso. Por isso cada
+ *     olho recebe o `lado` e gira ao contrário do outro.
+ *  3. **A íris fora do centro.** Encostada no lado do nariz, o olhar converge
+ *     e o rosto passa a olhar para quem vê. Centralizada, ele fica vazio.
+ *
+ * A pálpebra do olhar de lado é um retângulo da COR DA PELE por cima: como o
+ * olho mora dentro do rosto, o que sobra dele fora do olho é invisível — não
+ * precisa de recorte nenhum.
+ */
+export type Olhos = 'simples' | 'desenho' | 'surpreso' | 'esperto' | 'feliz'
+
+export interface DesenhoDeOlho {
+  x: number
+  y: number
+  /** Multiplicador de tamanho (a medida `olho`). */
+  t: number
+  /** A cor da íris. */
+  cor: string
+  /** -1 é o olho da esquerda, 1 o da direita: espelha a inclinação. */
+  lado: number
+  /** Para a pálpebra, que é pele por cima. */
+  pele: string
+  sombra: string
+}
+
+const BRANCO_DO_OLHO = '#fbf7ee'
 
 export const OLHOS: Record<Olhos, {
   rotulo: string
   teste?: boolean
-  desenhar: (x: number, y: number, t: number, cor: string) => ReactNode
+  desenhar: (o: DesenhoDeOlho) => ReactNode
 }> = {
   simples: {
     rotulo: 'Simples',
-    desenhar: (x, y, t) => <ellipse cx={x} cy={y} rx={3 * t} ry={3.6 * t} fill="#241f1b" />,
+    desenhar: ({ x, y, t }) => <ellipse cx={x} cy={y} rx={3 * t} ry={3.6 * t} fill="#241f1b" />,
   },
-  detalhado: {
-    rotulo: 'Detalhado',
+  desenho: {
+    rotulo: 'Desenho',
     teste: true,
-    // branco, íris, pupila e um brilho. O brilho é o que faz o olho parecer
-    // vivo em 24px — sem ele vira um ponto escuro do mesmo jeito
-    desenhar: (x, y, t, cor) => (
-      <>
-        <ellipse cx={x} cy={y} rx={4.2 * t} ry={3.4 * t} fill="#f7f2e7" />
-        <circle cx={x} cy={y} r={2.6 * t} fill={cor} />
-        <circle cx={x} cy={y} r={1.2 * t} fill="#181410" />
-        <circle cx={x + 1.1 * t} cy={y - 1.1 * t} r={0.8 * t} fill="#ffffff" />
-      </>
+    // o olho padrão do estilo: amêndoa inclinada para fora e para cima, íris
+    // sólida encostada no nariz
+    desenhar: ({ x, y, t, cor, lado }) => (
+      <g transform={`translate(${x} ${y}) rotate(${-16 * lado}) scale(${t})`}>
+        <ellipse rx={5.8} ry={4.3} fill={BRANCO_DO_OLHO} />
+        <ellipse cx={-1.5 * lado} cy={0.2} rx={2.4} ry={3.1} fill={cor} />
+      </g>
+    ),
+  },
+  surpreso: {
+    rotulo: 'Surpreso',
+    teste: true,
+    // redondo e alto, íris pequena e subida: o susto mora na proporção entre
+    // as duas, não em linha nenhuma a mais
+    desenhar: ({ x, y, t, cor, lado }) => (
+      <g transform={`translate(${x} ${y}) scale(${t})`}>
+        <ellipse rx={4.6} ry={5.2} fill={BRANCO_DO_OLHO} />
+        <ellipse cx={-0.8 * lado} cy={-0.5} rx={2.2} ry={2.8} fill={cor} />
+      </g>
+    ),
+  },
+  esperto: {
+    rotulo: 'De lado',
+    teste: true,
+    desenhar: ({ x, y, t, cor, lado, pele, sombra }) => (
+      <g transform={`translate(${x} ${y}) rotate(${-8 * lado}) scale(${t})`}>
+        <ellipse rx={5.8} ry={4.3} fill={BRANCO_DO_OLHO} />
+        <ellipse cx={-2.2 * lado} cy={0.9} rx={2.4} ry={3.1} fill={cor} />
+        {/* pálpebra: pele por cima. O que ela cobre fora do olho é pele
+            também, então some sozinho — sem recorte */}
+        <rect x={-6.8} y={-5.8} width={13.6} height={4.5} fill={pele} />
+        <path
+          d={`M-5.5 -1.3 h11`}
+          stroke={sombra}
+          strokeWidth={1.1}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </g>
+    ),
+  },
+  feliz: {
+    rotulo: 'Feliz',
+    teste: true,
+    // sem branco e sem íris: só o arco. É o olho mais expressivo dos cinco, e
+    // o que tem menos desenho — a prova de que expressão aqui não é detalhe
+    desenhar: ({ x, y, t }) => (
+      <path
+        d={`M${x - 4.4 * t} ${y + 1.4 * t} Q${x} ${y - 4 * t} ${x + 4.4 * t} ${y + 1.4 * t}`}
+        fill="none"
+        stroke="#241f1b"
+        strokeWidth={2.3 * t}
+        strokeLinecap="round"
+      />
     ),
   },
 }
@@ -347,7 +427,7 @@ export interface Ajustes {
     /** Cor livre de pele: as duas sombras saem dela por `escurecer()`. */
     pele?: string
     acessorio?: string
-    /** A íris do olho detalhado. */
+    /** A íris dos olhos que têm íris (todos menos Simples e Feliz). */
     olho?: string
   }
   pecas?: { silhueta?: string; franja?: string; mecha?: string }
@@ -487,7 +567,15 @@ export default function Avatar({
                     rx={m.sobrancelha / 2}
                     fill={cs}
                   />
-                  {olhos.desenhar(50 + s * olhoX, olhoY, m.olho, ajustes?.cores?.olho ?? '#4a3524')}
+                  {olhos.desenhar({
+                    x: 50 + s * olhoX,
+                    y: olhoY,
+                    t: m.olho,
+                    cor: ajustes?.cores?.olho ?? '#4a3524',
+                    lado: s,
+                    pele: p,
+                    sombra: ps,
+                  })}
                 </g>
               ))}
               <path

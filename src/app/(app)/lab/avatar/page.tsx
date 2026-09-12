@@ -44,7 +44,7 @@ import styles from './lab.module.sass'
  * **As peças marcadas com o frasco são de TESTE e o jogador não as alcança.**
  * Elas existem no `Avatar.tsx` e são desenhadas de verdade, mas a receita
  * gravada no banco não tem como pedi-las — cabelo quadrado, careca, degradê,
- * boné, chapéu e olho detalhado. Isso é de propósito: dá para ver como ficam
+ * boné, chapéu e quatro olhos de desenho. Isso é de propósito: dá para ver como ficam
  * em todas as combinações antes de decidir se entram, e decidir que não entram
  * não custa migração nenhuma.
  *
@@ -101,7 +101,7 @@ function inicial(corpo: Corpo): Estado {
     medidas: { ...MEDIDAS[corpo] },
     cores: {
       cabelo: '#6b4326', roupa: '#6f7f8c', fundo: '#d8cfba',
-      pele: '', acessorio: '#8c5a58', olho: '#4a3524',
+      pele: '', acessorio: '#8c5a58', olho: '#8a6330',
     },
     pecas: { silhueta: '', franja: '', mecha: '' },
     teste: { cabelo: 'longo', acessorio: 'nenhum', olhos: 'simples' },
@@ -325,13 +325,13 @@ export default function AvatarLabPage() {
                         chave: `olhos:${id}`,
                         titulo: `Olhos “${o.rotulo}” no jogo`,
                         oQue: o.teste
-                          ? 'Confira antes em 24px, na barra lateral: detalhe que só aparece no tamanho grande é peso sem retorno.'
+                          ? 'Confira antes em 24px, na barra lateral: o que só se lê no tamanho grande é peso sem retorno. Estes olhos são de forma, não de detalhe, justamente por isso.'
                           : 'Já é o olho do jogo.',
                         passos: o.teste
                           ? [
                               'Se for para TODO MUNDO: troque o padrão de OLHOS em Avatar.tsx e tire o teste: true. Não mexe em receita nem em banco.',
                               'Se for ESCOLHA do jogador: acrescente olhos ao tipo Avatar, uma lista de rótulos, e um Segmentado em /perfil/editar.',
-                              'A cor da íris só existe no olho detalhado — se ele entrar como escolha, ela precisa de uma paleta própria.',
+                              'A cor da íris só é usada pelos olhos que têm íris (todos menos Simples e Feliz) — se algum entrar como escolha, ela precisa de uma paleta própria na receita.',
                             ]
                           : [],
                       })

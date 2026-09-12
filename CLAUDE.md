@@ -481,6 +481,18 @@ opções. O que ele escolheu, e que deve ser preservado:
     o valor ao tipo em `src/data/avatar.ts` e o rótulo na lista. É `lerAvatar()`
     que valida, na leitura, caindo no padrão diante de peça desconhecida — e é
     exatamente por isso que `salvar_avatar()` não valida nada.
+  - **O olho é FORMA, não detalhe.** A primeira tentativa foi realista —
+    branco, íris, pupila e um brilho — e ficou pior: em 24px o brilho some,
+    a pupila vira um ponto, e o rosto foge do estilo chapado do resto. O que
+    dá expressão aqui são três coisas, e nenhuma é detalhe: forma grande e
+    sólida (branco e íris, sem pupila e sem brilho), **inclinação espelhada**
+    entre os dois olhos — é o ângulo que diz curioso, desconfiado ou
+    surpreso —, e a íris **fora do centro**, encostada no lado do nariz, que
+    é o que faz o rosto olhar para quem vê. O `Feliz` é a prova: é o mais
+    expressivo dos cinco e o que tem menos desenho (dois arcos).
+    A pálpebra do "De lado" é um retângulo da COR DA PELE por cima do olho —
+    como ele mora dentro do rosto, o que sobra dela fora do olho é pele
+    também e some sozinho, sem precisar de recorte.
   - **Acessório é a peça barata**, e cabelo é a cara: acessório vai solto por
     cima de tudo, sem encaixe com o rosto nem com o cabelo para errar. Boné,
     chapéu, óculos e barba são todos dessa família. O que o acessório custa
@@ -1031,7 +1043,7 @@ antes de usá-los para decidir qualquer coisa.
   `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
 - **Mais peças de avatar.** Já DESENHADAS e marcadas como teste no
   `/lab/avatar`, esperando a decisão de promover: cabelo quadrado, careca,
-  degradê, boné, chapéu e olho detalhado. Promover cabelo e olho é barato
+  degradê, boné, chapéu e quatro olhos de desenho. Promover cabelo e olho é barato
   (tipo + rótulo, sem migração); o acessório é o que custa, porque a receita
   ainda não tem campo para ele — e a decisão barata ali é o acessório herdar
   a cor da roupa em vez de virar uma sétima escolha. Óculos e barba entram na
