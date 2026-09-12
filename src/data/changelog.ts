@@ -25,7 +25,8 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 export const EM_ANDAMENTO: string[] = [
   'Conquistas: um punhado de objetivos para perseguir além de ganhar o mês.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
-  'Mais peças de avatar (óculos, barba) e o avatar aparecendo também no ranking e nos feedbacks.',
+  'Mais peças de avatar: cabelo quadrado, careca, degradê, boné e chapéu já estão desenhados e em teste no laboratório — falta decidir quais entram.',
+  'O avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
   'Notificação de verdade (e-mail ou aviso no aparelho) quando o seu relato mudar de estado.',
   'Rebalancear o jogo depois do Embalo, em especial as cartas de grana — a medição já mostrou que o despejo quase não acontece e que o embalo de grana é caro demais para sair.',

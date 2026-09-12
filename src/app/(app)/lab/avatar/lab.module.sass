@@ -91,12 +91,14 @@
 
 .cor
   display: grid
-  grid-template-columns: 70px 48px 1fr
+  grid-template-columns: 70px 48px minmax(0, 1fr)
   align-items: center
   gap: 10px
   font-size: 12px
 
-  input
+  // só o seletor de cor tem tamanho fixo: a regra era `input` e espremia o
+  // campo de hex, que entrou depois, nos mesmos 48px
+  input[type='color']
     width: 48px
     height: 28px
     padding: 0
@@ -158,3 +160,189 @@
 
   &:hover
     color: var(--tinta)
+
+// ------------------------------------------------------------ peças de teste
+
+// o aviso é a primeira coisa que se lê na página de propósito: a confusão
+// cara aqui é achar que uma peça de teste já está no jogo
+// NÃO é flex: num parágrafo, `display: flex` transforma cada pedaço de texto
+// e cada <b> num item, e a frase quebra em colunas. O ícone entra inline
+.avisoTeste
+  max-width: 66ch
+  margin: 0 0 22px
+  padding: 10px 14px
+  border: 1px dashed var(--destaque)
+  border-radius: 10px
+  background: var(--papel-alto)
+  color: var(--tinta)
+  font-size: 13px
+  line-height: 1.55
+
+  svg
+    margin-right: 6px
+    vertical-align: -2px
+    color: var(--destaque)
+
+.galeria
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+.pecaBotao
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 4px
+  padding: 6px
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  background: var(--papel)
+  color: var(--tinta-fraca)
+  cursor: pointer
+
+  &:hover
+    border-color: var(--tinta-fraca)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+// tracejado = ainda não está no jogo. A mesma linguagem do aviso lá em cima
+.pecaTeste
+  border-style: dashed
+  border-color: var(--destaque)
+
+.pecaAtiva
+  border-color: var(--tinta)
+  background: var(--papel-alto)
+  color: var(--tinta)
+
+.pecaNome
+  display: flex
+  align-items: center
+  gap: 3px
+  font-size: 11px
+
+// --------------------------------------------------------------- cores
+
+.slotCor
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding-bottom: 8px
+  border-bottom: 1px dashed var(--linha)
+
+  &:last-of-type
+    border-bottom: none
+
+.hex
+  min-width: 0
+  padding: 5px 8px
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  background: var(--papel)
+  color: var(--tinta)
+  // 16px ou o Safari do iPhone dá zoom ao focar e não desfaz
+  font-size: 16px
+  font-family: var(--mono)
+
+.amostras
+  display: flex
+  flex-wrap: wrap
+  gap: 5px
+
+.amostra
+  position: relative
+  width: 26px
+  height: 26px
+  padding: 0
+  border: 1px solid var(--linha)
+  border-radius: 6px
+  cursor: pointer
+
+.amostraTeste
+  border-style: dashed
+  border-color: var(--destaque)
+
+.amostraAtiva
+  outline: 2px solid var(--tinta)
+  outline-offset: 1px
+
+.amostraOk::after
+  content: '✓'
+  position: absolute
+  right: 1px
+  bottom: -2px
+  color: var(--tinta)
+  font-size: 11px
+  text-shadow: 0 0 2px var(--papel-alto)
+
+// ----------------------------------------------------------- aprovadas
+
+.aprovadasBloco
+  border-color: var(--destaque)
+
+.aprovadas
+  display: flex
+  flex-direction: column
+  gap: 4px
+  margin: 0
+  padding: 0
+  list-style: none
+
+  li
+    display: flex
+    align-items: center
+    gap: 6px
+    font-size: 12px
+
+  code
+    font-family: var(--mono)
+
+.tirar
+  margin-left: auto
+  padding: 0
+  border: none
+  background: none
+  color: var(--tinta-fraca)
+  font-size: 11px
+  text-decoration: underline
+  cursor: pointer
+
+  &:hover
+    color: var(--estresse)
+
+// ---------------------------------------------------------------- popup
+
+.popupTexto
+  margin: 0
+  font-size: 14px
+  line-height: 1.55
+
+.popupAviso
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.55
+
+.passos
+  margin: 0
+  padding-left: 20px
+  display: flex
+  flex-direction: column
+  gap: 6px
+  font-size: 13px
+  line-height: 1.5
+
+.popupAcoes
+  display: flex
+  flex-wrap: wrap
+  justify-content: flex-end
+  gap: 8px
+
+// `flex: none` porque o palco é uma coluna flex: com `overflow-x: auto`, o
+// eixo Y também vira `auto` e a caixa é espremida até virar uma barra de
+// rolagem minúscula — a mesma armadilha da tabela das semanas em /lab/regras
+.rolaLado
+  flex: none
+  overflow-x: auto

@@ -1,7 +1,9 @@
 # CLT — contexto do projeto
 
 Arquivo de contexto para quem (pessoa ou IA) for mexer neste repositório sem ter
-acompanhado a construção. O [`README.md`](README.md) é o documento do jogo — as
+acompanhado a construção. (Existe também um `CONTEXTO-TOTAL-<data>.md`, que é
+uma FOTO datada para levar o projeto a outra conversa e não é mantido — se os
+dois discordarem, este aqui ganha. E `CONTEXTO-VOZ.md` está desatualizado.) O [`README.md`](README.md) é o documento do jogo — as
 regras, as cartas, o balanceamento. Aqui está o resto: como o código está
 organizado, o que foi decidido e por quê, e as armadilhas que já custaram tempo.
 
@@ -464,7 +466,26 @@ opções. O que ele escolheu, e que deve ser preservado:
   - **O rosto é paramétrico** (`MEDIDAS`), e a silhueta e a franja saem dos
     mesmos números — é o que deixa o homem ser maior e de queixo reto sem
     nada desencaixar. `cantoY`/`cantoX` são o raio do canto do rosto: iguais
-    a `larg`, o queixo vira ponta. Mexer nisso é o assunto do `/avatar-lab`.
+    a `larg`, o queixo vira ponta. Mexer nisso é o assunto do `/lab/avatar`.
+    São 17 números hoje: além do rosto e do cabelo, o pescoço (grossura e
+    quanto dele aparece), a borda do ombro, o tamanho da cabeça inteira
+    (`escalaCabeca`, ancorada no QUEIXO para não descolar do pescoço) e os
+    três multiplicadores de feição (nariz, sobrancelha, olho).
+  - **O corte de cabelo é uma TABELA, não um `if`** (`CABELOS_FORMA` em
+    `Avatar.tsx`). Era `longo ? silhueta : elipse`, o que fazia de todo corte
+    novo mais um ramo; hoje é uma linha, pela mesma razão que as cartas
+    viraram dado. `ACESSORIOS` e `OLHOS` seguem o mesmo formato. Cada linha
+    diz o que vai ATRÁS do rosto e o que vai na FRENTE, e `teste: true`
+    marca a que o jogador ainda não alcança.
+    **Promover uma peça de teste não precisa de migração:** basta acrescentar
+    o valor ao tipo em `src/data/avatar.ts` e o rótulo na lista. É `lerAvatar()`
+    que valida, na leitura, caindo no padrão diante de peça desconhecida — e é
+    exatamente por isso que `salvar_avatar()` não valida nada.
+  - **Acessório é a peça barata**, e cabelo é a cara: acessório vai solto por
+    cima de tudo, sem encaixe com o rosto nem com o cabelo para errar. Boné,
+    chapéu, óculos e barba são todos dessa família. O que o acessório custa
+    não é desenho, é RECEITA: ele é o único que ainda não tem campo no
+    `Avatar` gravado no banco.
 - **`/lab` é a oficina, e nenhuma bancada dela grava no jogo.** A trava é o
   layout de `/lab` (`GuardaAdmin`), que pergunta ao banco — mas ela é
   conveniência, não segurança: o código vai no mesmo bundle para todo mundo,
@@ -500,6 +521,14 @@ opções. O que ele escolheu, e que deve ser preservado:
   diferente do jogo mente sobre o resultado. A grade com todas as combinações
   no rodapé existe porque é lá que o estrago aparece: ajuste que fica bom num
   caso costuma abrir buraco em outro.
+  **As peças marcadas com o frasco são de TESTE**, e essa marca é a informação
+  mais importante da tela: elas são desenhadas de verdade pelo componente do
+  jogo, mas o jogador não as alcança, porque a receita gravada no banco não
+  tem como pedi-las. Clique simples experimenta; **clique duplo abre a
+  confirmação**, que NÃO escreve código (não há servidor) — ela guarda a peça
+  numa lista, com os passos de código que faltam para promovê-la. Ver peça de
+  teste e achar que já está no jogo é o erro caro aqui, e é por isso que o
+  tracejado, o frasco e o aviso do topo dizem a mesma coisa três vezes.
 - **Escolha curta e excludente é o `Segmentado`** (`src/components/Segmentado.tsx`):
   tema, abas de entrar/criar, gênero no cadastro, novos/todos nos avisos. O
   fundo do selecionado é **um elemento só que desliza**, posicionado por
@@ -1000,10 +1029,14 @@ antes de usá-los para decidir qualquer coisa.
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,
   derrota). Quando entrarem, o volume deles é mais um multiplicador em
   `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
-- **Mais peças de avatar.** Óculos e barba são as próximas que rendem muito
-  por pouco: peças soltas por cima de tudo, sem encaixe para errar — o
-  oposto do cabelo. O `/avatar-lab` aceita colar o `d=` de uma peça nova
-  para testar antes de virar código.
+- **Mais peças de avatar.** Já DESENHADAS e marcadas como teste no
+  `/lab/avatar`, esperando a decisão de promover: cabelo quadrado, careca,
+  degradê, boné, chapéu e olho detalhado. Promover cabelo e olho é barato
+  (tipo + rótulo, sem migração); o acessório é o que custa, porque a receita
+  ainda não tem campo para ele — e a decisão barata ali é o acessório herdar
+  a cor da roupa em vez de virar uma sétima escolha. Óculos e barba entram na
+  mesma família do acessório. O lab também aceita colar o `d=` de uma peça
+  nova para testar antes de virar código.
 - **Recompensa por feedback.** A nota que o admin dá já vira `players.pontos`
   (nota × 10, recalculado a cada mudança) e aparece no perfil. Falta decidir o
   que se compra com ela — carta, tema, nada disso.
