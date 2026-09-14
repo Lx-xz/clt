@@ -8,18 +8,19 @@ import Avatar, {
   CABELOS_FORMA,
   MEDIDAS,
   OLHOS,
+  TRONCOS,
   type Acessorio,
   type Ajustes,
   type FormaDeCabelo,
   type Medidas,
   type Olhos,
+  type Tronco,
 } from '@/components/Avatar'
 import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
   CORES,
   CORPOS,
-  CORTES,
   FUNDOS,
   PELES,
   ROUPAS,
@@ -28,6 +29,7 @@ import {
   type Corpo,
 } from '@/data/avatar'
 import buttons from '@/styles/buttons.module.sass'
+import { ESTILOS, type Estilo } from './estilos'
 import { SLOTS_DE_COR } from './sugestoes'
 import styles from './lab.module.sass'
 
@@ -72,25 +74,26 @@ const LIMITES: Record<keyof Medidas, [number, number, string, number]> = {
   nariz: [0.5, 2, 'tamanho do nariz', 0.05],
   sobrancelha: [0.8, 6, 'grossura da sobrancelha', 0.2],
   olho: [0.6, 1.8, 'tamanho do olho', 0.05],
+  orelha: [0, 9, 'orelha (0 = sem orelha, que é o jogo de hoje)', 0.2],
 }
 
 const GRUPOS: { titulo: string; chaves: (keyof Medidas)[] }[] = [
   { titulo: 'Rosto', chaves: ['larg', 'topo', 'queixo', 'cantoY', 'cantoX', 'escalaCabeca'] },
   { titulo: 'Cabelo', chaves: ['rx', 'ry', 'cy'] },
   { titulo: 'Pescoço e ombros', chaves: ['pescocoLarg', 'pescocoAlt', 'ombro', 'meioOmbro', 'ombroBorda'] },
-  { titulo: 'Feições', chaves: ['nariz', 'sobrancelha', 'olho'] },
+  { titulo: 'Feições', chaves: ['nariz', 'sobrancelha', 'olho', 'orelha'] },
 ]
 
-// v2: o estado ganhou as peças de teste e as aprovadas. Um estado da v1 não
-// as tem, e a página quebraria ao ler — mesma regra do save do jogo
-const CHAVE = 'clt:avatar-lab:v2'
+// v3: o estado ganhou o tronco e a orelha. Um estado da v2 não os tem, e a
+// página quebraria ao ler — mesma regra do save do jogo
+const CHAVE = 'clt:avatar-lab:v3'
 
 interface Estado {
   receita: Receita
   medidas: Medidas
   cores: { cabelo: string; roupa: string; fundo: string; pele: string; acessorio: string; olho: string }
   pecas: { silhueta: string; franja: string; mecha: string }
-  teste: { cabelo: FormaDeCabelo; acessorio: Acessorio; olhos: Olhos }
+  teste: { cabelo: FormaDeCabelo; acessorio: Acessorio; olhos: Olhos; tronco: Tronco }
   /** O que você já confirmou que quer no jogo, para não se perder. */
   aprovadas: string[]
 }
@@ -98,13 +101,15 @@ interface Estado {
 function inicial(corpo: Corpo): Estado {
   return {
     receita: { ...AVATAR_PADRAO, corpo, cabelo: 'longo', pele: 'media', cor: 'castanho' },
-    medidas: { ...MEDIDAS[corpo] },
+    // a orelha não existe no jogo (0) e o laboratório é justamente onde ela
+    // se vê: abrir a bancada sem ela seria abrir sem a peça nova
+    medidas: { ...MEDIDAS[corpo], orelha: 4.2 },
     cores: {
       cabelo: '#6b4326', roupa: '#6f7f8c', fundo: '#d8cfba',
       pele: '', acessorio: '#8c5a58', olho: '#8a6330',
     },
     pecas: { silhueta: '', franja: '', mecha: '' },
-    teste: { cabelo: 'longo', acessorio: 'nenhum', olhos: 'simples' },
+    teste: { cabelo: 'longo', acessorio: 'nenhum', olhos: 'simples', tronco: 'padrao' },
     aprovadas: [],
   }
 }
@@ -147,7 +152,22 @@ export default function AvatarLabPage() {
   function trocarCorpo(corpo: Corpo) {
     // trocar de corpo recarrega as medidas dele: sem isso você ficaria
     // editando os números do homem com o desenho da mulher na tela
-    guardar({ ...e, receita: { ...e.receita, corpo }, medidas: { ...MEDIDAS[corpo] } })
+    // a orelha sobrevive à troca: ela é 0 em todo corpo do jogo, e recarregar
+    // o corpo a apagaria toda vez
+    guardar({
+      ...e,
+      receita: { ...e.receita, corpo },
+      medidas: { ...MEDIDAS[corpo], orelha: e.medidas.orelha },
+    })
+  }
+
+  function aplicarEstilo(es: Estilo) {
+    guardar({
+      ...e,
+      receita: { ...e.receita, corpo: es.corpo },
+      medidas: { ...MEDIDAS[es.corpo], ...es.medidas },
+      teste: es.teste,
+    })
   }
 
   function aprovar(p: Promocao) {
@@ -215,19 +235,70 @@ export default function AvatarLabPage() {
           <div className={styles.rolaLado}>
             <Segmentado rotulo="Corpo" valor={e.receita.corpo} onChange={trocarCorpo} opcoes={CORPOS} />
           </div>
-          <div className={styles.rolaLado}>
-            <Segmentado
-              rotulo="Pele"
-              valor={e.receita.pele}
-              onChange={(v) => guardar({ ...e, receita: { ...e.receita, pele: v } })}
-              opcoes={PELES}
-            />
-          </div>
         </div>
 
         <div className={styles.controles}>
           <section className={styles.bloco}>
+            <h2 className={styles.blocoTitulo}>Estilos inteiros</h2>
+            <p className={styles.blocoDica}>
+              Peça sozinha engana: o mesmo cabelo fica ruim com o pescoço de hoje e bom com o
+              tronco colado. Cada botão aqui troca <b>corpo, medidas, cabelo, tronco, olhos e
+              acessório de uma vez</b> — é assim que dá para comparar respostas inteiras em vez de
+              peças soltas.
+            </p>
+            <div className={styles.galeria}>
+              {ESTILOS.map((es) => (
+                <Peca
+                  key={es.nome}
+                  rotulo={es.nome}
+                  teste={es.nome !== 'Jogo hoje'}
+                  ativa={
+                    e.receita.corpo === es.corpo &&
+                    e.teste.cabelo === es.teste.cabelo &&
+                    e.teste.tronco === es.teste.tronco &&
+                    e.teste.olhos === es.teste.olhos &&
+                    e.teste.acessorio === es.teste.acessorio
+                  }
+                  aprovada={e.aprovadas.includes(`estilo:${es.nome}`)}
+                  dica={es.dica}
+                  aoEscolher={() => aplicarEstilo(es)}
+                  aoPromover={() =>
+                    setPromovendo({
+                      chave: `estilo:${es.nome}`,
+                      titulo: `Estilo “${es.nome}”`,
+                      oQue: es.dica,
+                      passos:
+                        es.nome === 'Jogo hoje'
+                          ? []
+                          : [
+                              'Um estilo não é uma peça: confirmar aqui é dizer “é este o caminho”, não “entra assim”.',
+                              'Promova as peças dele uma a uma (cabelo, olhos, tronco) — cada uma tem um custo diferente, e o tronco e o acessório são os únicos que mexem na receita.',
+                              `As medidas deste estilo saem no código lá embaixo: troque de estilo, copie a linha e cole em MEDIDAS['${es.corpo}'] de Avatar.tsx.`,
+                            ],
+                    })
+                  }
+                >
+                  <Avatar
+                    avatar={{ ...e.receita, corpo: es.corpo }}
+                    tamanho={56}
+                    ajustes={{
+                      medidas: { ...MEDIDAS[es.corpo], ...es.medidas },
+                      cores: ajustes.cores,
+                      teste: es.teste,
+                    }}
+                  />
+                </Peca>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.bloco}>
             <h2 className={styles.blocoTitulo}>Cabelo</h2>
+            <p className={styles.blocoDica}>
+              Os cortes novos são desenhados a partir da <b>caixa do rosto</b>, e não de uma elipse
+              solta como o Curto e o Longo — é só isso que faz o boné encaixar e a orelha aparecer.
+              Corte que cobre a orelha a esconde sozinho.
+            </p>
             <div className={styles.galeria}>
               {(Object.keys(CABELOS_FORMA) as FormaDeCabelo[]).map((id) => {
                 const f = CABELOS_FORMA[id]
@@ -258,6 +329,48 @@ export default function AvatarLabPage() {
                     }
                   >
                     <Avatar avatar={e.receita} tamanho={56} ajustes={comTeste({ cabelo: id })} />
+                  </Peca>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className={styles.bloco}>
+            <h2 className={styles.blocoTitulo}>Do queixo para baixo</h2>
+            <p className={styles.blocoDica}>
+              Pescoço, tronco e gola são uma peça só, porque se recortam. <b>Sem pescoço</b> é o
+              corte do Duolingo: a roupa encosta no queixo, e a cabeça parece maior sem nenhuma
+              medida mudar.
+            </p>
+            <div className={styles.galeria}>
+              {(Object.keys(TRONCOS) as Tronco[]).map((id) => {
+                const t = TRONCOS[id]
+                return (
+                  <Peca
+                    key={id}
+                    rotulo={t.rotulo}
+                    teste={t.teste}
+                    ativa={e.teste.tronco === id}
+                    aprovada={e.aprovadas.includes(`tronco:${id}`)}
+                    aoEscolher={() => guardar({ ...e, teste: { ...e.teste, tronco: id } })}
+                    aoPromover={() =>
+                      setPromovendo({
+                        chave: `tronco:${id}`,
+                        titulo: `“${t.rotulo}” no jogo`,
+                        oQue: t.teste
+                          ? 'O desenho já existe. Como o acessório, ele é uma escolha NOVA da receita — ou entra para todo mundo de uma vez, e aí não custa campo nenhum.'
+                          : 'É o tronco do jogo de hoje.',
+                        passos: t.teste
+                          ? [
+                              'Se for para TODO MUNDO: troque o padrão de TRONCOS em Avatar.tsx e tire o teste: true. Não mexe em receita nem em banco.',
+                              'Se for ESCOLHA do jogador: acrescente tronco ao tipo Avatar, uma lista de rótulos, e um Segmentado em /perfil/editar.',
+                              'Repare que só o padrao olha o corpo (homem/mulher). Se um de teste virar o padrão, é ele que passa a dizer o que separa os dois corpos — e hoje quem diz isso é a gola.',
+                            ]
+                          : [],
+                      })
+                    }
+                  >
+                    <Avatar avatar={e.receita} tamanho={56} ajustes={comTeste({ tronco: id })} />
                   </Peca>
                 )
               })}
@@ -509,23 +622,31 @@ export default function AvatarLabPage() {
         </div>
       </div>
 
-      <h2 className={styles.blocoTitulo}>Todas as combinações, com estas medidas</h2>
+      <h2 className={styles.blocoTitulo}>Todo corte, em todo corpo</h2>
       <p className={styles.blocoDica}>
         É aqui que o estrago aparece: um ajuste que fica bom num caso costuma abrir buraco em
-        outro. Confira antes de levar o número para o código.
+        outro. Cada corpo usa as <b>medidas dele</b> (a orelha é a sua), e o corpo que está em
+        edição usa os sliders — então a linha de cima muda enquanto você mexe e as outras duas
+        servem de controle.
       </p>
       <div className={styles.grade}>
-        {CORTES.map((corte) =>
-          PELES.map((pele) =>
-            CORES.map((cor) => (
-              <Avatar
-                key={`${corte.valor}-${pele.valor}-${cor.valor}`}
-                tamanho={72}
-                avatar={{ ...e.receita, cabelo: corte.valor, pele: pele.valor, cor: cor.valor }}
-                ajustes={{ medidas: e.medidas, pecas: ajustes.pecas }}
-              />
-            )),
-          ),
+        {(Object.keys(CABELOS_FORMA) as FormaDeCabelo[]).map((cab) =>
+          CORPOS.map((c) => (
+            <Avatar
+              key={`${cab}-${c.valor}`}
+              tamanho={72}
+              avatar={{ ...e.receita, corpo: c.valor }}
+              ajustes={{
+                medidas:
+                  c.valor === e.receita.corpo
+                    ? e.medidas
+                    : { ...MEDIDAS[c.valor], orelha: e.medidas.orelha },
+                cores: ajustes.cores,
+                pecas: ajustes.pecas,
+                teste: { ...e.teste, cabelo: cab },
+              }}
+            />
+          )),
         )}
       </div>
 
@@ -571,11 +692,12 @@ export default function AvatarLabPage() {
  * confirmação — e o frasco marca o que ainda não é alcançável pelo jogador,
  * que é a informação mais importante desta tela.
  */
-function Peca({ rotulo, teste, ativa, aprovada, aoEscolher, aoPromover, children }: {
+function Peca({ rotulo, teste, ativa, aprovada, dica, aoEscolher, aoPromover, children }: {
   rotulo: string
   teste?: boolean
   ativa: boolean
   aprovada: boolean
+  dica?: string
   aoEscolher: () => void
   aoPromover: () => void
   children: React.ReactNode
@@ -586,7 +708,9 @@ function Peca({ rotulo, teste, ativa, aprovada, aoEscolher, aoPromover, children
       className={`${styles.pecaBotao} ${teste ? styles.pecaTeste : ''} ${ativa ? styles.pecaAtiva : ''}`}
       onClick={aoEscolher}
       onDoubleClick={aoPromover}
-      title={teste ? `${rotulo} — peça de teste. Clique duplo para confirmar que quer no jogo.` : rotulo}
+      title={
+        dica ?? (teste ? `${rotulo} — peça de teste. Clique duplo para confirmar que quer no jogo.` : rotulo)
+      }
     >
       {children}
       <span className={styles.pecaNome}>

@@ -474,9 +474,37 @@ opções. O que ele escolheu, e que deve ser preservado:
   - **O corte de cabelo é uma TABELA, não um `if`** (`CABELOS_FORMA` em
     `Avatar.tsx`). Era `longo ? silhueta : elipse`, o que fazia de todo corte
     novo mais um ramo; hoje é uma linha, pela mesma razão que as cartas
-    viraram dado. `ACESSORIOS` e `OLHOS` seguem o mesmo formato. Cada linha
-    diz o que vai ATRÁS do rosto e o que vai na FRENTE, e `teste: true`
-    marca a que o jogador ainda não alcança.
+    viraram dado. `ACESSORIOS`, `OLHOS` e `TRONCOS` seguem o mesmo formato.
+    Cada linha diz o que vai ATRÁS do rosto e o que vai na FRENTE, e
+    `teste: true` marca a que o jogador ainda não alcança.
+  - **A CAIXA DO ROSTO é o esqueleto, e corte novo nasce dela.** Os dois
+    cortes antigos (`curto`, `longo`) saem de uma elipse SOLTA
+    (`rx`/`ry`/`cy`), sem relação com a cabeça — e as três consequências
+    apareceram juntas: eles cobrem a orelha, não cabem embaixo do boné e leem
+    todos como o mesmo cabelo comprido ("os cabelos parecem todos femininos").
+    Os cortes novos são desenhados a partir de `larg`/`topo`/`queixo`, os
+    mesmos números do rosto, e por isso o chapéu encaixa sem ajuste por corte.
+  - **A orelha é MEDIDA, não peça** (`orelha`, zero no jogo de hoje). É um
+    número só, e sendo medida ela some sozinha nos cortes mais largos que a
+    cabeça — quem esconde a orelha é o cabelo, não um `if`.
+  - **O degradê é o único corte que pinta a PELE.** A primeira versão eram duas
+    elipses atrás do rosto, e não era um degradê: era um cabelo de dois tons
+    com a transição escondida debaixo da cabeça, que é onde ela justamente não
+    podia estar. Um fade de máquina acontece NA TESTA. Por isso ele é a única
+    peça com gradiente — e a única que precisa de um `id`, que vem de
+    `useId()` **sem pontuação** (os dois-pontos não sobrevivem a um
+    `url(#...)`, e id repetido pinta todos os avatares da página com a cor do
+    primeiro).
+  - **O chapéu e o cabelo têm um acordo só: a linha da aba** (`ACESSORIOS.aba`).
+    Embaixo do chapéu o corte continua aparecendo — é isso que faz o boné
+    parecer vestido e não colado, e é o que muda de um corte para outro. Quem
+    briga com a aba declara `sobChapeu`, que troca o corte INTEIRO (o que
+    aparecia por cima do boné era o bloco de TRÁS do quadrado, não a franja).
+  - **Do queixo para baixo é uma peça só** (`TRONCOS`): pescoço, tronco e gola
+    se recortam, e gola desenhada sem saber onde o pescoço acabou deixa lascas
+    de pele nos cantos. O `padrao` é o único que olha o corpo — se um tronco de
+    teste virar o padrão, é ele que passa a dizer o que separa homem de
+    mulher, que hoje é a gola.
     **Promover uma peça de teste não precisa de migração:** basta acrescentar
     o valor ao tipo em `src/data/avatar.ts` e o rótulo na lista. É `lerAvatar()`
     que valida, na leitura, caindo no padrão diante de peça desconhecida — e é
@@ -533,6 +561,8 @@ opções. O que ele escolheu, e que deve ser preservado:
   diferente do jogo mente sobre o resultado. A grade com todas as combinações
   no rodapé existe porque é lá que o estrago aparece: ajuste que fica bom num
   caso costuma abrir buraco em outro.
+  Os botões de pele saíram: quem manda na pele é o slot de cor, com hex livre
+  — dois controles para a mesma coisa é um deles mentindo.
   **As peças marcadas com o frasco são de TESTE**, e essa marca é a informação
   mais importante da tela: elas são desenhadas de verdade pelo componente do
   jogo, mas o jogador não as alcança, porque a receita gravada no banco não
@@ -1042,13 +1072,18 @@ antes de usá-los para decidir qualquer coisa.
   derrota). Quando entrarem, o volume deles é mais um multiplicador em
   `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
 - **Mais peças de avatar.** Já DESENHADAS e marcadas como teste no
-  `/lab/avatar`, esperando a decisão de promover: cabelo quadrado, careca,
-  degradê, boné, chapéu e quatro olhos de desenho. Promover cabelo e olho é barato
-  (tipo + rótulo, sem migração); o acessório é o que custa, porque a receita
-  ainda não tem campo para ele — e a decisão barata ali é o acessório herdar
-  a cor da roupa em vez de virar uma sétima escolha. Óculos e barba entram na
-  mesma família do acessório. O lab também aceita colar o `d=` de uma peça
-  nova para testar antes de virar código.
+  `/lab/avatar`, esperando a decisão de promover: seis cortes novos (quadrado,
+  careca, degradê, espetado, topete, cacheado, chanel e coque), a orelha,
+  quatro troncos (sem pescoço, gola alta, camiseta, social), boné, chapéu e
+  sete olhos. Promover cabelo e olho é barato (tipo + rótulo, sem migração);
+  o acessório e o tronco são os que custam, porque a receita ainda não tem
+  campo para eles — e a decisão barata ali é o acessório herdar a cor da roupa
+  em vez de virar uma sétima escolha, ou o tronco entrar para todo mundo de
+  uma vez, que não custa campo nenhum. Óculos e barba entram na família do
+  acessório. O lab também aceita colar o `d=` de uma peça nova para testar
+  antes de virar código, e tem **estilos inteiros** (`estilos.ts`): peça
+  sozinha engana, porque o mesmo cabelo fica ruim com o pescoço de hoje e bom
+  com o tronco colado.
 - **Recompensa por feedback.** A nota que o admin dá já vira `players.pontos`
   (nota × 10, recalculado a cada mudança) e aparece no perfil. Falta decidir o
   que se compra com ela — carta, tema, nada disso.

@@ -113,7 +113,7 @@ export const SLOTS_DE_COR: SlotDeCor[] = [
   {
     chave: 'olho',
     rotulo: 'Íris',
-    onde: 'só o olho detalhado usa esta cor, e ele é de teste',
+    onde: 'só os olhos com íris usam esta cor, e todos eles são de teste',
     cores: [
       { nome: 'Castanho', hex: '#4a3524' },
       { nome: 'Mel', hex: '#8a6330' },
