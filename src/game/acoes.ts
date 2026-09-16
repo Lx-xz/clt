@@ -1,3 +1,4 @@
+import { numeroDaSemana } from './regras'
 import type { CardId, CardKind, GameState } from './types'
 
 /**
@@ -32,8 +33,10 @@ export type Recurso = 'produtividade' | 'energia' | 'estresse' | 'dinheiro'
 export type Acao =
   /** Soma no recurso. Estresse positivo SOBE o estresse; nunca passa de zero. */
   | { faz: 'recurso'; qual: Recurso; quanto: number }
-  /** Efeito adiado: entra no começo do dia seguinte. */
-  | { faz: 'amanha'; qual: 'energia' | 'cota'; quanto: number }
+  /** Efeito adiado: a lista inteira roda no começo do dia seguinte. Serve
+   *  para QUALQUER coisa — um recurso, uma carta, uma mensagem —, e não para
+   *  dois números escolhidos a dedo, que era o que ela fazia antes. */
+  | { faz: 'amanha'; acoes: Acao[] }
   | { faz: 'comprar'; quantas: number }
   /** `quantas: 'tudo'` esvazia a mão. `aleatorio` escolhe qual sai.
    *  `porque` é quem aparece no histórico: "Fofoca de Corredor descartou
@@ -51,16 +54,39 @@ export type Acao =
   | { faz: 'advertencia'; quanto: number; informal?: boolean }
   /** Soma na cota do dia, ou fixa um valor com `absoluto`. */
   | { faz: 'cota'; quanto: number; absoluto?: boolean }
-  | { faz: 'salarioPermanente'; quanto: number }
-  | { faz: 'produtividadePassiva'; quanto: number }
+  /** O que continua valendo depois de hoje.
+   *
+   *  Ela nasceu de duas: `salarioPermanente` somava no salário da sexta e
+   *  `produtividadePassiva` somava na produtividade de todo dia. Eram a mesma
+   *  ideia escrita duas vezes — o que as separava não era o recurso, era a
+   *  CADÊNCIA. Hoje é um campo (`cada`), e de brinde veio o que não existia:
+   *  `duracao`, que permite um efeito valer só por esta semana em vez de para
+   *  sempre. */
+  | {
+      faz: 'recorrente'
+      qual: Recurso
+      quanto: number
+      cada: 'dia' | 'semana'
+      /** `'run'` (padrão) é o resto da partida · `'semana'` é o resto desta
+       *  semana · um número é essa quantidade de disparos. */
+      duracao?: 'run' | 'semana' | number
+    }
   /** Quantas cartas o dia compra, quando não são as de sempre. Com
    *  `relativo`, `quantas` é somado ao tamanho normal da mão — é o que
    *  mantém o Dia Tranquilo sendo "duas a mais" mesmo se o modo de jogo
    *  mudar a mão de 5 para 6. */
   | { faz: 'maoDoDia'; quantas: number; relativo?: boolean }
   | { faz: 'sorteio'; chance: number; entao: Acao[]; senao?: Acao[] }
-  /** Só escreve no histórico da mesa. Serve para explicar o que aconteceu. */
-  | { faz: 'aviso'; texto: string }
+  /** O irmão do `sorteio`: um pergunta à sorte, o outro pergunta ao estado.
+   *  Ele existe porque o `se` do efeito só vale no nível do bloco — dentro de
+   *  um `sorteio` não havia como perguntar nada. */
+  | { faz: 'se'; condicao: Condicao; entao: Acao[]; senao?: Acao[] }
+  /** Pergunta ao JOGADOR, como os eventos ambíguos já fazem. Igual ao
+   *  `escolherDescarte`, ela PAUSA o dia — então o que vier depois dela na
+   *  mesma lista roda antes da resposta. Na prática: é a última da lista. */
+  | { faz: 'escolha'; opcoes: { rotulo: string; acoes: Acao[] }[] }
+  /** Aparece na mesa e fica no histórico da run. */
+  | { faz: 'mensagem'; texto: string }
 
 /** O "se" de um efeito. Sem ele, o efeito sempre vale. */
 export type Condicao =
@@ -72,14 +98,40 @@ export type Condicao =
   | { se: 'advertencias'; aoMenos: number }
   /** Esta carta ainda não foi jogada nenhuma vez nesta run. */
   | { se: 'ineditaNaRun' }
+  /** Quantas cartas já saíram hoje, de qualquer tipo. Com `noMaximo: 0` é
+   *  "só se for a PRIMEIRA do dia" — e é mais geral do que uma condição com
+   *  esse nome, que só saberia dizer essa frase. */
+  | { se: 'cartasJogadasHoje'; aoMenos?: number; noMaximo?: number }
+  /** Quantas cartas dessa classe já saíram hoje. É o `embalo` sem precisar
+   *  ser seguido. */
+  | { se: 'classeJogadaHoje'; classe: CardKind; aoMenos?: number; noMaximo?: number }
+  | { se: 'cartasNaMao'; aoMenos?: number; noMaximo?: number }
+  | { se: 'dia'; aoMenos?: number; noMaximo?: number }
+  | { se: 'semana'; aoMenos?: number; noMaximo?: number }
+  // As três combinatórias. São o que faz as condições de cima valerem o
+  // dobro: sem elas, um bloco só consegue perguntar UMA coisa, e "a cota não
+  // foi batida E você tem menos de 3 cartas" não tinha como ser escrito.
+  | { se: 'nao'; condicao: Condicao }
+  | { se: 'todas'; condicoes: Condicao[] }
+  | { se: 'alguma'; condicoes: Condicao[] }
 
 /**
  * Quando o efeito dispara. `aoJogar` é o padrão das cartas e `aoRevelar` o
- * dos eventos; os outros dois existem porque a ORDEM importa — a Fofoca de
+ * dos eventos; os outros existem porque a ORDEM importa — a Fofoca de
  * Corredor descarta depois da mão chegar, e a Cobrança no Zap só pesa se a
  * cota não foi batida no fim do dia.
+ *
+ * `aoDescartar` é o único que dispara na carta que está SAINDO da mão, e é o
+ * que permite uma carta ser boa de largar. `fimDaSemana` dispara na sexta,
+ * antes do salário, e é o par natural do recorrente semanal.
  */
-export type Quando = 'aoJogar' | 'aoRevelar' | 'aposComprar' | 'fimDoDia'
+export type Quando =
+  | 'aoJogar'
+  | 'aoRevelar'
+  | 'aposComprar'
+  | 'fimDoDia'
+  | 'aoDescartar'
+  | 'fimDaSemana'
 
 export interface Efeito {
   quando?: Quando
@@ -120,8 +172,20 @@ export interface Contexto {
     entao: Acao[],
     cartaId: CardId | null,
   ) => void
+  /** Pausa o dia até o jogador escolher um dos caminhos da carta. */
+  pedirEscolha: (
+    state: GameState,
+    opcoes: { rotulo: string; acoes: Acao[] }[],
+    cartaId: CardId | null,
+  ) => void
   criarCarta: (cardId: CardId) => { uid: string; cardId: CardId }
+  /** A classe de uma carta pelo id. Entra por aqui, e não por um import do
+   *  catálogo, pelo mesmo motivo que `comprar` entra: o interpretador não
+   *  conhece o baralho — quem conhece é o motor. */
+  classeDe: (cardId: CardId) => CardKind | null
   log: (state: GameState, texto: string) => void
+  /** Escreve E mostra na mesa. É a diferença entre a `mensagem` e o `log`. */
+  mostrarMensagem: (state: GameState, texto: string) => void
   /** 0..1; recebe o sorteio de fora para o teste poder ser determinístico. */
   sorte: () => number
 }
@@ -149,7 +213,32 @@ export function condicaoVale(state: GameState, cond: Condicao | undefined, ctx: 
       return state.warnings >= cond.aoMenos
     case 'ineditaNaRun':
       return ctx.cartaId ? !state.usadasNaRun.includes(ctx.cartaId) : true
+    case 'cartasJogadasHoje':
+      return entre(state.playedToday.length, cond.aoMenos, cond.noMaximo)
+    case 'classeJogadaHoje': {
+      const vezes = state.playedToday.filter((id) => ctx.classeDe(id) === cond.classe).length
+      return entre(vezes, cond.aoMenos, cond.noMaximo)
+    }
+    case 'cartasNaMao':
+      return entre(state.hand.length, cond.aoMenos, cond.noMaximo)
+    case 'dia':
+      return entre(state.day, cond.aoMenos, cond.noMaximo)
+    case 'semana':
+      return entre(numeroDaSemana(state.modo, state.day), cond.aoMenos, cond.noMaximo)
+    case 'nao':
+      return !condicaoVale(state, cond.condicao, ctx)
+    case 'todas':
+      return cond.condicoes.every((c) => condicaoVale(state, c, ctx))
+    case 'alguma':
+      return cond.condicoes.some((c) => condicaoVale(state, c, ctx))
   }
+}
+
+/** Sete condições fazem a mesma comparação; ela mora aqui uma vez só. */
+function entre(valor: number, aoMenos?: number, noMaximo?: number): boolean {
+  if (aoMenos !== undefined && valor < aoMenos) return false
+  if (noMaximo !== undefined && valor > noMaximo) return false
+  return true
 }
 
 function valorDoRecurso(state: GameState, qual: Recurso): number {
@@ -169,8 +258,8 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
       else state.stress = Math.max(0, state.stress + acao.quanto)
       break
     case 'amanha':
-      if (acao.qual === 'energia') state.tomorrow.energy += acao.quanto
-      else state.tomorrow.quota += acao.quanto
+      // a fila é só dado: ela é clonada e serializada com o resto do estado
+      state.amanha.push(...acao.acoes)
       break
     case 'comprar':
       ctx.comprar(state, acao.quantas)
@@ -226,12 +315,33 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
     case 'cota':
       state.dailyQuota = acao.absoluto ? acao.quanto : state.dailyQuota + acao.quanto
       break
-    case 'salarioPermanente':
-      state.salaryBonus += acao.quanto
+    case 'recorrente': {
+      // a duração é resolvida AGORA, e não guardada como palavra: "uma
+      // semana" depende de quantos dias tem a semana DESTA run, e a run já
+      // carrega uma cópia das regras justamente para não mudar no meio
+      const duracao = acao.duracao ?? 'run'
+      const restam =
+        duracao === 'run'
+          ? null
+          : duracao === 'semana'
+            ? acao.cada === 'dia'
+              ? state.modo.diasPorSemana
+              : 1
+            : Math.max(0, duracao)
+      if (restam !== 0) {
+        state.recorrentes.push({
+          qual: acao.qual,
+          quanto: acao.quanto,
+          cada: acao.cada,
+          restam,
+          // guarda o ID, não o nome: quem traduz id em nome é o catálogo, e
+          // quem fala com o catálogo é o motor. A ação continua sem conhecer
+          // carta nenhuma
+          origem: ctx.cartaId ?? null,
+        })
+      }
       break
-    case 'produtividadePassiva':
-      state.passiveProductivity += acao.quanto
-      break
+    }
     case 'maoDoDia':
       state.maoDoDia = acao.relativo
         ? Math.max(0, state.modo.cartasNaMao + acao.quantas)
@@ -240,14 +350,32 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
     case 'sorteio':
       executar(state, ctx.sorte() < acao.chance ? acao.entao : (acao.senao ?? []), ctx)
       break
-    case 'aviso':
-      ctx.log(state, acao.texto)
+    case 'se':
+      executar(state, condicaoVale(state, acao.condicao, ctx) ? acao.entao : (acao.senao ?? []), ctx)
+      break
+    case 'escolha':
+      ctx.pedirEscolha(state, acao.opcoes, ctx.cartaId ?? null)
+      break
+    case 'mensagem':
+      ctx.mostrarMensagem(state, acao.texto)
       break
   }
 }
 
 export function executar(state: GameState, acoes: Acao[], ctx: Contexto) {
-  for (const acao of acoes) executarAcao(state, acao, ctx)
+  for (let i = 0; i < acoes.length; i += 1) {
+    executarAcao(state, acoes[i], ctx)
+    // Uma pergunta aberta PARA a lista. O que vem depois de um "escolha" é
+    // consequência da resposta, e rodar antes dela seria contar o fim antes
+    // do começo — o `for` de antes rodava a lista inteira na hora.
+    // O resto fica guardado na própria pergunta e é retomado ao responder,
+    // o que resolve o aninhamento de graça: um `escolha` dentro de um
+    // `sorteio` pausa a lista de dentro, e a de fora empilha atrás.
+    if (state.escolhaAberta) {
+      state.escolhaAberta.resto = [...state.escolhaAberta.resto, ...acoes.slice(i + 1)]
+      return
+    }
+  }
 }
 
 /** Roda os efeitos de um gatilho, respeitando o `se` de cada um. */
@@ -268,4 +396,81 @@ export function dispararEfeitos(
 /** Sem `quando`, o efeito pertence ao gatilho principal daquele dono. */
 function padraoDe(quando: Quando): Quando {
   return quando === 'aoRevelar' ? 'aoRevelar' : 'aoJogar'
+}
+
+// ------------------------------------------------------- vocabulário antigo
+
+/**
+ * Traduz o vocabulário anterior na LEITURA.
+ *
+ * **Sem isto, mudar o vocabulário quebra o jogo em silêncio.** As cartas
+ * moram no banco desde a v0.10, e a `automatizar` que está no ar ainda guarda
+ * `{"faz":"produtividadePassiva"}`. O `switch` de `executarAcao` não tem
+ * `default`: uma ação que ele não conhece não dá erro, não avisa e não faz
+ * nada — a carta especial simplesmente pararia de funcionar, e ninguém
+ * descobriria.
+ *
+ * É a mesma escolha que o avatar faz: quem valida é a leitura
+ * (`lerAvatar()`), e por isso `salvar_avatar()` pode não validar nada. Aqui
+ * também não há migração no banco para rodar: salvar a carta de novo no
+ * `/lab` grava o formato de hoje, e daí em diante esta função não encosta
+ * mais nela.
+ */
+export function migrarAcoes(acoes: Acao[] | undefined): Acao[] {
+  if (!acoes) return []
+  return acoes.map(migrarAcao)
+}
+
+type AcaoAntiga =
+  | { faz: 'salarioPermanente'; quanto: number }
+  | { faz: 'produtividadePassiva'; quanto: number }
+  | { faz: 'amanha'; qual: 'energia' | 'cota'; quanto: number }
+  | { faz: 'aviso'; texto: string }
+
+function migrarAcao(acao: Acao): Acao {
+  const velha = acao as unknown as AcaoAntiga
+  switch (velha.faz) {
+    case 'salarioPermanente':
+      return { faz: 'recorrente', qual: 'dinheiro', quanto: velha.quanto, cada: 'semana' }
+    case 'produtividadePassiva':
+      return { faz: 'recorrente', qual: 'produtividade', quanto: velha.quanto, cada: 'dia' }
+    case 'aviso':
+      return { faz: 'mensagem', texto: velha.texto }
+    case 'amanha':
+      // o `amanha` antigo adiava dois números; o novo adia uma lista. Só é
+      // formato velho quando tem `qual` — o novo tem `acoes`
+      if ('qual' in velha) {
+        return {
+          faz: 'amanha',
+          acoes: [
+            velha.qual === 'energia'
+              ? { faz: 'recurso', qual: 'energia', quanto: velha.quanto }
+              : { faz: 'cota', quanto: velha.quanto },
+          ],
+        }
+      }
+      break
+  }
+  // desce nos pontos de aninhamento — senão um `salarioPermanente` dentro de
+  // um `sorteio` (que é exatamente onde ele está na Pedir Aumento) escapa
+  switch (acao.faz) {
+    case 'sorteio':
+      return { ...acao, entao: migrarAcoes(acao.entao), senao: acao.senao && migrarAcoes(acao.senao) }
+    case 'se':
+      return { ...acao, entao: migrarAcoes(acao.entao), senao: acao.senao && migrarAcoes(acao.senao) }
+    case 'escolherDescarte':
+      return { ...acao, entao: acao.entao && migrarAcoes(acao.entao) }
+    case 'amanha':
+      return { ...acao, acoes: migrarAcoes(acao.acoes) }
+    case 'escolha':
+      return { ...acao, opcoes: acao.opcoes.map((o) => ({ ...o, acoes: migrarAcoes(o.acoes) })) }
+    default:
+      return acao
+  }
+}
+
+/** O mesmo, para a lista de efeitos inteira de uma carta ou evento. */
+export function migrarEfeitos(efeitos: Efeito[] | undefined): Efeito[] {
+  if (!efeitos) return []
+  return efeitos.map((e) => ({ ...e, acoes: migrarAcoes(e.acoes) }))
 }

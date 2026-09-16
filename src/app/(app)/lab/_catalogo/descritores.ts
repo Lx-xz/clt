@@ -1,6 +1,6 @@
 import {
-  AlertTriangle, Ban, Banknote, Cog, Dices, Gauge, Gift, Hand, Layers,
-  LayoutGrid, MessageSquare, Sunrise, Target, Trash2, Zap,
+  AlertTriangle, Ban, CalendarDays, Dices, Gauge, Gift, GitBranch, Hand, Layers,
+  LayoutGrid, MessageSquare, Repeat, Split, Sunrise, Target, Trash2, Zap,
   type LucideIcon,
 } from 'lucide-react'
 import type { Acao, Condicao, Quando } from '@/game/acoes'
@@ -29,11 +29,20 @@ export type TipoDeCampo =
   | { tipo: 'simNao' }
   /** Um id de carta, com a lista do catálogo como sugestão. */
   | { tipo: 'carta' }
-  /** `descartar.quantas` aceita um número ou a palavra 'tudo'. */
-  | { tipo: 'numeroOuTudo' }
-  /** Uma lista de ações dentro da ação — os dois pontos de aninhamento que a
-   *  linguagem tem: `sorteio.entao/senao` e `escolherDescarte.entao`. */
+  /** Um número OU uma palavra fixa. Nasceu para `descartar.quantas` ('tudo') e
+   *  serve igual a `recorrente.duracao` ('run'/'semana') — generalizar custou
+   *  menos do que um tipo de campo por caso. */
+  | { tipo: 'numeroOuPalavra'; palavras: { valor: string; rotulo: string }[] }
+  /** Uma lista de ações dentro da ação. Os pontos de aninhamento da linguagem:
+   *  `sorteio.entao/senao`, `se.entao/senao`, `escolherDescarte.entao`,
+   *  `amanha.acoes` e cada opção de `escolha`. */
   | { tipo: 'acoes' }
+  /** Uma condição dentro da ação ou da condição (`se.condicao`, `nao`). */
+  | { tipo: 'condicao' }
+  /** Uma lista de condições (`todas`, `alguma`). */
+  | { tipo: 'condicoes' }
+  /** A lista de { rotulo, acoes } da ação `escolha`. */
+  | { tipo: 'opcoes' }
 
 export interface Campo {
   chave: string
@@ -51,7 +60,15 @@ export interface Descritor {
   grupo: Grupo
   Icone: LucideIcon
   campos: Campo[]
+  /** Não aparece no editor de EVENTOS. A `escolha` é o caso: um evento que
+   *  pergunta já tem as escolhas dele, e a pergunta por ação não sobrevive à
+   *  compra da mão que vem logo depois do efeito do evento. */
+  soEmCarta?: boolean
 }
+
+/** O padrão de um campo de condição. Tem que ser uma condição VÁLIDA: um `se`
+ *  que nasce sem condição cai sempre no `então`, e ninguém entende por quê. */
+const CONDICAO_PADRAO: Condicao = { se: 'recurso', qual: 'estresse', aoMenos: 5 }
 
 export const GRUPOS: { id: Grupo; rotulo: string }[] = [
   { id: 'recursos', rotulo: 'Recursos' },
@@ -86,11 +103,7 @@ export const DESCRITORES = {
   amanha: {
     rotulo: 'Deixar para amanhã', grupo: 'dia', Icone: Sunrise,
     campos: [
-      {
-        chave: 'qual', rotulo: 'O quê', padrao: 'energia',
-        campo: { tipo: 'escolha', opcoes: [{ valor: 'energia', rotulo: 'Energia' }, { valor: 'cota', rotulo: 'Cota' }] },
-      },
-      { chave: 'quanto', rotulo: 'Quanto', padrao: -1, campo: { tipo: 'numero', min: -20, max: 20 } },
+      { chave: 'acoes', rotulo: 'amanhã cedo', padrao: [], campo: { tipo: 'acoes' } },
     ],
   },
   comprar: {
@@ -100,7 +113,7 @@ export const DESCRITORES = {
   descartar: {
     rotulo: 'Descartar', grupo: 'cartas', Icone: Trash2,
     campos: [
-      { chave: 'quantas', rotulo: 'Quantas', padrao: 1, campo: { tipo: 'numeroOuTudo' } },
+      { chave: 'quantas', rotulo: 'Quantas', padrao: 1, campo: { tipo: 'numeroOuPalavra', palavras: [{ valor: 'tudo', rotulo: 'a mão inteira' }] } },
       { chave: 'aleatorio', rotulo: 'Sorteada', padrao: false, opcional: true, campo: { tipo: 'simNao' } },
       { chave: 'porque', rotulo: 'Motivo no histórico', padrao: '', opcional: true, campo: { tipo: 'texto', exemplo: 'Fofoca de Corredor' } },
     ],
@@ -145,13 +158,20 @@ export const DESCRITORES = {
       { chave: 'absoluto', rotulo: 'Fixar neste valor', padrao: false, opcional: true, campo: { tipo: 'simNao' } },
     ],
   },
-  salarioPermanente: {
-    rotulo: 'Salário permanente', grupo: 'chefe', Icone: Banknote,
-    campos: [{ chave: 'quanto', rotulo: 'Quanto', padrao: 50, campo: { tipo: 'numero', min: -500, max: 500 } }],
-  },
-  produtividadePassiva: {
-    rotulo: 'Produtividade passiva', grupo: 'chefe', Icone: Cog,
-    campos: [{ chave: 'quanto', rotulo: 'Por dia', padrao: 1, campo: { tipo: 'numero', min: -5, max: 5 } }],
+  recorrente: {
+    rotulo: 'Continua valendo', grupo: 'chefe', Icone: Repeat,
+    campos: [
+      { chave: 'qual', rotulo: 'Qual', padrao: 'produtividade', campo: { tipo: 'escolha', opcoes: RECURSOS } },
+      { chave: 'quanto', rotulo: 'Quanto', padrao: 1, campo: { tipo: 'numero', min: -500, max: 500 } },
+      {
+        chave: 'cada', rotulo: 'A cada', padrao: 'dia',
+        campo: { tipo: 'escolha', opcoes: [{ valor: 'dia', rotulo: 'Dia' }, { valor: 'semana', rotulo: 'Semana' }] },
+      },
+      {
+        chave: 'duracao', rotulo: 'Por quanto tempo', padrao: 'run', opcional: true,
+        campo: { tipo: 'numeroOuPalavra', palavras: [{ valor: 'run', rotulo: 'a run inteira' }, { valor: 'semana', rotulo: 'o resto desta semana' }] },
+      },
+    ],
   },
   maoDoDia: {
     rotulo: 'Tamanho da mão', grupo: 'dia', Icone: LayoutGrid,
@@ -168,8 +188,21 @@ export const DESCRITORES = {
       { chave: 'senao', rotulo: 'deu errado', padrao: [], opcional: true, campo: { tipo: 'acoes' } },
     ],
   },
-  aviso: {
-    rotulo: 'Escrever no histórico', grupo: 'especiais', Icone: MessageSquare,
+  se: {
+    rotulo: 'Se…', grupo: 'especiais', Icone: GitBranch,
+    campos: [
+      { chave: 'condicao', rotulo: 'quando', padrao: CONDICAO_PADRAO, campo: { tipo: 'condicao' } },
+      { chave: 'entao', rotulo: 'então', padrao: [], campo: { tipo: 'acoes' } },
+      { chave: 'senao', rotulo: 'senão', padrao: [], opcional: true, campo: { tipo: 'acoes' } },
+    ],
+  },
+  escolha: {
+    rotulo: 'Perguntar ao jogador', grupo: 'especiais', Icone: Split,
+    soEmCarta: true,
+    campos: [{ chave: 'opcoes', rotulo: 'Caminhos', padrao: [], campo: { tipo: 'opcoes' } }],
+  },
+  mensagem: {
+    rotulo: 'Mensagem na mesa', grupo: 'especiais', Icone: MessageSquare,
     campos: [{ chave: 'texto', rotulo: 'Texto', padrao: '', campo: { tipo: 'texto', exemplo: 'O chefe passou e não falou nada.' } }],
   },
 } satisfies Record<Acao['faz'], Descritor>
@@ -223,6 +256,54 @@ export const CONDICOES = {
     rotulo: 'Inédita nesta run', grupo: 'especiais', Icone: Gift,
     campos: [],
   },
+  cartasJogadasHoje: {
+    rotulo: 'Cartas jogadas hoje', grupo: 'cartas', Icone: Layers,
+    campos: [
+      { chave: 'aoMenos', rotulo: 'Ao menos', padrao: 1, opcional: true, campo: { tipo: 'numero', min: 0, max: 20 } },
+      { chave: 'noMaximo', rotulo: 'No máximo', padrao: 0, opcional: true, campo: { tipo: 'numero', min: 0, max: 20 } },
+    ],
+  },
+  classeJogadaHoje: {
+    rotulo: 'Cartas de uma classe hoje', grupo: 'cartas', Icone: Layers,
+    campos: [
+      { chave: 'classe', rotulo: 'Classe', padrao: 'tarefa', campo: { tipo: 'escolha', opcoes: CLASSES } },
+      { chave: 'aoMenos', rotulo: 'Ao menos', padrao: 1, opcional: true, campo: { tipo: 'numero', min: 0, max: 20 } },
+      { chave: 'noMaximo', rotulo: 'No máximo', padrao: 0, opcional: true, campo: { tipo: 'numero', min: 0, max: 20 } },
+    ],
+  },
+  cartasNaMao: {
+    rotulo: 'Cartas na mão', grupo: 'cartas', Icone: Hand,
+    campos: [
+      { chave: 'aoMenos', rotulo: 'Ao menos', padrao: 1, opcional: true, campo: { tipo: 'numero', min: 0, max: 20 } },
+      { chave: 'noMaximo', rotulo: 'No máximo', padrao: 0, opcional: true, campo: { tipo: 'numero', min: 0, max: 20 } },
+    ],
+  },
+  dia: {
+    rotulo: 'Dia da run', grupo: 'dia', Icone: Sunrise,
+    campos: [
+      { chave: 'aoMenos', rotulo: 'Ao menos', padrao: 1, opcional: true, campo: { tipo: 'numero', min: 1, max: 40 } },
+      { chave: 'noMaximo', rotulo: 'No máximo', padrao: 20, opcional: true, campo: { tipo: 'numero', min: 1, max: 40 } },
+    ],
+  },
+  semana: {
+    rotulo: 'Semana', grupo: 'dia', Icone: CalendarDays,
+    campos: [
+      { chave: 'aoMenos', rotulo: 'Ao menos', padrao: 1, opcional: true, campo: { tipo: 'numero', min: 1, max: 10 } },
+      { chave: 'noMaximo', rotulo: 'No máximo', padrao: 4, opcional: true, campo: { tipo: 'numero', min: 1, max: 10 } },
+    ],
+  },
+  nao: {
+    rotulo: 'Não…', grupo: 'especiais', Icone: Ban,
+    campos: [{ chave: 'condicao', rotulo: 'não vale que', padrao: CONDICAO_PADRAO, campo: { tipo: 'condicao' } }],
+  },
+  todas: {
+    rotulo: 'Todas estas…', grupo: 'especiais', Icone: GitBranch,
+    campos: [{ chave: 'condicoes', rotulo: 'e', padrao: [], campo: { tipo: 'condicoes' } }],
+  },
+  alguma: {
+    rotulo: 'Alguma destas…', grupo: 'especiais', Icone: Split,
+    campos: [{ chave: 'condicoes', rotulo: 'ou', padrao: [], campo: { tipo: 'condicoes' } }],
+  },
 } satisfies Record<Condicao['se'], Descritor>
 
 export type NomeDeCondicao = keyof typeof CONDICOES
@@ -240,4 +321,6 @@ export const QUANDOS: { valor: Quando; rotulo: string; dica: string }[] = [
   { valor: 'aoRevelar', rotulo: 'Ao revelar', dica: 'O padrão de um evento.' },
   { valor: 'aposComprar', rotulo: 'Depois da mão chegar', dica: 'Para mexer na mão do dia — ela só existe depois.' },
   { valor: 'fimDoDia', rotulo: 'No fim do dia', dica: 'Para cobrar no fechamento, com a cota já conhecida.' },
+  { valor: 'aoDescartar', rotulo: 'Ao ser descartada', dica: 'Quando a carta sai da mão sem ser jogada. Jogar a carta não conta.' },
+  { valor: 'fimDaSemana', rotulo: 'No fim da semana', dica: 'Na sexta, antes de o salário ser calculado.' },
 ]

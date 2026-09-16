@@ -151,16 +151,49 @@ números não conta a carta inteira.
    é uma ação: é `descartar(1)` seguido de `comprar(1)`. Se cada combinação
    virar primitiva, em três meses são trinta primitivas — e trinta linhas para
    ler antes de entender uma carta.
-2. **Isto não é para virar linguagem de programação.** `sorteio` já carrega
-   listas dentro e é o limite: laço, variável e expressão ficam de fora. O que
-   não couber continua sendo código no motor, e tudo bem. Desde que existe um
-   editor visual, a régua deixou de ser "o editor aguenta desenhar isso?" e
-   passou a ser a única que sempre valeu: **cabe numa carta que alguém lê na
-   mão, em três linhas?**
+2. **Isto não é para virar linguagem de programação.** Laço, variável e
+   expressão ficam de fora; o que não couber continua sendo código no motor, e
+   tudo bem. Desde que existe um editor visual, a régua deixou de ser "o editor
+   aguenta desenhar isso?" e passou a ser a única que sempre valeu: **cabe numa
+   carta que alguém lê na mão, em três linhas?**
+   O aninhamento é sempre "uma lista dentro de um campo", e os pontos são
+   `sorteio.entao/senao`, `se.entao/senao`, `escolherDescarte.entao`,
+   `amanha.acoes`, cada opção de `escolha`, e condição dentro de condição
+   (`nao`/`todas`/`alguma`). São muitos mais do que os dois de antes, e ainda
+   assim é a mesma forma repetida — é por isso que o editor não cresceu junto.
 3. **Ação nova precisa de um descritor.** Quem sabe desenhar o formulário de
    uma ação é `src/app/(app)/lab/_catalogo/descritores.ts`, e ela é um
    `satisfies Record<Acao['faz'], Descritor>` — esquecer o descritor quebra o
    build, em vez de deixar a ação sem editor em silêncio.
+
+**O vocabulário mudou de novo na v0.12, e as trocas foram estas:**
+
+| Antes | Agora | Por quê |
+|---|---|---|
+| `salarioPermanente` · `produtividadePassiva` | `recorrente` (`qual`, `quanto`, `cada`, `duracao`) | eram a mesma ideia escrita duas vezes: uma somava na sexta, a outra todo dia. O que as separava não era o recurso, era a CADÊNCIA — e de brinde veio a `duracao`, que não existia |
+| `amanha { qual, quanto }` | `amanha { acoes }` | adiar valia para dois números escolhidos a dedo; agora vale para qualquer coisa |
+| `aviso` | `mensagem` | ela escrevia numa lista que **ninguém desenhava**. Agora aparece na mesa |
+| — | `se { condicao, entao, senao }` | o `se` só existia no nível do bloco: dentro de um `sorteio` não dava para perguntar nada |
+| — | `escolha { opcoes }` | a carta pergunta, como os eventos ambíguos já faziam |
+| — | `nao` · `todas` · `alguma` | um bloco só conseguia perguntar UMA coisa |
+| — | `dia` · `semana` · `cartasNaMao` · `cartasJogadasHoje` · `classeJogadaHoje` | `cartasJogadasHoje noMaximo: 0` é "só se for a primeira do dia", e é mais geral do que uma condição com esse nome |
+| — | gatilhos `aoDescartar` e `fimDaSemana` | a carta reage a SAIR da mão, e a semana ganhou um fechamento |
+
+**A armadilha que essa troca cria, e que vale para qualquer troca futura:** as
+cartas moram no BANCO desde a v0.10, e o `switch` de `executarAcao` **não tem
+`default`**. Tirar um nome da união faria a carta que está no ar carregar uma
+ação que o motor não conhece — sem erro, sem aviso, sem efeito. Por isso a
+tradução do vocabulário antigo acontece na LEITURA (`migrarAcoes` em
+`acoes.ts`, chamada por `src/data/cartas.ts`), exatamente como `lerAvatar()`
+valida a receita do avatar. Não há migração para rodar no banco: salvar a carta
+de novo no `/lab` já grava o formato de hoje.
+
+**`escolha` e `escolherDescarte` PARAM a lista.** `executar` devolve o que
+faltava para dentro da pergunta (`escolhaAberta.resto`) e retoma ao responder —
+senão as ações depois da pergunta aconteceriam antes dela, que é contar o fim
+antes do começo. **A ação `escolha` é só de CARTA:** num evento, a pausa não
+sobrevive à compra da mão que vem logo depois do efeito, e `revealEvent` a
+descarta com uma linha no histórico em vez de deixar a mesa travada.
 
 **O que NÃO foi para o catálogo, de propósito:** comprar, descartar e
 embaralhar continuam funções do motor, entregues ao interpretador por
@@ -542,6 +575,16 @@ opções. O que ele escolheu, e que deve ser preservado:
   tanto de contas) — porque a pergunta que se faz ali é sempre "isso ainda
   fecha?". Salvar pede motivo como as cartas, e a tela diz na cara que quem
   está jogando não é afetado.
+- **A mesa mostra o que aconteceu, e guarda.** A ação `mensagem` aparece num
+  balão no rodapé do tapete (`MensagemNaMesa.tsx`, mesmo mecanismo de `selo` +
+  timer do `DescarteNaMesa`, e num canto diferente porque o Foco Total dispara
+  os dois na mesma jogada). E o botão **Histórico**, ao lado do "Como jogar",
+  abre a run inteira agrupada por dia (`HistoricoDaRun.tsx`) — dia mais novo em
+  cima, linhas na ordem em que aconteceram, e os números do `DayLog` nos dias já
+  fechados. Ele aparece em TODA fase, inclusive depois da derrota: é aí que se
+  quer ler o que aconteceu. Os dois botões do canto esquerdo vivem num
+  invólucro (`.cantoEsquerdo`) — com cada um preso em `left` por conta própria,
+  o segundo precisaria de uma conta à mão.
 - **`/lab/cartas` e `/lab/eventos` gravam no banco.** Até a v0.10 a bancada
   era um rascunho que devolvia `cards.ts` para colar, e o motivo era bom: com
   as cartas no código, um `delete` apagaria uma carta que está dentro do save
@@ -607,6 +650,20 @@ espelho local não sabe de quem é.
 ## Armadilhas conhecidas
 
 Todas já morderam neste projeto. Leia antes de mexer nas áreas correspondentes.
+
+**Um `switch` sem `default` transforma dado desconhecido em silêncio.** É a
+armadilha mais cara deste projeto, porque ela não deixa rastro: o
+interpretador de ações não tem ramo padrão, então uma ação cujo nome mudou não
+dá erro — ela simplesmente não acontece, e a carta parece quebrada sem que nada
+apareça no console. Toda mudança de vocabulário precisa da tradução na leitura
+(`migrarAcoes`), e o `satisfies Record<Acao['faz'], Descritor>` dos descritores
+é a outra metade da rede: ele quebra o BUILD quando falta o formulário.
+
+**Começar o dia passou a poder matar.** `startDay` sempre foi seguro: ele só
+somava energia e cota. Com a fila do `amanha` carregando ações quaisquer, o dia
+pode nascer com estresse ou advertência suficientes para acabar a run — por
+isso ele termina em `checkDefeat`. Qualquer coisa nova que rode ali precisa do
+mesmo cuidado.
 
 **Item flex não encolhe abaixo do próprio min-content.** O popup é um item
 flex centralizado pela cortina, com `width: min(100%, 560px)`. Isso NÃO
@@ -1027,16 +1084,37 @@ o `npm run dev` continuar na raiz.
 
 ## Balanceamento
 
-Simulando 500 runs com um bot mediano (bate a cota, descansa com energia
-sobrando), antes do Embalo: **309 burnouts, 173 demissões, 11 despejos, 7
-vitórias.** Os 20 dias são alcançáveis e os quatro desfechos disparam.
+**O simulador está no repositório:** `npm run simular` (`scripts/simular.ts`).
+Ele roda o motor fora do navegador — que é o que o princípio de `src/game/` não
+importar React compra — com `Math.random` trocado por um LCG semeado, então a
+mesma semente dá exatamente a mesma partida. É isso que permite comparar duas
+versões do motor jogada por jogada: foi assim que a mudança de vocabulário da
+v0.12 foi conferida (300 runs, **zero diferenças**).
 
-O gargalo não é dinheiro, é estresse: como `Energia = 10 − Estresse`, um dia ruim
-encolhe todos os seguintes e `−3` no fim de semana raramente recupera. O despejo
-quase não acontece — a conta de R$ 300 está confortável perto do estresse.
+Ele não existia antes: as medições eram feitas por um script escrito na conversa
+e jogado fora, e por isso envelheceram sem ninguém conseguir refazê-las.
 
-**Estes números são anteriores ao Embalo e ao bot ser refeito.** Rode de novo
-antes de usá-los para decidir qualquer coisa.
+**Medição de 16/09/2026 — 1000 runs, bot mediano** (joga tarefa quando falta
+cota, descansa quando o estresse aperta, recua quando uma carta o levaria perto
+do teto):
+
+| | |
+|---|---|
+| vitória | **0,7%** |
+| burnout | **98,1%**, dia mediano **5** |
+| demissão | 1,2%, dia mediano 15 |
+| despejo | **0%** |
+| cota batida | 46% dos dias |
+| duração | 6,9 dias por run |
+
+**O jogo está duro demais, e o gargalo continua sendo o estresse.** A run
+mediana morre na primeira semana: como `Energia = 10 − Estresse`, cada dia sem
+bater a cota custa `+2` de estresse, que vira menos energia no dia seguinte, que
+faz perder a cota de novo. O `−3` do fim de semana quase nunca chega a tempo. O
+despejo **nunca** acontece: a conta de R$ 300 é irrelevante perto disso.
+
+Os números antigos do CLAUDE.md (309 burnouts em 500) eram anteriores ao Embalo
+e a um bot diferente — não compare os dois.
 
 ---
 
@@ -1051,9 +1129,13 @@ antes de usá-los para decidir qualquer coisa.
   ("Café depois de Reunião não gera estresse") foram propostos e não feitos.
 - **Código morto:** `embaloAtual()` e `weekNumber()` em `engine.ts` não têm uso
   fora do próprio arquivo.
-- **Rebalancear depois do Embalo**, especialmente a classe `grana`. A
-  infraestrutura já está pronta: retrato dentro da run, `VERSAO_BARALHO` e o
-  histórico por carta. Falta decidir os números.
+- **Rebalancear: o jogo está duro demais.** A medição de 1000 runs (veja
+  Balanceamento) dá 98% de burnout, quase sempre na primeira semana, e 0% de
+  despejo. As duas pontas a mexer são o custo do estresse (o `+2` por cota não
+  batida, e o `−3` do fim de semana) e a cota da semana 1. A infraestrutura toda
+  já existe: o retrato dentro da run, `VERSAO_BARALHO`, o histórico por carta, e
+  agora o `npm run simular` para medir antes de decidir. Falta decidir os
+  números — e dá para fazer pelo `/lab/regras` sem publicar o site.
 - **Semear o catálogo em produção.** A tabela nasce vazia e o jogo cai no
   baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
   isso não acontece, editar carta é impossível (o botão fica desligado) e o

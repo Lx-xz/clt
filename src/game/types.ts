@@ -1,4 +1,4 @@
-import type { Acao, Efeito, Restricao } from './acoes'
+import type { Acao, Efeito, Recurso, Restricao } from './acoes'
 import type { Regras } from './regras'
 
 export type CardId = string
@@ -169,11 +169,22 @@ export interface GameState {
 
   weekProductivity: number
   dailyQuota: number // cota do dia já com ajustes de evento
-  tomorrow: { energy: number; quota: number } // efeitos adiados
 
-  /** Bônus permanente de produtividade por dia (carta Automatizar). */
-  passiveProductivity: number
-  salaryBonus: number
+  /**
+   * A fila do dia seguinte. Roda no COMEÇO do próximo `startDay`, depois dos
+   * recorrentes e antes de o evento ser sorteado.
+   *
+   * Era `tomorrow: { energy, quota }` — dois números escolhidos a dedo. Uma
+   * lista de ações adia qualquer coisa: um recurso, uma carta, uma mensagem.
+   * Cuidado com um detalhe de momento: quando a fila roda, **a mão do dia
+   * ainda não foi comprada** (ela só chega em `revealEvent`), então adiar
+   * `comprar`/`descartar` age sobre uma mão vazia.
+   */
+  amanha: Acao[]
+
+  /** O que continua valendo depois de hoje — o que era `passiveProductivity`
+   *  (todo dia) e `salaryBonus` (toda semana), agora um só. */
+  recorrentes: Recorrente[]
   /** Cartas já jogadas alguma vez nesta run, sem repetir. É o que sustenta
    *  `umaVezPorRun` sem um booleano por carta (era `usedPuxarOSaco`). */
   usadasNaRun: CardId[]
@@ -214,6 +225,24 @@ export interface GameState {
     cartaId: CardId | null
   } | null
 
+  /**
+   * A pergunta que uma CARTA fez ao jogador, no mesmo espírito do
+   * `escolhaDeDescarte`: o dia para até alguém responder.
+   *
+   * `resto` é o que faltava rodar da lista quando a pergunta apareceu. Sem
+   * ele, as ações depois de um `escolha` aconteceriam antes da resposta —
+   * contar o fim antes do começo.
+   */
+  escolhaAberta: {
+    opcoes: { rotulo: string; acoes: Acao[] }[]
+    cartaId: CardId | null
+    resto: Acao[]
+  } | null
+
+  /** A última mensagem de carta ou evento, para a mesa MOSTRAR. Mesmo padrão
+   *  do `ultimoDescarte`, `selo` incluído — e pelo mesmo motivo. */
+  ultimaMensagem: { texto: string; selo: number } | null
+
   /** Embalo: cartas seguidas da mesma classe rendem bônus crescente. */
   streakKind: CardKind | null
   streakCount: number
@@ -240,8 +269,38 @@ export interface GameState {
   rewardOptions: CardId[]
   /** Um resumo por dia fechado, para reabrir a run jogada por jogada depois. */
   history: DayLog[]
-  log: string[]
+  /** A narrativa da run, em ordem cronológica. Era `string[]` com teto de 40
+   *  linhas — o que cobria três dias — porque **ninguém lia**: o campo era
+   *  escrito desde sempre e não era desenhado em tela nenhuma. Agora ele é o
+   *  botão Histórico da mesa, e por isso carrega o dia e guarda a run toda. */
+  log: LinhaDoLog[]
+  /** Cartas jogadas nesta semana, sem repetir — é o sujeito do gatilho
+   *  `fimDaSemana`. Zera junto com `weekProductivity`, no descanso. */
+  jogadasNaSemana: CardId[]
   outcome: 'jogando' | 'vitoria' | 'burnout' | 'demissao' | 'despejo'
+}
+
+export interface LinhaDoLog {
+  dia: number
+  texto: string
+}
+
+/**
+ * Um efeito que volta sozinho, todo dia ou toda semana.
+ *
+ * `restam` é a duração JÁ RESOLVIDA: a carta diz "uma semana" e aqui fica o
+ * número de disparos, porque quantos dias tem a semana é uma regra do modo, e
+ * a run carrega uma cópia das regras para nada mudar no meio dela. `null` é
+ * "até a run acabar".
+ */
+export interface Recorrente {
+  qual: Recurso
+  quanto: number
+  cada: 'dia' | 'semana'
+  restam: number | null
+  /** Quem criou, para o histórico dizer o nome da carta. Guarda o ID: quem
+   *  traduz id em nome é o catálogo, e quem fala com ele é o motor. */
+  origem: CardId | null
 }
 
 /** Coleção persistida entre runs (o "baralho" fora da partida). */

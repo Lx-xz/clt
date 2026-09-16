@@ -10,6 +10,7 @@ import type {
   EventChoice,
   MudancaDeCarta,
 } from '@/game/types'
+import { migrarAcoes, migrarEfeitos } from '@/game/acoes'
 import type { Acao, Efeito, Restricao } from '@/game/acoes'
 import { supabase } from './supabase'
 
@@ -62,6 +63,15 @@ function paraClasse(bruta: string | null): ClasseDaCarta {
   return CLASSES_VALIDAS.includes(bruta as CardKind) ? (bruta as CardKind) : null
 }
 
+/**
+ * A linha do banco vira carta — e é AQUI que o vocabulário antigo é traduzido.
+ *
+ * Sem isso, mudar o nome de uma ação quebra o jogo em silêncio: a carta que
+ * está no ar guarda o JSON de quando foi salva, e o `switch` do interpretador
+ * não tem `default`. Uma ação que ele não conhece não dá erro e não faz nada.
+ * É a mesma divisão do avatar — quem valida é a LEITURA —, e por isso não há
+ * migração para rodar no banco.
+ */
 function paraCarta(linha: LinhaCarta): ActionCard {
   return {
     id: linha.id,
@@ -69,7 +79,7 @@ function paraCarta(linha: LinhaCarta): ActionCard {
     cost: linha.custo,
     kind: paraClasse(linha.classe),
     text: linha.texto,
-    efeitos: linha.efeitos ?? [],
+    efeitos: migrarEfeitos(linha.efeitos ?? undefined),
     restricao: linha.restricao ?? undefined,
     especial: linha.especial || undefined,
     starter: linha.inicial,
@@ -86,8 +96,16 @@ function paraEvento(linha: LinhaEvento): EventCard {
     name: linha.nome,
     tone: linha.tom,
     text: linha.texto,
-    efeitos: linha.efeitos ?? [],
-    choices: escolhas && escolhas.length === 2 ? [escolhas[0], escolhas[1]] : undefined,
+    efeitos: migrarEfeitos(linha.efeitos ?? undefined),
+    // as escolhas do evento carregam ações próprias, e elas também precisam
+    // passar pela tradução: o `amanha` antigo mora justamente aí
+    choices:
+      escolhas && escolhas.length === 2
+        ? [
+            { ...escolhas[0], acoes: migrarAcoes(escolhas[0].acoes) },
+            { ...escolhas[1], acoes: migrarAcoes(escolhas[1].acoes) },
+          ]
+        : undefined,
     ativa: linha.ativa,
     versao: linha.versao,
   }

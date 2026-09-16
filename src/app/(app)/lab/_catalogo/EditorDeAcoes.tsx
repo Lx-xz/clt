@@ -1,9 +1,10 @@
 'use client'
 
 import { ChevronDown, ChevronUp, X } from 'lucide-react'
-import { useId, useState } from 'react'
+import { createContext, useContext, useId, useState } from 'react'
 import { todasAsCartas } from '@/game/catalogo'
 import type { Acao, Condicao, Efeito, Quando } from '@/game/acoes'
+import { textoDaCondicao } from '@/game/textos'
 import type { EventChoice } from '@/game/types'
 import {
   CONDICOES, DESCRITORES, GRUPOS, QUANDOS,
@@ -16,20 +17,32 @@ import styles from './editor.module.sass'
  * O editor visual das ações — o que aposentou o painel de JSON cru.
  *
  * A linguagem do jogo NÃO é o Scratch, e é por isso que isto coube em um
- * arquivo: não há expressão (todo parâmetro é literal), não há variável, e só
- * existem dois pontos de aninhamento (`sorteio.entao/senao` e
- * `escolherDescarte.entao`). Uma lista vertical com listas dentro cobre a
- * linguagem inteira — canvas, encaixe por forma e arrastar não acrescentariam
- * capacidade nenhuma, só deleite, e ficaram de fora desta primeira fatia.
+ * arquivo: não há expressão (todo parâmetro é literal), não há variável, e o
+ * aninhamento é sempre "uma lista dentro de um campo" (`sorteio.entao/senao`,
+ * `se`, `amanha`, `escolha`, e condição dentro de condição). Uma lista
+ * vertical com listas dentro cobre a linguagem inteira — canvas, encaixe por
+ * forma e arrastar não acrescentariam capacidade nenhuma, só deleite, e
+ * ficaram de fora desta primeira fatia.
  *
  * **Quem sabe desenhar um campo é a tabela de descritores, não este arquivo.**
- * Aqui só existem os cinco tipos de campo e a recursão. Ação nova entra em
+ * Aqui só existem os tipos de campo e a recursão. Ação nova entra em
  * `descritores.ts` e aparece aqui sozinha — e, se ninguém a descrever lá, o
  * build quebra antes de alguém descobrir pelo silêncio.
  *
  * O JSON não sumiu: virou `EscapeJson`, recolhido. Ele continua sendo a saída
  * para o caso raro, e o lugar onde se confere o que o editor produziu.
  */
+
+/**
+ * Em qual editor estamos. Um contexto, e não uma prop, porque a informação
+ * precisa atravessar toda a recursão (lista → bloco → lista dentro do bloco) e
+ * só é lida numa folha — o menu de "adicionar ação".
+ *
+ * Quem precisa dela hoje é a ação `escolha`: um evento que pergunta já tem as
+ * escolhas dele, e a pergunta por ação não sobrevive à compra da mão que vem
+ * logo depois do efeito do evento.
+ */
+const EmEvento = createContext(false)
 
 // ------------------------------------------------------------------ campos
 
@@ -66,13 +79,25 @@ function CampoSimples({ c, valor, aoMudar, cartas }: {
     )
   }
 
-  if (k.tipo === 'numeroOuTudo') {
-    const tudo = valor === 'tudo'
+  if (k.tipo === 'numeroOuPalavra') {
+    // um `<select>` com as palavras mais "um número": o checkbox de antes só
+    // sabia dizer sim/não, e a duração tem duas palavras
+    const palavra = typeof valor === 'string' ? valor : ''
     return (
       <span className={styles.campo}>
         <span className={styles.rotulo}>{c.rotulo}</span>
         <span className={styles.linha}>
-          {tudo ? null : (
+          <select
+            className={styles.seletor}
+            value={palavra}
+            onChange={(e) => aoMudar(e.target.value === '' ? 1 : e.target.value)}
+          >
+            {k.palavras.map((p) => (
+              <option key={p.valor} value={p.valor}>{p.rotulo}</option>
+            ))}
+            <option value="">um número de vezes</option>
+          </select>
+          {palavra ? null : (
             <input
               className={styles.numero}
               type="number"
@@ -80,10 +105,6 @@ function CampoSimples({ c, valor, aoMudar, cartas }: {
               onChange={(e) => aoMudar(Number(e.target.value) || 0)}
             />
           )}
-          <label className={styles.marca}>
-            <input type="checkbox" checked={tudo} onChange={(e) => aoMudar(e.target.checked ? 'tudo' : 1)} />
-            a mão inteira
-          </label>
         </span>
       </span>
     )
@@ -180,8 +201,8 @@ function Bloco({ acao, aoMudar, aoRemover, aoSubir, aoDescer, cartas }: {
     )
   }
 
-  const simples = d.campos.filter((c) => c.campo.tipo !== 'acoes')
-  const listas = d.campos.filter((c) => c.campo.tipo === 'acoes')
+  const simples = d.campos.filter((c) => !EH_ANINHADO.has(c.campo.tipo))
+  const aninhados = d.campos.filter((c) => EH_ANINHADO.has(c.campo.tipo))
   const { Icone } = d
 
   return (
@@ -213,15 +234,86 @@ function Bloco({ acao, aoMudar, aoRemover, aoSubir, aoDescer, cartas }: {
         </div>
       </div>
 
-      {listas.map((c) => (
+      {aninhados.map((c) => (
         <fieldset key={c.chave} className={styles.aninhado}>
           <legend className={styles.legenda}>{c.rotulo}</legend>
+          {c.campo.tipo === 'acoes' ? (
+            <ListaDeAcoes
+              acoes={Array.isArray(obj[c.chave]) ? (obj[c.chave] as Acao[]) : []}
+              aoMudar={(lista) => aoMudar(comCampo(obj, c, lista) as unknown as Acao)}
+            />
+          ) : null}
+          {c.campo.tipo === 'condicao' ? (
+            <EditorDeCondicao
+              cond={obj[c.chave] as Condicao | undefined}
+              rotulo="Só se"
+              permitirVazio={false}
+              aoMudar={(nova) => aoMudar(comCampo(obj, c, nova) as unknown as Acao)}
+            />
+          ) : null}
+          {c.campo.tipo === 'opcoes' ? (
+            <ListaDeOpcoes
+              opcoes={Array.isArray(obj[c.chave]) ? (obj[c.chave] as OpcaoDeEscolha[]) : []}
+              aoMudar={(lista) => aoMudar(comCampo(obj, c, lista) as unknown as Acao)}
+            />
+          ) : null}
+        </fieldset>
+      ))}
+    </div>
+  )
+}
+
+/** Os campos que abrem uma caixa própria embaixo, em vez de um controle na
+ *  linha do bloco. Um conjunto só porque o filtro precisa bater nos DOIS
+ *  lados: um campo aninhado que caia no `CampoSimples` renderiza o rótulo e
+ *  nada dentro, em silêncio. */
+const EH_ANINHADO = new Set(['acoes', 'condicao', 'condicoes', 'opcoes'])
+
+type OpcaoDeEscolha = { rotulo: string; acoes: Acao[] }
+
+/** Os caminhos da ação `escolha`: rótulo + lista de ações, um por opção. */
+function ListaDeOpcoes({ opcoes, aoMudar }: {
+  opcoes: OpcaoDeEscolha[]
+  aoMudar: (o: OpcaoDeEscolha[]) => void
+}) {
+  return (
+    <div className={styles.lista}>
+      <p className={styles.dicaAninhada}>
+        Perguntar PARA o dia: nada depois desta ação acontece antes da resposta.
+      </p>
+      {opcoes.map((o, i) => (
+        <fieldset key={i} className={styles.aninhado}>
+          <legend className={styles.legenda}>
+            <input
+              className={styles.texto}
+              value={o.rotulo}
+              placeholder="O que o botão diz"
+              onChange={(e) =>
+                aoMudar(opcoes.map((x, j) => (j === i ? { ...x, rotulo: e.target.value } : x)))
+              }
+            />
+            <button
+              type="button"
+              className={`${styles.iconeBotao} ${styles.tirar}`}
+              onClick={() => aoMudar(opcoes.filter((_, j) => j !== i))}
+              aria-label="Remover caminho"
+            >
+              <X size={14} aria-hidden />
+            </button>
+          </legend>
           <ListaDeAcoes
-            acoes={Array.isArray(obj[c.chave]) ? (obj[c.chave] as Acao[]) : []}
-            aoMudar={(lista) => aoMudar(comCampo(obj, c, lista) as unknown as Acao)}
+            acoes={o.acoes ?? []}
+            aoMudar={(lista) => aoMudar(opcoes.map((x, j) => (j === i ? { ...x, acoes: lista } : x)))}
           />
         </fieldset>
       ))}
+      <button
+        type="button"
+        className={styles.adicionar}
+        onClick={() => aoMudar([...opcoes, { rotulo: '', acoes: [] }])}
+      >
+        + adicionar caminho
+      </button>
     </div>
   )
 }
@@ -265,6 +357,7 @@ export function ListaDeAcoes({ acoes, aoMudar }: { acoes: Acao[]; aoMudar: (a: A
  * mais código para ficar pior no dedo.
  */
 function Adicionar({ aoEscolher }: { aoEscolher: (faz: NomeDeAcao) => void }) {
+  const emEvento = useContext(EmEvento)
   return (
     <select
       className={styles.adicionar}
@@ -277,7 +370,7 @@ function Adicionar({ aoEscolher }: { aoEscolher: (faz: NomeDeAcao) => void }) {
       <option value="">+ adicionar ação</option>
       {GRUPOS.map((g) => {
         const desta = (Object.entries(DESCRITORES) as [NomeDeAcao, Descritor][])
-          .filter(([, d]) => d.grupo === g.id)
+          .filter(([, d]) => d.grupo === g.id && !(emEvento && d.soEmCarta))
         if (desta.length === 0) return null
         return (
           <optgroup key={g.id} label={g.rotulo}>
@@ -291,27 +384,43 @@ function Adicionar({ aoEscolher }: { aoEscolher: (faz: NomeDeAcao) => void }) {
 
 // ---------------------------------------------------------------- condição
 
-function EditorDeCondicao({ cond, aoMudar }: { cond: Condicao | undefined; aoMudar: (c: Condicao | undefined) => void }) {
+/**
+ * O editor de uma condição — e, desde as combinatórias, ele se contém.
+ *
+ * `não`, `todas` e `alguma` guardam condição dentro de condição, e é isso que
+ * faz as outras valerem o dobro: sem elas um bloco só consegue perguntar UMA
+ * coisa. A recursão aqui é a mesma da `ListaDeAcoes`, e sai do mesmo lugar —
+ * o descritor diz que o campo é `condicao`/`condicoes`, e o editor obedece.
+ */
+function EditorDeCondicao({ cond, aoMudar, rotulo = 'Só se', permitirVazio = true }: {
+  cond: Condicao | undefined
+  aoMudar: (c: Condicao | undefined) => void
+  rotulo?: string
+  /** Dentro de um `não` ou de um `todas`, "Sempre" não é resposta. */
+  permitirVazio?: boolean
+}) {
   const cartas: string[] = []
   const d = cond ? (CONDICOES as Record<string, Descritor>)[cond.se] : undefined
   const obj = (cond ?? {}) as unknown as Obj
+  const simples = d?.campos.filter((c) => !EH_ANINHADO.has(c.campo.tipo)) ?? []
+  const aninhados = d?.campos.filter((c) => EH_ANINHADO.has(c.campo.tipo)) ?? []
 
   return (
     <div className={styles.condicao}>
       <label className={styles.campo}>
-        <span className={styles.rotulo}>Só se</span>
+        <span className={styles.rotulo}>{rotulo}</span>
         <select
           className={styles.seletor}
           value={cond?.se ?? ''}
           onChange={(e) => aoMudar(e.target.value ? novaCondicao(e.target.value as NomeDeCondicao) : undefined)}
         >
-          <option value="">Sempre</option>
+          {permitirVazio ? <option value="">Sempre</option> : null}
           {(Object.entries(CONDICOES) as [NomeDeCondicao, Descritor][]).map(([se, dd]) => (
             <option key={se} value={se}>{dd.rotulo}</option>
           ))}
         </select>
       </label>
-      {d?.campos.map((c) => (
+      {simples.map((c) => (
         <CampoSimples
           key={c.chave}
           c={c}
@@ -320,6 +429,65 @@ function EditorDeCondicao({ cond, aoMudar }: { cond: Condicao | undefined; aoMud
           cartas={cartas}
         />
       ))}
+      {aninhados.map((c) => (
+        <fieldset key={c.chave} className={styles.aninhado}>
+          <legend className={styles.legenda}>{c.rotulo}</legend>
+          {c.campo.tipo === 'condicao' ? (
+            <EditorDeCondicao
+              cond={obj[c.chave] as Condicao | undefined}
+              rotulo="a condição"
+              permitirVazio={false}
+              aoMudar={(nova) => aoMudar(comCampo(obj, c, nova) as unknown as Condicao)}
+            />
+          ) : null}
+          {c.campo.tipo === 'condicoes' ? (
+            <ListaDeCondicoes
+              condicoes={Array.isArray(obj[c.chave]) ? (obj[c.chave] as Condicao[]) : []}
+              aoMudar={(lista) => aoMudar(comCampo(obj, c, lista) as unknown as Condicao)}
+            />
+          ) : null}
+        </fieldset>
+      ))}
+      {/* a frase em português é a rede: é ela que mostra que uma lista vazia
+          em "alguma destas" quer dizer NUNCA, antes de a carta ir para o banco */}
+      {cond ? <p className={styles.dicaAninhada}>Vale quando {textoDaCondicao(cond)}.</p> : null}
+    </div>
+  )
+}
+
+function ListaDeCondicoes({ condicoes, aoMudar }: {
+  condicoes: Condicao[]
+  aoMudar: (c: Condicao[]) => void
+}) {
+  return (
+    <div className={styles.lista}>
+      {condicoes.map((c, i) => (
+        <div key={i} className={styles.linhaCondicao}>
+          <EditorDeCondicao
+            cond={c}
+            rotulo="condição"
+            permitirVazio={false}
+            aoMudar={(nova) =>
+              aoMudar(nova ? condicoes.map((x, j) => (j === i ? nova : x)) : condicoes.filter((_, j) => j !== i))
+            }
+          />
+          <button
+            type="button"
+            className={`${styles.iconeBotao} ${styles.tirar}`}
+            onClick={() => aoMudar(condicoes.filter((_, j) => j !== i))}
+            aria-label="Remover condição"
+          >
+            <X size={14} aria-hidden />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className={styles.adicionar}
+        onClick={() => aoMudar([...condicoes, novaCondicao('recurso')])}
+      >
+        + adicionar condição
+      </button>
     </div>
   )
 }
@@ -338,11 +506,15 @@ export function EditorDeEfeitos({ efeitos, aoMudar, padrao }: {
   /** O gatilho que vale quando ninguém escolheu: `aoJogar` na carta, `aoRevelar` no evento. */
   padrao: Quando
 }) {
+  // o padrão diz de quem é este editor, e é ele que esconde as ações que só
+  // valem em carta — sem uma prop nova para o chamador esquecer
+  const emEvento = padrao === 'aoRevelar'
   function trocar(i: number, e: Efeito) {
     aoMudar(efeitos.map((x, j) => (j === i ? e : x)))
   }
 
   return (
+    <EmEvento.Provider value={emEvento}>
     <div className={styles.efeitos}>
       {efeitos.map((ef, i) => (
         <fieldset key={i} className={styles.efeito}>
@@ -391,6 +563,7 @@ export function EditorDeEfeitos({ efeitos, aoMudar, padrao }: {
         + outro bloco (outro gatilho, ou outra condição)
       </button>
     </div>
+    </EmEvento.Provider>
   )
 }
 
@@ -449,7 +622,11 @@ export function EditorDeEscolhas({ escolhas, aoMudar }: {
               />
             </label>
           </div>
-          <ListaDeAcoes acoes={esc.acoes} aoMudar={(acoes) => trocar(i as 0 | 1, { ...esc, acoes })} />
+          {/* as escolhas de um evento são evento: a ação `escolha` não entra
+              aqui, pelo mesmo motivo que não entra nos efeitos do evento */}
+          <EmEvento.Provider value>
+            <ListaDeAcoes acoes={esc.acoes} aoMudar={(acoes) => trocar(i as 0 | 1, { ...esc, acoes })} />
+          </EmEvento.Provider>
         </fieldset>
       ))}
       <button type="button" className={`${styles.novoBloco} ${styles.tirar}`} onClick={() => aoMudar(null)}>

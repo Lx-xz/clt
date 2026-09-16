@@ -17,8 +17,22 @@ import {
   getEvent,
   versaoDoBaralho,
 } from './catalogo'
-import { condicaoVale, dispararEfeitos, executar, type Acao, type Contexto } from './acoes'
-import type { CardId, CardInstance, ClasseDaCarta, DayLog, GameState } from './types'
+import {
+  condicaoVale,
+  dispararEfeitos,
+  executar,
+  executarAcao,
+  type Acao,
+  type Contexto,
+} from './acoes'
+import type {
+  CardId,
+  CardInstance,
+  ClasseDaCarta,
+  DayLog,
+  GameState,
+  Recorrente,
+} from './types'
 
 // ---------------------------------------------------------------- utilidades
 
@@ -41,8 +55,18 @@ function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]
 }
 
-function log(state: GameState, message: string) {
-  state.log = [message, ...state.log].slice(0, 40)
+/**
+ * O histórico da run, em ordem cronológica.
+ *
+ * Ele guardava 40 linhas, de trás para frente, e isso bastava porque **nada o
+ * lia**: o campo era escrito desde sempre e não aparecia em tela nenhuma.
+ * Agora ele é o botão Histórico da mesa, então precisa da run inteira (cerca
+ * de 20 linhas por dia × 20 dias) e do dia em cada linha, que é como o popup
+ * agrupa. O teto continua existindo porque o estado inteiro sobe para o banco
+ * a cada jogada.
+ */
+function log(state: GameState, texto: string) {
+  state.log = [...state.log, { dia: state.day, texto }].slice(-400)
 }
 
 function clone(state: GameState): GameState {
@@ -71,6 +95,9 @@ function contexto(cartaId?: CardId): Contexto {
       state.discard.push(alvo)
       const nome = getCard(alvo.cardId).name
       log(state, porque ? `${porque} descartou ${nome}.` : `Descartou ${nome}.`)
+      // depois de a carta já estar no descarte: um `comprar` dentro do
+      // gatilho não pode repescá-la de volta do limbo
+      reagirAoDescarte(state, [alvo.cardId])
       return alvo.cardId
     },
     mostrarDescarte: (state, cartas, porque) => anunciarDescarte(state, cartas, porque),
@@ -84,8 +111,15 @@ function contexto(cartaId?: CardId): Contexto {
       }
       state.escolhaDeDescarte = { restam, porque, entao, cartaId }
     },
+    pedirEscolha: (state, opcoes, cartaId) => {
+      // uma pergunta sem resposta possível travaria o dia para sempre
+      if (opcoes.length === 0) return
+      state.escolhaAberta = { opcoes, cartaId, resto: [] }
+    },
     criarCarta: (cardId) => makeInstance(cardId),
+    classeDe: (cardId) => getCard(cardId).kind,
     log: (state, texto) => log(state, texto),
+    mostrarMensagem: (state, texto) => anunciarMensagem(state, texto),
     sorte: () => Math.random(),
   }
 }
@@ -110,9 +144,9 @@ export function effectiveCost(state: GameState, cardId: CardId) {
 
 export function canPlay(state: GameState, instance: CardInstance) {
   if (state.phase !== 'dia') return false
-  // uma escolha de descarte em aberto é uma pergunta: o dia para até ela ser
-  // respondida, senão o jogador escaparia dela jogando outra coisa
-  if (state.escolhaDeDescarte) return false
+  // uma pergunta em aberto para o dia até ser respondida, senão o jogador
+  // escaparia dela jogando outra coisa
+  if (state.escolhaDeDescarte || state.escolhaAberta) return false
   const card = getCard(instance.cardId)
   // carta neutra não tem classe para ser bloqueada — Sistema Fora do Ar não
   // tem como proibir "nenhum tipo"
@@ -146,6 +180,7 @@ function discardHand(state: GameState): CardId[] {
   const saiu = state.hand.map((c) => c.cardId)
   state.discard.push(...state.hand)
   state.hand = []
+  reagirAoDescarte(state, saiu)
   return saiu
 }
 
@@ -158,6 +193,43 @@ function anunciarDescarte(state: GameState, cartas: CardId[], porque: string) {
   if (cartas.length === 0) return
   const selo = (state.ultimoDescarte?.selo ?? 0) + 1
   state.ultimoDescarte = { cartas, porque, selo }
+}
+
+/** Mostra na mesa E guarda no histórico — é a diferença entre a `mensagem` e
+ *  as linhas que o motor escreve sozinho. */
+function anunciarMensagem(state: GameState, texto: string) {
+  state.ultimaMensagem = { texto, selo: (state.ultimaMensagem?.selo ?? 0) + 1 }
+  log(state, texto)
+}
+
+/**
+ * Trava de reentrância do `aoDescartar`. Duas cartas que se descartam uma à
+ * outra fariam pingue-pongue para sempre, então **só o primeiro nível
+ * reage**: o que for descartado por um `aoDescartar` sai calado.
+ *
+ * É variável de módulo e NÃO campo do estado de propósito: ela só vale dentro
+ * de uma chamada síncrona do motor, e no estado ela viraria lixo dentro do
+ * jsonb do save — pior, um caminho que não a limpasse deixaria a run travada
+ * para sempre.
+ */
+let emCascataDeDescarte = false
+
+/**
+ * Avisa as cartas que acabaram de sair da mão SEM ser jogadas.
+ *
+ * Jogar não é descartar: `playCard` empurra a carta direto para o descarte
+ * sem passar por aqui, e o gatilho dela já é o `aoJogar`.
+ */
+function reagirAoDescarte(state: GameState, ids: CardId[]) {
+  if (emCascataDeDescarte || ids.length === 0) return
+  emCascataDeDescarte = true
+  try {
+    for (const id of ids) {
+      dispararEfeitos(state, getCard(id).efeitos, 'aoDescartar', contexto(id))
+    }
+  } finally {
+    emCascataDeDescarte = false
+  }
 }
 
 // ------------------------------------------------------------ início da run
@@ -193,16 +265,17 @@ export function createRun(equipped: CardId[]): GameState {
     informalWarnings: 0,
     weekProductivity: 0,
     dailyQuota: 0,
-    tomorrow: { energy: 0, quota: 0 },
-    passiveProductivity: 0,
-    salaryBonus: 0,
+    amanha: [],
+    recorrentes: [],
     usadasNaRun: [],
     deck: shuffle(deck),
     hand: [],
     discard: [],
     playedToday: [],
     ultimoDescarte: null,
+    ultimaMensagem: null,
     escolhaDeDescarte: null,
+    escolhaAberta: null,
     streakKind: null,
     streakCount: 0,
     lastCombo: null,
@@ -218,6 +291,7 @@ export function createRun(equipped: CardId[]): GameState {
     rewardOptions: [],
     history: [],
     log: [],
+    jogadasNaSemana: [],
     outcome: 'jogando',
   }
 
@@ -230,10 +304,12 @@ function startDay(input: GameState): GameState {
   const state = clone(input)
   state.day += 1
   state.phase = 'evento'
-  state.energy = Math.max(0, state.modo.energiaBase - state.stress + state.tomorrow.energy)
-  state.productivity = state.passiveProductivity
-  state.dailyQuota = currentWeek(state).dailyQuota + state.tomorrow.quota
-  state.tomorrow = { energy: 0, quota: 0 }
+  // a linha de base do dia, sem nada por cima. O que era somado aqui dentro
+  // (o passivo e o "amanhã") entra depois, como ação, para o clamp de cada
+  // recurso ser o mesmo de sempre
+  state.energy = Math.max(0, state.modo.energiaBase - state.stress)
+  state.productivity = 0
+  state.dailyQuota = currentWeek(state).dailyQuota
   state.maoDoDia = state.modo.cartasNaMao
   state.blockedKinds = []
   state.costModifier = 0
@@ -241,20 +317,68 @@ function startDay(input: GameState): GameState {
   state.lastEventChoice = null
   state.playedToday = []
   state.ultimoDescarte = null
+  state.ultimaMensagem = null
   state.escolhaDeDescarte = null
+  state.escolhaAberta = null
   state.streakKind = null
   state.streakCount = 0
   state.lastCombo = null
 
-  if (state.passiveProductivity > 0) {
-    log(state, `Automatizar rende +${state.passiveProductivity} produtividade antes de começar.`)
-  }
+  // o que continua valendo de dias anteriores
+  aplicarRecorrentes(state, 'dia')
+
+  // a fila de ontem. Esvaziar ANTES de executar: um `amanha` dentro de um
+  // `amanha` (que é o ponto de ela ser recursiva) seria apagado no mesmo
+  // instante em que foi criado se a ordem fosse a inversa
+  const fila = state.amanha
+  state.amanha = []
+  executar(state, fila, contexto())
 
   // O evento entra virado para baixo. Nada acontece até o jogador revelar,
   // e a mão só é comprada depois — a ordem que o README descreve.
   state.currentEvent = pick(eventosDoJogo()).id
   state.eventRevealed = false
-  return state
+  // começar o dia passou a poder MATAR: a fila de ontem carrega ações
+  // quaisquer, e antes dela só havia energia e cota, que não matam ninguém
+  return checkDefeat(state)
+}
+
+/**
+ * Roda o que continua valendo, gasta uma vez de cada um e joga fora os que
+ * acabaram.
+ *
+ * Devolve quanto de DINHEIRO renderam quando `dinheiroSeparado` — é o que faz
+ * o bônus de salário entrar DENTRO da linha do salário na sexta. Sem isso,
+ * "Pedir Aumento: salário +R$ 100" viraria dinheiro que aparece do nada no
+ * medidor, e o painel da sexta mostraria um salário que não é o que entrou.
+ */
+function aplicarRecorrentes(state: GameState, cada: 'dia' | 'semana', dinheiroSeparado = false) {
+  let dinheiro = 0
+  const ctx = contexto()
+  const sobrando: Recorrente[] = []
+  for (const r of state.recorrentes) {
+    if (r.cada !== cada) {
+      sobrando.push(r)
+      continue
+    }
+    if (dinheiroSeparado && r.qual === 'dinheiro') {
+      dinheiro += r.quanto
+    } else {
+      executarAcao(state, { faz: 'recurso', qual: r.qual, quanto: r.quanto }, ctx)
+      log(state, `${nomeDaOrigem(r)} rende ${r.quanto > 0 ? '+' : ''}${r.quanto} de ${r.qual}.`)
+    }
+    const restam = r.restam === null ? null : r.restam - 1
+    if (restam === null || restam > 0) sobrando.push({ ...r, restam })
+  }
+  state.recorrentes = sobrando
+  return dinheiro
+}
+
+/** Quem traduz id em nome é o CATÁLOGO, e quem fala com ele é o motor — por
+ *  isso o nome da carta aparece aqui e não dentro da ação. Antes esta linha
+ *  era um `"Automatizar"` escrito à mão no meio do `startDay`. */
+function nomeDaOrigem(r: Recorrente): string {
+  return r.origem ? getCard(r.origem).name : 'Efeito contínuo'
 }
 
 /** Vira a carta de evento: aplica o efeito e compra a mão do dia. */
@@ -265,7 +389,9 @@ export function revealEvent(input: GameState): GameState {
   const event = getEvent(state.currentEvent)
   const ctx = contexto()
   state.eventRevealed = true
-  log(state, `${dayLabel(state)} — evento: ${event.name}.`)
+  // sem a data: quem agrupa por dia é o histórico, e repetir
+  // "Semana 1 · Quarta" dentro do bloco "Semana 1 · Quarta" é ruído
+  log(state, `Evento: ${event.name}.`)
 
   // o evento ambíguo não faz nada sozinho: quem carrega o efeito é a escolha
   if (event.choices) {
@@ -274,11 +400,29 @@ export function revealEvent(input: GameState): GameState {
   }
 
   dispararEfeitos(state, event.efeitos, 'aoRevelar', ctx)
+  descartarPerguntaDeEvento(state)
   draw(state, state.maoDoDia)
   // e só depois da mão chegar vem o que precisa dela (a Fofoca de Corredor)
   dispararEfeitos(state, event.efeitos, 'aposComprar', ctx)
+  descartarPerguntaDeEvento(state)
   state.phase = 'dia'
   return checkDefeat(state)
+}
+
+/**
+ * A ação `escolha` é para CARTA, não para evento — evento que pergunta já tem
+ * as `choices` dele.
+ *
+ * O motivo é de mecanismo, não de gosto: a pausa do `executar` segura a lista
+ * de ações, mas o que vem depois dela aqui (comprar a mão, virar a fase) não
+ * é lista nenhuma, e rodaria por cima da pergunta. O jogador ficaria com a mão
+ * já comprada e uma pergunta pendurada. Fazer isso funcionar exigiria um
+ * segundo caminho de retomada no motor, e não vale o preço.
+ */
+function descartarPerguntaDeEvento(state: GameState) {
+  if (!state.escolhaAberta) return
+  state.escolhaAberta = null
+  log(state, 'Um evento não pode perguntar por ação — use as escolhas do evento.')
 }
 
 export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
@@ -290,12 +434,14 @@ export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
 
   const ctx = contexto()
   executar(state, choice.acoes, ctx)
+  descartarPerguntaDeEvento(state)
 
   log(state, `${event.name}: você escolheu "${choice.label}".`)
   state.pendingEventChoice = false
   state.lastEventChoice = index
   draw(state, state.maoDoDia)
   dispararEfeitos(state, event.efeitos, 'aposComprar', ctx)
+  descartarPerguntaDeEvento(state)
   state.phase = 'dia'
   return checkDefeat(state)
 }
@@ -316,9 +462,14 @@ export function playCard(input: GameState, uid: string): GameState {
   // reunião do dia, o descarte do Foco Total e o sorteio do Pedir Aumento.
   // O motor não conhece o id de carta nenhuma, e é isso que deixa carta nova
   // nascer só de dado.
+  // os efeitos rodam ANTES de a carta entrar em `playedToday`/`usadasNaRun`, e
+  // essa ordem é load-bearing: é ela que faz `jaJogadaHoje` contar as vezes
+  // ANTERIORES, `ineditaNaRun` valer na primeira vez, e
+  // `cartasJogadasHoje noMaximo: 0` significar "só se esta for a primeira"
   dispararEfeitos(state, card.efeitos, 'aoJogar', contexto(card.id))
 
   state.playedToday.push(card.id)
+  if (!state.jogadasNaSemana.includes(card.id)) state.jogadasNaSemana.push(card.id)
   if (!state.usadasNaRun.includes(card.id)) state.usadasNaRun.push(card.id)
   state.cardsPlayed += 1
   log(state, `Jogou ${card.name}.`)
@@ -347,6 +498,7 @@ export function escolherParaDescartar(input: GameState, uid: string): GameState 
   state.discard.push(alvo)
   log(state, `${pedido.porque} descartou ${getCard(alvo.cardId).name}.`)
   anunciarDescarte(state, [alvo.cardId], pedido.porque)
+  reagirAoDescarte(state, [alvo.cardId])
 
   const restam = pedido.restam - 1
   // a mão pode ter acabado antes da conta fechar (uma carta que pede 2 numa
@@ -358,6 +510,35 @@ export function escolherParaDescartar(input: GameState, uid: string): GameState 
 
   state.escolhaDeDescarte = null
   executar(state, pedido.entao, contexto(pedido.cartaId ?? undefined))
+  return checkDefeat(state)
+}
+
+/**
+ * O jogador respondeu a pergunta de uma carta.
+ *
+ * Irmã da `escolherParaDescartar`, e com a mesma regra: enquanto a pergunta
+ * está em pé o dia não anda. `resto` é o que faltava da lista quando a
+ * pergunta apareceu, e ele roda DEPOIS da opção escolhida — se as ações
+ * seguintes rodassem na hora, a carta contaria o fim antes do começo.
+ */
+export function escolherOpcao(input: GameState, indice: number): GameState {
+  const state = clone(input)
+  const pergunta = state.escolhaAberta
+  if (!pergunta) return input
+  const opcao = pergunta.opcoes[indice]
+  if (!opcao) return input
+
+  // limpar ANTES de executar: senão o próprio `executar` veria uma pergunta
+  // aberta no primeiro passo e pausaria a si mesmo
+  state.escolhaAberta = null
+  const ctx = contexto(pergunta.cartaId ?? undefined)
+  log(state, `Escolheu "${opcao.rotulo}".`)
+  executar(state, opcao.acoes, ctx)
+
+  // uma pergunta dentro da pergunta adia o resto mais uma vez
+  const aninhada = state.escolhaAberta as GameState['escolhaAberta']
+  if (aninhada) aninhada.resto = [...aninhada.resto, ...pergunta.resto]
+  else executar(state, pergunta.resto, ctx)
   return checkDefeat(state)
 }
 
@@ -440,8 +621,8 @@ export function embaloAtual(state: GameState): { kind: Exclude<ClasseDaCarta, nu
 export function endDay(input: GameState): GameState {
   let state = clone(input)
   if (state.phase !== 'dia') return input
-  // a escolha de descarte é uma pergunta em aberto; o dia não fecha por cima
-  if (state.escolhaDeDescarte) return input
+  // pergunta em aberto: o dia não fecha por cima dela
+  if (state.escolhaDeDescarte || state.escolhaAberta) return input
 
   const metQuota = state.productivity >= state.dailyQuota
   if (!metQuota) {
@@ -469,6 +650,10 @@ export function endDay(input: GameState): GameState {
   state.daysNoRest = descansouHoje ? 0 : state.daysNoRest + 1
   state.maxDaysNoRest = Math.max(state.maxDaysNoRest, state.daysNoRest)
 
+  // o `aoDescartar` das cartas que ficaram na mão dispara aqui, DEPOIS de a
+  // cota já ter sido julgada: quem decide a cota do dia é o que foi jogado, e
+  // não o que sobrou. O que ele mexer em estresse ou dinheiro ainda entra no
+  // resumo do dia, que é montado logo abaixo
   discardHand(state)
 
   state = checkDefeat(state)
@@ -512,9 +697,25 @@ export function paySalary(input: GameState): GameState {
   const state = clone(input)
   if (state.phase !== 'sexta' || state.fridayStep !== 'salario') return input
 
+  // o fim da semana é aqui, e não nas contas nem no descanso: é a última hora
+  // em que um efeito ainda pode mexer no que o chefe vai ver. O sujeito são o
+  // evento do dia e as cartas jogadas nesta semana — uma carta que quisesse
+  // render toda semana usaria `recorrente`, mas quem quer REAGIR ao fechamento
+  // precisa de um gatilho
+  if (state.currentEvent) {
+    dispararEfeitos(state, getEvent(state.currentEvent).efeitos, 'fimDaSemana', contexto())
+  }
+  for (const id of state.jogadasNaSemana) {
+    dispararEfeitos(state, getCard(id).efeitos, 'fimDaSemana', contexto(id))
+  }
+
   const week = currentWeek(state)
   const metGoal = state.weekProductivity >= week.weeklyGoal
-  const salary = (metGoal ? week.fullSalary : week.reducedSalary) + state.salaryBonus
+  // os recorrentes semanais entram ANTES, e os de dinheiro entram DENTRO do
+  // salário: é esse número que o painel da sexta mostra, e um bônus somado
+  // por fora viraria dinheiro que aparece do nada no medidor
+  const bonus = aplicarRecorrentes(state, 'semana', true)
+  const salary = (metGoal ? week.fullSalary : week.reducedSalary) + bonus
   state.money += salary
   state.fridayResult = { metGoal, salary }
 
@@ -555,6 +756,7 @@ export function restWeekend(input: GameState): GameState {
   const alivio = state.modo.descansoDoFimDeSemana
   state.stress = Math.max(0, state.stress - alivio)
   state.weekProductivity = 0
+  state.jogadasNaSemana = []
   state.fridayStep = null
   log(state, `Fim de semana: −${alivio} estresse.`)
 

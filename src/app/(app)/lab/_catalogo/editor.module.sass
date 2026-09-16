@@ -248,3 +248,23 @@
   margin-top: 4px
   color: var(--tinta-fraca)
   font-size: 11px
+
+// a frase em português embaixo de uma condição montada. É a rede contra o
+// caso silencioso: "alguma destas" com a lista vazia é NUNCA, e sem a frase
+// isso só apareceria depois, na mesa de alguém
+.dicaAninhada
+  margin: 4px 0 0
+  color: var(--tinta-fraca)
+  font-size: 11px
+  line-height: 1.4
+
+// uma condição da lista, com o botão de tirar ao lado. `min-width: 0` porque
+// a condição é item de um flex e não encolhe abaixo do próprio min-content
+.linhaCondicao
+  display: flex
+  align-items: flex-start
+  gap: 6px
+
+  > :first-child
+    flex: 1
+    min-width: 0

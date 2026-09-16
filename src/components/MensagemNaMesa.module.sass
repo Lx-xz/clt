@@ -1,0 +1,38 @@
+// No RODAPÉ do tapete, e não no centro: o DescarteNaMesa já mora no meio, e o
+// Foco Total dispara os dois na mesma jogada — um por cima do outro seria
+// esconder metade do que acabou de acontecer.
+.caixa
+  position: absolute
+  left: 50%
+  bottom: 8px
+  z-index: 31
+  max-width: min(92%, 420px)
+  margin: 0
+  padding: 8px 14px
+  transform: translateX(-50%)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  background: var(--papel-alto)
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18)
+  color: var(--tinta)
+  font-size: 13px
+  line-height: 1.4
+  text-align: center
+  // decoração sobreposta ao tapete não pode roubar o ponteiro de quem está
+  // arrastando uma carta para lá
+  pointer-events: none
+  animation: entrar .18s ease-out
+
+@keyframes entrar
+  from
+    opacity: 0
+    transform: translate(-50%, 8px)
+  to
+    opacity: 1
+    transform: translate(-50%, 0)
+
+@media (max-width: 760px)
+  .caixa
+    bottom: 4px
+    padding: 6px 11px
+    font-size: 12px

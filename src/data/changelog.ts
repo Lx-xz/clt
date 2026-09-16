@@ -24,6 +24,7 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
   'Conquistas: um punhado de objetivos para perseguir além de ganhar o mês.',
+  'Rebalancear: a medição com 1000 partidas simuladas mostrou 98% de burnout, quase sempre na primeira semana — o jogo está mais duro do que deveria.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
   'Mais peças de avatar: oito cortes de cabelo (com degradê de máquina, espetado, topete e careca), orelha, roupa sem pescoço, boné, chapéu e sete olhos novos já estão desenhados e em teste no laboratório — falta decidir quais entram.',
   'O avatar aparecendo também no ranking e nos feedbacks.',
@@ -35,6 +36,19 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.12',
+    data: '2026-09-16',
+    titulo: 'O histórico saiu do escuro, e o que uma carta faz cabe em mais coisas',
+    itens: [
+      { tipo: 'novo', texto: 'Botão de Histórico na mesa, ao lado do "Como jogar": tudo o que aconteceu na run, dia por dia, com o resultado de cada dia fechado. O jogo já guardava esse histórico desde sempre e não mostrava em lugar nenhum.' },
+      { tipo: 'novo', texto: 'As cartas e os eventos agora falam com você na mesa. "Segunda reunião do dia: só estresse" aparece na hora em que acontece, em vez de sumir.' },
+      { tipo: 'melhor', texto: 'Carta travada explica POR QUE está travada, com a condição escrita em português, em vez de "as condições desta carta ainda não aconteceram".' },
+      { tipo: 'melhor', texto: 'Efeito que continua valendo virou uma coisa só, e agora sabe durar uma semana em vez de só "para sempre" — dá para existir carta cujo bônus acaba junto com a semana.' },
+      { tipo: 'melhor', texto: '"Deixar para amanhã" deixou de valer só para energia e cota: dá para adiar qualquer coisa, inclusive uma carta ou um recado.' },
+      { tipo: 'novo', texto: 'Uma carta pode PERGUNTAR antes de agir, como os eventos ambíguos já faziam.' },
+    ],
+  },
   {
     versao: '0.11',
     data: '2026-09-11',

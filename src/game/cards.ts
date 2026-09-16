@@ -36,7 +36,7 @@ export const CARTAS_BASE: ActionCard[] = [
         se: { se: 'jaJogadaHoje', aoMenos: 1 },
         acoes: [
           { faz: 'recurso', qual: 'estresse', quanto: 1 },
-          { faz: 'aviso', texto: 'Segunda reunião do dia: só estresse, nenhuma produtividade.' },
+          { faz: 'mensagem', texto: 'Segunda reunião do dia: só estresse, nenhuma produtividade.' },
         ],
       },
     ],
@@ -119,7 +119,7 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'produtividade', quanto: 4 },
       { faz: 'descartar', quantas: 'tudo' },
-      { faz: 'aviso', texto: 'Foco Total: o resto da mão foi descartado.' },
+      { faz: 'mensagem', texto: 'Foco Total: o resto da mão foi descartado.' },
     ] }],
   },
   {
@@ -152,7 +152,7 @@ export const CARTAS_BASE: ActionCard[] = [
     especial: true, starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'produtividade', quanto: 2 },
-      { faz: 'produtividadePassiva', quanto: 1 },
+      { faz: 'recorrente', qual: 'produtividade', quanto: 1, cada: 'dia' },
     ] }],
   },
   {
@@ -178,12 +178,12 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [{
       faz: 'sorteio', chance: 0.5,
       entao: [
-        { faz: 'salarioPermanente', quanto: 100 },
-        { faz: 'aviso', texto: 'Pedir Aumento: deu certo! Salário +R$ 100 pelo resto da run.' },
+        { faz: 'recorrente', qual: 'dinheiro', quanto: 100, cada: 'semana' },
+        { faz: 'mensagem', texto: 'Pedir Aumento: deu certo! Salário +R$ 100 pelo resto da run.' },
       ],
       senao: [
         { faz: 'recurso', qual: 'estresse', quanto: 3 },
-        { faz: 'aviso', texto: 'Pedir Aumento: "vamos ver no próximo ciclo". +3 estresse.' },
+        { faz: 'mensagem', texto: 'Pedir Aumento: "vamos ver no próximo ciclo". +3 estresse.' },
       ],
     }] }],
   },

@@ -42,17 +42,24 @@
   letter-spacing: .04em
   text-transform: uppercase
 
-// as regras, ancoradas abaixo do header no canto OPOSTO ao "Próximo dia":
-// os dois botões flutuam sobre a mesa e brigariam pelo mesmo canto
-.comoJogar
+// as regras e o histórico, ancorados abaixo do header no canto OPOSTO ao
+// "Próximo dia": os botões flutuam sobre a mesa e brigariam pelo mesmo canto.
+// Quem se ancora é o INVÓLUCRO — com cada botão preso em `left` por conta
+// própria, o segundo precisaria de uma conta à mão que quebraria no primeiro
+// ajuste de padding
+.cantoEsquerdo
   position: absolute
   top: 100%
   left: 10px
   z-index: 30
+  display: flex
+  gap: 8px
+  margin-top: 8px
+
+.botaoCanto
   display: inline-flex
   align-items: center
   gap: 5px
-  margin-top: 8px
   padding: 7px 12px
   background: var(--papel-alto)
   border: 1px solid var(--linha)
@@ -575,14 +582,17 @@
     > button
       width: 100%
 
-  // no celular o botão das regras fica só com o ícone: o espaço embaixo do
-  // header é disputado, e o "Próx. dia" é quem precisa da palavra
-  .comoJogar
+  // no celular os dois botões do canto ficam só com o ícone: o espaço embaixo
+  // do header é disputado, e o "Próx. dia" é quem precisa da palavra
+  .cantoEsquerdo
     left: 8px
     margin-top: 6px
+    gap: 6px
+
+  .botaoCanto
     padding: 6px 8px
 
-  .comoJogarTexto
+  .rotuloCanto
     display: none
 
   // "Próx. dia" no celular
@@ -704,3 +714,14 @@
 @media (hover: none)
   .escolhivel::after
     opacity: 1
+
+// os caminhos de uma carta que pergunta. Reaproveita o `.pedido`, que já é o
+// balão de "o dia parou esperando você" — a pergunta da carta é o mesmo
+// acontecimento que a escolha de descarte, com botões em vez de cartas
+.escolhasDaCarta
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 8px
+  margin-top: 6px
+  pointer-events: auto

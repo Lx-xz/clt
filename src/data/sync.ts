@@ -1,4 +1,4 @@
-import { clearRun, loadCollection, loadRun, runUsavel, saveCollection, saveRun } from '@/game/storage'
+import { clearRun, loadCollection, loadRun, migrarRun, saveCollection, saveRun } from '@/game/storage'
 import type { Collection, GameState } from '@/game/types'
 import {
   enviarRun,
@@ -33,7 +33,9 @@ export async function carregarDoBanco(
 ): Promise<{ run: GameState | null; collection: Collection }> {
   const remoto = await baixarSave(playerId)
 
-  const runRemota = runUsavel(remoto.run) ? (remoto.run as GameState) : null
+  // migrada aqui também: a run do banco pode ter sido gravada por uma versão
+  // anterior do vocabulário, e ela volta para o espelho local logo abaixo
+  const runRemota = migrarRun<GameState>(remoto.run)
   const run = runRemota ?? loadRun<GameState>()
   const collection = remoto.collection ?? loadCollection()
 

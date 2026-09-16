@@ -74,17 +74,71 @@ export function runUsavel(bruta: unknown): boolean {
 }
 
 /**
- * Devolve a run salva só quando ela tem o formato desta versão. Um estado de
- * versão antiga é descartado em vez de derrubar a página.
+ * Põe uma run salva no formato de hoje, em vez de jogá-la fora.
+ *
+ * **Subir a `RUN_KEY` não resolveria**: ela só apaga o espelho local, e a run
+ * também vem do BANCO, onde `runUsavel` a aprovaria (os campos que mudaram
+ * não estão em `CAMPOS_DA_RUN`) e a mesa quebraria ao ler `state.amanha`. Por
+ * isso migração, aplicada nos dois pontos de entrada.
+ *
+ * É idempotente: uma run já desta versão passa inteira. E os campos novos NÃO
+ * entram em `CAMPOS_DA_RUN` de propósito — se entrassem, `runUsavel` reprovaria
+ * a run velha antes de esta função ter chance de consertá-la.
+ */
+export function migrarRun<T>(bruta: unknown): T | null {
+  if (!runUsavel(bruta)) return null
+  const r = { ...(bruta as Record<string, unknown>) }
+
+  if (r.amanha === undefined) {
+    const t = (r.tomorrow ?? {}) as { energy?: number; quota?: number }
+    r.amanha = [
+      ...(t.energy ? [{ faz: 'recurso', qual: 'energia', quanto: t.energy }] : []),
+      ...(t.quota ? [{ faz: 'cota', quanto: t.quota }] : []),
+    ]
+  }
+  delete r.tomorrow
+
+  if (r.recorrentes === undefined) {
+    const passiva = Number(r.passiveProductivity ?? 0)
+    const salario = Number(r.salaryBonus ?? 0)
+    r.recorrentes = [
+      ...(passiva
+        ? [{ qual: 'produtividade', quanto: passiva, cada: 'dia', restam: null, origem: null }]
+        : []),
+      ...(salario
+        ? [{ qual: 'dinheiro', quanto: salario, cada: 'semana', restam: null, origem: null }]
+        : []),
+    ]
+  }
+  delete r.passiveProductivity
+  delete r.salaryBonus
+
+  // o histórico antigo era uma lista de frases sem dia; fingir um dia para
+  // cada uma seria inventar. Ele vira uma linha só, honesta
+  if (!Array.isArray(r.log) || typeof r.log[0] === 'string') {
+    r.log = [{ dia: Number(r.day) || 1, texto: 'Histórico anterior a esta versão do jogo.' }]
+  }
+
+  r.ultimaMensagem ??= null
+  r.escolhaAberta ??= null
+  r.jogadasNaSemana ??= []
+
+  return r as T
+}
+
+/**
+ * Devolve a run salva, migrada quando vier de uma versão anterior. O que nem
+ * migrar resolve é descartado em vez de derrubar a página.
  */
 export function loadRun<T>(): T | null {
   descartarRunsAntigas()
   const bruta = read<Record<string, unknown>>(RUN_KEY)
-  if (!runUsavel(bruta)) {
+  const run = migrarRun<T>(bruta)
+  if (!run) {
     clearRun()
     return null
   }
-  return bruta as T
+  return run
 }
 
 function descartarRunsAntigas() {

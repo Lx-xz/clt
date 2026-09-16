@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, CloudOff, Loader } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, CloudOff, Loader, ScrollText } from 'lucide-react'
 import Card from '@/components/Card'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
+import HistoricoDaRun from '@/components/HistoricoDaRun'
+import MensagemNaMesa from '@/components/MensagemNaMesa'
 import Medidor from '@/components/Medidor'
 import { RESOURCE_ICONS } from '@/components/icons'
 import { getCard, getEvent } from '@/game/catalogo'
@@ -18,6 +20,7 @@ import {
   dayLabel,
   effectiveCost,
   endDay,
+  escolherOpcao,
   escolherParaDescartar,
   payBills,
   paySalary,
@@ -35,6 +38,7 @@ import {
 import { useSessao } from '@/components/SessaoGuard'
 import { EVENTO_REINICIAR } from '@/components/SideNav'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
+import { textoDaCondicao } from '@/game/textos'
 import type { CardInstance, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
@@ -68,6 +72,7 @@ export default function JogarPage() {
   // dúvida aparece, e no meio da partida abrir o menu para consultá-las é
   // atravessar o jogo inteiro
   const [tutorial, setTutorial] = useState(false)
+  const [historico, setHistorico] = useState(false)
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -245,16 +250,33 @@ export default function JogarPage() {
           {status === 'salvo' ? <Check size={13} aria-label="salvo" /> : null}
           {status === 'erro' ? <CloudOff size={13} aria-label="sem conexão" /> : null}
         </span>
-        <button
-          type="button"
-          className={styles.comoJogar}
-          onClick={() => setTutorial(true)}
-          aria-label="Como jogar"
-          title="Como jogar"
-        >
-          <BookOpen size={15} aria-hidden />
-          <span className={styles.comoJogarTexto}>Como jogar</span>
-        </button>
+        {/* os dois moram num invólucro: o "Como jogar" estava preso sozinho
+            em `left: 10px`, e um segundo botão exigiria um `left` calculado à
+            mão que quebraria no primeiro ajuste de padding */}
+        <div className={styles.cantoEsquerdo}>
+          <button
+            type="button"
+            className={styles.botaoCanto}
+            onClick={() => setTutorial(true)}
+            aria-label="Como jogar"
+            title="Como jogar"
+          >
+            <BookOpen size={15} aria-hidden />
+            <span className={styles.rotuloCanto}>Como jogar</span>
+          </button>
+          {/* aparece em TODA fase, inclusive depois da derrota: é justamente
+              aí que se quer ler o que aconteceu */}
+          <button
+            type="button"
+            className={styles.botaoCanto}
+            onClick={() => setHistorico(true)}
+            aria-label="Histórico da run"
+            title="Histórico da run"
+          >
+            <ScrollText size={15} aria-hidden />
+            <span className={styles.rotuloCanto}>Histórico</span>
+          </button>
+        </div>
 
         {state.phase === 'dia' ? (
           <button
@@ -262,7 +284,7 @@ export default function JogarPage() {
             className={`${buttons.button} ${buttons.primary} ${styles.proximoDia}`}
             // o dia não fecha por cima de uma pergunta em aberto; o motor
             // recusa de qualquer jeito, e o botão apagado explica por quê
-            disabled={Boolean(escolhendo)}
+            disabled={Boolean(escolhendo) || Boolean(state.escolhaAberta)}
             onClick={() => update(endDay(state))}
           >
             <span className={styles.rotuloLongo}>Próximo dia</span>
@@ -317,6 +339,25 @@ export default function JogarPage() {
           </div>
         )}
         <DescarteNaMesa descarte={state.ultimoDescarte} />
+        <MensagemNaMesa mensagem={state.ultimaMensagem} />
+
+        {state.escolhaAberta ? (
+          <div className={styles.pedido} role="status">
+            <b>{state.escolhaAberta.cartaId ? getCard(state.escolhaAberta.cartaId).name : 'Escolha'}</b>
+            <div className={styles.escolhasDaCarta}>
+              {state.escolhaAberta.opcoes.map((o, i) => (
+                <button
+                  key={o.rotulo || i}
+                  type="button"
+                  className={buttons.button}
+                  onClick={() => update(escolherOpcao(state, i))}
+                >
+                  {o.rotulo || `Opção ${i + 1}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {escolhendo ? (
           <div className={styles.pedido} role="status">
@@ -519,6 +560,7 @@ export default function JogarPage() {
         </div>
       ) : null}
       {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
+      {historico ? <HistoricoDaRun state={state} onFechar={() => setHistorico(false)} /> : null}
     </main>
   )
 }
@@ -540,6 +582,7 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   const carta = getCard(instancia.cardId)
   if (state.phase !== 'dia') return 'Só dá para jogar depois de revelar o evento do dia.'
   if (state.escolhaDeDescarte) return 'Primeiro escolha o que descartar.'
+  if (state.escolhaAberta) return 'Primeiro responda a pergunta da carta.'
   if (carta.kind !== null && state.blockedKinds.includes(carta.kind)) {
     return `O evento de hoje bloqueia cartas de ${carta.kind}.`
   }
@@ -548,7 +591,12 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   if (carta.restricao?.umaVezPorRun && state.usadasNaRun.includes(carta.id)) {
     return 'Esta carta só sai uma vez por run, e já saiu.'
   }
-  if (carta.restricao?.exige) return 'As condições desta carta ainda não aconteceram.'
+  // a frase vem do MOTOR (`textoDaCondicao`), a mesma que o lab mostra ao
+  // montar a condição: "as condições desta carta ainda não aconteceram" não
+  // dizia qual condição, e a carta travada virava um mistério
+  if (carta.restricao?.exige) {
+    return `Esta carta pede: ${textoDaCondicao(carta.restricao.exige)}.`
+  }
   return `Energia insuficiente: custa ${effectiveCost(state, carta.id)} e você tem ${state.energy}.`
 }
 

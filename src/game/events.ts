@@ -79,7 +79,7 @@ export const EVENTOS_BASE: EventCard[] = [
         se: { se: 'cotaBatida', valor: false },
         acoes: [
           { faz: 'recurso', qual: 'estresse', quanto: 2 },
-          { faz: 'aviso', texto: 'A cobrança no grupo do zap piorou: +2 estresse extra.' },
+          { faz: 'mensagem', texto: 'A cobrança no grupo do zap piorou: +2 estresse extra.' },
         ],
       },
     ],
@@ -145,7 +145,7 @@ export const EVENTOS_BASE: EventCard[] = [
         label: 'Ir', text: '−3 estresse e −3 energia amanhã',
         acoes: [
           { faz: 'recurso', qual: 'estresse', quanto: -3 },
-          { faz: 'amanha', qual: 'energia', quanto: -3 },
+          { faz: 'amanha', acoes: [{ faz: 'recurso', qual: 'energia', quanto: -3 }] },
         ],
       },
       { label: 'Não ir', text: '+1 estresse', acoes: [{ faz: 'recurso', qual: 'estresse', quanto: 1 }] },
@@ -161,7 +161,7 @@ export const EVENTOS_BASE: EventCard[] = [
         label: 'Aceitar', text: '+R$ 60, mas sua cota de amanhã aumenta em +2',
         acoes: [
           { faz: 'recurso', qual: 'dinheiro', quanto: 60 },
-          { faz: 'amanha', qual: 'cota', quanto: 2 },
+          { faz: 'amanha', acoes: [{ faz: 'cota', quanto: 2 }] },
         ],
       },
       { label: 'Recusar', text: 'Nada acontece', acoes: [] },
@@ -177,7 +177,7 @@ export const EVENTOS_BASE: EventCard[] = [
         label: 'Atender', text: '+R$ 25 e energia de amanhã −4',
         acoes: [
           { faz: 'recurso', qual: 'dinheiro', quanto: 25 },
-          { faz: 'amanha', qual: 'energia', quanto: -4 },
+          { faz: 'amanha', acoes: [{ faz: 'recurso', qual: 'energia', quanto: -4 }] },
         ],
       },
       { label: 'Ignorar', text: '+2 estresse', acoes: [{ faz: 'recurso', qual: 'estresse', quanto: 2 }] },
