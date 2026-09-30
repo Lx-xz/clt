@@ -26,8 +26,8 @@ export default function Termos() {
           dois dados de lá.
         </li>
         <li>
-          <b>Nick e avatar</b>, que são públicos: aparecem no ranking, no seu perfil e ao lado dos
-          seus relatos.
+          <b>Nick e avatar</b>, que são públicos: o nick aparece no ranking e ao lado dos seus
+          relatos, e o avatar no seu perfil e na sua página pública.
         </li>
         <li>
           <b>Suas partidas</b> — o dia a dia de cada run, para o histórico e para balancear o jogo.

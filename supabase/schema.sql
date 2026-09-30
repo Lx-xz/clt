@@ -49,7 +49,7 @@ alter table public.players add column if not exists termos_em timestamptz;
 -- moeda dos feedbacks bem escritos. Ninguém gasta ainda; existe desde já
 -- para a recompensa futura não precisar de migração no meio do caminho.
 alter table public.players add column if not exists pontos    integer not null default 0;
--- o avatar é uma RECEITA, não uma imagem: quatro escolhas que o site
+-- o avatar é uma RECEITA, não uma imagem: um punhado de escolhas que o site
 -- desenha em SVG na hora. Nulo quer dizer "ainda não escolheu" e o site
 -- mostra o padrão. Não existe imagem para moderar porque ninguém sobe uma.
 alter table public.players add column if not exists avatar    jsonb;

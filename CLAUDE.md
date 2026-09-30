@@ -472,12 +472,29 @@ opções. O que ele escolheu, e que deve ser preservado:
   (`SCRIPT_TEMA`): sem ele o site abre claro e pisca para escuro quando o
   React monta — justamente no tema que a pessoa não quer ver.
 - **O avatar é uma receita, não uma imagem** (`src/components/Avatar.tsx` +
-  `src/data/avatar.ts`). O que vai para o banco são seis palavras (corpo,
-  cabelo, pele, cor do cabelo, roupa, fundo) num `jsonb`; o SVG é montado na
-  hora. Trocar de avatar é um `update` numa linha, o desenho é nítido em
-  qualquer tamanho, e não existe imagem imprópria para moderar porque
-  ninguém sobe imagem. **Por enquanto ele só aparece no perfil** — pôr no
-  ranking e nos feedbacks é decisão do autor, não consequência automática.
+  `src/data/avatar.ts`). O que vai para o banco são onze palavras (rosto,
+  pele, cabelo, cor, olhos, barba, tronco, roupa, óculos, acessório, fundo)
+  num `jsonb`; o SVG é montado na hora. Trocar de avatar é um `update` numa
+  linha, o desenho é nítido em qualquer tamanho, e não existe imagem imprópria
+  para moderar porque ninguém sobe imagem. Ele aparece no perfil, em
+  `/jogador` e na mesa. **No ranking e nos relatos, ainda não:** `ranking()` e
+  as funções de feedback não devolvem o avatar, e pôr ali exige mudar o
+  `schema.sql` (o que traz as conquistas junto) e estender o `ranking()` a uma
+  coluna nova — que a regra de segurança abaixo proíbe sem decisão do autor.
+  - **A receita não tem gênero (v0.13).** Era `corpo: homem | mulher`, e o
+    corpo decidia o rosto e a gola. O cadastro já tinha parado de perguntar
+    gênero na v0.8, por ser dado pessoal, e o editor continuava perguntando.
+    Hoje o primeiro campo é o FORMATO do rosto (`quadrado`, `redondo`, `oval`),
+    e o que lê como masculino ou feminino vem do cabelo e da barba.
+    `lerAvatar()` traduz a receita antiga na leitura (`homem → quadrado` +
+    gola V, `mulher → oval` + gola alta, olho novo para todo mundo) — sem
+    migração no banco.
+  - **O avatar sente o estresse.** `humor` é uma camada por cima do rosto, não
+    peça da receita: `humorDoEstresse()` escolhe a cara em FRAÇÕES do estresse
+    máximo (olheira, suor, lágrima no 9, olhos em X no burnout). A mesa o
+    mostra ao lado do nick e no painel de fim; o perfil mostra sem humor. É o
+    medidor de estresse com cara — a conta `Energia = 10 − Estresse` só existia
+    em texto antes dele.
   - **O fundo e a borda são CSS, não SVG.** Eram um `rect` dentro de um
     `clipPath` e outro `rect` com `stroke` por cima; o stroke de um retângulo
     colado na borda do viewBox é **cortado ao meio pela própria caixa**, e
@@ -485,9 +502,9 @@ opções. O que ele escolheu, e que deve ser preservado:
     em volta (`Avatar.module.sass`), e com isso sumiu o `clipPath` — e o id
     único que ele exigia. Regra geral: moldura é CSS, desenho é SVG.
   - **O manequim é o padrão de quem não escolheu**: a figura de madeira sem
-    rosto. É o avatar do convidado e de quem chegou pelo Google, e ele diz
-    "ainda não escolhi" sem fingir ser ninguém. Quem se cadastra por e-mail
-    responde o gênero e já ganha um avatar sorteado a partir dele.
+    rosto. É o avatar de todo mundo que chega — convidado, Google ou e-mail —,
+    e ele diz "ainda não escolhi" sem fingir ser ninguém. Ele não veste óculos,
+    barba nem chapéu: seria fingir uma pessoa.
   - **O cabelo custou três tentativas** e está comentado no componente:
     silhueta fechada ATRÁS do rosto (o miolo some debaixo dele, então não há
     encaixe para errar), franja por cima com a borda de fora sendo um arco da
@@ -556,9 +573,9 @@ opções. O que ele escolheu, e que deve ser preservado:
     também e some sozinho, sem precisar de recorte.
   - **Acessório é a peça barata**, e cabelo é a cara: acessório vai solto por
     cima de tudo, sem encaixe com o rosto nem com o cabelo para errar. Boné,
-    chapéu, óculos e barba são todos dessa família. O que o acessório custa
-    não é desenho, é RECEITA: ele é o único que ainda não tem campo no
-    `Avatar` gravado no banco.
+    chapéu, óculos e barba são todos dessa família. Óculos e chapéu são
+    campos SEPARADOS da receita (um é do rosto, o outro da cabeça); o chapéu
+    herda a cor da roupa, e os óculos têm armação escura fixa.
 - **`/lab` é a oficina, e nenhuma bancada dela grava no jogo.** A trava é o
   layout de `/lab` (`GuardaAdmin`), que pergunta ao banco — mas ela é
   conveniência, não segurança: o código vai no mesmo bundle para todo mundo,
@@ -951,12 +968,12 @@ avatar gravado por uma versão antiga nunca derruba a página de ninguém. O
 convidado não passa por aqui — o avatar dele mora no localStorage, junto com
 o resto dele.
 
-**O avatar do cadastro entra pelo GATILHO, não por uma chamada do site.** Com
-"Confirm email" ligado não existe sessão logo depois do `signUp`, e um
-`salvar_avatar()` nesse momento seria recusado — então o avatar sorteado
-viaja como metadado (`options.data.avatar`) e `ao_criar_usuario` o grava
-junto com o perfil. Quem vem do Google é o caso oposto: ali já há sessão, e
-`completarPerfil()` grava direto.
+**O cadastro não escolhe avatar (desde a v0.8).** Ele perguntava o gênero
+para sortear um desenho, e isso era pedir um dado pessoal para enfeitar a
+tela. Hoje todo mundo nasce manequim. O gatilho `ao_criar_usuario` ainda lê
+`raw_user_meta_data -> 'avatar'`, que o site não manda mais — o valor é nulo
+e `lerAvatar()` o transforma no manequim. `avatarAleatorio()` é o botão
+Sortear do editor.
 
 **Comentário de admin faz a triagem sozinho.** `comentar_feedback()` move o
 relato de `novo` para `triado` quando quem comenta é admin: responder já é ter
@@ -1153,19 +1170,18 @@ e a um bot diferente — não compare os dois.
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,
   derrota). Quando entrarem, o volume deles é mais um multiplicador em
   `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
-- **Mais peças de avatar.** Já DESENHADAS e marcadas como teste no
-  `/lab/avatar`, esperando a decisão de promover: seis cortes novos (quadrado,
-  careca, degradê, espetado, topete, cacheado, chanel e coque), a orelha,
-  quatro troncos (sem pescoço, gola alta, camiseta, social), boné, chapéu e
-  sete olhos. Promover cabelo e olho é barato (tipo + rótulo, sem migração);
-  o acessório e o tronco são os que custam, porque a receita ainda não tem
-  campo para eles — e a decisão barata ali é o acessório herdar a cor da roupa
-  em vez de virar uma sétima escolha, ou o tronco entrar para todo mundo de
-  uma vez, que não custa campo nenhum. Óculos e barba entram na família do
-  acessório. O lab também aceita colar o `d=` de uma peça nova para testar
-  antes de virar código, e tem **estilos inteiros** (`estilos.ts`): peça
-  sozinha engana, porque o mesmo cabelo fica ruim com o pescoço de hoje e bom
-  com o tronco colado.
+- **Avatar no ranking e nos relatos, e cosméticos desbloqueáveis.** Vão
+  juntos com a migração das conquistas: os dois exigem `schema.sql`, e o
+  ranking exige a decisão do autor de estender `ranking()` ao avatar. Os
+  pontos de feedback e as conquistas comprando acessórios (crachá, caneca,
+  óculos da firma) resolvem a pendência "o que se compra com os pontos".
+- **Espiral visível e o jogo duro de propósito.** Decidido: meta de 10–20% de
+  vitória para o bot mediano — e, por isso mesmo, junto com o que torna a
+  espiral LEGÍVEL: o `+2` de estresse por cota perdida virando regra de
+  `modos` (hoje está fixo em `engine.ts`), prévia de jogada rodando `playCard`
+  puro, "amanhã: X de energia", zonas de perigo no estresse, a cota como
+  barra, o veredito do dia e o fim do `−N` vermelho falso na virada da
+  produtividade. Duro e ilegível é injusto.
 - **Recompensa por feedback.** A nota que o admin dá já vira `players.pontos`
   (nota × 10, recalculado a cada mudança) e aparece no perfil. Falta decidir o
   que se compra com ela — carta, tema, nada disso.

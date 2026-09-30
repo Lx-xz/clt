@@ -10,11 +10,29 @@
   &:hover
     color: var(--tinta)
 
+// a prévia fica FIXA no topo enquanto se rola: mexer num botão lá embaixo
+// sem ver o desenho é escolher no escuro. O fundo é opaco porque o conteúdo
+// passa por baixo dela
 .topo
+  position: sticky
+  top: 0
+  z-index: 5
   display: flex
   align-items: flex-start
   gap: 20px
-  margin-bottom: 26px
+  margin: 0 calc(-1 * var(--pad, 0px)) 18px
+  padding: 10px var(--pad, 0px)
+  background: var(--papel)
+  border-bottom: 1px solid var(--linha)
+
+.topoTexto
+  min-width: 0
+
+.sortear
+  display: inline-flex
+  align-items: center
+  gap: 6px
+  margin-top: 10px
 
 .previa
   box-shadow: var(--sombra)
@@ -82,7 +100,7 @@
   color: var(--tinta)
   font-weight: 600
 
-// só a cabeça: é onde a diferença está, e o ombro só ocuparia espaço
+// o enquadramento da miniatura: onde a peça está no desenho
 .recorte
   display: block
   width: 72px
@@ -90,8 +108,102 @@
   overflow: hidden
   border-radius: 8px
 
+// só a cabeça: é onde a diferença do corte está, e o ombro só ocuparia espaço
+.cabeca
+  height: 54px
+
+// o rosto de perto: desenhado em 120 px e deslocado para a janela cair entre
+// a sobrancelha e o queixo. No enquadramento da cabeça inteira, olho e barba
+// viram dois pontinhos e ninguém vê a diferença entre eles
+.rosto > *
+  transform: translate(-24px, -34px)
+
+// o corpo inteiro: a roupa mora do queixo para baixo, que é justamente o que
+// o recorte da cabeça cortaria
+.inteiro
+  height: 72px
+
 .opcaoRotulo
   line-height: 1
+
+// ---------------------------------------------------------------- abas
+
+// `flex: none` porque a página é uma coluna: com `overflow-x: auto`, o eixo Y
+// também vira `auto` e a faixa seria espremida até uma barra de rolagem
+.rolaLado
+  flex: none
+  overflow-x: auto
+  margin-bottom: 16px
+
+.abas
+  display: flex
+  gap: 4px
+  width: max-content
+  border-bottom: 1px solid var(--linha)
+
+.aba
+  padding: 8px 12px
+  border: none
+  border-bottom: 2px solid transparent
+  background: none
+  color: var(--tinta-fraca)
+  font-size: 14px
+  cursor: pointer
+
+  &:hover
+    color: var(--tinta)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: -2px
+
+.abaAtiva
+  border-bottom-color: var(--tinta)
+  color: var(--tinta)
+  font-weight: 600
+
+.painel
+  min-height: 200px
+
+.dica
+  max-width: 52ch
+  margin: -10px 0 18px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  line-height: 1.5
+
+// --------------------------------------------------------------- cores
+
+.corAtual
+  color: var(--tinta)
+  letter-spacing: 0
+  text-transform: none
+
+.amostras
+  display: flex
+  flex-wrap: wrap
+  gap: 10px
+
+// 36 px e não menos: é alvo de dedo
+.amostra
+  width: 36px
+  height: 36px
+  padding: 0
+  border: 2px solid var(--linha)
+  border-radius: 50%
+  cursor: pointer
+  transition: transform .12s ease
+
+  &:hover
+    transform: scale(1.08)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.amostraAtiva
+  border-color: var(--papel)
+  box-shadow: 0 0 0 2px var(--tinta)
 
 .nota
   max-width: 52ch
@@ -115,7 +227,26 @@
   gap: 8px
   padding-top: 4px
 
+// no celular a prévia encolhe e o texto de apresentação sai: fixa no topo,
+// uma prévia de 132 px com três parágrafos ocuparia meia tela
 @media (max-width: 520px)
   .topo
-    flex-direction: column
-    gap: 14px
+    align-items: center
+    gap: 12px
+
+  .previa
+    width: 84px !important
+    height: 84px !important
+
+    svg
+      width: 84px
+      height: 84px
+
+  .titulo
+    font-size: 20px
+
+  .intro, .aviso
+    display: none
+
+  .sortear
+    margin-top: 6px

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, BookOpen, Check, CloudOff, Loader, ScrollText } from 'lucide-react'
+import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import Card from '@/components/Card'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
@@ -243,6 +244,15 @@ export default function JogarPage() {
         </div>
         <span className={styles.espaco} />
         <span className={`${styles.sync} ${status === 'erro' ? styles.syncErro : ''}`}>
+          {/* o medidor de estresse com CARA: ele cansa junto com o jogador.
+              A conta "Energia = 10 − Estresse" é o jogo inteiro, e antes dele
+              ela só existia em texto */}
+          <Avatar
+            avatar={sessao.avatar}
+            tamanho={28}
+            className={styles.avatarHud}
+            humor={humorDoEstresse(state.stress, state.modo.estresseMaximo)}
+          />
           <span className={styles.nick}>{sessao.nick}</span>
           {status === 'salvando' ? (
             <Loader size={13} className={styles.girando} aria-label="salvando" />
@@ -534,6 +544,12 @@ export default function JogarPage() {
       {acabou ? (
         <div className={styles.fundo}>
           <div className={styles.painel}>
+            <Avatar
+              avatar={sessao.avatar}
+              tamanho={88}
+              className={styles.avatarFim}
+              humor={state.outcome === 'vitoria' ? 'vitoria' : humorDoEstresse(state.stress, state.modo.estresseMaximo)}
+            />
             <h2 className={styles.painelTitulo}>{FIM[state.outcome as keyof typeof FIM].title}</h2>
             <p className={styles.painelTexto}>
               {FIM[state.outcome as keyof typeof FIM].text} Pontuação final: R$ {state.money}.
@@ -554,6 +570,12 @@ export default function JogarPage() {
                 onClick={() => recomecar()}
               >
                 Nova run
+              </button>
+              {/* o botão Histórico do canto fica DEBAIXO deste painel — e é
+                  justamente agora que se quer ler o que aconteceu. O Dialogo
+                  do histórico abre por cima do painel */}
+              <button type="button" className={buttons.button} onClick={() => setHistorico(true)}>
+                Ver o que aconteceu
               </button>
             </div>
           </div>

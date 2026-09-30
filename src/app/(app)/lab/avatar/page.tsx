@@ -5,13 +5,18 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import Avatar, {
   ACESSORIOS,
+  BARBAS,
+  OCULOS,
   CABELOS_FORMA,
   MEDIDAS,
   OLHOS,
   TRONCOS,
   type Acessorio,
   type Ajustes,
+  type Barba,
+  type Oculos,
   type FormaDeCabelo,
+  type Humor,
   type Medidas,
   type Olhos,
   type Tronco,
@@ -20,13 +25,13 @@ import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
   CORES,
-  CORPOS,
+  ROSTOS,
   FUNDOS,
   PELES,
   ROUPAS,
   AVATAR_PADRAO,
   type Avatar as Receita,
-  type Corpo,
+  type Rosto,
 } from '@/data/avatar'
 import buttons from '@/styles/buttons.module.sass'
 import { ESTILOS, type Estilo } from './estilos'
@@ -54,6 +59,8 @@ import styles from './lab.module.sass'
  * ao jogo", que não é automática (não há servidor) — ela junta a peça numa
  * lista com o que falta fazer no código para promovê-la.
  */
+
+const HUMORES_DO_LAB: Humor[] = ['tranquilo', 'cansado', 'suando', 'chorando', 'burnout', 'vitoria']
 
 /** [mínimo, máximo, o que é, passo] */
 const LIMITES: Record<keyof Medidas, [number, number, string, number]> = {
@@ -84,9 +91,9 @@ const GRUPOS: { titulo: string; chaves: (keyof Medidas)[] }[] = [
   { titulo: 'Feições', chaves: ['nariz', 'sobrancelha', 'olho', 'orelha'] },
 ]
 
-// v3: o estado ganhou o tronco e a orelha. Um estado da v2 não os tem, e a
-// página quebraria ao ler — mesma regra do save do jogo
-const CHAVE = 'clt:avatar-lab:v3'
+// v4: a receita trocou `corpo` por `rosto`. Um estado da v3 abriria com
+// `MEDIDAS[undefined]` e a página quebraria — mesma regra do save do jogo
+const CHAVE = 'clt:avatar-lab:v4'
 
 interface Estado {
   receita: Receita
@@ -98,18 +105,16 @@ interface Estado {
   aprovadas: string[]
 }
 
-function inicial(corpo: Corpo): Estado {
+function inicial(rosto: Rosto): Estado {
   return {
-    receita: { ...AVATAR_PADRAO, corpo, cabelo: 'longo', pele: 'media', cor: 'castanho' },
-    // a orelha não existe no jogo (0) e o laboratório é justamente onde ela
-    // se vê: abrir a bancada sem ela seria abrir sem a peça nova
-    medidas: { ...MEDIDAS[corpo], orelha: 4.2 },
+    receita: { ...AVATAR_PADRAO, rosto, cabelo: 'espetado', pele: 'media', cor: 'castanho' },
+    medidas: { ...MEDIDAS[rosto] },
     cores: {
       cabelo: '#6b4326', roupa: '#6f7f8c', fundo: '#d8cfba',
       pele: '', acessorio: '#8c5a58', olho: '#8a6330',
     },
     pecas: { silhueta: '', franja: '', mecha: '' },
-    teste: { cabelo: 'longo', acessorio: 'nenhum', olhos: 'simples', tronco: 'padrao' },
+    teste: { cabelo: 'espetado', acessorio: 'nenhum', olhos: 'amendoa', tronco: 'colado' },
     aprovadas: [],
   }
 }
@@ -123,7 +128,7 @@ interface Promocao {
 }
 
 export default function AvatarLabPage() {
-  const [e, setE] = useState<Estado>(() => inicial('homem'))
+  const [e, setE] = useState<Estado>(() => inicial('quadrado'))
   const [copiado, setCopiado] = useState(false)
   const [promovendo, setPromovendo] = useState<Promocao | null>(null)
 
@@ -149,23 +154,22 @@ export default function AvatarLabPage() {
     }
   }, [])
 
-  function trocarCorpo(corpo: Corpo) {
-    // trocar de corpo recarrega as medidas dele: sem isso você ficaria
-    // editando os números do homem com o desenho da mulher na tela
-    // a orelha sobrevive à troca: ela é 0 em todo corpo do jogo, e recarregar
-    // o corpo a apagaria toda vez
-    guardar({
-      ...e,
-      receita: { ...e.receita, corpo },
-      medidas: { ...MEDIDAS[corpo], orelha: e.medidas.orelha },
-    })
+  function trocarRosto(rosto: Rosto) {
+    // trocar de rosto recarrega as medidas dele: sem isso você ficaria
+    // editando os números do quadrado com o desenho do oval na tela
+    guardar({ ...e, receita: { ...e.receita, rosto }, medidas: { ...MEDIDAS[rosto] } })
   }
 
   function aplicarEstilo(es: Estilo) {
     guardar({
       ...e,
-      receita: { ...e.receita, corpo: es.corpo },
-      medidas: { ...MEDIDAS[es.corpo], ...es.medidas },
+      receita: {
+        ...e.receita,
+        rosto: es.rosto,
+        barba: es.barba ?? 'nenhuma',
+        oculos: es.oculos ?? 'nenhum',
+      },
+      medidas: { ...MEDIDAS[es.rosto], ...es.medidas },
       teste: es.teste,
     })
   }
@@ -199,7 +203,7 @@ export default function AvatarLabPage() {
     return { ...ajustes, teste: { ...e.teste, ...troca } }
   }
 
-  const codigo = `${e.receita.corpo}: { ${(Object.keys(LIMITES) as (keyof Medidas)[])
+  const codigo = `${e.receita.rosto}: { ${(Object.keys(LIMITES) as (keyof Medidas)[])
     .map((k) => `${k}: ${e.medidas[k]}`)
     .join(', ')} },`
 
@@ -233,7 +237,7 @@ export default function AvatarLabPage() {
               do Segmentado não quebram, e sem isto ele transbordava POR CIMA da
               coluna de controles, à direita */}
           <div className={styles.rolaLado}>
-            <Segmentado rotulo="Corpo" valor={e.receita.corpo} onChange={trocarCorpo} opcoes={CORPOS} />
+            <Segmentado rotulo="Rosto" valor={e.receita.rosto} onChange={trocarRosto} opcoes={ROSTOS} />
           </div>
         </div>
 
@@ -242,7 +246,7 @@ export default function AvatarLabPage() {
             <h2 className={styles.blocoTitulo}>Estilos inteiros</h2>
             <p className={styles.blocoDica}>
               Peça sozinha engana: o mesmo cabelo fica ruim com o pescoço de hoje e bom com o
-              tronco colado. Cada botão aqui troca <b>corpo, medidas, cabelo, tronco, olhos e
+              tronco colado. Cada botão aqui troca <b>rosto, medidas, cabelo, tronco, olhos e
               acessório de uma vez</b> — é assim que dá para comparar respostas inteiras em vez de
               peças soltas.
             </p>
@@ -253,7 +257,7 @@ export default function AvatarLabPage() {
                   rotulo={es.nome}
                   teste={es.nome !== 'Jogo hoje'}
                   ativa={
-                    e.receita.corpo === es.corpo &&
+                    e.receita.rosto === es.rosto &&
                     e.teste.cabelo === es.teste.cabelo &&
                     e.teste.tronco === es.teste.tronco &&
                     e.teste.olhos === es.teste.olhos &&
@@ -273,16 +277,21 @@ export default function AvatarLabPage() {
                           : [
                               'Um estilo não é uma peça: confirmar aqui é dizer “é este o caminho”, não “entra assim”.',
                               'Promova as peças dele uma a uma (cabelo, olhos, tronco) — cada uma tem um custo diferente, e o tronco e o acessório são os únicos que mexem na receita.',
-                              `As medidas deste estilo saem no código lá embaixo: troque de estilo, copie a linha e cole em MEDIDAS['${es.corpo}'] de Avatar.tsx.`,
+                              `As medidas deste estilo saem no código lá embaixo: troque de estilo, copie a linha e cole em MEDIDAS['${es.rosto}'] de Avatar.tsx.`,
                             ],
                     })
                   }
                 >
                   <Avatar
-                    avatar={{ ...e.receita, corpo: es.corpo }}
+                    avatar={{
+                      ...e.receita,
+                      rosto: es.rosto,
+                      barba: es.barba ?? 'nenhuma',
+                      oculos: es.oculos ?? 'nenhum',
+                    }}
                     tamanho={56}
                     ajustes={{
-                      medidas: { ...MEDIDAS[es.corpo], ...es.medidas },
+                      medidas: { ...MEDIDAS[es.rosto], ...es.medidas },
                       cores: ajustes.cores,
                       teste: es.teste,
                     }}
@@ -364,7 +373,7 @@ export default function AvatarLabPage() {
                           ? [
                               'Se for para TODO MUNDO: troque o padrão de TRONCOS em Avatar.tsx e tire o teste: true. Não mexe em receita nem em banco.',
                               'Se for ESCOLHA do jogador: acrescente tronco ao tipo Avatar, uma lista de rótulos, e um Segmentado em /perfil/editar.',
-                              'Repare que só o padrao olha o corpo (homem/mulher). Se um de teste virar o padrão, é ele que passa a dizer o que separa os dois corpos — e hoje quem diz isso é a gola.',
+                              'Nenhum tronco pergunta gênero: é uma escolha de roupa, e qualquer rosto veste qualquer um.',
                             ]
                           : [],
                       })
@@ -417,6 +426,43 @@ export default function AvatarLabPage() {
                   </Peca>
                 )
               })}
+            </div>
+          </section>
+
+          <section className={styles.bloco}>
+            <h2 className={styles.blocoTitulo}>Barba e óculos</h2>
+            <p className={styles.blocoDica}>
+              Nasceram direto na receita (v0.13), sem passar por teste: são da família do
+              acessório, soltas por cima do rosto. A barba é o que faz um rosto sem gênero ler
+              como masculino sem ninguém precisar perguntar.
+            </p>
+            <div className={styles.galeria}>
+              {(Object.keys(BARBAS) as Barba[]).map((id) => (
+                <Peca
+                  key={id}
+                  rotulo={BARBAS[id].rotulo}
+                  ativa={e.receita.barba === id}
+                  aprovada={false}
+                  aoEscolher={() => guardar({ ...e, receita: { ...e.receita, barba: id } })}
+                  aoPromover={() => {}}
+                >
+                  <Avatar avatar={{ ...e.receita, barba: id }} tamanho={56} ajustes={ajustes} />
+                </Peca>
+              ))}
+            </div>
+            <div className={styles.galeria}>
+              {(Object.keys(OCULOS) as Oculos[]).map((id) => (
+                <Peca
+                  key={id}
+                  rotulo={OCULOS[id].rotulo}
+                  ativa={e.receita.oculos === id}
+                  aprovada={false}
+                  aoEscolher={() => guardar({ ...e, receita: { ...e.receita, oculos: id } })}
+                  aoPromover={() => {}}
+                >
+                  <Avatar avatar={{ ...e.receita, oculos: id }} tamanho={56} ajustes={ajustes} />
+                </Peca>
+              ))}
             </div>
           </section>
 
@@ -487,7 +533,7 @@ export default function AvatarLabPage() {
           <button
             type="button"
             className={buttons.button}
-            onClick={() => guardar({ ...e, medidas: { ...MEDIDAS[e.receita.corpo] } })}
+            onClick={() => guardar({ ...e, medidas: { ...MEDIDAS[e.receita.rosto] } })}
           >
             Voltar às medidas do jogo
           </button>
@@ -548,7 +594,7 @@ export default function AvatarLabPage() {
                                   `Acrescente ${cor.hex} em ${slot.onde}.`,
                                   slot.chave === 'pele'
                                     ? 'A pele precisa dos TRÊS tons: base, sombra e sombra forte. O lab deriva as sombras automaticamente para ver o efeito, mas no jogo elas são escolhidas à mão — derivada some no tom escuro.'
-                                    : 'Confira na grade do rodapé: cor que fica boa num corpo costuma sumir em outro.',
+                                    : 'Confira na grade do rodapé: cor que fica boa num rosto costuma sumir em outro.',
                                 ],
                           })
                         }
@@ -622,25 +668,21 @@ export default function AvatarLabPage() {
         </div>
       </div>
 
-      <h2 className={styles.blocoTitulo}>Todo corte, em todo corpo</h2>
+      <h2 className={styles.blocoTitulo}>Todo corte, em todo rosto</h2>
       <p className={styles.blocoDica}>
         É aqui que o estrago aparece: um ajuste que fica bom num caso costuma abrir buraco em
-        outro. Cada corpo usa as <b>medidas dele</b> (a orelha é a sua), e o corpo que está em
-        edição usa os sliders — então a linha de cima muda enquanto você mexe e as outras duas
-        servem de controle.
+        outro. Cada rosto usa as <b>medidas dele</b>, e o que está em edição usa os sliders —
+        então uma coluna muda enquanto você mexe e as outras duas servem de controle.
       </p>
       <div className={styles.grade}>
         {(Object.keys(CABELOS_FORMA) as FormaDeCabelo[]).map((cab) =>
-          CORPOS.map((c) => (
+          ROSTOS.filter((r) => r.valor !== 'manequim').map((r) => (
             <Avatar
-              key={`${cab}-${c.valor}`}
+              key={`${cab}-${r.valor}`}
               tamanho={72}
-              avatar={{ ...e.receita, corpo: c.valor }}
+              avatar={{ ...e.receita, rosto: r.valor }}
               ajustes={{
-                medidas:
-                  c.valor === e.receita.corpo
-                    ? e.medidas
-                    : { ...MEDIDAS[c.valor], orelha: e.medidas.orelha },
+                medidas: r.valor === e.receita.rosto ? e.medidas : MEDIDAS[r.valor],
                 cores: ajustes.cores,
                 pecas: ajustes.pecas,
                 teste: { ...e.teste, cabelo: cab },
@@ -648,6 +690,21 @@ export default function AvatarLabPage() {
             />
           )),
         )}
+      </div>
+
+      <h2 className={styles.blocoTitulo}>Os humores, com o avatar de cima</h2>
+      <p className={styles.blocoDica}>
+        É a cara que a mesa mostra ao lado do nick, conforme o estresse sobe. Confira em{' '}
+        <b>24 px</b>: é o tamanho em que ela vive, e o que só se lê grande não serve para nada lá.
+      </p>
+      <div className={styles.grade}>
+        {HUMORES_DO_LAB.map((h) => (
+          <div key={h} className={styles.humor}>
+            <Avatar avatar={e.receita} tamanho={96} ajustes={ajustes} humor={h} />
+            <Avatar avatar={e.receita} tamanho={24} ajustes={ajustes} humor={h} />
+            <span>{h}</span>
+          </div>
+        ))}
       </div>
 
       {promovendo ? (

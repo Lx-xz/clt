@@ -26,7 +26,6 @@ export const EM_ANDAMENTO: string[] = [
   'Conquistas: um punhado de objetivos para perseguir além de ganhar o mês.',
   'Rebalancear: a medição com 1000 partidas simuladas mostrou 98% de burnout, quase sempre na primeira semana — o jogo está mais duro do que deveria.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
-  'Mais peças de avatar: oito cortes de cabelo (com degradê de máquina, espetado, topete e careca), orelha, roupa sem pescoço, boné, chapéu e sete olhos novos já estão desenhados e em teste no laboratório — falta decidir quais entram.',
   'O avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
   'Notificação de verdade (e-mail ou aviso no aparelho) quando o seu relato mudar de estado.',
@@ -36,6 +35,18 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.13',
+    data: '2026-09-30',
+    titulo: 'O avatar ganhou rosto, barba e humor',
+    itens: [
+      { tipo: 'novo', texto: 'Editor de avatar em abas, com a prévia fixa no topo e um botão de Sortear. Dez cortes de cabelo, oito olhos, cinco barbas, seis modelos de roupa, óculos e chapéu — que agora dá para usar juntos.' },
+      { tipo: 'melhor', texto: 'O avatar não pergunta mais "homem ou mulher": você escolhe o formato do rosto, e o resto vem do cabelo e da barba que escolher. Quem já tinha avatar abre com o mesmo rosto e a mesma gola de antes.' },
+      { tipo: 'melhor', texto: 'Todo avatar ganhou orelha e um olho novo, com brilho. Sete tons de pele em vez de três.' },
+      { tipo: 'novo', texto: 'Na mesa, o seu avatar fica ao lado do nick e sente o estresse com você: olheira, suor, lágrima — e o fim da partida mostra a cara do desfecho.' },
+      { tipo: 'correcao', texto: 'No fim da partida, o painel cobria o botão de Histórico. Agora o próprio painel tem "Ver o que aconteceu".' },
+    ],
+  },
   {
     versao: '0.12',
     data: '2026-09-16',
