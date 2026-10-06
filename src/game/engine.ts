@@ -541,6 +541,92 @@ export function escolherOpcao(input: GameState, indice: number): GameState {
   return checkDefeat(state)
 }
 
+// ------------------------------------------------------------------ prévia
+
+/**
+ * O que acontece com a energia de AMANHÃ se o dia fechar agora.
+ *
+ * A conta que sustenta o jogo — energia do dia = base − estresse — só
+ * existia em texto. Nas simulações, o jogador que perde é o que gasta toda a
+ * energia no que couber: Café e Hora Extra parecem bons hoje e cobram 1 de
+ * energia em TODOS os dias seguintes, até o fim de semana. Esta função é o
+ * número que mostra isso antes, e não depois.
+ *
+ * Ela roda o `endDay` de verdade num clone — o motor é puro, então simular é
+ * de graça — e lê a energia com que o dia seguinte nasce, recorrentes e fila
+ * do "amanhã" incluídos. Na sexta o dia seguinte é a segunda: o fim de semana
+ * tira o estresse dele antes da conta.
+ */
+export interface PrevisaoDeAmanha {
+  energia: number
+  estresse: number
+  /** O dia seguinte é uma segunda: o fim de semana entra antes. */
+  fimDeSemana: boolean
+  /** Fechar agora acaba a run (o burnout da cota perdida, por exemplo). */
+  desfecho: GameState['outcome']
+}
+
+export function previsaoDeAmanha(state: GameState): PrevisaoDeAmanha | null {
+  if (state.phase !== 'dia' || state.outcome !== 'jogando') return null
+  const fim = endDay(state)
+  // o motor recusou fechar (uma pergunta em aberto): não há o que prever
+  if (fim === state) return null
+  if (fim.outcome !== 'jogando') {
+    return { energia: 0, estresse: fim.stress, fimDeSemana: false, desfecho: fim.outcome }
+  }
+  if (fim.phase === 'sexta') {
+    const estresse = Math.max(0, fim.stress - fim.modo.descansoDoFimDeSemana)
+    return {
+      energia: Math.max(0, fim.modo.energiaBase - estresse),
+      estresse,
+      fimDeSemana: true,
+      desfecho: 'jogando',
+    }
+  }
+  return { energia: fim.energy, estresse: fim.stress, fimDeSemana: false, desfecho: 'jogando' }
+}
+
+/** Uma lista de ações que depende da sorte: a prévia dela é UM resultado
+ *  possível, e a mesa precisa dizer isso em vez de prometer o número. */
+function temAcaso(acoes: Acao[]): boolean {
+  return acoes.some((a) => {
+    switch (a.faz) {
+      case 'sorteio':
+        return true
+      case 'descartar':
+        return a.aleatorio === true
+      case 'comprar':
+        // comprar é sorte: a carta que vem é a do topo de um baralho que o
+        // jogador não vê
+        return true
+      case 'se':
+        return temAcaso(a.entao) || temAcaso(a.senao ?? [])
+      case 'escolherDescarte':
+        return temAcaso(a.entao ?? [])
+      case 'amanha':
+        return temAcaso(a.acoes)
+      case 'escolha':
+        return a.opcoes.some((o) => temAcaso(o.acoes))
+      default:
+        return false
+    }
+  })
+}
+
+/**
+ * Como a mesa ficaria se esta carta fosse jogada — sem jogá-la. É o mesmo
+ * `playCard`, num clone; o que muda é que o resultado não é guardado.
+ */
+export function preverJogada(state: GameState, uid: string): { depois: GameState; incerta: boolean } | null {
+  const instancia = state.hand.find((c) => c.uid === uid)
+  if (!instancia || !canPlay(state, instancia)) return null
+  const depois = playCard(state, uid)
+  if (depois === state) return null
+  const carta = getCard(instancia.cardId)
+  const incerta = carta.efeitos.some((e) => (e.quando ?? 'aoJogar') === 'aoJogar' && temAcaso(e.acoes))
+  return { depois, incerta }
+}
+
 // ------------------------------------------------------------------ embalo
 
 /** O que cada classe rende por nível de embalo. Os NÚMEROS são do modo

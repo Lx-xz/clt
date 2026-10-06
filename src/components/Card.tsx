@@ -31,6 +31,9 @@ export interface CardProps {
   /** Alvo em que soltar a carta conta como jogada. */
   dropRef?: RefObject<HTMLElement | null>
   onDragOver?: (over: boolean) => void
+  /** A carta entrou ou saiu de foco — mouse por cima, arraste, teclado. A
+   *  mesa usa para mostrar nos medidores o que a jogada faria. */
+  onPrevia?: (ativa: boolean) => void
   style?: CSSProperties
   className?: string
 }
@@ -56,6 +59,7 @@ export default function Card({
   onPlay,
   dropRef,
   onDragOver,
+  onPrevia,
   style,
   className,
 }: CardProps) {
@@ -113,6 +117,9 @@ export default function Card({
       if (Math.abs(dx) + Math.abs(dy) < LIMIAR_ARRASTE) return
       d.moveu = true
       ref.current?.classList.add(styles.arrastando)
+      // no toque não existe "passar por cima": o arraste é o único momento
+      // em que dá para mostrar a prévia antes de a carta cair no tapete
+      onPrevia?.(true)
     }
     // o deslocamento é o do ponteiro, em coordenadas de tela: a carta fica
     // exatamente sob o cursor, sem depender de medir a caixa girada
@@ -126,6 +133,7 @@ export default function Card({
     arraste.current = null
     ignorarClique.current = d.moveu
     onDragOver?.(false)
+    if (d.moveu && e.pointerType !== 'mouse') onPrevia?.(false)
     if (!d.moveu) {
       limpar()
       return
@@ -195,6 +203,17 @@ export default function Card({
         tabIndex={interativa || (faceDown && onOpen) ? 0 : undefined}
         aria-label={rotulo}
         onPointerDown={onPointerDown}
+        // passar o mouse é do mouse: no toque o `pointerenter` dispara junto
+        // com o clique, e a prévia piscaria a cada toque (a mesma armadilha
+        // da dica dos medidores)
+        onPointerEnter={(e) => {
+          if (e.pointerType === 'mouse' && !faceDown) onPrevia?.(true)
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType === 'mouse' && !arraste.current) onPrevia?.(false)
+        }}
+        onFocus={faceDown ? undefined : () => onPrevia?.(true)}
+        onBlur={faceDown ? undefined : () => onPrevia?.(false)}
         onPointerMove={onPointerMove}
         onPointerUp={soltar}
         onPointerCancel={soltar}

@@ -79,6 +79,46 @@
   color: var(--tinta-fraca)
   font-size: 12.5px
 
+// a prévia da jogada: cada número que muda, de quanto para quanto. O texto
+// fica na cor da tinta e só a seta de antes→depois ganha cor de bom/ruim
+.consequencias
+  display: flex
+  flex-direction: column
+  gap: 4px
+  padding: 8px 10px
+  background: var(--papel)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  font-size: 12.5px
+
+  ul
+    display: flex
+    flex-direction: column
+    gap: 2px
+    margin: 0
+    padding: 0
+    list-style: none
+
+  li
+    display: flex
+    justify-content: space-between
+    gap: 12px
+
+.consequenciasTitulo
+  color: var(--tinta-fraca)
+
+.melhora,
+.piora
+  font-family: var(--mono)
+  font-weight: 600
+  font-variant-numeric: tabular-nums
+
+.melhora
+  color: var(--produtividade)
+
+.piora
+  color: var(--estresse)
+
 .acoes
   display: flex
   flex-wrap: wrap

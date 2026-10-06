@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, BookOpen, Check, CloudOff, Layers, Loader, ScrollText } from 'lucide-react'
 import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import Card from '@/components/Card'
@@ -31,6 +31,8 @@ import {
   payBills,
   paySalary,
   playCard,
+  preverJogada,
+  previsaoDeAmanha,
   restWeekend,
   revealEvent,
   skipReward,
@@ -47,6 +49,10 @@ import { EVENTO_REINICIAR } from '@/components/SideNav'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
 import type { CardId, CardInstance, GameState } from '@/game/types'
+import type { PrevisaoDeAmanha } from '@/game/engine'
+import type { Consequencia } from '@/components/CardDetail'
+
+const EnergiaIcone = RESOURCE_ICONS.energia
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
 
@@ -103,6 +109,16 @@ export default function JogarPage() {
   const [confirmarFim, setConfirmarFim] = useState(false)
   const [vendoCartas, setVendoCartas] = useState(false)
   const [recompensaAberta, setRecompensaAberta] = useState<CardId | null>(null)
+  // a carta em foco (mouse por cima, arraste, teclado) ou a aberta no
+  // detalhe — no toque não existe "por cima", e o detalhe é onde se decide
+  const [previaUid, setPreviaUid] = useState<string | null>(null)
+  const focoDaPrevia = previaUid ?? aberta?.uid ?? null
+  const previa = useMemo(
+    () => (state && focoDaPrevia ? preverJogada(state, focoDaPrevia) : null),
+    [state, focoDaPrevia],
+  )
+  const amanha = useMemo(() => (state ? previsaoDeAmanha(state) : null), [state])
+  const amanhaComPrevia = useMemo(() => (previa ? previsaoDeAmanha(previa.depois) : null), [previa])
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -310,6 +326,8 @@ export default function JogarPage() {
             descricao={`Reinicia todo dia em ${state.modo.energiaBase} menos o estresse. É o que você gasta para jogar cartas.`}
             valor={state.energy}
             tom={styles.energia}
+            previa={previa?.depois.energy}
+            previaIncerta={previa?.incerta}
           />
           <Medidor
             icon={RESOURCE_ICONS.estresse}
@@ -319,6 +337,8 @@ export default function JogarPage() {
             total={state.modo.estresseMaximo}
             tom={styles.estresse}
             subirEhRuim
+            previa={previa?.depois.stress}
+            previaIncerta={previa?.incerta}
           />
           <Medidor
             icon={RESOURCE_ICONS.produtividade}
@@ -327,6 +347,8 @@ export default function JogarPage() {
             valor={state.productivity}
             total={state.dailyQuota}
             tom={styles.produtividade}
+            previa={previa?.depois.productivity}
+            previaIncerta={previa?.incerta}
           />
           <Medidor
             icon={RESOURCE_ICONS.dinheiro}
@@ -335,6 +357,8 @@ export default function JogarPage() {
             valor={state.money}
             prefixo="R$ "
             tom={styles.dinheiro}
+            previa={previa?.depois.money}
+            previaIncerta={previa?.incerta}
           />
           <Medidor
             icon={RESOURCE_ICONS.semana}
@@ -342,6 +366,8 @@ export default function JogarPage() {
             descricao={`Soma da produtividade dos ${state.modo.diasPorSemana} dias, já contando a de hoje. Não bater significa salário reduzido e advertência.`}
             valor={semanaComHoje}
             total={week.weeklyGoal}
+            previa={previa ? previa.depois.weekProductivity + previa.depois.productivity : undefined}
+            previaIncerta={previa?.incerta}
           />
           <Medidor
             icon={RESOURCE_ICONS.advertencias}
@@ -350,6 +376,7 @@ export default function JogarPage() {
             valor={state.warnings}
             total={state.modo.advertenciasMaximas}
             subirEhRuim
+            previa={previa?.depois.warnings}
           />
         </div>
         <span className={styles.espaco} />
@@ -417,9 +444,24 @@ export default function JogarPage() {
             // recusa de qualquer jeito, e o botão apagado explica por quê
             disabled={Boolean(escolhendo) || Boolean(state.escolhaAberta)}
             onClick={pedirFimDoDia}
+            title={amanha ? textoDeAmanha(amanha, state) : undefined}
           >
             <span className={styles.rotuloLongo}>Próximo dia</span>
             <span className={styles.rotuloCurto}>Próx. dia</span>
+            {/* a energia com que amanhã começa, se o dia fechar agora. É a
+                conta "base − estresse" que sustenta o jogo, feita em voz
+                alta — e com uma carta em foco, como ela mudaria */}
+            {amanha ? (
+              <span className={styles.amanha} aria-label={textoDeAmanha(amanha, state)}>
+                <EnergiaIcone size={12} aria-hidden />
+                {amanha.desfecho === 'jogando' ? amanha.energia : '✕'}
+                {amanhaComPrevia && amanhaComPrevia.energia !== amanha.energia ? (
+                  <span className={amanhaComPrevia.energia < amanha.energia ? styles.amanhaPior : styles.amanhaMelhor}>
+                    →{amanhaComPrevia.desfecho === 'jogando' ? amanhaComPrevia.energia : '✕'}
+                  </span>
+                ) : null}
+              </span>
+            ) : null}
             <ArrowRight size={15} aria-hidden />
           </button>
         ) : null}
@@ -570,6 +612,11 @@ export default function JogarPage() {
                     onPlay={podeJogar ? () => jogar(instancia.uid) : undefined}
                     dropRef={tapete}
                     onDragOver={setSobreTapete}
+                    onPrevia={(ativa) =>
+                      setPreviaUid((atual) =>
+                        ativa ? instancia.uid : atual === instancia.uid ? null : atual,
+                      )
+                    }
                   />
                 )
               })}
@@ -593,6 +640,8 @@ export default function JogarPage() {
           onClose={() => setAberta(null)}
           onPlay={canPlay(state, aberta) ? () => jogar(aberta.uid) : undefined}
           blockedReason={canPlay(state, aberta) ? undefined : motivoBloqueio(state, aberta)}
+          consequencias={previa ? consequenciasDe(state, previa.depois, amanha, amanhaComPrevia) : undefined}
+          incerta={previa?.incerta}
         />
       ) : null}
 
@@ -720,6 +769,7 @@ export default function JogarPage() {
             custa <b>+{state.modo.penalidadeDaCota} de estresse</b> — e ainda há carta na mão que
             dá para jogar.
           </p>
+          {amanha ? <p className={styles.painelTexto}>{textoDeAmanha(amanha, state)}</p> : null}
         </Dialogo>
       ) : null}
 
@@ -782,6 +832,40 @@ export default function JogarPage() {
       {historico ? <HistoricoDaRun state={state} onFechar={() => setHistorico(false)} /> : null}
     </main>
   )
+}
+
+/** A frase da energia de amanhã — a mesma no botão, na dica e no aviso. */
+function textoDeAmanha(a: PrevisaoDeAmanha, state: GameState): string {
+  if (a.desfecho === 'burnout') return 'Fechar o dia agora leva ao burnout.'
+  if (a.desfecho !== 'jogando') return 'Fechar o dia agora encerra a run.'
+  const conta = `${state.modo.energiaBase} − ${a.estresse} de estresse`
+  return a.fimDeSemana
+    ? `Se encerrar agora, segunda começa com ${a.energia} de energia (${conta}, já com o fim de semana).`
+    : `Se encerrar agora, amanhã começa com ${a.energia} de energia (${conta}).`
+}
+
+/** O que a carta aberta mudaria, para o detalhe mostrar antes do "Jogar". */
+function consequenciasDe(
+  antes: GameState,
+  depois: GameState,
+  amanha: PrevisaoDeAmanha | null,
+  amanhaDepois: PrevisaoDeAmanha | null,
+): Consequencia[] {
+  const linhas: Consequencia[] = [
+    { rotulo: 'Energia', de: antes.energy, para: depois.energy },
+    { rotulo: 'Estresse', de: antes.stress, para: depois.stress, subirEhRuim: true },
+    { rotulo: 'Produtividade', de: antes.productivity, para: depois.productivity },
+    { rotulo: 'Dinheiro', de: antes.money, para: depois.money },
+    { rotulo: 'Advertências', de: antes.warnings, para: depois.warnings, subirEhRuim: true },
+  ]
+  if (amanha && amanhaDepois && amanha.desfecho === 'jogando') {
+    linhas.push({
+      rotulo: amanha.fimDeSemana ? 'Energia na segunda' : 'Energia amanhã',
+      de: amanha.energia,
+      para: amanhaDepois.desfecho === 'jogando' ? amanhaDepois.energia : 0,
+    })
+  }
+  return linhas.filter((l) => l.de !== l.para)
 }
 
 function textoDaSexta(state: GameState): string {

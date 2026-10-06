@@ -15,6 +15,12 @@ interface MedidorProps {
   tom?: string
   /** Quando subir é ruim, como estresse e advertências. */
   subirEhRuim?: boolean
+  /** O valor que este medidor TERIA se a carta em foco fosse jogada. Só
+   *  aparece quando muda alguma coisa. */
+  previa?: number
+  /** A prévia depende da sorte (um sorteio, uma compra): o número é um
+   *  resultado possível, e não uma promessa. */
+  previaIncerta?: boolean
 }
 
 /** Interpola o número mostrado para a mudança ser vista, não só notada. */
@@ -57,6 +63,8 @@ export default function Medidor({
   prefixo,
   tom,
   subirEhRuim,
+  previa,
+  previaIncerta,
 }: MedidorProps) {
   const mostrado = useNumeroAnimado(valor)
   const [dica, setDica] = useState(false)
@@ -132,13 +140,16 @@ export default function Medidor({
   const bom = delta === null ? false : subirEhRuim ? delta < 0 : delta > 0
   const classes = [styles.medidor]
   if (delta !== null) classes.push(bom ? styles.subiu : styles.desceu)
+  const mostraPrevia = previa !== undefined && previa !== valor
+  const previaBoa = mostraPrevia && (subirEhRuim ? previa < valor : previa > valor)
+  if (mostraPrevia) classes.push(styles.emPrevia)
 
   return (
     <button
       ref={chip}
       type="button"
       className={classes.join(' ')}
-      aria-label={`${nome}: ${valor}${total !== undefined ? ` de ${total}` : ''}. ${descricao}`}
+      aria-label={`${nome}: ${valor}${total !== undefined ? ` de ${total}` : ''}${mostraPrevia ? `, iria para ${previa}${previaIncerta ? ' (depende da sorte)' : ''}` : ''}. ${descricao}`}
       // no toque, `pointerenter` dispara junto com o clique e os dois se
       // anulavam: a dica abria e fechava na mesma batida, ou pior, ficava
       // presa aberta. Passar o mouse é do mouse; tocar é só o clique.
@@ -156,6 +167,15 @@ export default function Medidor({
         {prefixo ? <span className={styles.prefixo}>{prefixo}</span> : null}
         {mostrado}
       </span>
+      {mostraPrevia ? (
+        <span
+          className={`${styles.previa} ${previaBoa ? styles.deltaBom : styles.deltaRuim}`}
+          aria-hidden
+        >
+          →{previa}
+          {previaIncerta ? '?' : ''}
+        </span>
+      ) : null}
       {total !== undefined ? <span className={styles.total}>/{total}</span> : null}
       {delta !== null ? (
         <span className={`${styles.delta} ${bom ? styles.deltaBom : styles.deltaRuim}`}>

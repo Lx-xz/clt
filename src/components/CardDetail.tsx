@@ -7,6 +7,14 @@ import Card from './Card'
 import { RESOURCE_ICONS, nomeDaClasse } from './icons'
 import styles from './CardDetail.module.sass'
 
+/** Um número que a jogada mudaria: de quanto para quanto. */
+export interface Consequencia {
+  rotulo: string
+  de: number
+  para: number
+  subirEhRuim?: boolean
+}
+
 interface CardDetailProps {
   card: ActionCard | EventCard
   /** Custo já ajustado pelo evento do dia, quando houver. */
@@ -19,6 +27,11 @@ interface CardDetailProps {
   /** O texto do botão de ação. A recompensa usa o mesmo detalhe para
    *  ESCOLHER a carta, e "Jogar carta" ali seria mentira. */
   rotuloAcao?: string
+  /** O que jogar AGORA mudaria — no toque não há "passar por cima", e é
+   *  aqui, antes do botão de jogar, que a decisão acontece. */
+  consequencias?: Consequencia[]
+  /** As consequências dependem da sorte: são um resultado possível. */
+  incerta?: boolean
 }
 
 export default function CardDetail({
@@ -28,6 +41,8 @@ export default function CardDetail({
   onPlay,
   blockedReason,
   rotuloAcao = 'Jogar carta',
+  consequencias,
+  incerta,
 }: CardDetailProps) {
   const evento = 'tone' in card
   useEffect(() => {
@@ -76,6 +91,26 @@ export default function CardDetail({
               ))
             : null}
           {blockedReason ? <p className={styles.nota}>{blockedReason}</p> : null}
+          {consequencias && consequencias.length > 0 ? (
+            <div className={styles.consequencias}>
+              <span className={styles.consequenciasTitulo}>
+                Se jogar agora{incerta ? ' (um resultado possível — depende da sorte)' : ''}:
+              </span>
+              <ul>
+                {consequencias.map((c) => {
+                  const bom = c.subirEhRuim ? c.para < c.de : c.para > c.de
+                  return (
+                    <li key={c.rotulo}>
+                      <span>{c.rotulo}</span>
+                      <span className={bom ? styles.melhora : styles.piora}>
+                        {c.de} → {c.para}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : null}
           <div className={styles.acoes}>
             {onPlay ? (
               <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={onPlay}>
