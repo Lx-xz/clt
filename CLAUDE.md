@@ -1136,6 +1136,31 @@ despejo **nunca** acontece: a conta de R$ 300 é irrelevante perto disso.
 Os números antigos do CLAUDE.md (309 burnouts em 500) eram anteriores ao Embalo
 e a um bot diferente — não compare os dois.
 
+**O segundo bot: `--bot cuidadoso`.** O de cima (o padrão, e o único que o
+`--hash` usa) joga tudo que cabe na energia — Café e Hora Extra inclusos —, e
+é por isso que morre no dia 5. O cuidadoso busca em profundidade a melhor
+sequência do dia e joga a primeira. **Os dois juntos são a régua:** o ingênuo é
+quem ainda não entendeu que estresse de hoje é energia a menos amanhã; o
+cuidadoso é o teto prático. A distância entre eles é o tamanho do que o jogo
+precisa ensinar — e foi para encurtá-la que a mesa ganhou a prévia da jogada.
+
+Medição de 06/10/2026, semente 1, depois da loja e do baralho mínimo:
+
+| | ingênuo (500) | cuidadoso (200) | cuidadoso sem loja (200) | cuidadoso, tudo equipado (120) |
+|---|---|---|---|---|
+| vitória | 0,4% | **75%** | 67% | 97% |
+| burnout | 98,6%, dia 5 | 16,5%, dia 10 | 23%, dia 10 | 3% |
+| demissão | 1% | 8,5% | 10% | 0% |
+| despejo | 0% | 0% | 0% | 0% |
+| R$ mediano nas vitórias | — | 465 | 725 | 990 |
+| compras na loja por run | — | 3,8 | — | 4,3 |
+
+A loja vale +8 pontos de vitória contra −R$ 260 de pontuação: é a troca que
+ela existe para criar. O despejo segue em 0% porque o bot guarda um colchão
+antes de comprar; uma pessoa que gaste tudo na loja e perca a meta da semana
+seguinte (salário reduzido de R$ 250 contra R$ 300 de aluguel) é despejada.
+`--sem-loja` fecha a loja e `--tudo` equipa todas as cartas, para comparar.
+
 ---
 
 ## Pendências abertas

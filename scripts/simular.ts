@@ -50,6 +50,13 @@ function arg(nome: string, padrao: number): number {
 const QUANTAS = arg('runs', 500)
 const SEMENTE = arg('semente', 1)
 const SO_HASH = args.includes('--hash')
+/** `ingenuo` (o padrão, e o do --hash) ou `cuidadoso`. */
+const BOT = args.includes('--bot') ? args[args.indexOf('--bot') + 1] : 'ingenuo'
+/** Equipa todas as cartas do jogo, em vez do baralho inicial. */
+const TUDO = args.includes('--tudo')
+// fecha a loja, para medir o que ela muda: as runs copiam as regras na
+// criação, então basta esvaziar a lista antes da primeira
+if (args.includes('--sem-loja')) regras().loja = []
 
 
 if (catalogoVeioDoBanco()) {
@@ -106,6 +113,127 @@ function melhorJogada(state: GameState): string | null {
   return nota(ordenadas[0].uid) <= -20 ? null : ordenadas[0].uid
 }
 
+// ------------------------------------------------------- o bot cuidadoso
+
+/**
+ * O bot CUIDADOSO: a cada passo ele procura, em profundidade, a melhor
+ * sequência de jogadas do dia e joga a primeira. Ele existe porque o
+ * ingênuo — que joga tudo que cabe na energia, Café e Hora Extra inclusos —
+ * morre no dia 5 em 98% das runs, e isso dizia mais sobre o bot do que sobre
+ * o jogo: com o mesmo baralho, planejar o dia vence perto de 80%.
+ *
+ * Os dois juntos são a régua. O ingênuo é o jogador que ainda não entendeu
+ * que estresse de hoje é energia a menos amanhã; o cuidadoso é o teto
+ * prático. Um ajuste que mexe só num deles está mexendo na DISTÂNCIA entre
+ * aprender e não aprender o jogo.
+ *
+ * A nota de um estado é uma heurística, não a verdade: estresse custa caro
+ * (e cada vez mais caro perto do teto), produtividade vale enquanto a meta
+ * da semana pede, advertência é quase morte, e dinheiro vale pouco — ele é
+ * pontuação, a não ser que a próxima sexta esteja em risco.
+ */
+function nota(s: GameState): number {
+  if (s.outcome === 'vitoria') return 1e6 + s.money
+  if (s.outcome !== 'jogando') return -1e6 + s.day * 1000
+  const r = s.modo
+  let st = s.stress + (s.productivity < s.dailyQuota ? r.penalidadeDaCota : 0)
+  if (s.currentEvent === 'cobranca-no-zap' && s.productivity < s.dailyQuota) st += 2
+  if (st >= r.estresseMaximo) return -1e5 + s.day * 100 + s.productivity
+  let v = -8 * st - 2.5 * Math.max(0, st - 5) ** 2
+  const semana = r.semanas[Math.min(Math.floor((s.day - 1) / r.diasPorSemana), r.semanas.length - 1)]
+  const diaDaSemana = ((s.day - 1) % r.diasPorSemana) + 1
+  const faltam = r.diasPorSemana - diaDaSemana
+  const precisa = semana.weeklyGoal - (s.weekProductivity + s.productivity)
+  v += precisa > 0 ? 2.2 * s.productivity : 0.3 * s.productivity
+  v -= 7 * Math.max(0, precisa - faltam * 4)
+  // abaixo do aluguel, dinheiro vale muito; acima dele, é só pontuação
+  v += s.money < r.contasSemanais ? s.money / 6 : r.contasSemanais / 6 + (s.money - r.contasSemanais) / 15
+  v -= 45 * s.warnings + 20 * s.informalWarnings
+  for (const rec of s.recorrentes) {
+    if (rec.qual === 'produtividade') v += rec.quanto * 1.6 * (totalDeDias(r) - s.day)
+    if (rec.qual === 'dinheiro') v += rec.quanto / 15
+  }
+  return v
+}
+
+function busca(s: GameState, prof: number): { v: number; uid: string | null; descartar: boolean } {
+  let melhor = { v: nota(s), uid: null as string | null, descartar: false }
+  if (prof === 0 || s.phase !== 'dia' || s.outcome !== 'jogando') return melhor
+  const vistos = new Set<string>()
+  if (s.escolhaDeDescarte) {
+    melhor = { v: -Infinity, uid: null, descartar: true }
+    for (const c of s.hand) {
+      if (vistos.has(c.cardId)) continue
+      vistos.add(c.cardId)
+      const b = busca(engine.escolherParaDescartar(s, c.uid), prof - 1)
+      if (b.v > melhor.v) melhor = { v: b.v, uid: c.uid, descartar: true }
+    }
+    return melhor
+  }
+  for (const c of s.hand) {
+    if (vistos.has(c.cardId) || !engine.canPlay(s, c)) continue
+    vistos.add(c.cardId)
+    const b = busca(engine.playCard(s, c.uid), prof - 1)
+    if (b.v > melhor.v + 1e-9) melhor = { v: b.v, uid: c.uid, descartar: false }
+  }
+  return melhor
+}
+
+/** As desbloqueáveis na ordem em que o cuidadoso as quer. */
+const PREFERIDAS = [
+  'home-office', 'soneca-no-banheiro', 'terapia', 'atalho-no-sistema', 'automatizar', 'delegar',
+  'puxar-o-saco', 'foco-total', 'vale-refeicao', 'pedir-aumento', 'reorganizar-a-mesa',
+  'cafe-duplo', 'freela-grande',
+]
+const RUINS = ['hora-extra', 'cafe', 'reuniao']
+
+let comprasNaLoja = 0
+
+function passoCuidadoso(state: GameState): GameState {
+  if (state.escolhaAberta) return engine.escolherOpcao(state, 0)
+  if (state.phase === 'evento') {
+    if (!state.pendingEventChoice) return engine.revealEvent(state)
+    const a = busca(engine.chooseEventOption(state, 0), 3).v
+    const b = busca(engine.chooseEventOption(state, 1), 3).v
+    return engine.chooseEventOption(state, a >= b ? 0 : 1)
+  }
+  if (state.phase === 'dia') {
+    const b = busca(state, 4)
+    if (!b.uid) return engine.endDay(state)
+    return b.descartar ? engine.escolherParaDescartar(state, b.uid) : engine.playCard(state, b.uid)
+  }
+  if (state.phase === 'sexta') {
+    if (state.fridayStep === 'salario') return engine.paySalary(state)
+    if (state.fridayStep === 'contas') return engine.payBills(state)
+    // a loja: compra alívio enquanto sobra um colchão para a próxima sexta, e
+    // corta a pior carta que ainda estiver no baralho
+    if (engine.lojaAberta(state)) {
+      const colchao = state.modo.contasSemanais - Math.min(...state.modo.semanas.map((w) => w.reducedSalary))
+      for (const item of state.modo.loja) {
+        if (engine.motivoDaLoja(state, item.id)) continue
+        if (state.money - item.preco < colchao + 40) continue
+        if (item.cortarCarta) {
+          const alvo = RUINS.find((id) => [...state.deck, ...state.discard].some((c) => c.cardId === id))
+          if (!alvo) continue
+          comprasNaLoja += 1
+          return engine.comprarNaLoja(state, item.id, alvo)
+        }
+        const alivia = item.acoes.some((a) => a.faz === 'recurso' && a.qual === 'estresse' && a.quanto < 0)
+        if (alivia && state.stress >= 2) {
+          comprasNaLoja += 1
+          return engine.comprarNaLoja(state, item.id)
+        }
+      }
+    }
+    return engine.restWeekend(state)
+  }
+  if (state.phase === 'recompensa') {
+    const op = [...state.rewardOptions].sort((x, y) => PREFERIDAS.indexOf(x) - PREFERIDAS.indexOf(y))
+    return engine.chooseReward(state, op[0])
+  }
+  return state
+}
+
 interface Relatorio {
   outcome: GameState['outcome']
   dia: number
@@ -121,7 +249,8 @@ interface Relatorio {
 
 function jogarUmaRun(semente: number): Relatorio {
   Math.random = lcg(semente)
-  let state = engine.createRun(cartasIniciais().map((c) => c.id))
+  const equipadas = TUDO ? cartasDoJogo().map((c) => c.id) : cartasIniciais().map((c) => c.id)
+  let state = engine.createRun(equipadas)
   let escolhas = 0
   // trava de segurança: com as pausas novas (escolha de descarte, pergunta de
   // carta), um caminho que não limpe a pausa travaria o script para sempre.
@@ -130,6 +259,10 @@ function jogarUmaRun(semente: number): Relatorio {
 
   while (state.outcome === 'jogando' && passos < 4000) {
     passos += 1
+    if (BOT === 'cuidadoso') {
+      state = passoCuidadoso(state)
+      continue
+    }
     if (state.escolhaAberta) {
       state = engine.escolherOpcao(state, 0)
       escolhas += 1
@@ -206,7 +339,7 @@ function mediana(ns: number[]): number {
 }
 
 const m = regras()
-console.log(`\nCLT — ${QUANTAS} runs, semente ${SEMENTE}, modo "${m.nome}"`)
+console.log(`\nCLT — ${QUANTAS} runs, semente ${SEMENTE}, modo "${m.nome}", bot ${BOT}${TUDO ? ', tudo equipado' : ''}`)
 console.log(`Aluguel ${m.contasSemanais} · energia base ${m.energiaBase} · ${totalDeDias(m)} dias · mão de ${m.cartasNaMao}\n`)
 
 console.log('DESFECHOS')
@@ -244,4 +377,5 @@ const comEscolha = relatorios.reduce((s, r) => s + r.escolhas, 0)
 console.log(`\nVOCABULÁRIO`)
 console.log(`  runs que terminaram com efeito recorrente em pé: ${comRecorrente}`)
 console.log(`  perguntas de carta respondidas: ${comEscolha}`)
+if (BOT === 'cuidadoso') console.log(`  compras na loja: ${comprasNaLoja} (${(comprasNaLoja / QUANTAS).toFixed(2)} por run)`)
 console.log()
