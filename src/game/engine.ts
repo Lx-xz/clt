@@ -291,6 +291,7 @@ export function createRun(equipped: CardId[]): GameState {
     history: [],
     log: [],
     jogadasNaSemana: [],
+    compradosNaSemana: [],
     outcome: 'jogando',
   }
 
@@ -841,6 +842,67 @@ export function payBills(input: GameState): GameState {
   return state
 }
 
+// ----------------------------------------------------------------- a loja
+
+/** A loja abre depois das contas, antes do descanso — o dinheiro que sobrou
+ *  já é o dinheiro de verdade. No último fim de semana ela fica fechada: a
+ *  run acaba no descanso, e gastar ali só tiraria pontos. */
+export function lojaAberta(state: GameState): boolean {
+  return (
+    state.outcome === 'jogando' &&
+    state.phase === 'sexta' &&
+    state.fridayStep === 'descanso' &&
+    state.day < totalDeDias(state.modo) &&
+    state.modo.loja.length > 0
+  )
+}
+
+/** Quantas cartas a run tem no total — baralho, mão e descarte. */
+function cartasNaRun(state: GameState): number {
+  return state.deck.length + state.hand.length + state.discard.length
+}
+
+/** Por que um item não pode ser comprado agora, ou `null` se pode. A mesa
+ *  mostra a frase no lugar do botão. */
+export function motivoDaLoja(state: GameState, itemId: string): string | null {
+  const item = state.modo.loja.find((i) => i.id === itemId)
+  if (!item) return 'Este item não existe mais.'
+  if (state.compradosNaSemana.includes(item.id)) return 'Já comprado neste fim de semana.'
+  if (state.money < item.preco) return `Falta R$ ${item.preco - state.money}.`
+  if (item.cortarCarta && cartasNaRun(state) <= state.modo.baralhoMinimo) {
+    return `O baralho está no mínimo (${state.modo.baralhoMinimo}).`
+  }
+  return null
+}
+
+/**
+ * Compra um item da loja. `cardId` é a carta que sai, no item que corta
+ * carta: uma cópia dela some do baralho DESTA run — a coleção não muda.
+ */
+export function comprarNaLoja(input: GameState, itemId: string, cardId?: CardId): GameState {
+  if (!lojaAberta(input) || motivoDaLoja(input, itemId)) return input
+  const state = clone(input)
+  const item = state.modo.loja.find((i) => i.id === itemId)
+  if (!item) return input
+
+  if (item.cortarCarta) {
+    // do descarte primeiro: na sexta a mão já foi descartada, e é lá que está
+    // quase tudo. Nenhuma cópia em lugar nenhum: a compra não acontece
+    const doDescarte = state.discard.findIndex((c) => c.cardId === cardId)
+    const doBaralho = state.deck.findIndex((c) => c.cardId === cardId)
+    if (doDescarte >= 0) state.discard.splice(doDescarte, 1)
+    else if (doBaralho >= 0) state.deck.splice(doBaralho, 1)
+    else return input
+    log(state, `${getCard(cardId!).name} saiu do baralho desta run.`)
+  }
+
+  state.money -= item.preco
+  state.compradosNaSemana.push(item.id)
+  executar(state, item.acoes, contexto())
+  log(state, `Fim de semana: ${item.nome} (−R$ ${item.preco}).`)
+  return checkDefeat(state)
+}
+
 export function restWeekend(input: GameState): GameState {
   let state = clone(input)
   if (state.phase !== 'sexta' || state.fridayStep !== 'descanso') return input
@@ -849,6 +911,7 @@ export function restWeekend(input: GameState): GameState {
   state.stress = Math.max(0, state.stress - alivio)
   state.weekProductivity = 0
   state.jogadasNaSemana = []
+  state.compradosNaSemana = []
   state.fridayStep = null
   log(state, `Fim de semana: −${alivio} estresse.`)
 

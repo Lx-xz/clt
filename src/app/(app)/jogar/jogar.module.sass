@@ -464,6 +464,12 @@
   flex-direction: column
   gap: 12px
   max-width: 560px
+  // a sexta com a loja ficou mais alta que a tela do celular: quem rola é o
+  // painel, e a página atrás continua parada
+  max-height: calc(100dvh - 40px)
+  min-width: 0
+  overflow-y: auto
+  overscroll-behavior: contain
   padding: 22px
   background: var(--papel-alto)
   border: 1px solid var(--linha)
@@ -566,6 +572,68 @@
 
 .saida
   color: var(--estresse)
+
+// ------------------------------------------------------------- a lojinha
+.loja
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding-top: 8px
+  border-top: 1px solid var(--linha)
+
+.lojaTitulo
+  font-size: 15px
+
+.lojaNota
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12.5px
+
+.lojaItens
+  display: flex
+  flex-direction: column
+  margin: 0
+  padding: 0
+  list-style: none
+
+.lojaItem
+  display: grid
+  grid-template-columns: minmax(0, 1fr) auto auto
+  align-items: center
+  gap: 4px 12px
+  padding: 8px 2px
+  border-bottom: 1px dotted var(--linha)
+
+  button
+    padding: 6px 12px
+    font-size: 13px
+
+.lojaComprado
+  opacity: .6
+
+.lojaNome
+  display: flex
+  flex-direction: column
+  min-width: 0
+  font-size: 13.5px
+
+  span
+    color: var(--tinta-fraca)
+    font-size: 12.5px
+
+.lojaPreco
+  font-family: var(--mono)
+  font-size: 14px
+  font-weight: 600
+  font-variant-numeric: tabular-nums
+
+// o motivo ocupa a linha de baixo inteira, embaixo do botão apagado: um
+// botão cinza sem explicação é um mistério
+.lojaMotivo
+  grid-column: 1 / -1
+  color: var(--tinta-fraca)
+  font-size: 11.5px
+  text-align: right
 
 .recompensas
   display: flex

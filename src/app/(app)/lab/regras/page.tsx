@@ -3,17 +3,26 @@
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import Check from '@/components/Check'
 import Dialogo from '@/components/Dialogo'
 import {
   Origem,
   PedirMotivo,
   estilosDaBancada as comuns,
 } from '../_catalogo/Bancada'
+import { ListaDeAcoes } from '../_catalogo/EditorDeAcoes'
 import { salvarModo, semearCatalogo } from '@/data/cartas'
 import { CARTAS_BASE } from '@/game/cards'
 import { EVENTOS_BASE } from '@/game/events'
 import { catalogoVeioDoBanco } from '@/game/catalogo'
-import { MODO_NORMAL, modosDisponiveis, regras, totalDeDias, type Regras } from '@/game/regras'
+import {
+  MODO_NORMAL,
+  modosDisponiveis,
+  regras,
+  totalDeDias,
+  type ItemDaLoja,
+  type Regras,
+} from '@/game/regras'
 import type { WeekConfig } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from '../cartas/cartas.module.sass'
@@ -80,6 +89,15 @@ function resumoDaMudanca(antes: Regras, depois: Regras): string {
   if (antes.semanas.length !== depois.semanas.length) {
     partes.push(`Semanas: ${antes.semanas.length} → ${depois.semanas.length}`)
   }
+  for (const item of depois.loja) {
+    const a = antes.loja.find((i) => i.id === item.id)
+    if (!a) partes.push(`Loja: ${item.nome} novo`)
+    else if (a.preco !== item.preco) partes.push(`Loja ${item.nome}: R$ ${a.preco} → ${item.preco}`)
+    else if (JSON.stringify(a) !== JSON.stringify(item)) partes.push(`Loja: ${item.nome} mudou`)
+  }
+  for (const a of antes.loja) {
+    if (!depois.loja.some((i) => i.id === a.id)) partes.push(`Loja: ${a.nome} saiu`)
+  }
   return partes.join(' · ') || 'Salvo sem mudança de número'
 }
 
@@ -121,6 +139,24 @@ export default function LabRegrasPage() {
   function mudarNumero(campo: keyof Regras, valor: number) {
     if (!emEdicao) return
     setEmEdicao({ ...emEdicao, [campo]: valor })
+  }
+
+  function mudarItem(i: number, mudanca: Partial<ItemDaLoja>) {
+    if (!emEdicao) return
+    const loja = emEdicao.loja.map((item, j) => (i === j ? { ...item, ...mudanca } : item))
+    setEmEdicao({ ...emEdicao, loja })
+  }
+
+  function novoItem() {
+    if (!emEdicao) return
+    const item: ItemDaLoja = {
+      id: `item-${Date.now().toString(36)}`,
+      nome: 'Item novo',
+      texto: '',
+      preco: 50,
+      acoes: [],
+    }
+    setEmEdicao({ ...emEdicao, loja: [...emEdicao.loja, item] })
   }
 
   function mudarSemana(i: number, campo: keyof WeekConfig, valor: number) {
@@ -228,6 +264,62 @@ export default function LabRegrasPage() {
               </tbody>
             </table>
           </div>
+
+          <h3 className={styles.subtituloDialogo}>Lojinha do fim de semana</h3>
+          <p className={comuns.dica}>
+            Abre depois das contas, menos no último fim de semana. Cada item sai uma vez por
+            semana, e o que ele faz é a mesma lista de ações das cartas. Lista vazia desliga a
+            loja.
+          </p>
+          {emEdicao.loja.map((item, i) => (
+            <fieldset key={item.id} className={styles.itemDaLoja}>
+              <div className={styles.campos}>
+                <label className={comuns.rotulo}>
+                  Nome
+                  <input
+                    className={comuns.campo}
+                    value={item.nome}
+                    onChange={(e) => mudarItem(i, { nome: e.target.value })}
+                  />
+                </label>
+                <label className={comuns.rotulo}>
+                  Texto na loja
+                  <input
+                    className={comuns.campo}
+                    value={item.texto}
+                    onChange={(e) => mudarItem(i, { texto: e.target.value })}
+                  />
+                </label>
+                <label className={comuns.rotulo}>
+                  Preço (R$)
+                  <input
+                    className={comuns.campo}
+                    type="number"
+                    min={0}
+                    value={item.preco}
+                    onChange={(e) => mudarItem(i, { preco: Number(e.target.value) || 0 })}
+                  />
+                </label>
+              </div>
+              <Check
+                marcado={Boolean(item.cortarCarta)}
+                onChange={(v) => mudarItem(i, { cortarCarta: v || undefined })}
+              >
+                Tira 1 carta do baralho da run (o jogador escolhe qual)
+              </Check>
+              <ListaDeAcoes acoes={item.acoes} aoMudar={(acoes) => mudarItem(i, { acoes })} />
+              <button
+                type="button"
+                className={buttons.button}
+                onClick={() => setEmEdicao({ ...emEdicao, loja: emEdicao.loja.filter((_, j) => j !== i) })}
+              >
+                Tirar da loja
+              </button>
+            </fieldset>
+          ))}
+          <button type="button" className={buttons.button} onClick={novoItem}>
+            Acrescentar item
+          </button>
 
           <p className={styles.conta}>
             Dá <b>{totalDeDias(emEdicao)} dias úteis</b>. Entra{' '}

@@ -1,4 +1,26 @@
+import type { Acao } from './acoes'
 import type { WeekConfig } from './types'
+
+/**
+ * Um item da lojinha de fim de semana.
+ *
+ * Ela existe porque o dinheiro não tinha uso: em todas as simulações o
+ * despejo deu 0%, e a classe `grana` servia só para a pontuação. Com a loja,
+ * dinheiro vira estresse a menos — e cada real gasto sai da pontuação final,
+ * que é a troca que dá sentido a juntar.
+ *
+ * O que o item faz é lista de ações, a mesma linguagem das cartas. A exceção
+ * é `cortarCarta`: tirar uma carta do baralho da run não é coisa que carta
+ * nenhuma deveria poder fazer, então não virou ação — é um poder da loja.
+ */
+export interface ItemDaLoja {
+  id: string
+  nome: string
+  texto: string
+  preco: number
+  acoes: Acao[]
+  cortarCarta?: boolean
+}
 
 /**
  * As regras do jogo — os números que não pertencem a carta nenhuma.
@@ -46,6 +68,8 @@ export interface Regras {
    *  cartas ruins até sobrar só o que presta dava 100% de vitória nas
    *  simulações — e um baralho de 5 cartas compra a mesma mão todo dia. */
   baralhoMinimo: number
+  /** A lojinha de fim de semana. Lista vazia desliga a loja. */
+  loja: ItemDaLoja[]
   semanas: WeekConfig[]
   versao: number
 }
@@ -71,6 +95,40 @@ export const MODO_NORMAL: Regras = {
   // o tamanho do baralho inicial: até desbloquear alguma coisa, não dá para
   // tirar carta nenhuma — só trocar
   baralhoMinimo: 15,
+  // preços pensados contra a sobra da semana: o salário cheio deixa R$ 100
+  // depois do aluguel, então o alívio maior pede ter juntado com cartas de
+  // grana — e cada compra sai da pontuação final
+  loja: [
+    {
+      id: 'happy-hour',
+      nome: 'Happy hour com a turma',
+      texto: '−1 de estresse',
+      preco: 60,
+      acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -1 }],
+    },
+    {
+      id: 'massagem',
+      nome: 'Massagem',
+      texto: '−2 de estresse',
+      preco: 140,
+      acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -2 }],
+    },
+    {
+      id: 'faxina',
+      nome: 'Pagar a faxina',
+      texto: 'Segunda começa com +2 de energia',
+      preco: 70,
+      acoes: [{ faz: 'amanha', acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }],
+    },
+    {
+      id: 'largar-tarefa',
+      nome: 'Largar uma tarefa',
+      texto: 'Tira 1 carta do baralho desta run',
+      preco: 50,
+      acoes: [],
+      cortarCarta: true,
+    },
+  ],
   semanas: [
     { week: 1, dailyQuota: 3, weeklyGoal: 16, fullSalary: 400, reducedSalary: 250 },
     { week: 2, dailyQuota: 3, weeklyGoal: 18, fullSalary: 400, reducedSalary: 250 },
@@ -98,6 +156,7 @@ export function completarRegras(bruto: Partial<Regras> | null | undefined): Regr
     ...b,
     id: b.id ?? MODO_NORMAL.id,
     semanas: b.semanas?.length ? b.semanas : MODO_NORMAL.semanas,
+    loja: Array.isArray(b.loja) ? b.loja : MODO_NORMAL.loja,
   }
 }
 

@@ -277,6 +277,9 @@ export interface GameState {
   /** Cartas jogadas nesta semana, sem repetir — é o sujeito do gatilho
    *  `fimDaSemana`. Zera junto com `weekProductivity`, no descanso. */
   jogadasNaSemana: CardId[]
+  /** Itens da loja comprados neste fim de semana: cada um sai uma vez por
+   *  semana. Zera no descanso. */
+  compradosNaSemana: string[]
   outcome: 'jogando' | 'vitoria' | 'burnout' | 'demissao' | 'despejo'
 }
 

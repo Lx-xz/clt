@@ -242,6 +242,20 @@
   margin: 20px 0 4px
   font-size: 15px
 
+// um item da lojinha no /lab/regras: nome, preço, e o que ele faz em blocos
+.itemDaLoja
+  display: flex
+  flex-direction: column
+  gap: 10px
+  margin: 0
+  padding: 12px
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  min-width: 0
+
+  > button
+    align-self: flex-start
+
 // a tabela é a única coisa da página que pode passar da largura: no celular
 // quatro colunas de número não cabem, e encolher o campo até caber deixaria
 // de dar para digitar

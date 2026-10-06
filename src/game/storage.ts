@@ -123,6 +123,7 @@ export function migrarRun<T>(bruta: unknown): T | null {
   r.ultimaMensagem ??= null
   r.escolhaAberta ??= null
   r.jogadasNaSemana ??= []
+  r.compradosNaSemana ??= []
 
   // a run copiou as regras antes de os números novos existirem (penalidade
   // da cota, embalo, recompensas, baralho mínimo). O padrão de cada um é o

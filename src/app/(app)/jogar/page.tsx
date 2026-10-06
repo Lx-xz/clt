@@ -7,6 +7,7 @@ import Card from '@/components/Card'
 import CartasDaRun from '@/components/CartasDaRun'
 import CurvaDeEstresse from '@/components/CurvaDeEstresse'
 import Dialogo from '@/components/Dialogo'
+import EscolherCarta from '@/components/EscolherCarta'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
@@ -21,6 +22,9 @@ import {
   canPlay,
   chooseEventOption,
   chooseReward,
+  comprarNaLoja,
+  lojaAberta,
+  motivoDaLoja,
   createRun,
   currentWeek,
   dayLabel,
@@ -109,6 +113,8 @@ export default function JogarPage() {
   const [confirmarFim, setConfirmarFim] = useState(false)
   const [vendoCartas, setVendoCartas] = useState(false)
   const [recompensaAberta, setRecompensaAberta] = useState<CardId | null>(null)
+  // o item da loja que tira carta, esperando o jogador apontar qual
+  const [cortando, setCortando] = useState<string | null>(null)
   // a carta em foco (mouse por cima, arraste, teclado) ou a aberta no
   // detalhe — no toque não existe "por cima", e o detalhe é onde se decide
   const [previaUid, setPreviaUid] = useState<string | null>(null)
@@ -677,6 +683,43 @@ export default function JogarPage() {
 
             <p className={styles.painelTexto}>{textoDaSexta(state)}</p>
 
+            {lojaAberta(state) ? (
+              <section className={styles.loja} aria-label="Lojinha do fim de semana">
+                <h3 className={styles.lojaTitulo}>O que fazer com o dinheiro</h3>
+                <p className={styles.lojaNota}>
+                  Cada compra sai da pontuação final — e o aluguel da próxima sexta continua
+                  sendo R$ {state.modo.contasSemanais}.
+                </p>
+                <ul className={styles.lojaItens}>
+                  {state.modo.loja.map((item) => {
+                    const motivo = motivoDaLoja(state, item.id)
+                    const comprado = state.compradosNaSemana.includes(item.id)
+                    return (
+                      <li key={item.id} className={`${styles.lojaItem} ${comprado ? styles.lojaComprado : ''}`}>
+                        <span className={styles.lojaNome}>
+                          <b>{item.nome}</b>
+                          <span>{item.texto}</span>
+                        </span>
+                        <span className={styles.lojaPreco}>R$ {item.preco}</span>
+                        <button
+                          type="button"
+                          className={buttons.button}
+                          disabled={motivo !== null}
+                          title={motivo ?? undefined}
+                          onClick={() =>
+                            item.cortarCarta ? setCortando(item.id) : update(comprarNaLoja(state, item.id))
+                          }
+                        >
+                          {comprado ? 'Feito' : 'Comprar'}
+                        </button>
+                        {motivo && !comprado ? <span className={styles.lojaMotivo}>{motivo}</span> : null}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ) : null}
+
             <div className={styles.acoes}>
               {state.fridayStep === 'salario' ? (
                 <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(paySalary(state))}>
@@ -771,6 +814,20 @@ export default function JogarPage() {
           </p>
           {amanha ? <p className={styles.painelTexto}>{textoDeAmanha(amanha, state)}</p> : null}
         </Dialogo>
+      ) : null}
+
+      {cortando && lojaAberta(state) ? (
+        <EscolherCarta
+          titulo="Qual carta sai?"
+          explicacao={`Uma cópia dela sai do baralho desta run — a sua coleção não muda. O baralho não pode ficar abaixo de ${state.modo.baralhoMinimo}.`}
+          cartas={[...state.deck, ...state.discard]}
+          onFechar={() => setCortando(null)}
+          aoEscolher={(id) => {
+            const item = cortando
+            setCortando(null)
+            update(comprarNaLoja(state, item, id))
+          }}
+        />
       ) : null}
 
       {vendoCartas ? (
