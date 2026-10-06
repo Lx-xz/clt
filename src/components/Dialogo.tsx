@@ -1,8 +1,9 @@
 'use client'
 
 import { X } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import styles from './Dialogo.module.sass'
+import { useFocoPreso } from './useFocoPreso'
 
 /** Quantos popups estão abertos agora — é o que trava a página atrás. */
 let abertos = 0
@@ -33,7 +34,10 @@ export default function Dialogo({
   acoes?: React.ReactNode
 }) {
   const fundo = useRef<HTMLDivElement>(null)
+  const painel = useRef<HTMLDivElement>(null)
   const comecouNoFundo = useRef(false)
+  const idDoTitulo = useId()
+  useFocoPreso(painel)
 
   useEffect(() => {
     // contagem, e não um booleano: um popup aberto por cima de outro não pode
@@ -68,13 +72,17 @@ export default function Dialogo({
       onClick={(e) => {
         if (comecouNoFundo.current && e.target === fundo.current) onFechar()
       }}
-      role="dialog"
-      aria-modal="true"
-      aria-label={titulo}
     >
-      <div className={`${styles.dialogo} ${largo ? styles.largo : ''}`}>
+      <div
+        ref={painel}
+        className={`${styles.dialogo} ${largo ? styles.largo : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={idDoTitulo}
+        tabIndex={-1}
+      >
         <div className={styles.cabecalho}>
-          <h2 className={styles.titulo}>{titulo}</h2>
+          <h2 className={styles.titulo} id={idDoTitulo}>{titulo}</h2>
           <button type="button" className={styles.fechar} onClick={onFechar} aria-label="Fechar">
             <X size={18} aria-hidden />
           </button>

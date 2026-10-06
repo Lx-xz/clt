@@ -4,7 +4,9 @@
   z-index: 200
   display: grid
   place-items: center
-  padding: 20px
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))
+  overflow-y: auto
+  overscroll-behavior: contain
   background: color-mix(in srgb, var(--tinta) 55%, transparent)
   animation: surgir .16s ease
 
@@ -27,6 +29,10 @@
   border: 1px solid var(--linha)
   border-radius: 8px
   box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
+
+// recebe o foco ao abrir; o anel fica com os botões de dentro
+.painel:focus
+  outline: none
 
 .carta
   --carta-w: 208px

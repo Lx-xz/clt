@@ -1,8 +1,14 @@
 // A casca ocupa exatamente a janela: quem rola é o conteúdo, nunca a página.
+//
+// O padding de área segura existe por causa do `viewportFit: 'cover'` do
+// layout: com ele, o app instalado no iPhone pinta embaixo do entalhe e da
+// barra de gestos — e sem este padding o HUD ficava atrás do entalhe e a mão
+// de cartas atrás da barra. Fora do iPhone `env()` vale 0 e nada muda.
 .shell
   display: flex
   height: 100dvh
   overflow: hidden
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)
 
 .conteudo
   flex: 1

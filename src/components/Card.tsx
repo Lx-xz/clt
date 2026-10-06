@@ -102,6 +102,13 @@ export default function Card({
   }
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // retorno imediato ao dedo: o detalhe ainda espera a janela do toque
+    // duplo, mas a carta levanta agora
+    if (e.pointerType !== 'mouse' && interativa && !faceDown) {
+      const el = ref.current
+      el?.classList.add(styles.tocada)
+      setTimeout(() => el?.classList.remove(styles.tocada), 320)
+    }
     if (!onPlay || disabled || locked || faceDown || e.button !== 0) return
     ignorarClique.current = false
     arraste.current = { x: e.clientX, y: e.clientY, moveu: false }
@@ -180,11 +187,20 @@ export default function Card({
   if (disabled) classes.push(styles.indisponivel)
   if (locked) classes.push(styles.bloqueada)
 
+  // o rótulo é o que o leitor de tela lê, e ele não lia o EFEITO da carta de
+  // ação — só nome e custo. Os comandos dizem as teclas também: "clique
+  // duplo" não diz nada a quem joga pelo teclado
   const rotulo = evento
     ? faceDown
       ? 'Carta de evento virada para baixo. Clique para revelar.'
       : `${card.name}. ${card.text}`
-    : `${card.name}, custa ${custo} de energia. Clique para ver o detalhe, clique duplo para jogar.`
+    : `${card.name}, custa ${custo} de energia. ${card.text}.${
+        onPlay
+          ? ' Enter ou clique abre o detalhe; espaço, clique duplo ou arrastar até o tapete joga.'
+          : onOpen
+            ? ' Enter ou clique abre o detalhe.'
+            : ''
+      }`
 
   return (
     <div className={`${styles.palco} ${className ?? ''}`} style={style}>
@@ -212,7 +228,16 @@ export default function Card({
         onPointerLeave={(e) => {
           if (e.pointerType === 'mouse' && !arraste.current) onPrevia?.(false)
         }}
-        onFocus={faceDown ? undefined : () => onPrevia?.(true)}
+        // só o foco de TECLADO mostra a prévia: o detalhe devolve o foco para
+        // a carta ao fechar, e com o mouse isso deixaria a prévia acesa sem
+        // ninguém estar olhando a carta
+        onFocus={
+          faceDown
+            ? undefined
+            : (e) => {
+                if (e.currentTarget.matches(':focus-visible')) onPrevia?.(true)
+              }
+        }
         onBlur={faceDown ? undefined : () => onPrevia?.(false)}
         onPointerMove={onPointerMove}
         onPointerUp={soltar}

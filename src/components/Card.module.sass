@@ -181,7 +181,9 @@ $levantada: 18px
 .nome
   // acompanha o tamanho da carta: em carta pequena o nome de 3 linhas
   // empurrava o texto do efeito para fora
-  font-size: clamp(10px, calc(var(--carta-h, 200px) * .066), 14px)
+  // o piso subiu de 10px: no leque do desktop (carta de 132px) o nome caía
+  // para 10px e o efeito para 9px, ilegíveis sem abrir o detalhe
+  font-size: clamp(11px, calc(var(--carta-h, 200px) * .066), 14px)
   font-weight: 650
   line-height: 1.18
   display: -webkit-box
@@ -203,7 +205,7 @@ $levantada: 18px
 .texto
   margin: 0
   color: var(--tinta-fraca)
-  font-size: clamp(9px, calc(var(--carta-h, 200px) * .058), 12.5px)
+  font-size: clamp(10.5px, calc(var(--carta-h, 200px) * .058), 12.5px)
   line-height: 1.32
   // o texto completo vive no detalhe; aqui ele só não pode vazar
   display: -webkit-box
@@ -230,3 +232,16 @@ $levantada: 18px
 
   .selo
     color: var(--destaque)
+
+// no toque não existe hover: a carta levanta no instante do dedo, porque o
+// detalhe só abre depois da janela do toque duplo (240ms) — sem isto, o
+// toque parecia não ter acontecido
+.tocada:not(.indisponivel)
+  --ty: calc(var(--lift, 0px) - #{$levantada})
+  --sc: 1.06
+  z-index: 20
+
+// movimento reduzido: a carta muda de lugar sem deslizar e vira sem girar
+@media (prefers-reduced-motion: reduce)
+  .carta
+    transition: none

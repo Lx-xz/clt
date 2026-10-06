@@ -8,6 +8,7 @@ import CartasDaRun from '@/components/CartasDaRun'
 import CurvaDeEstresse from '@/components/CurvaDeEstresse'
 import Dialogo from '@/components/Dialogo'
 import EscolherCarta from '@/components/EscolherCarta'
+import { useFocoPreso } from '@/components/useFocoPreso'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
@@ -264,8 +265,7 @@ export default function JogarPage() {
   if (falha) {
     return (
       <main className={styles.mesa}>
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
+        <PainelDaMesa rotulo="Não deu para carregar">
             <h2 className={styles.painelTitulo}>Não deu para carregar seu save</h2>
             <p className={styles.painelTexto}>{falha}</p>
             <div className={styles.acoes}>
@@ -277,8 +277,7 @@ export default function JogarPage() {
                 Tentar de novo
               </button>
             </div>
-          </div>
-        </div>
+        </PainelDaMesa>
       </main>
     )
   }
@@ -286,8 +285,7 @@ export default function JogarPage() {
   if (baralhoCurto) {
     return (
       <main className={styles.mesa}>
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
+        <PainelDaMesa rotulo="Baralho curto demais">
             <h2 className={styles.painelTitulo}>Baralho curto demais</h2>
             <p className={styles.painelTexto}>
               Seu baralho tem {baralhoCurto.tem} cartas e uma run precisa de pelo menos{' '}
@@ -299,8 +297,7 @@ export default function JogarPage() {
                 Montar o baralho
               </Link>
             </div>
-          </div>
-        </div>
+        </PainelDaMesa>
       </main>
     )
   }
@@ -652,8 +649,7 @@ export default function JogarPage() {
       ) : null}
 
       {state.phase === 'sexta' ? (
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
+        <PainelDaMesa rotulo="Sexta-feira">
             <h2 className={styles.painelTitulo}>Sexta-feira</h2>
 
             <ol className={styles.passos}>
@@ -737,13 +733,11 @@ export default function JogarPage() {
                 </button>
               ) : null}
             </div>
-          </div>
-        </div>
+        </PainelDaMesa>
       ) : null}
 
       {state.phase === 'recompensa' ? (
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
+        <PainelDaMesa rotulo="Recompensa da semana">
             <h2 className={styles.painelTitulo}>Recompensa da semana</h2>
             <p className={styles.painelTexto}>
               Toque numa carta para ler e escolher. Ela entra no baralho desta run e fica na sua
@@ -768,8 +762,7 @@ export default function JogarPage() {
                 Seguir sem carta nova
               </button>
             </div>
-          </div>
-        </div>
+        </PainelDaMesa>
       ) : null}
 
       {recompensaAberta && state.phase === 'recompensa' ? (
@@ -835,8 +828,7 @@ export default function JogarPage() {
       ) : null}
 
       {acabou ? (
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
+        <PainelDaMesa rotulo="Fim da run">
             <Avatar
               avatar={sessao.avatar}
               tamanho={88}
@@ -882,8 +874,7 @@ export default function JogarPage() {
                 Ver o que aconteceu
               </button>
             </div>
-          </div>
-        </div>
+        </PainelDaMesa>
       ) : null}
       {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
       {historico ? <HistoricoDaRun state={state} onFechar={() => setHistorico(false)} /> : null}
@@ -983,5 +974,30 @@ function Pilha({ area, rotulo, quantidade, onAbrir }: {
       </span>
       <span className={styles.rotPilha}>{rotulo}</span>
     </button>
+  )
+}
+
+/**
+ * Os painéis da própria mesa — sexta, recompensa, fim de run, erro — são
+ * modais como qualquer popup: cobrem a mesa e esperam uma resposta. Mas não
+ * eram o `Dialogo`, e o foco do teclado escapava para os botões da mesa atrás
+ * da cortina. O foco preso é o mesmo do `Dialogo`.
+ */
+function PainelDaMesa({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  const painel = useRef<HTMLDivElement>(null)
+  useFocoPreso(painel)
+  return (
+    <div className={styles.fundo}>
+      <div
+        ref={painel}
+        className={styles.painel}
+        role="dialog"
+        aria-modal="true"
+        aria-label={rotulo}
+        tabIndex={-1}
+      >
+        {children}
+      </div>
+    </div>
   )
 }

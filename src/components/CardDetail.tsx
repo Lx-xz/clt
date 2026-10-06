@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from './Card'
 import { RESOURCE_ICONS, nomeDaClasse } from './icons'
 import styles from './CardDetail.module.sass'
+import { useFocoPreso } from './useFocoPreso'
 
 /** Um número que a jogada mudaria: de quanto para quanto. */
 export interface Consequencia {
@@ -45,6 +46,8 @@ export default function CardDetail({
   incerta,
 }: CardDetailProps) {
   const evento = 'tone' in card
+  const painel = useRef<HTMLDivElement>(null)
+  useFocoPreso(painel)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -57,14 +60,16 @@ export default function CardDetail({
   const custo = evento ? null : (cost ?? card.cost)
 
   return (
-    <div
-      className={styles.fundo}
-      role="dialog"
-      aria-modal="true"
-      aria-label={card.name}
-      onClick={onClose}
-    >
-      <div className={styles.painel} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.fundo} onClick={onClose}>
+      <div
+        ref={painel}
+        className={styles.painel}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={card.name}
+        tabIndex={-1}
+      >
         <Card card={card} cost={custo ?? undefined} className={styles.carta} />
         <div className={styles.info}>
           <h2 className={styles.nome}>{card.name}</h2>

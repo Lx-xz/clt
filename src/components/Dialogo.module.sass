@@ -4,8 +4,10 @@
   z-index: 260
   display: grid
   place-items: center
-  padding: 16px
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))
   overflow-y: auto
+  // rolar até o fim do popup não pode passar a rolagem para a página atrás
+  overscroll-behavior: contain
   background: color-mix(in srgb, var(--tinta) 55%, transparent)
   animation: cortina-entra .16s ease
 
@@ -33,6 +35,12 @@
 
 .largo
   width: min(100%, 560px)
+
+// o painel recebe o foco ao abrir (para o leitor de tela ler o título e o Tab
+// começar lá dentro), mas o anel aqui seria uma moldura amarela em volta do
+// popup inteiro a cada abertura — o anel é dos controles de dentro
+.dialogo:focus
+  outline: none
 
 .cabecalho
   display: flex

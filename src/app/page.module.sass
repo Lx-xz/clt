@@ -13,9 +13,12 @@
   overflow-y: auto
   justify-content: center
   justify-content: safe center
-  padding-block: 40px
-  padding-left: 20px
-  padding-right: 20px
+  // a área segura do iPhone instalado (viewportFit: cover) entra por cima
+  // do respiro de sempre — fora do iPhone `env()` vale 0
+  padding-top: calc(40px + env(safe-area-inset-top))
+  padding-bottom: calc(40px + env(safe-area-inset-bottom))
+  padding-left: calc(20px + env(safe-area-inset-left))
+  padding-right: calc(20px + env(safe-area-inset-right))
   text-align: center
 
 .title

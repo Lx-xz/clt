@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import CarregarCatalogo from '@/components/CarregarCatalogo'
+import { COR_DA_BARRA } from '@/data/coresDoTema'
 import { SCRIPT_TEMA } from '@/data/tema'
 import './global.sass'
 
@@ -28,7 +29,14 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#e9e4d9',
+  // a barra do navegador (e a de status do app instalado) acompanha o tema.
+  // Era só a cor clara, e no escuro o topo da tela ficava um retângulo bege
+  // em cima do papel preto. Estes dois são o tema do APARELHO; a escolha
+  // explícita em Configurações é aplicada por cima, em `src/data/tema.ts`
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: COR_DA_BARRA.claro },
+    { media: '(prefers-color-scheme: dark)', color: COR_DA_BARRA.escuro },
+  ],
   // instalado no iPhone o app pega a tela inteira, entalhe incluso
   viewportFit: 'cover',
 }

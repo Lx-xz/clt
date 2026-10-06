@@ -293,6 +293,13 @@ $painel-largo: 216px
   .rodape
     opacity: 1
 
+  // no celular a gaveta é `fixed` e ignora o padding da casca: a área segura
+  // entra aqui, senão o logo fica atrás do entalhe e "Sair" atrás da barra
+  .corpo
+    padding-top: calc(16px + env(safe-area-inset-top))
+    padding-bottom: calc(16px + env(safe-area-inset-bottom))
+    padding-left: calc(12px + env(safe-area-inset-left))
+
   .puxador
     display: block
     position: fixed
