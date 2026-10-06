@@ -77,6 +77,12 @@
     outline: 2px solid var(--destaque)
     outline-offset: 2px
 
+// o atalho para baralho e descarte só existe no celular, onde as pilhas saem
+// da mesa. Fica ANTES do @media de propósito: a regra de depois ganharia da
+// de dentro, e o botão sumiria também no celular
+.soCelular
+  display: none
+
 // botão de avançar o dia: ancorado logo abaixo do header, à direita
 .proximoDia
   position: absolute
@@ -302,12 +308,27 @@
     transform: translate(-50%, 0)
 
 // ------------------------------------------------------ baralho e descarte
+// a pilha é um botão: abre a lista do que tem nela (sem a ordem)
 .pilha
   display: flex
   flex-direction: column
   align-items: center
   justify-content: flex-end
   gap: 5px
+  padding: 0
+  background: none
+  border: none
+  color: inherit
+  font: inherit
+  cursor: pointer
+
+  &:hover .topo
+    border-color: var(--tinta-fraca)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 4px
+    border-radius: var(--raio)
 
 .pilhaDeck
   grid-area: deck
@@ -603,6 +624,9 @@
 
   .botaoCanto
     padding: 6px 8px
+
+  .soCelular
+    display: inline-flex
 
   .rotuloCanto
     display: none

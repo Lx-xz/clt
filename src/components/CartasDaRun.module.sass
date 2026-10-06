@@ -1,0 +1,35 @@
+.grupo
+  display: flex
+  flex-direction: column
+  gap: 6px
+
+.titulo
+  display: flex
+  align-items: baseline
+  gap: 8px
+  font-size: 15px
+
+.qtd
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 500
+
+.nota,
+.vazio
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12.5px
+
+.vazio
+  font-style: italic
+
+// cartas pequenas, mas no desenho de verdade: o jogador reconhece a carta
+// pela arte e pelo custo antes de ler o nome
+.grade
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+  --carta-h: 132px
+  --carta-w: calc(var(--carta-h) * .66)
+  --carta-arte: calc(var(--carta-h) * .39)

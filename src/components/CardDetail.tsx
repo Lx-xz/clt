@@ -16,9 +16,19 @@ interface CardDetailProps {
   onPlay?: () => void
   /** Motivo de a carta não poder ser jogada, para o jogador não ficar no escuro. */
   blockedReason?: string
+  /** O texto do botão de ação. A recompensa usa o mesmo detalhe para
+   *  ESCOLHER a carta, e "Jogar carta" ali seria mentira. */
+  rotuloAcao?: string
 }
 
-export default function CardDetail({ card, cost, onClose, onPlay, blockedReason }: CardDetailProps) {
+export default function CardDetail({
+  card,
+  cost,
+  onClose,
+  onPlay,
+  blockedReason,
+  rotuloAcao = 'Jogar carta',
+}: CardDetailProps) {
   const evento = 'tone' in card
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -69,7 +79,7 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason 
           <div className={styles.acoes}>
             {onPlay ? (
               <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={onPlay}>
-                Jogar carta
+                {rotuloAcao}
               </button>
             ) : null}
             <button type="button" className={buttons.button} onClick={onClose}>

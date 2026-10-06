@@ -799,6 +799,20 @@ export function chooseReward(input: GameState, cardId: CardId): GameState {
   return startDay(state)
 }
 
+/**
+ * Recusar a recompensa. Com o baralho mínimo, uma carta a mais nem sempre
+ * ajuda: quem montou um baralho enxuto pode não querer diluí-lo com uma
+ * carta que não combina — e "nenhuma das três" é uma escolha que o jogo
+ * não oferecia.
+ */
+export function skipReward(input: GameState): GameState {
+  const state = clone(input)
+  if (state.phase !== 'recompensa') return input
+  state.rewardOptions = []
+  log(state, 'Recompensa recusada: o baralho segue como estava.')
+  return startDay(state)
+}
+
 // -------------------------------------------------------------------- morte
 
 function checkDefeat(state: GameState): GameState {

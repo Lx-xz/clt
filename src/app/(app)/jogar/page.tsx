@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, CloudOff, Loader, ScrollText } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, CloudOff, Layers, Loader, ScrollText } from 'lucide-react'
 import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import Card from '@/components/Card'
+import CartasDaRun from '@/components/CartasDaRun'
+import CurvaDeEstresse from '@/components/CurvaDeEstresse'
+import Dialogo from '@/components/Dialogo'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
@@ -30,6 +33,7 @@ import {
   playCard,
   restWeekend,
   revealEvent,
+  skipReward,
 } from '@/game/engine'
 import {
   carregarDoBanco,
@@ -96,6 +100,9 @@ export default function JogarPage() {
   const [tutorial, setTutorial] = useState(false)
   const [historico, setHistorico] = useState(false)
   const [baralhoCurto, setBaralhoCurto] = useState<{ tem: number; minimo: number } | null>(null)
+  const [confirmarFim, setConfirmarFim] = useState(false)
+  const [vendoCartas, setVendoCartas] = useState(false)
+  const [recompensaAberta, setRecompensaAberta] = useState<CardId | null>(null)
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -201,6 +208,30 @@ export default function JogarPage() {
     update(playCard(state, uid))
   }
 
+  /**
+   * Fechar o dia sem bater a cota custa estresse, e o botão ficava a um
+   * clique distraído disso. Só pergunta quando ainda há o que fazer — cota
+   * aberta E carta jogável na mão: sem carta jogável não existe escolha, e
+   * perguntar seria só atrito.
+   */
+  function pedirFimDoDia() {
+    if (!state) return
+    const faltaCota = state.productivity < state.dailyQuota
+    const temJogada = state.hand.some((c) => canPlay(state, c))
+    if (faltaCota && temJogada) {
+      setConfirmarFim(true)
+      return
+    }
+    update(endDay(state))
+  }
+
+  function escolherRecompensa(id: CardId) {
+    if (!state) return
+    setRecompensaAberta(null)
+    unlockCard(id)
+    update(chooseReward(state, id))
+  }
+
   /** A resposta do jogador ao pedido de descarte de uma carta ou evento. */
   function escolherDescarte(uid: string) {
     if (!state) return
@@ -262,6 +293,11 @@ export default function JogarPage() {
   const esperandoEvento = state.phase === 'evento' && !state.eventRevealed
   const meio = (state.hand.length - 1) / 2
   const escolhendo = state.escolhaDeDescarte
+  // `weekProductivity` só recebe o dia no `endDay`, e o medidor mostrava a
+  // semana SEM o que já foi feito hoje: o jogador batia a meta e o número
+  // dizia que faltava. Na sexta o dia já foi somado, e somar de novo dobraria
+  const diaEmAndamento = state.phase === 'dia' || state.phase === 'evento'
+  const semanaComHoje = state.weekProductivity + (diaEmAndamento ? state.productivity : 0)
 
   return (
     <main className={`${styles.mesa} ${sobreTapete ? styles.arrastando : ''}`}>
@@ -303,8 +339,8 @@ export default function JogarPage() {
           <Medidor
             icon={RESOURCE_ICONS.semana}
             nome="Meta da semana"
-            descricao={`Soma da produtividade dos ${state.modo.diasPorSemana} dias. Não bater significa salário reduzido e advertência.`}
-            valor={state.weekProductivity}
+            descricao={`Soma da produtividade dos ${state.modo.diasPorSemana} dias, já contando a de hoje. Não bater significa salário reduzido e advertência.`}
+            valor={semanaComHoje}
             total={week.weeklyGoal}
           />
           <Medidor
@@ -360,6 +396,17 @@ export default function JogarPage() {
             <ScrollText size={15} aria-hidden />
             <span className={styles.rotuloCanto}>Histórico</span>
           </button>
+          {/* no celular as pilhas saem da mesa; o que elas guardam continua
+              acessível por aqui */}
+          <button
+            type="button"
+            className={`${styles.botaoCanto} ${styles.soCelular}`}
+            onClick={() => setVendoCartas(true)}
+            aria-label="Baralho e descarte"
+            title="Baralho e descarte"
+          >
+            <Layers size={15} aria-hidden />
+          </button>
         </div>
 
         {state.phase === 'dia' ? (
@@ -369,7 +416,7 @@ export default function JogarPage() {
             // o dia não fecha por cima de uma pergunta em aberto; o motor
             // recusa de qualquer jeito, e o botão apagado explica por quê
             disabled={Boolean(escolhendo) || Boolean(state.escolhaAberta)}
-            onClick={() => update(endDay(state))}
+            onClick={pedirFimDoDia}
           >
             <span className={styles.rotuloLongo}>Próximo dia</span>
             <span className={styles.rotuloCurto}>Próx. dia</span>
@@ -465,7 +512,12 @@ export default function JogarPage() {
         ) : null}
       </div>
 
-      <Pilha area={styles.pilhaDeck} rotulo="Baralho" quantidade={state.deck.length} />
+      <Pilha
+        area={styles.pilhaDeck}
+        rotulo="Baralho"
+        quantidade={state.deck.length}
+        onAbrir={() => setVendoCartas(true)}
+      />
 
       <div className={styles.zonaMao}>
         {state.hand.length === 0 ? (
@@ -525,7 +577,12 @@ export default function JogarPage() {
         )}
       </div>
 
-      <Pilha area={styles.pilhaDesc} rotulo="Descarte" quantidade={state.discard.length} />
+      <Pilha
+        area={styles.pilhaDesc}
+        rotulo="Descarte"
+        quantidade={state.discard.length}
+        onAbrir={() => setVendoCartas(true)}
+      />
 
       {eventoAberto && evento ? <CardDetail card={evento} onClose={() => setEventoAberto(false)} /> : null}
 
@@ -596,7 +653,13 @@ export default function JogarPage() {
         <div className={styles.fundo}>
           <div className={styles.painel}>
             <h2 className={styles.painelTitulo}>Recompensa da semana</h2>
-            <p className={styles.painelTexto}>Escolha 1 carta entre 3 para entrar no baralho.</p>
+            <p className={styles.painelTexto}>
+              Toque numa carta para ler e escolher. Ela entra no baralho desta run e fica na sua
+              coleção — ou siga sem nenhuma.
+            </p>
+            {/* o clique abre o detalhe em vez de escolher: na mesa o clique
+                simples é LER, e aqui ele era uma escolha irreversível, feita
+                sem dar para ler a carta inteira */}
             <div className={styles.recompensas}>
               {state.rewardOptions.map((id, i) => (
                 <Card
@@ -604,15 +667,64 @@ export default function JogarPage() {
                   card={getCard(id)}
                   className={styles.recompensa}
                   style={{ '--i': i } as React.CSSProperties}
-                  onOpen={() => {
-                    unlockCard(id)
-                    update(chooseReward(state, id))
-                  }}
+                  onOpen={() => setRecompensaAberta(id)}
                 />
               ))}
             </div>
+            <div className={styles.acoes}>
+              <button type="button" className={buttons.button} onClick={() => update(skipReward(state))}>
+                Seguir sem carta nova
+              </button>
+            </div>
           </div>
         </div>
+      ) : null}
+
+      {recompensaAberta && state.phase === 'recompensa' ? (
+        <CardDetail
+          card={getCard(recompensaAberta)}
+          onClose={() => setRecompensaAberta(null)}
+          onPlay={() => escolherRecompensa(recompensaAberta)}
+          rotuloAcao="Escolher esta carta"
+        />
+      ) : null}
+
+      {confirmarFim && state.phase === 'dia' ? (
+        <Dialogo
+          titulo="Encerrar sem bater a cota?"
+          onFechar={() => setConfirmarFim(false)}
+          acoes={
+            <>
+              <button
+                type="button"
+                className={`${buttons.button} ${buttons.primary}`}
+                onClick={() => setConfirmarFim(false)}
+              >
+                Continuar jogando
+              </button>
+              <button
+                type="button"
+                className={buttons.button}
+                onClick={() => {
+                  setConfirmarFim(false)
+                  update(endDay(state))
+                }}
+              >
+                Encerrar o dia
+              </button>
+            </>
+          }
+        >
+          <p className={styles.painelTexto}>
+            A produtividade está em <b>{state.productivity}/{state.dailyQuota}</b>. Fechar agora
+            custa <b>+{state.modo.penalidadeDaCota} de estresse</b> — e ainda há carta na mão que
+            dá para jogar.
+          </p>
+        </Dialogo>
+      ) : null}
+
+      {vendoCartas ? (
+        <CartasDaRun baralho={state.deck} descarte={state.discard} onFechar={() => setVendoCartas(false)} />
       ) : null}
 
       {acabou ? (
@@ -628,6 +740,17 @@ export default function JogarPage() {
             <p className={styles.painelTexto}>
               {textoDoFim(state).text} Pontuação final: R$ {state.money}.
             </p>
+            {/* a run inteira numa linha: é o "por quê" da derrota, que o
+                texto acima não tem como contar */}
+            {state.history.length > 1 ? (
+              <CurvaDeEstresse
+                titulo="Seu estresse ao fim de cada dia"
+                pontos={state.history.map((d) => ({ dia: d.day, valor: d.stress }))}
+                maximo={state.modo.estresseMaximo}
+                diasPorSemana={state.modo.diasPorSemana}
+                altura={120}
+              />
+            ) : null}
             {registroFalhou ? (
               <div className={styles.painelAviso}>
                 <p>
@@ -696,17 +819,28 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   return `Energia insuficiente: custa ${effectiveCost(state, carta.id)} e você tem ${state.energy}.`
 }
 
-function Pilha({ area, rotulo, quantidade }: { area: string; rotulo: string; quantidade: number }) {
+function Pilha({ area, rotulo, quantidade, onAbrir }: {
+  area: string
+  rotulo: string
+  quantidade: number
+  onAbrir: () => void
+}) {
   return (
-    <div className={`${styles.pilha} ${area}`}>
-      <div className={`${styles.monte} ${quantidade === 0 ? styles.vazia : ''}`}>
+    <button
+      type="button"
+      className={`${styles.pilha} ${area}`}
+      onClick={onAbrir}
+      aria-label={`${rotulo}: ${quantidade} cartas. Ver quais são.`}
+      title={`Ver o que tem no ${rotulo.toLowerCase()}`}
+    >
+      <span className={`${styles.monte} ${quantidade === 0 ? styles.vazia : ''}`}>
         <span className={`${styles.lastro} ${styles.lastro1}`} />
         <span className={`${styles.lastro} ${styles.lastro2}`} />
         <span className={styles.topo}>
           <span className={styles.qtd}>{quantidade}</span>
         </span>
-      </div>
+      </span>
       <span className={styles.rotPilha}>{rotulo}</span>
-    </div>
+    </button>
   )
 }
