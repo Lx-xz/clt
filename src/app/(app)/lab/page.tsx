@@ -139,7 +139,7 @@ export default function LabPage() {
         >
           <p className={styles.dialogoTexto}>
             {confirmando === 'desbloquear'
-              ? 'As 20 cartas entram na sua coleção, fora do baralho. Serve para testar carta nova sem jogar quatro semanas — e estraga qualquer leitura de dificuldade que venha da sua conta.'
+              ? `As ${cartasDoJogo().length} cartas do jogo entram na sua coleção, fora do baralho. Serve para testar carta nova sem jogar quatro semanas — e estraga qualquer leitura de dificuldade que venha da sua conta.`
               : 'A run em andamento é descartada e a coleção volta às cartas iniciais. As partidas já terminadas continuam no histórico: elas são append-only de propósito, e apagá-las seria mentir sobre o balanceamento.'}
           </p>
         </Dialogo>

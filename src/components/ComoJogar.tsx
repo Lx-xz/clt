@@ -3,14 +3,12 @@
 import Card from './Card'
 import Dialogo from './Dialogo'
 import { RESOURCE_ICONS, iconeDaClasse } from './icons'
-
-/** O ícone de tarefa, citado no texto que explica o canto da carta. */
-const IconeDeTarefa = iconeDaClasse('tarefa')
-import {
-} from '@/game/cards'
 import { regras, totalDeDias, type Regras } from '@/game/regras'
 import { getCard } from '@/game/catalogo'
 import styles from './ComoJogar.module.sass'
+
+/** O ícone de tarefa, citado no texto que explica o canto da carta. */
+const IconeDeTarefa = iconeDaClasse('tarefa')
 
 /**
  * As regras, no popup. Os números e as cartas saem de `cards.ts` em vez de
