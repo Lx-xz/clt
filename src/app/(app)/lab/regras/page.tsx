@@ -46,6 +46,12 @@ const NUMEROS: { campo: keyof Regras; rotulo: string; dica: string; min: number;
   { campo: 'descansoDoFimDeSemana', rotulo: 'Estresse que o fim de semana tira', dica: 'O único alívio garantido da semana.', min: 0, max: 10 },
   { campo: 'cartasNaMao', rotulo: 'Cartas na mão por dia', dica: 'O Dia Tranquilo continua dando duas a mais que isto, seja qual for o número.', min: 1, max: 12 },
   { campo: 'diasPorSemana', rotulo: 'Dias úteis por semana', dica: 'A sexta é o último dia da semana, então isto move o dia de pagamento.', min: 1, max: 7 },
+  { campo: 'penalidadeDaCota', rotulo: 'Estresse por cota perdida', dica: 'Fechar o dia sem bater a cota. É o número que mais mata nas simulações.', min: 0, max: 10 },
+  { campo: 'embaloSegunda', rotulo: 'Embalo: 2ª carta seguida', dica: 'Quanto a 2ª carta seguida da mesma classe rende do recurso da classe.', min: 0, max: 10 },
+  { campo: 'embaloTerceira', rotulo: 'Embalo: 3ª em diante', dica: 'O mesmo, da 3ª carta seguida em diante.', min: 0, max: 10 },
+  { campo: 'embaloReaisPorPonto', rotulo: 'Embalo: R$ por ponto de grana', dica: 'A classe grana rende dinheiro: cada ponto de embalo vale isto.', min: 0, max: 200 },
+  { campo: 'opcoesDeRecompensa', rotulo: 'Cartas oferecidas na recompensa', dica: 'Quantas cartas aparecem para escolher no fim de semana.', min: 1, max: 6 },
+  { campo: 'baralhoMinimo', rotulo: 'Baralho mínimo', dica: 'Menos cartas que isto não começa run. Sem mínimo, afinar o baralho dava 100% de vitória.', min: 1, max: 40 },
 ]
 
 const COLUNAS: { campo: keyof WeekConfig; rotulo: string }[] = [

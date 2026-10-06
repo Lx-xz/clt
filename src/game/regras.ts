@@ -31,6 +31,21 @@ export interface Regras {
   cartasNaMao: number
   /** Quanto estresse o fim de semana tira. */
   descansoDoFimDeSemana: number
+  /** Quanto estresse custa fechar o dia sem bater a cota. Morava escrito
+   *  como `+2` dentro do `endDay`, e é o número que mais mata no jogo. */
+  penalidadeDaCota: number
+  /** O bônus do embalo: o que a 2ª carta seguida da mesma classe rende, o
+   *  que a 3ª em diante rende, e quantos reais vale um ponto na classe
+   *  `grana`. Eram três números soltos no motor. */
+  embaloSegunda: number
+  embaloTerceira: number
+  embaloReaisPorPonto: number
+  /** Quantas cartas a recompensa de fim de semana oferece. */
+  opcoesDeRecompensa: number
+  /** O menor baralho com que dá para começar uma run. Sem ele, tirar as
+   *  cartas ruins até sobrar só o que presta dava 100% de vitória nas
+   *  simulações — e um baralho de 5 cartas compra a mesma mão todo dia. */
+  baralhoMinimo: number
   semanas: WeekConfig[]
   versao: number
 }
@@ -48,6 +63,14 @@ export const MODO_NORMAL: Regras = {
   contasSemanais: 300,
   cartasNaMao: 5,
   descansoDoFimDeSemana: 3,
+  penalidadeDaCota: 2,
+  embaloSegunda: 1,
+  embaloTerceira: 2,
+  embaloReaisPorPonto: 10,
+  opcoesDeRecompensa: 3,
+  // o tamanho do baralho inicial: até desbloquear alguma coisa, não dá para
+  // tirar carta nenhuma — só trocar
+  baralhoMinimo: 15,
   semanas: [
     { week: 1, dailyQuota: 3, weeklyGoal: 16, fullSalary: 400, reducedSalary: 250 },
     { week: 2, dailyQuota: 3, weeklyGoal: 18, fullSalary: 400, reducedSalary: 250 },
@@ -55,6 +78,27 @@ export const MODO_NORMAL: Regras = {
     { week: 4, dailyQuota: 4, weeklyGoal: 25, fullSalary: 450, reducedSalary: 280 },
   ],
   versao: 1,
+}
+
+/**
+ * Um modo incompleto completado com o normal, campo a campo.
+ *
+ * É quem deixa um número NOVO entrar no modo sem migração: o modo gravado no
+ * banco por uma versão anterior não tem o campo, e a run em andamento também
+ * não — ela copiou as regras antes de ele existir. Os dois passam por aqui
+ * (`paraRegras` na leitura do banco, `migrarRun` na leitura do save), e o que
+ * falta vem do normal. Para os números que já existiam escondidos no motor
+ * (a penalidade da cota, o embalo, as três recompensas) isso é exato: o
+ * padrão é o valor que o motor usava.
+ */
+export function completarRegras(bruto: Partial<Regras> | null | undefined): Regras {
+  const b = bruto ?? {}
+  return {
+    ...MODO_NORMAL,
+    ...b,
+    id: b.id ?? MODO_NORMAL.id,
+    semanas: b.semanas?.length ? b.semanas : MODO_NORMAL.semanas,
+  }
 }
 
 let modos: Regras[] = [MODO_NORMAL]

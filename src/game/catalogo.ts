@@ -157,6 +157,19 @@ export function getCard(id: CardId): ActionCard {
   }
 }
 
+/** Quantas cópias uma carta põe no baralho: as iniciais entram com as cópias
+ *  delas, as ganhas como recompensa entram uma vez. */
+export function copiasNoBaralho(id: CardId): number {
+  const card = getCard(id)
+  return card.starter ? (card.copies ?? 1) : 1
+}
+
+/** O tamanho do baralho que estes tipos equipados dão — é o número que o
+ *  mínimo do modo compara, e o mesmo que `createRun` vai montar. */
+export function tamanhoDoBaralho(equipped: CardId[]): number {
+  return equipped.reduce((total, id) => total + copiasNoBaralho(id), 0)
+}
+
 export function getEvent(id: CardId): EventCard {
   const evento = atual.eventos.get(id)
   if (evento) return evento

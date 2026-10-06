@@ -1,5 +1,5 @@
 import { carregarCatalogo, type CatalogoCarregado } from '@/game/catalogo'
-import { MODO_NORMAL, carregarModos, type Regras } from '@/game/regras'
+import { carregarModos, completarRegras, type Regras } from '@/game/regras'
 import type {
   ActionCard,
   CardId,
@@ -155,12 +155,7 @@ interface RespostaCatalogo {
  *  avatar, quem valida é a LEITURA, e campo novo não pode derrubar a página
  *  de quem tem uma linha gravada por uma versão anterior. */
 function paraRegras(bruto: Partial<Regras> & { id?: string }): Regras {
-  return {
-    ...MODO_NORMAL,
-    ...bruto,
-    id: bruto.id ?? MODO_NORMAL.id,
-    semanas: bruto.semanas?.length ? bruto.semanas : MODO_NORMAL.semanas,
-  }
+  return completarRegras(bruto)
 }
 
 function traduzir(bruto: RespostaCatalogo): CatalogoCarregado {

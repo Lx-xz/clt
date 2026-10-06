@@ -44,11 +44,30 @@ import type { CardInstance, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
 
-const FIM: Record<Exclude<GameState['outcome'], 'jogando'>, { title: string; text: string }> = {
-  vitoria: { title: 'Mês fechado', text: 'Quatro semanas, ainda empregado e com as contas pagas.' },
-  burnout: { title: 'Burnout', text: 'O estresse chegou a 10. O corpo cobrou antes do banco.' },
-  demissao: { title: 'Demissão', text: 'Três advertências. O RH marcou uma conversa rápida.' },
-  despejo: { title: 'Despejo', text: 'As contas de sexta não fecharam.' },
+/** Os números saem das regras DA RUN, como o tutorial faz com as de hoje:
+ *  escritos à mão ("chegou a 10", "três advertências"), eles mentiriam no dia
+ *  em que o /lab/regras mudasse o modo. */
+function textoDoFim(state: GameState): { title: string; text: string } {
+  const m = state.modo
+  switch (state.outcome) {
+    case 'vitoria':
+      return {
+        title: 'Mês fechado',
+        text: `${m.semanas.length} semanas, ainda empregado e com as contas pagas.`,
+      }
+    case 'burnout':
+      return {
+        title: 'Burnout',
+        text: `O estresse chegou a ${m.estresseMaximo}. O corpo cobrou antes do banco.`,
+      }
+    case 'demissao':
+      return {
+        title: 'Demissão',
+        text: `${m.advertenciasMaximas} advertências. O RH marcou uma conversa rápida.`,
+      }
+    default:
+      return { title: 'Despejo', text: 'As contas de sexta não fecharam.' }
+  }
 }
 
 const CLASSES: Record<string, string> = {
@@ -197,14 +216,14 @@ export default function JogarPage() {
           <Medidor
             icon={RESOURCE_ICONS.energia}
             nome="Energia"
-            descricao="Reinicia todo dia em 10 menos o estresse. É o que você gasta para jogar cartas."
+            descricao={`Reinicia todo dia em ${state.modo.energiaBase} menos o estresse. É o que você gasta para jogar cartas.`}
             valor={state.energy}
             tom={styles.energia}
           />
           <Medidor
             icon={RESOURCE_ICONS.estresse}
             nome="Estresse"
-            descricao="Acumula entre os dias e encolhe a energia de amanhã. Chegou a 10, é burnout."
+            descricao={`Acumula entre os dias e encolhe a energia de amanhã. Chegou a ${state.modo.estresseMaximo}, é burnout.`}
             valor={state.stress}
             total={state.modo.estresseMaximo}
             tom={styles.estresse}
@@ -213,7 +232,7 @@ export default function JogarPage() {
           <Medidor
             icon={RESOURCE_ICONS.produtividade}
             nome="Produtividade"
-            descricao="Zera todo dia. Não bater a cota custa +2 estresse e uma anotação do chefe."
+            descricao={`Zera todo dia. Não bater a cota custa +${state.modo.penalidadeDaCota} de estresse.`}
             valor={state.productivity}
             total={state.dailyQuota}
             tom={styles.produtividade}
@@ -229,14 +248,14 @@ export default function JogarPage() {
           <Medidor
             icon={RESOURCE_ICONS.semana}
             nome="Meta da semana"
-            descricao="Soma da produtividade dos 5 dias. Não bater significa salário reduzido e advertência."
+            descricao={`Soma da produtividade dos ${state.modo.diasPorSemana} dias. Não bater significa salário reduzido e advertência.`}
             valor={state.weekProductivity}
             total={week.weeklyGoal}
           />
           <Medidor
             icon={RESOURCE_ICONS.advertencias}
             nome="Advertências"
-            descricao="Chegou a três, é demissão."
+            descricao={`Chegou a ${state.modo.advertenciasMaximas}, é demissão.`}
             valor={state.warnings}
             total={state.modo.advertenciasMaximas}
             subirEhRuim
@@ -386,7 +405,7 @@ export default function JogarPage() {
           >
             {state.streakCount >= 2
               ? state.lastCombo
-              : `Outra de ${state.streakKind}: +1 ${CLASSES[state.streakKind]}`}
+              : `Outra de ${state.streakKind}: +${state.streakKind === 'grana' ? `R$ ${state.modo.embaloSegunda * state.modo.embaloReaisPorPonto}` : `${state.modo.embaloSegunda} ${CLASSES[state.streakKind]}`}`}
           </span>
         ) : null}
       </div>
@@ -550,9 +569,9 @@ export default function JogarPage() {
               className={styles.avatarFim}
               humor={state.outcome === 'vitoria' ? 'vitoria' : humorDoEstresse(state.stress, state.modo.estresseMaximo)}
             />
-            <h2 className={styles.painelTitulo}>{FIM[state.outcome as keyof typeof FIM].title}</h2>
+            <h2 className={styles.painelTitulo}>{textoDoFim(state).title}</h2>
             <p className={styles.painelTexto}>
-              {FIM[state.outcome as keyof typeof FIM].text} Pontuação final: R$ {state.money}.
+              {textoDoFim(state).text} Pontuação final: R$ {state.money}.
             </p>
             {registroFalhou ? (
               <div className={styles.painelAviso}>
@@ -588,9 +607,9 @@ export default function JogarPage() {
 }
 
 function textoDaSexta(state: GameState): string {
-  if (state.fridayStep === 'salario') return 'O chefe soma a produtividade dos cinco dias antes de liberar o pagamento.'
+  if (state.fridayStep === 'salario') return `O chefe soma a produtividade dos ${state.modo.diasPorSemana} dias antes de liberar o pagamento.`
   if (state.fridayStep === 'contas') return `Salário na conta. Agora o aluguel e o mercado: R$ ${state.modo.contasSemanais}. Você tem R$ ${state.money}.`
-  return `Sobraram R$ ${state.money}. O fim de semana tira 3 de estresse antes da próxima segunda.`
+  return `Sobraram R$ ${state.money}. O fim de semana tira ${state.modo.descansoDoFimDeSemana} de estresse antes da próxima segunda.`
 }
 
 function dicaDoTapete(state: GameState, esperandoEvento: boolean): string {

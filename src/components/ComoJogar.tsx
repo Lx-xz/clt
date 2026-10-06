@@ -60,7 +60,8 @@ function recursos(jogo: Regras) {
 const CLASSES = [
   { kind: 'tarefa', nome: 'Tarefa', bonus: '+ produtividade', tom: styles.produtividade },
   { kind: 'descanso', nome: 'Descanso', bonus: '+ energia', tom: styles.energia },
-  { kind: 'grana', nome: 'Grana', bonus: '+ R$ 10', tom: styles.dinheiro },
+  // o valor em reais é do modo, e por isso é escrito na hora, lá embaixo
+  { kind: 'grana', nome: 'Grana', bonus: '+ R$', tom: styles.dinheiro },
   { kind: 'social', nome: 'Social', bonus: '− estresse', tom: styles.destaque },
 ] as const
 
@@ -163,16 +164,16 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
         </li>
         <li>
           <span className={styles.numero}>4</span>
-          <b>Próximo dia</b> encerra o expediente. Não bater a cota custa estresse e uma anotação
-          do chefe.
+          <b>Próximo dia</b> encerra o expediente. Não bater a cota custa{' '}
+          <b>+{jogo.penalidadeDaCota} de estresse</b>.
         </li>
       </ol>
 
       {/* ------------------------------------------------------ embalo */}
       <h3 className={styles.titulo}>Embalo — a ordem importa</h3>
       <p className={styles.linha}>
-        Cartas seguidas da <b>mesma classe</b> no mesmo dia rendem bônus: a 2ª dá o extra abaixo, e
-        da 3ª em diante o dobro. Jogar outra classe zera — e carta <b>sem tipo</b> zera também,
+        Cartas seguidas da <b>mesma classe</b> no mesmo dia rendem bônus: a 2ª dá{' '}
+        <b>+{jogo.embaloSegunda}</b> do recurso abaixo, e da 3ª em diante <b>+{jogo.embaloTerceira}</b>. Jogar outra classe zera — e carta <b>sem tipo</b> zera também,
         porque ela não pertence a classe nenhuma.
       </p>
       <div className={styles.classes}>
@@ -182,7 +183,7 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
             <span key={c.kind} className={`${styles.classe} ${c.tom}`}>
               <Icone size={15} aria-hidden />
               {c.nome}
-              <b>{c.bonus}</b>
+              <b>{c.kind === 'grana' ? `+ R$ ${jogo.embaloReaisPorPonto} por ponto` : c.bonus}</b>
             </span>
           )
         })}

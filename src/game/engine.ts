@@ -10,6 +10,7 @@ import {
 // moram no banco e podem mudar entre uma abertura do site e a próxima
 import {
   cartasDesbloqueaveis,
+  copiasNoBaralho,
   eventosDoJogo,
   fotografarBaralho,
   fotografarCarta,
@@ -238,11 +239,9 @@ export function createRun(equipped: CardId[]): GameState {
   // as regras são COPIADAS aqui, uma vez. Daqui em diante esta run joga com
   // elas, mesmo que o aluguel mude no banco no meio da partida
   const modo = structuredClone(regras())
-  const deck = equipped.flatMap((id) => {
-    const card = getCard(id)
-    const copies = card.starter ? (card.copies ?? 1) : 1
-    return Array.from({ length: copies }, () => makeInstance(id))
-  })
+  const deck = equipped.flatMap((id) =>
+    Array.from({ length: copiasNoBaralho(id) }, () => makeInstance(id)),
+  )
 
   const state: GameState = {
     runId: crypto.randomUUID(),
@@ -544,7 +543,9 @@ export function escolherOpcao(input: GameState, indice: number): GameState {
 
 // ------------------------------------------------------------------ embalo
 
-/** O que cada classe rende por nível de embalo. */
+/** O que cada classe rende por nível de embalo. Os NÚMEROS são do modo
+ *  (`embaloSegunda`, `embaloTerceira`, `embaloReaisPorPonto`); o que fica aqui
+ *  é só qual recurso cada classe toca, que é regra e não balanceamento. */
 const EMBALO: Record<Exclude<ClasseDaCarta, null>, { rotulo: string; efeito: (s: GameState, n: number) => string }> = {
   tarefa: {
     rotulo: 'tarefa',
@@ -563,8 +564,9 @@ const EMBALO: Record<Exclude<ClasseDaCarta, null>, { rotulo: string; efeito: (s:
   grana: {
     rotulo: 'grana',
     efeito: (s, n) => {
-      s.money += n * 10
-      return `+R$ ${n * 10}`
+      const reais = n * s.modo.embaloReaisPorPonto
+      s.money += reais
+      return `+R$ ${reais}`
     },
   },
   social: {
@@ -604,7 +606,7 @@ function aplicarEmbalo(state: GameState, kind: ClasseDaCarta) {
     return
   }
 
-  const nivel = state.streakCount >= 3 ? 2 : 1
+  const nivel = state.streakCount >= 3 ? state.modo.embaloTerceira : state.modo.embaloSegunda
   const ganho = EMBALO[kind].efeito(state, nivel)
   state.lastCombo = `Embalo ${EMBALO[kind].rotulo} ×${state.streakCount}: ${ganho}`
   log(state, state.lastCombo)
@@ -626,8 +628,12 @@ export function endDay(input: GameState): GameState {
 
   const metQuota = state.productivity >= state.dailyQuota
   if (!metQuota) {
-    state.stress += 2
-    log(state, `Cota não batida (${state.productivity}/${state.dailyQuota}): +2 estresse e o chefe anotou.`)
+    // dizia "+2 estresse e o chefe anotou", e a anotação não existia: perder
+    // a cota não gera advertência nenhuma, só estresse. Quem pune a semana
+    // fraca é a meta da sexta
+    const penalidade = state.modo.penalidadeDaCota
+    state.stress += penalidade
+    log(state, `Cota não batida (${state.productivity}/${state.dailyQuota}): +${penalidade} estresse.`)
   } else {
     log(state, `Cota batida (${state.productivity}/${state.dailyQuota}).`)
   }
@@ -771,7 +777,10 @@ export function restWeekend(input: GameState): GameState {
   }
 
   state.phase = 'recompensa'
-  state.rewardOptions = shuffle(cartasDesbloqueaveis().map((c) => c.id)).slice(0, 3)
+  state.rewardOptions = shuffle(cartasDesbloqueaveis().map((c) => c.id)).slice(
+    0,
+    state.modo.opcoesDeRecompensa,
+  )
   return state
 }
 

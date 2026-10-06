@@ -1,4 +1,5 @@
 import { cartasDoJogo, cartasIniciais } from './catalogo'
+import { completarRegras, type Regras } from './regras'
 import type { CardId, Collection } from './types'
 
 const COLLECTION_KEY = 'clt:collection:v1'
@@ -122,6 +123,11 @@ export function migrarRun<T>(bruta: unknown): T | null {
   r.ultimaMensagem ??= null
   r.escolhaAberta ??= null
   r.jogadasNaSemana ??= []
+
+  // a run copiou as regras antes de os números novos existirem (penalidade
+  // da cota, embalo, recompensas, baralho mínimo). O padrão de cada um é o
+  // valor que o motor usava escondido, então a partida segue igual
+  r.modo = completarRegras(r.modo as Partial<Regras>)
 
   return r as T
 }
