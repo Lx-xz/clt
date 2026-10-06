@@ -15,7 +15,9 @@ import {
   ACESSORIOS,
   BARBAS,
   CORES,
+  CORES_DA_BARRA,
   CORTES,
+  CRACHAS,
   FUNDOS,
   OCULOS,
   OLHOS,
@@ -182,7 +184,16 @@ export default function EditarAvatarPage() {
         {abaAtual === 'barba' ? (
           <>
             <Formas titulo="Barba" campo="barba" opcoes={BARBAS} receita={receita} aoMudar={mudar} enquadrar="rosto" />
-            <p className={styles.dica}>A barba tem a cor do cabelo — ela é da mesma pessoa.</p>
+            {receita.barba !== 'nenhuma' ? (
+              <Cores
+                titulo="Cor da barba"
+                campo="corBarba"
+                opcoes={CORES_DA_BARRA}
+                tons={(v) => TONS_DE_CABELO[v === 'cabelo' ? receita.cor : v][0]}
+                receita={receita}
+                aoMudar={mudar}
+              />
+            ) : null}
           </>
         ) : null}
 
@@ -198,6 +209,7 @@ export default function EditarAvatarPage() {
             <Formas titulo="Óculos" campo="oculos" opcoes={OCULOS} receita={receita} aoMudar={mudar} enquadrar="rosto" />
             <Formas titulo="Na cabeça" campo="acessorio" opcoes={ACESSORIOS} receita={receita} aoMudar={mudar} />
             <p className={styles.dica}>O chapéu e o boné vêm na cor da roupa.</p>
+            <Formas titulo="No pescoço" campo="cracha" opcoes={CRACHAS} receita={receita} aoMudar={mudar} enquadrar="inteiro" />
           </>
         ) : null}
 

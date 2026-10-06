@@ -21,6 +21,8 @@ interface MedidorProps {
   /** A prévia depende da sorte (um sorteio, uma compra): o número é um
    *  resultado possível, e não uma promessa. */
   previaIncerta?: boolean
+  /** Um desenho no lugar do ícone — o avatar, no medidor de estresse. */
+  figura?: React.ReactNode
 }
 
 /** Interpola o número mostrado para a mudança ser vista, não só notada. */
@@ -65,6 +67,7 @@ export default function Medidor({
   subirEhRuim,
   previa,
   previaIncerta,
+  figura,
 }: MedidorProps) {
   const mostrado = useNumeroAnimado(valor)
   const [dica, setDica] = useState(false)
@@ -162,7 +165,7 @@ export default function Medidor({
       }}
       onBlur={() => setDica(false)}
     >
-      <Icon size={14} className={tom} aria-hidden />
+      {figura ?? <Icon size={14} className={tom} aria-hidden />}
       <span className={`${styles.valor} ${tom ?? ''}`}>
         {prefixo ? <span className={styles.prefixo}>{prefixo}</span> : null}
         {mostrado}

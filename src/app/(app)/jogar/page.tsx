@@ -342,6 +342,17 @@ export default function JogarPage() {
             subirEhRuim
             previa={previa?.depois.stress}
             previaIncerta={previa?.incerta}
+            // o avatar mora DENTRO do medidor de estresse: ele cansa junto
+            // com o número, e ao lado do nick ele ficava no canto oposto do
+            // número que o fazia cansar
+            figura={
+              <Avatar
+                avatar={sessao.avatar}
+                tamanho={22}
+                className={styles.avatarHud}
+                humor={humorDoEstresse(state.stress, state.modo.estresseMaximo)}
+              />
+            }
           />
           <Medidor
             icon={RESOURCE_ICONS.produtividade}
@@ -384,15 +395,6 @@ export default function JogarPage() {
         </div>
         <span className={styles.espaco} />
         <span className={`${styles.sync} ${status === 'erro' ? styles.syncErro : ''}`}>
-          {/* o medidor de estresse com CARA: ele cansa junto com o jogador.
-              A conta "Energia = 10 − Estresse" é o jogo inteiro, e antes dele
-              ela só existia em texto */}
-          <Avatar
-            avatar={sessao.avatar}
-            tamanho={28}
-            className={styles.avatarHud}
-            humor={humorDoEstresse(state.stress, state.modo.estresseMaximo)}
-          />
           <span className={styles.nick}>{sessao.nick}</span>
           {status === 'salvando' ? (
             <Loader size={13} className={styles.girando} aria-label="salvando" />

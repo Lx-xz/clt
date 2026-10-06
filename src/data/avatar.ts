@@ -32,6 +32,9 @@ export type Corte =
   | 'cacheado'
   | 'chanel'
   | 'coque'
+  | 'blackPower'
+  | 'trancas'
+  | 'puff'
 export type Pele = 'clara' | 'areia' | 'mel' | 'media' | 'canela' | 'escura' | 'ebano'
 export type CorCabelo = 'preto' | 'branco' | 'castanho' | 'loiro' | 'ruivo' | 'grisalho' | 'mel'
 export type CorRoupa =
@@ -54,11 +57,23 @@ export type Olhos =
   | 'feliz'
   | 'simples'
 export type Barba = 'nenhuma' | 'rala' | 'bigode' | 'cavanhaque' | 'cheia'
-export type Tronco = 'colado' | 'golaV' | 'decote' | 'camiseta' | 'golaAlta' | 'social'
+export type Tronco =
+  | 'colado'
+  | 'golaV'
+  | 'decote'
+  | 'camiseta'
+  | 'golaAlta'
+  | 'social'
+  | 'gravata'
+  | 'colete'
+  | 'jaleco'
 /** Óculos e chapéu são campos SEPARADOS: um é do rosto e o outro da cabeça, e
  *  quem quer os dois não deveria ter que escolher. */
 export type Oculos = 'nenhum' | 'redondo' | 'quadrado'
-export type Acessorio = 'nenhum' | 'bone' | 'chapeu'
+export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'headset'
+/** A cor da barba: a do cabelo (o padrão), ou outra — barba grisalha com o
+ *  cabelo ainda escuro é a combinação mais comum que a receita não deixava. */
+export type CorDaBarba = 'cabelo' | CorCabelo
 
 export interface Avatar {
   rosto: Rosto
@@ -68,12 +83,16 @@ export interface Avatar {
   cor: CorCabelo
   olhos: Olhos
   barba: Barba
+  corBarba: CorDaBarba
   tronco: Tronco
   /** A cor da roupa — e do chapéu, que herda dela: uma sétima escolha de cor
    *  só para o chapéu seria um controle a mais para quase ninguém. */
   roupa: CorRoupa
   oculos: Oculos
   acessorio: Acessorio
+  /** O crachá no cordão: a peça que mais diz "CLT" e que não ocupa a cabeça,
+   *  então combina com chapéu, boné e headset. */
+  cracha: boolean
   fundo: CorFundo
 }
 
@@ -90,12 +109,14 @@ export const AVATAR_PADRAO: Avatar = {
   cor: 'castanho',
   olhos: 'amendoa',
   barba: 'nenhuma',
+  corBarba: 'cabelo',
   // o tronco sem pescoço é o padrão de quem escolhe agora; quem já tinha
   // avatar mantém a gola de antes, pela tradução em `lerAvatar`
   tronco: 'colado',
   roupa: 'azul',
   oculos: 'nenhum',
   acessorio: 'nenhum',
+  cracha: false,
   fundo: 'papel',
 }
 
@@ -121,7 +142,10 @@ export const CORTES: Opcao<Corte>[] = [
   { valor: 'cacheado', rotulo: 'Cacheado' },
   { valor: 'chanel', rotulo: 'Chanel' },
   { valor: 'coque', rotulo: 'Coque' },
+  { valor: 'puff', rotulo: 'Puff' },
+  { valor: 'blackPower', rotulo: 'Black power' },
   { valor: 'longo', rotulo: 'Longo' },
+  { valor: 'trancas', rotulo: 'Tranças' },
 ]
 
 export const PELES: Opcao<Pele>[] = [
@@ -144,11 +168,13 @@ export const CORES: Opcao<CorCabelo>[] = [
   { valor: 'branco', rotulo: 'Branco' },
 ]
 
+// "Desenho" e "Deitado" saíram da lista: em 40px ou menos eles eram a mesma
+// amêndoa, e quatro opções que não se distinguem são uma escolha só. Os dois
+// continuam desenhados (o lab ainda os experimenta), e quem os tinha cai na
+// amêndoa pela leitura — que era, na prática, o que já se via
 export const OLHOS: Opcao<Olhos>[] = [
   { valor: 'amendoa', rotulo: 'Amêndoa' },
-  { valor: 'desenho', rotulo: 'Desenho' },
   { valor: 'emPe', rotulo: 'Em pé' },
-  { valor: 'deitado', rotulo: 'Deitado' },
   { valor: 'surpreso', rotulo: 'Surpreso' },
   { valor: 'esperto', rotulo: 'De lado' },
   { valor: 'feliz', rotulo: 'Feliz' },
@@ -170,6 +196,9 @@ export const TRONCOS: Opcao<Tronco>[] = [
   { valor: 'decote', rotulo: 'Decote' },
   { valor: 'golaAlta', rotulo: 'Gola alta' },
   { valor: 'social', rotulo: 'Social' },
+  { valor: 'gravata', rotulo: 'Gravata' },
+  { valor: 'jaleco', rotulo: 'Jaleco' },
+  { valor: 'colete', rotulo: 'Colete' },
 ]
 
 export const ROUPAS: Opcao<CorRoupa>[] = [
@@ -193,6 +222,17 @@ export const ACESSORIOS: Opcao<Acessorio>[] = [
   { valor: 'nenhum', rotulo: 'Nada' },
   { valor: 'bone', rotulo: 'Boné' },
   { valor: 'chapeu', rotulo: 'Chapéu' },
+  { valor: 'headset', rotulo: 'Headset' },
+]
+
+export const CORES_DA_BARRA: Opcao<CorDaBarba>[] = [
+  { valor: 'cabelo', rotulo: 'A do cabelo' },
+  ...CORES,
+]
+
+export const CRACHAS: Opcao<boolean>[] = [
+  { valor: false, rotulo: 'Sem crachá' },
+  { valor: true, rotulo: 'Com crachá' },
 ]
 
 export const FUNDOS: Opcao<CorFundo>[] = [
@@ -244,10 +284,12 @@ export function lerAvatar(bruto: unknown): Avatar {
     cor: um(CORES, a.cor, AVATAR_PADRAO.cor),
     olhos: um(OLHOS, a.olhos, AVATAR_PADRAO.olhos),
     barba: um(BARBAS, a.barba, AVATAR_PADRAO.barba),
+    corBarba: um(CORES_DA_BARRA, a.corBarba, AVATAR_PADRAO.corBarba),
     tronco: um(TRONCOS, a.tronco, TRONCO_DO_CORPO[corpoAntigo] ?? AVATAR_PADRAO.tronco),
     roupa: um(ROUPAS, a.roupa, AVATAR_PADRAO.roupa),
     oculos: um(OCULOS, a.oculos, AVATAR_PADRAO.oculos),
     acessorio: um(ACESSORIOS, a.acessorio, AVATAR_PADRAO.acessorio),
+    cracha: a.cracha === true,
     fundo: um(FUNDOS, a.fundo, AVATAR_PADRAO.fundo),
   }
 }
@@ -280,10 +322,13 @@ export function avatarAleatorio(): Avatar {
     // quiser, mas não entra no sorteio de quem está conhecendo o editor
     olhos: sorteio(OLHOS.filter((o) => o.valor !== 'simples')).valor,
     barba: talvez(BARBAS, 'nenhuma', 0.35),
+    // quase sempre a do cabelo; às vezes grisalha, que é o caso comum
+    corBarba: Math.random() < 0.15 ? 'grisalho' : 'cabelo',
     tronco: sorteio(TRONCOS).valor,
     roupa: sorteio(ROUPAS).valor,
     oculos: talvez(OCULOS, 'nenhum', 0.25),
     acessorio: talvez(ACESSORIOS, 'nenhum', 0.15),
+    cracha: Math.random() < 0.3,
     fundo: sorteio(FUNDOS).valor,
   }
 }

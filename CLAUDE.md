@@ -492,9 +492,19 @@ opções. O que ele escolheu, e que deve ser preservado:
   - **O avatar sente o estresse.** `humor` é uma camada por cima do rosto, não
     peça da receita: `humorDoEstresse()` escolhe a cara em FRAÇÕES do estresse
     máximo (olheira, suor, lágrima no 9, olhos em X no burnout). A mesa o
-    mostra ao lado do nick e no painel de fim; o perfil mostra sem humor. É o
-    medidor de estresse com cara — a conta `Energia = 10 − Estresse` só existia
-    em texto antes dele.
+    mostra DENTRO do medidor de estresse (`Medidor.figura`) e no painel de fim;
+    o perfil mostra sem humor. É o medidor de estresse com cara — a conta
+    `Energia = 10 − Estresse` só existia em texto antes dele. **O que se lê em
+    24px é a COR do fundo**, que esquenta com o estresse (`HUMORES.fundo`):
+    olheira e suor só aparecem do tamanho do perfil para cima. Em 32px ou
+    menos o `viewBox` se aproxima da cabeça.
+  - **Contraste baixo entre cabelo e pele ganha contorno — e só ele.** Dez
+    das 49 combinações ficavam abaixo de 1,35:1 (mel em canela era 1,01:1) e
+    a cabeça virava uma mancha só. Abaixo de 1,45:1 o rosto ganha borda e o
+    cabelo da frente ganha um ANEL, que é a peça engrossada por filtro e
+    **recortada pelo rosto**: contornando a peça inteira, o anel aparecia onde
+    a franja passa por cima do cabelo de trás (uma tiara dentro do black
+    power). O resto dos avatares continua chapado como sempre foi.
   - **O fundo e a borda são CSS, não SVG.** Eram um `rect` dentro de um
     `clipPath` e outro `rect` com `stroke` por cima; o stroke de um retângulo
     colado na borda do viewBox é **cortado ao meio pela própria caixa**, e
@@ -537,19 +547,27 @@ opções. O que ele escolheu, e que deve ser preservado:
   - **A orelha é MEDIDA, não peça** (`orelha`, zero no jogo de hoje). É um
     número só, e sendo medida ela some sozinha nos cortes mais largos que a
     cabeça — quem esconde a orelha é o cabelo, não um `if`.
-  - **O degradê é o único corte que pinta a PELE.** A primeira versão eram duas
-    elipses atrás do rosto, e não era um degradê: era um cabelo de dois tons
-    com a transição escondida debaixo da cabeça, que é onde ela justamente não
-    podia estar. Um fade de máquina acontece NA TESTA. Por isso ele é a única
-    peça com gradiente — e a única que precisa de um `id`, que vem de
-    `useId()` **sem pontuação** (os dois-pontos não sobrevivem a um
-    `url(#...)`, e id repetido pinta todos os avatares da página com a cor do
-    primeiro).
+  - **O degradê é o único corte que pinta a PELE**, e custou quatro versões:
+    duas elipses atrás do rosto (dois tons com a transição escondida), a testa
+    inteira em gradiente (o centro lia como mancha), faixas nas têmporas com
+    borda dura (liam como listras). Hoje o topo é sólido, com linha de cabelo,
+    e o fade mora nas têmporas nas DUAS direções — para dentro e para baixo,
+    um gradiente mascarado por outro. Os `id` de gradiente, máscara, padrão e
+    recorte vêm todos de `useId()` **sem pontuação** (os dois-pontos não
+    sobrevivem a um `url(#...)`, e id repetido pinta todos os avatares da
+    página com a cor do primeiro).
   - **O chapéu e o cabelo têm um acordo só: a linha da aba** (`ACESSORIOS.aba`).
     Embaixo do chapéu o corte continua aparecendo — é isso que faz o boné
-    parecer vestido e não colado, e é o que muda de um corte para outro. Quem
-    briga com a aba declara `sobChapeu`, que troca o corte INTEIRO (o que
-    aparecia por cima do boné era o bloco de TRÁS do quadrado, não a franja).
+    parecer vestido e não colado. Por cima dela, NADA do cabelo aparece: todo
+    o cabelo é recortado (`clipPath`) da aba para baixo. Era um `sobChapeu` por
+    corte que brigava com a aba, e mesmo assim cinco cortes vazavam; com o
+    recorte, corte novo já nasce cabendo. A aba do chapéu fica em 0,22 da
+    cabeça porque mais baixa ela cobria a sobrancelha, que é metade da
+    expressão.
+  - **Crespos têm a textura no CONTORNO** (`bordaCrespa`, `linhaRedondaDe`):
+    black power, puff e a linha de cabelo deles são bordas onduladas, porque é
+    a borda que aparece em 24px. Com a linha de cabelo lisa, o puff lia como
+    gorro.
   - **Do queixo para baixo é uma peça só** (`TRONCOS`): pescoço, tronco e gola
     se recortam, e gola desenhada sem saber onde o pescoço acabou deixa lascas
     de pele nos cantos. O `padrao` é o único que olha o corpo — se um tronco de
