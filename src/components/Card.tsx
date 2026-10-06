@@ -3,7 +3,7 @@
 import { Coffee, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
-import { LockIcon, TONE_ICONS, iconeDaClasse } from './icons'
+import { LockIcon, TONE_ICONS, arteDaCarta, iconeDaClasse } from './icons'
 import styles from './Card.module.sass'
 
 /** Distância em px que separa um clique de um arraste. */
@@ -73,7 +73,9 @@ export default function Card({
   }, [])
 
   const evento = isEvent(card)
+  // o canto diz a CLASSE (ou o tom do evento); a arte diz qual carta é
   const Icon = evento ? TONE_ICONS[card.tone] : iconeDaClasse(card.kind)
+  const Arte = arteDaCarta(card.id, Icon)
   const custo = evento ? null : (cost ?? card.cost)
   const custoAlto = !evento && custo !== null && custo > card.cost
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
@@ -261,7 +263,7 @@ export default function Card({
           </span>
           {copies && copies > 1 ? <span className={styles.copias}>×{copies}</span> : null}
           <div className={styles.arte}>
-            <Icon size={40} aria-hidden />
+            <Arte size={40} aria-hidden />
           </div>
           <div className={styles.topo}>
             <span className={styles.nome}>{card.name}</span>
