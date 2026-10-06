@@ -11,7 +11,9 @@ import HistoricoDaRun from '@/components/HistoricoDaRun'
 import MensagemNaMesa from '@/components/MensagemNaMesa'
 import Medidor from '@/components/Medidor'
 import { RESOURCE_ICONS } from '@/components/icons'
-import { getCard, getEvent } from '@/game/catalogo'
+import Link from 'next/link'
+import { getCard, getEvent, tamanhoDoBaralho } from '@/game/catalogo'
+import { regras } from '@/game/regras'
 import {
   canPlay,
   chooseEventOption,
@@ -40,7 +42,7 @@ import { useSessao } from '@/components/SessaoGuard'
 import { EVENTO_REINICIAR } from '@/components/SideNav'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
-import type { CardInstance, GameState } from '@/game/types'
+import type { CardId, CardInstance, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
 
@@ -93,6 +95,7 @@ export default function JogarPage() {
   // atravessar o jogo inteiro
   const [tutorial, setTutorial] = useState(false)
   const [historico, setHistorico] = useState(false)
+  const [baralhoCurto, setBaralhoCurto] = useState<{ tem: number; minimo: number } | null>(null)
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -109,7 +112,8 @@ export default function JogarPage() {
         }
         // run nova já nasce salva: sem isso, recarregar antes da primeira
         // jogada sorteava outra run
-        const nova = createRun(collection.equipped)
+        const nova = comecarRun(collection.equipped)
+        if (!nova) return
         setState(nova)
         sincronizar(sessao.id, nova, collection, setStatus)
       })
@@ -120,6 +124,26 @@ export default function JogarPage() {
       vivo = false
     }
   }, [sessao.id])
+
+  /**
+   * A run só começa com o baralho no mínimo do modo. Antes não havia mínimo
+   * nenhum: dava para começar com o baralho vazio (o dia não comprava nada e
+   * a cota perdida matava em uma semana) e, no outro extremo, tirar as cartas
+   * ruins até sobrar só o que presta dava 100% de vitória nas simulações.
+   * A tela do baralho já recusa a carta que passaria do limite; isto aqui
+   * pega a coleção que chegou abaixo dele por outro caminho (uma de antes do
+   * mínimo existir, um modo novo com mínimo maior).
+   */
+  function comecarRun(equipped: CardId[]): GameState | null {
+    const tem = tamanhoDoBaralho(equipped)
+    const minimo = regras().baralhoMinimo
+    if (tem < minimo) {
+      setBaralhoCurto({ tem, minimo })
+      return null
+    }
+    setBaralhoCurto(null)
+    return createRun(equipped)
+  }
 
   function update(next: GameState) {
     setState(next)
@@ -146,7 +170,16 @@ export default function JogarPage() {
     }
     clearRun()
     setAberta(null)
-    update(createRun(loadCollection().equipped))
+    const collection = loadCollection()
+    const nova = comecarRun(collection.equipped)
+    if (nova) {
+      update(nova)
+      return
+    }
+    // a run velha já foi largada: sem uma nova, o save fica sem run até o
+    // baralho voltar ao mínimo
+    setState(null)
+    sincronizar(sessao.id, null, collection, setStatus)
   }
 
   // o botão de reiniciar vive no menu lateral (com confirmação); ele avisa por
@@ -190,6 +223,28 @@ export default function JogarPage() {
               >
                 Tentar de novo
               </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  if (baralhoCurto) {
+    return (
+      <main className={styles.mesa}>
+        <div className={styles.fundo}>
+          <div className={styles.painel}>
+            <h2 className={styles.painelTitulo}>Baralho curto demais</h2>
+            <p className={styles.painelTexto}>
+              Seu baralho tem {baralhoCurto.tem} cartas e uma run precisa de pelo menos{' '}
+              {baralhoCurto.minimo}. Equipe mais {baralhoCurto.minimo - baralhoCurto.tem} para
+              começar.
+            </p>
+            <div className={styles.acoes}>
+              <Link className={`${buttons.button} ${buttons.primary}`} href="/baralho">
+                Montar o baralho
+              </Link>
             </div>
           </div>
         </div>

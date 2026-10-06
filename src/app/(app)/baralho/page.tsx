@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Card from '@/components/Card'
 import HistoricoDaCarta from '@/components/HistoricoDaCarta'
 import { versaoDoBaralho } from '@/data/balanceamento'
-import { getCard } from '@/game/catalogo'
+import { getCard, tamanhoDoBaralho } from '@/game/catalogo'
+import { regras } from '@/game/regras'
 import { carregarDoBanco, sincronizar, type StatusSync } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
 import { loadCollection, loadRun, lockedCards, saveCollection } from '@/game/storage'
@@ -16,7 +17,9 @@ export default function BaralhoPage() {
   const [collection, setCollection] = useState<Collection | null>(null)
   const [status, setStatus] = useState<StatusSync>('ocioso')
   const [historico, setHistorico] = useState<CardId | null>(null)
+  const [recusa, setRecusa] = useState<string | null>(null)
   const sessao = useSessao()
+  const minimo = regras().baralhoMinimo
 
   useEffect(() => {
     let vivo = true
@@ -41,6 +44,17 @@ export default function BaralhoPage() {
 
   function unequip(id: CardId) {
     if (!collection) return
+    // o mínimo é do MODO, e ele vale para a montagem: abaixo dele a mesa não
+    // começa a run. Recusar aqui, com o motivo na tela, é melhor do que
+    // deixar montar e barrar depois — o jogador descobriria longe da causa
+    const sobraria = tamanhoDoBaralho(collection.equipped.filter((c) => c !== id))
+    if (sobraria < minimo) {
+      setRecusa(
+        `O baralho precisa de pelo menos ${minimo} cartas, e sem ${getCard(id).name} ficaria com ${sobraria}. Equipe outra antes de tirar esta.`,
+      )
+      return
+    }
+    setRecusa(null)
     update({
       equipped: collection.equipped.filter((c) => c !== id),
       unequipped: [...collection.unequipped, id],
@@ -49,6 +63,7 @@ export default function BaralhoPage() {
 
   function equip(id: CardId) {
     if (!collection) return
+    setRecusa(null)
     update({
       equipped: [...collection.equipped, id],
       unequipped: collection.unequipped.filter((c) => c !== id),
@@ -64,10 +79,7 @@ export default function BaralhoPage() {
   }
 
   const locked = lockedCards(collection)
-  const deckSize = collection.equipped.reduce((total, id) => {
-    const card = getCard(id)
-    return total + (card.starter ? (card.copies ?? 1) : 1)
-  }, 0)
+  const deckSize = tamanhoDoBaralho(collection.equipped)
 
   return (
     <main className="page">
@@ -86,10 +98,21 @@ export default function BaralhoPage() {
       <section className={styles.section}>
         <div className={styles.head}>
           <h2>Equipadas</h2>
-          <span className={styles.count}>
-            {collection.equipped.length} tipos · {deckSize} cartas
+          <span className={`${styles.count} ${deckSize < minimo ? styles.countAbaixo : ''}`}>
+            {collection.equipped.length} tipos · {deckSize} cartas · mínimo {minimo}
           </span>
         </div>
+        {recusa ? (
+          <p className={styles.recusa} role="status">
+            {recusa}
+          </p>
+        ) : null}
+        {deckSize < minimo && !recusa ? (
+          <p className={styles.recusa} role="status">
+            Este baralho tem {deckSize} cartas e o mínimo é {minimo}: a mesa não começa uma run
+            assim. Equipe mais {minimo - deckSize}.
+          </p>
+        ) : null}
         {collection.equipped.length === 0 ? (
           <p className={styles.empty}>Nenhuma carta no baralho — você não vai longe assim.</p>
         ) : (
