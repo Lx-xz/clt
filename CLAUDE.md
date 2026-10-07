@@ -547,12 +547,31 @@ opções. O que ele escolheu, e que deve ser preservado:
   - **A orelha é MEDIDA, não peça** (`orelha`, zero no jogo de hoje). É um
     número só, e sendo medida ela some sozinha nos cortes mais largos que a
     cabeça — quem esconde a orelha é o cabelo, não um `if`.
-  - **O degradê é o único corte que pinta a PELE**, e custou quatro versões:
+  - **O degradê é o único corte que pinta a PELE**, e custou cinco versões:
     duas elipses atrás do rosto (dois tons com a transição escondida), a testa
     inteira em gradiente (o centro lia como mancha), faixas nas têmporas com
-    borda dura (liam como listras). Hoje o topo é sólido, com linha de cabelo,
+    borda dura (liam como listras), e uma com coroa atrás da cabeça (fazia uma
+    borda redonda de volume em volta do topo — e degradê é o corte SEM volume).
+    Hoje ele não tem peça de trás: o topo é sólido, pintado dentro da cabeça,
     e o fade mora nas têmporas nas DUAS direções — para dentro e para baixo,
-    um gradiente mascarado por outro. Os `id` de gradiente, máscara, padrão e
+    um gradiente mascarado por outro.
+  - **O topo do cabelo é um só para trás e frente** (`capaDe`). Chanel e coque
+    tinham franja de cantos retos sobre silhueta redonda, e os cantos saíam por
+    cima como pontas. Corte novo que tenha franja usa `capaDe` dos dois lados.
+  - **Careca é sem cabelo nenhum.** Já foi "a coroa que sobra nas laterais",
+    e lia como dois tufos na orelha.
+  - **Do queixo para baixo, toda gola nasce de `pescocoLarg`.** As golas eram
+    números fixos (41 a 59, ±11) sobre um pescoço de ±6,5, e sobravam cunhas.
+    O pescoço é da cor da PELE, com a sombra só numa meia-lua debaixo do
+    queixo — na cor da sombra inteiro, ele ficava mais escuro que o colo do
+    decote. E ele é desenhado DEPOIS do tronco, terminando logo abaixo do
+    ombro: por baixo, sobrava uma lasca da roupa atravessando o pescoço.
+  - **A boca dentro da barba cheia é da cor da barba, mais escura** (mais
+    clara na barba quase preta, onde não existe mais escuro). Era um recorte
+    de pele em elipse, que lia como máscara. A barba por fazer é a cor da
+    barba bem fraca, e só — o padrão de pontos lia como rede.
+  - **O boné é de frente**: copa com gomos, botão e aba grossa em meia-lua.
+    A aba de lado lia como boné virado. Os `id` de gradiente, máscara, padrão e
     recorte vêm todos de `useId()` **sem pontuação** (os dois-pontos não
     sobrevivem a um `url(#...)`, e id repetido pinta todos os avatares da
     página com a cor do primeiro).
