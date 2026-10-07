@@ -340,3 +340,31 @@
 
   .painel
     flex: 0 0 380px
+
+// as três cartas da capa: um leque pequeno, sobreposto, com o mesmo arco da
+// mão na mesa. Pequeno de propósito — elas apresentam o jogo, não competem
+// com o título
+.leque
+  display: flex
+  justify-content: center
+  align-items: flex-end
+  padding: 10px 0 6px
+  --carta-h: 128px
+  --carta-w: calc(var(--carta-h) * .66)
+  --carta-arte: calc(var(--carta-h) * .39)
+
+  > *
+    margin-inline: calc(var(--carta-w) * -.1)
+
+@media (max-width: 760px)
+  .leque
+    --carta-h: 98px
+
+@media (min-width: 900px)
+  .leque
+    align-self: flex-start
+    padding-left: 12px
+
+// decorativa: não é para clicar, e o cursor não pode prometer o contrário
+.cartaDaCapa
+  pointer-events: none

@@ -1,8 +1,9 @@
 'use client'
 
-import { BookOpen, Layers, LogIn, MessageSquareWarning, Play, Trophy, User, UserRound } from 'lucide-react'
+import { BookOpen, Layers, LogIn, MessageSquareWarning, Play, Trophy, User } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import Card from '@/components/Card'
 import Check from '@/components/Check'
 import ComoJogar from '@/components/ComoJogar'
 import Segmentado from '@/components/Segmentado'
@@ -23,9 +24,14 @@ import {
 } from '@/data/conta'
 import { bancoConfigurado } from '@/data/supabase'
 import { cancelarSync } from '@/data/sync'
+import { getCard } from '@/game/catalogo'
 import { limparLocalDoJogo } from '@/game/storage'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './page.module.sass'
+
+/** As cartas da capa: as duas armadilhas do baralho inicial e a carta que
+ *  bate a cota — o jogo inteiro em três cartas. */
+const CARTAS_DA_CAPA = ['cafe', 'tarefa-simples', 'hora-extra']
 
 type Aba = 'entrar' | 'criar'
 
@@ -216,6 +222,21 @@ export default function Home() {
           and Tears
         </h1>
         <p className={styles.sub}>Sobreviva ao mês. Depois a gente vê.</p>
+        {/* três cartas DE VERDADE, com o componente da mesa: a home era só um
+            formulário, e quem chega para avaliar o jogo decidia entrar sem ter
+            visto o jogo. Decorativas para o leitor de tela — o tutorial é que
+            as explica */}
+        <div className={styles.leque} aria-hidden>
+          {CARTAS_DA_CAPA.map((id, i) => (
+            <Card
+              key={id}
+              card={getCard(id)}
+              rotation={(i - 1) * 9}
+              lift={Math.abs(i - 1) * 9}
+              className={styles.cartaDaCapa}
+            />
+          ))}
+        </div>
       </div>
 
       <div className={styles.painel}>
@@ -416,14 +437,16 @@ export default function Home() {
             >
               Entrar com o Google
             </button>
+            {/* o caminho mais curto até o jogo: era o botão mais apagado da tela
+                (fantasma), e é o que quem chega para conhecer o jogo procura */}
             <button
               type="button"
-              className={`${buttons.button} ${buttons.ghost} ${styles.largo}`}
+              className={`${buttons.button} ${styles.largo}`}
               disabled={ocupado}
               onClick={() => setAvisoConvidado(true)}
             >
-              <UserRound size={16} aria-hidden />
-              Jogar como convidado
+              <Play size={16} aria-hidden />
+              Jogar agora, sem conta
             </button>
             {aba === 'entrar' ? (
               <button
