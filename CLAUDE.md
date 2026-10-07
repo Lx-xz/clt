@@ -437,8 +437,11 @@ opções. O que ele escolheu, e que deve ser preservado:
   seu e o dos outros), e Análise/Feedbacks/Novidades viraram abas de
   `/comunidade` — eram três entradas para o mesmo assunto, "o que está
   acontecendo com o jogo". "Como jogar" saiu daqui e foi para a mesa, no
-  canto oposto ao "Próximo dia": é lá que a dúvida aparece, e abrir o menu
-  no meio da partida é atravessar o jogo inteiro.
+  canto de cima à esquerda: é lá que a dúvida aparece, e abrir o menu
+  no meio da partida é atravessar o jogo inteiro. O **"Próximo dia"** fica,
+  no desktop, embaixo à direita, em cima do descarte — perto da mão, porque
+  fechar o dia é o último gesto depois de jogar; no celular, onde as pilhas
+  saem da mesa, ele continua embaixo do header.
   Enquanto houver popup aberto o arraste do menu é ignorado — veja `Dialogo`
   abaixo.
 - **O tutorial (`ComoJogar.tsx`) monta as cartas de verdade.** Ele renderiza o

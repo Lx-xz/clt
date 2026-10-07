@@ -95,6 +95,20 @@
   font-size: 13px
   box-shadow: 0 6px 16px rgba(30, 28, 24, .22), 2px 2px 0 var(--tinta)
 
+// No desktop ele desce para perto da MÃO, em cima do descarte: fechar o dia é
+// o último gesto depois de jogar as cartas, e o olho está lá embaixo. No
+// canto de cima ele ficava do outro lado da tela, a uma viagem de mouse de
+// toda jogada. `fixed` porque o HUD é o pai dele, e a altura do descarte é a
+// da carta (`--carta-h`, que mora na mesa e o botão herda). No celular as
+// pilhas saem da mesa e ele fica embaixo do header, como antes
+@media (min-width: 761px)
+  .proximoDia
+    position: fixed
+    top: auto
+    right: 18px
+    bottom: calc(var(--carta-h) * .78 + 46px + env(safe-area-inset-bottom))
+    margin-top: 0
+
 // a energia de amanhã, dentro do botão que leva até ele. As cores são fixas e
 // escuras porque o fundo é o amarelo do botão nos dois temas — as do HUD
 // sumiriam nele
