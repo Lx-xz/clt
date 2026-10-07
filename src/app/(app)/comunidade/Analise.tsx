@@ -16,7 +16,9 @@ import {
   type EstatisticasNerds,
   type EstressePorDia,
 } from '@/data/analytics'
+import CurvaDeEstresse from '@/components/CurvaDeEstresse'
 import { getCard, getEvent } from '@/game/catalogo'
+import { regras } from '@/game/regras'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './analise.module.sass'
 
@@ -116,7 +118,6 @@ function Conteudo({ dados }: { dados: Dados }) {
   const taxaVitoria = gerais.total_runs > 0 ? Math.round((gerais.vitorias / gerais.total_runs) * 100) : 0
   const maisJogadas = cartas.slice(0, 10)
   const tetoCartas = maisJogadas[0]?.vezes ?? 0
-  const picoEstresse = estresse.reduce((a, b) => (b.estresse_medio > a ? b.estresse_medio : a), 0)
   const favorita = cartas[0]
   const assassina = fatais[0]
 
@@ -161,7 +162,6 @@ function Conteudo({ dados }: { dados: Dados }) {
           totalDerrotas={totalDerrotas}
           taxaVitoria={taxaVitoria}
           estresse={estresse}
-          picoEstresse={picoEstresse}
         />
       ) : (
         <Nerds
@@ -182,13 +182,11 @@ function Normal({
   totalDerrotas,
   taxaVitoria,
   estresse,
-  picoEstresse,
 }: {
   gerais: EstatisticasGerais
   totalDerrotas: number
   taxaVitoria: number
   estresse: EstressePorDia[]
-  picoEstresse: number
 }) {
   return (
     <>
@@ -232,27 +230,25 @@ function Normal({
         <div className={styles.head}>
           <h2>Curva do estresse</h2>
         </div>
-        <p className={styles.hint}>Estresse médio no fim de cada dia do mês.</p>
+        <p className={styles.hint}>Passe o dedo ou o mouse na linha para ver cada dia e quantas runs chegaram até ele.</p>
         {estresse.length === 0 ? (
           <p className={styles.empty}>Sem dias registrados ainda.</p>
         ) : (
-          <div className={styles.barras}>
-            {estresse.map((d) => (
-              <div className={styles.barraLinha} key={d.day}>
-                <span>Dia {d.day}</span>
-                <span className={styles.barraFundo}>
-                  <span
-                    className={styles.barraPreenchida}
-                    style={{
-                      width: `${picoEstresse > 0 ? (d.estresse_medio / picoEstresse) * 100 : 0}%`,
-                      background: 'var(--estresse)',
-                    }}
-                  />
-                </span>
-                <span className={styles.numBarra}>{d.estresse_medio}</span>
-              </div>
-            ))}
-          </div>
+          // uma série no tempo é uma LINHA: como vinte barras deitadas, a
+          // "curva" do título não aparecia em lugar nenhum. O teto do burnout
+          // fica no alto, e é a distância até ele que conta a história
+          <CurvaDeEstresse
+            titulo="Estresse médio no fim de cada dia"
+            pontos={estresse.map((d) => ({
+              dia: d.day,
+              valor: Number(d.estresse_medio),
+              nota: `${d.amostras} ${d.amostras === 1 ? 'run' : 'runs'}`,
+            }))}
+            maximo={regras().estresseMaximo}
+            diasPorSemana={regras().diasPorSemana}
+            altura={170}
+            formatar={(v) => v.toFixed(1).replace('.', ',')}
+          />
         )}
       </section>
     </>
