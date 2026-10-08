@@ -475,9 +475,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   (`SCRIPT_TEMA`): sem ele o site abre claro e pisca para escuro quando o
   React monta — justamente no tema que a pessoa não quer ver.
 - **O avatar é uma receita, não uma imagem** (`src/components/Avatar.tsx` +
-  `src/data/avatar.ts`). O que vai para o banco são onze palavras (rosto,
-  pele, cabelo, cor, olhos, barba, tronco, roupa, óculos, acessório, fundo)
-  num `jsonb`; o SVG é montado na hora. Trocar de avatar é um `update` numa
+  `src/data/avatar.ts`). O que vai para o banco é um punhado de palavras
+  (rosto, pele, cabelo, cor, expressão, barba e a cor dela, tronco, roupa,
+  óculos, acessório e a cor dele, crachá, fundo) num `jsonb`; o SVG é montado na hora. Trocar de avatar é um `update` numa
   linha, o desenho é nítido em qualquer tamanho, e não existe imagem imprópria
   para moderar porque ninguém sobe imagem. Ele aparece no perfil, em
   `/jogador` e na mesa. **No ranking e nos relatos, ainda não:** `ranking()` e
@@ -555,9 +555,16 @@ opções. O que ele escolheu, e que deve ser preservado:
     inteira em gradiente (o centro lia como mancha), faixas nas têmporas com
     borda dura (liam como listras), e uma com coroa atrás da cabeça (fazia uma
     borda redonda de volume em volta do topo — e degradê é o corte SEM volume).
-    Hoje ele não tem peça de trás: o topo é sólido, pintado dentro da cabeça,
-    e o fade mora nas têmporas nas DUAS direções — para dentro e para baixo,
-    um gradiente mascarado por outro.
+    A sexta esmaecia de LADO, e a pálpebra do "De lado" (pele por cima)
+    mostrou a mancha translúcida na têmpora. Hoje é o militar da referência:
+    topo pintado dentro do rosto, testa baixa de cantos redondos, e laterais
+    estreitas de cor CHEIA que só esmaecem para baixo, até a orelha
+    (`esmaecido`). O espetado usa o mesmo fade.
+  - **As laterais descem até a orelha e terminam afinando** (`capaceteDe`).
+    Todo corte curto acabava numa quina reta na altura da têmpora, e lia como
+    peruca. O capacete é uma peça só — capa, laterais e a linha do cabelo, que
+    é o que cada corte muda —, sem peça de trás. Ele também baixou a testa:
+    a linha do cabelo ficava em 0,1 da cabeça, e hoje fica entre 0,2 e 0,27.
   - **O topo do cabelo é um só para trás e frente** (`capaDe`). Chanel e coque
     tinham franja de cantos retos sobre silhueta redonda, e os cantos saíam por
     cima como pontas. Corte novo que tenha franja usa `capaDe` dos dois lados.
@@ -567,25 +574,30 @@ opções. O que ele escolheu, e que deve ser preservado:
     números fixos (41 a 59, ±11) sobre um pescoço de ±6,5, e sobravam cunhas.
     O pescoço é da cor da PELE, com a sombra só numa meia-lua debaixo do
     queixo — na cor da sombra inteiro, ele ficava mais escuro que o colo do
-    decote. E ele é desenhado DEPOIS do tronco, terminando logo abaixo do
-    ombro: por baixo, sobrava uma lasca da roupa atravessando o pescoço.
+    decote. Ele é desenhado DEPOIS do tronco, e o que vai embaixo dele (o V
+    do jaleco, a camiseta do colete) ANTES: na ordem trocada sobrava um fio
+    de 1px atravessando o pescoço. As golas são recortadas pelo tronco
+    (`naRoupa`) — o decote do rosto oval subia acima do ombro. No "sem
+    pescoço" a sombra é o contorno do próprio rosto deslocado para baixo:
+    uma meia-lua de largura fixa lia como gola fora do lugar.
   - **A boca dentro da barba cheia é da cor da barba, mais escura** (mais
     clara na barba quase preta, onde não existe mais escuro). Era um recorte
     de pele em elipse, que lia como máscara. A barba por fazer é a cor da
     barba bem fraca, e só — o padrão de pontos lia como rede.
-  - **O boné é de frente**: copa com gomos, botão e aba grossa em meia-lua.
-    A aba de lado lia como boné virado. Os `id` de gradiente, máscara, padrão e
+  - **O boné é de frente**, como o da referência: copa com gomos e botão, e a
+    aba é uma FAIXA curva mais escura atravessando a testa. A aba de lado lia
+    como boné virado, e a meia-lua cheia, como uma segunda copa. Os `id` de gradiente, máscara, padrão e
     recorte vêm todos de `useId()` **sem pontuação** (os dois-pontos não
     sobrevivem a um `url(#...)`, e id repetido pinta todos os avatares da
     página com a cor do primeiro).
-  - **O chapéu e o cabelo têm um acordo só: a linha da aba** (`ACESSORIOS.aba`).
-    Embaixo do chapéu o corte continua aparecendo — é isso que faz o boné
-    parecer vestido e não colado. Por cima dela, NADA do cabelo aparece: todo
-    o cabelo é recortado (`clipPath`) da aba para baixo. Era um `sobChapeu` por
-    corte que brigava com a aba, e mesmo assim cinco cortes vazavam; com o
-    recorte, corte novo já nasce cabendo. A aba do chapéu fica em 0,22 da
-    cabeça porque mais baixa ela cobria a sobrancelha, que é metade da
-    expressão.
+  - **Boné e chapéu somem com o cabelo**, como no Duolingo. Foi um
+    `sobChapeu` por corte e depois o cabelo recortado da aba para baixo, e o
+    que sobrava embaixo da aba brigava com ela em quase todo corte. Só os
+    cortes `comprido` (longo, tranças, chanel) mostram o comprimento, da aba
+    (`ACESSORIOS.aba`) para baixo. A aba do chapéu fica em 0,22 da cabeça
+    porque mais baixa ela cobria a sobrancelha, que é metade da expressão.
+    A cor é escolha própria (`corChapeu`); "a da roupa" é o padrão de quem
+    gravou antes de ela existir.
   - **Crespos têm a textura no CONTORNO** (`bordaCrespa`, `linhaRedondaDe`):
     black power, puff e a linha de cabelo deles são bordas onduladas, porque é
     a borda que aparece em 24px. Com a linha de cabelo lisa, o puff lia como
@@ -599,6 +611,12 @@ opções. O que ele escolheu, e que deve ser preservado:
     o valor ao tipo em `src/data/avatar.ts` e o rótulo na lista. É `lerAvatar()`
     que valida, na leitura, caindo no padrão diante de peça desconhecida — e é
     exatamente por isso que `salvar_avatar()` não valida nada.
+  - **Escolhe-se EXPRESSÃO, não olho.** O olho é sempre a amêndoa, e
+    a expressão é a pálpebra, a abertura e a sobrancelha
+    (`OLHOS[].sobrancelha`). O campo continua `olhos` e as chaves antigas
+    também (`emPe` é a "Decidida", `surpreso` a "Surpresa"); "Ponto" saiu, e
+    quem o tinha cai na amêndoa pela leitura. **Sem brilho na íris**: no
+    tamanho do perfil ele lia como o único reflexo de luz num desenho chapado.
   - **O olho é FORMA, não detalhe.** A primeira tentativa foi realista —
     branco, íris, pupila e um brilho — e ficou pior: em 24px o brilho some,
     a pupila vira um ponto, e o rosto foge do estilo chapado do resto. O que
@@ -615,7 +633,8 @@ opções. O que ele escolheu, e que deve ser preservado:
     cima de tudo, sem encaixe com o rosto nem com o cabelo para errar. Boné,
     chapéu, óculos e barba são todos dessa família. Óculos e chapéu são
     campos SEPARADOS da receita (um é do rosto, o outro da cabeça); o chapéu
-    herda a cor da roupa, e os óculos têm armação escura fixa.
+    tem cor própria, e os óculos têm armação escura fixa. O crachá passa POR
+    TRÁS do pescoço: o cordão sai dos lados da base dele, já sobre a roupa.
 - **`/lab` é a oficina, e nenhuma bancada dela grava no jogo.** A trava é o
   layout de `/lab` (`GuardaAdmin`), que pergunta ao banco — mas ela é
   conveniência, não segurança: o código vai no mesmo bundle para todo mundo,

@@ -74,6 +74,10 @@ export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'headset'
 /** A cor da barba: a do cabelo (o padrão), ou outra — barba grisalha com o
  *  cabelo ainda escuro é a combinação mais comum que a receita não deixava. */
 export type CorDaBarba = 'cabelo' | CorCabelo
+/** A cor do boné e do chapéu: a da roupa (o padrão, e o que valia antes de a
+ *  escolha existir), ou uma das cores de boné — mais vivas que as de roupa,
+ *  porque boné roxo é boné e camisa roxa é fantasia. */
+export type CorDoChapeu = 'roupa' | 'roxo' | 'vermelho' | 'azul' | 'verde' | 'amarelo' | 'preto' | 'branco'
 
 export interface Avatar {
   rosto: Rosto
@@ -85,11 +89,10 @@ export interface Avatar {
   barba: Barba
   corBarba: CorDaBarba
   tronco: Tronco
-  /** A cor da roupa — e do chapéu, que herda dela: uma sétima escolha de cor
-   *  só para o chapéu seria um controle a mais para quase ninguém. */
   roupa: CorRoupa
   oculos: Oculos
   acessorio: Acessorio
+  corChapeu: CorDoChapeu
   /** O crachá no cordão: a peça que mais diz "CLT" e que não ocupa a cabeça,
    *  então combina com chapéu, boné e headset. */
   cracha: boolean
@@ -116,6 +119,7 @@ export const AVATAR_PADRAO: Avatar = {
   roupa: 'azul',
   oculos: 'nenhum',
   acessorio: 'nenhum',
+  corChapeu: 'roupa',
   cracha: false,
   fundo: 'papel',
 }
@@ -168,17 +172,17 @@ export const CORES: Opcao<CorCabelo>[] = [
   { valor: 'branco', rotulo: 'Branco' },
 ]
 
-// "Desenho" e "Deitado" saíram da lista: em 40px ou menos eles eram a mesma
-// amêndoa, e quatro opções que não se distinguem são uma escolha só. Os dois
-// continuam desenhados (o lab ainda os experimenta), e quem os tinha cai na
-// amêndoa pela leitura — que era, na prática, o que já se via
+// O campo se chama `olhos` por história, mas a escolha é de EXPRESSÃO: o olho
+// é sempre a amêndoa, e o que muda é a pálpebra, a abertura e a sobrancelha.
+// As chaves antigas (`emPe`, `surpreso`) continuam para os avatares gravados
+// valerem. "Ponto", "Desenho" e "Deitado" saíram: quem os tinha cai na
+// amêndoa pela leitura
 export const OLHOS: Opcao<Olhos>[] = [
-  { valor: 'amendoa', rotulo: 'Amêndoa' },
-  { valor: 'emPe', rotulo: 'Em pé' },
-  { valor: 'surpreso', rotulo: 'Surpreso' },
+  { valor: 'amendoa', rotulo: 'Neutra' },
   { valor: 'esperto', rotulo: 'De lado' },
+  { valor: 'emPe', rotulo: 'Decidida' },
+  { valor: 'surpreso', rotulo: 'Surpresa' },
   { valor: 'feliz', rotulo: 'Feliz' },
-  { valor: 'simples', rotulo: 'Ponto' },
 ]
 
 export const BARBAS: Opcao<Barba>[] = [
@@ -228,6 +232,17 @@ export const ACESSORIOS: Opcao<Acessorio>[] = [
 export const CORES_DA_BARRA: Opcao<CorDaBarba>[] = [
   { valor: 'cabelo', rotulo: 'A do cabelo' },
   ...CORES,
+]
+
+export const CORES_DO_CHAPEU: Opcao<CorDoChapeu>[] = [
+  { valor: 'roupa', rotulo: 'A da roupa' },
+  { valor: 'roxo', rotulo: 'Roxo' },
+  { valor: 'vermelho', rotulo: 'Vermelho' },
+  { valor: 'azul', rotulo: 'Azul' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'amarelo', rotulo: 'Amarelo' },
+  { valor: 'preto', rotulo: 'Preto' },
+  { valor: 'branco', rotulo: 'Branco' },
 ]
 
 export const CRACHAS: Opcao<boolean>[] = [
@@ -289,6 +304,7 @@ export function lerAvatar(bruto: unknown): Avatar {
     roupa: um(ROUPAS, a.roupa, AVATAR_PADRAO.roupa),
     oculos: um(OCULOS, a.oculos, AVATAR_PADRAO.oculos),
     acessorio: um(ACESSORIOS, a.acessorio, AVATAR_PADRAO.acessorio),
+    corChapeu: um(CORES_DO_CHAPEU, a.corChapeu, AVATAR_PADRAO.corChapeu),
     cracha: a.cracha === true,
     fundo: um(FUNDOS, a.fundo, AVATAR_PADRAO.fundo),
   }
@@ -318,9 +334,7 @@ export function avatarAleatorio(): Avatar {
     pele: sorteio(PELES).valor,
     cabelo: sorteio(CORTES).valor,
     cor: sorteio(CORES).valor,
-    // o olho de ponto é o do avatar antigo; ele fica disponível para quem
-    // quiser, mas não entra no sorteio de quem está conhecendo o editor
-    olhos: sorteio(OLHOS.filter((o) => o.valor !== 'simples')).valor,
+    olhos: sorteio(OLHOS).valor,
     barba: talvez(BARBAS, 'nenhuma', 0.35),
     // quase sempre a do cabelo; às vezes grisalha, que é o caso comum
     corBarba: Math.random() < 0.15 ? 'grisalho' : 'cabelo',
@@ -328,6 +342,7 @@ export function avatarAleatorio(): Avatar {
     roupa: sorteio(ROUPAS).valor,
     oculos: talvez(OCULOS, 'nenhum', 0.25),
     acessorio: talvez(ACESSORIOS, 'nenhum', 0.15),
+    corChapeu: sorteio(CORES_DO_CHAPEU).valor,
     cracha: Math.random() < 0.3,
     fundo: sorteio(FUNDOS).valor,
   }

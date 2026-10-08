@@ -9,6 +9,7 @@ import Avatar, {
   TONS_DE_FUNDO,
   TONS_DE_PELE,
   TONS_DE_ROUPA,
+  corDoChapeu,
 } from '@/components/Avatar'
 import { useDefinirSessao, useSessao } from '@/components/SessaoGuard'
 import {
@@ -16,6 +17,7 @@ import {
   BARBAS,
   CORES,
   CORES_DA_BARRA,
+  CORES_DO_CHAPEU,
   CORTES,
   CRACHAS,
   FUNDOS,
@@ -53,7 +55,7 @@ type Aba = 'rosto' | 'olhos' | 'cabelo' | 'barba' | 'roupa' | 'extras' | 'fundo'
 
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: 'rosto', rotulo: 'Rosto' },
-  { id: 'olhos', rotulo: 'Olhos' },
+  { id: 'olhos', rotulo: 'Expressão' },
   { id: 'cabelo', rotulo: 'Cabelo' },
   { id: 'barba', rotulo: 'Barba' },
   { id: 'roupa', rotulo: 'Roupa' },
@@ -171,7 +173,7 @@ export default function EditarAvatarPage() {
         ) : null}
 
         {abaAtual === 'olhos' ? (
-          <Formas titulo="Olhos" campo="olhos" opcoes={OLHOS} receita={receita} aoMudar={mudar} enquadrar="rosto" />
+          <Formas titulo="Expressão" campo="olhos" opcoes={OLHOS} receita={receita} aoMudar={mudar} enquadrar="rosto" />
         ) : null}
 
         {abaAtual === 'cabelo' ? (
@@ -208,7 +210,16 @@ export default function EditarAvatarPage() {
           <>
             <Formas titulo="Óculos" campo="oculos" opcoes={OCULOS} receita={receita} aoMudar={mudar} enquadrar="rosto" />
             <Formas titulo="Na cabeça" campo="acessorio" opcoes={ACESSORIOS} receita={receita} aoMudar={mudar} />
-            <p className={styles.dica}>O chapéu e o boné vêm na cor da roupa.</p>
+            {receita.acessorio === 'bone' || receita.acessorio === 'chapeu' ? (
+              <Cores
+                titulo={receita.acessorio === 'bone' ? 'Cor do boné' : 'Cor do chapéu'}
+                campo="corChapeu"
+                opcoes={CORES_DO_CHAPEU}
+                tons={(v) => corDoChapeu(v, receita.roupa)}
+                receita={receita}
+                aoMudar={mudar}
+              />
+            ) : null}
             <Formas titulo="No pescoço" campo="cracha" opcoes={CRACHAS} receita={receita} aoMudar={mudar} enquadrar="inteiro" />
           </>
         ) : null}
