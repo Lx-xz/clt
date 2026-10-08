@@ -46,7 +46,23 @@ export type CorRoupa =
   | 'terracota'
   | 'petroleo'
   | 'mostarda'
-export type CorFundo = 'papel' | 'kraft' | 'menta' | 'ceu' | 'poeira' | 'lavanda' | 'pessego'
+/** Cada fundo tem a sua versão escura (`…Escuro`), para quem quer o avatar
+ *  num fundo de contraste alto. */
+export type CorFundo =
+  | 'papel'
+  | 'kraft'
+  | 'menta'
+  | 'ceu'
+  | 'poeira'
+  | 'lavanda'
+  | 'pessego'
+  | 'papelEscuro'
+  | 'kraftEscuro'
+  | 'mentaEscuro'
+  | 'ceuEscuro'
+  | 'poeiraEscuro'
+  | 'lavandaEscuro'
+  | 'pessegoEscuro'
 export type Olhos =
   | 'amendoa'
   | 'desenho'
@@ -56,7 +72,25 @@ export type Olhos =
   | 'esperto'
   | 'feliz'
   | 'simples'
-export type Barba = 'nenhuma' | 'rala' | 'bigode' | 'cavanhaque' | 'cheia'
+  // as caras do estresse, que a mesa usa, também podem ficar no perfil
+  | 'cansado'
+  | 'suando'
+  | 'chorando'
+  | 'burnout'
+  | 'vitoria'
+export type Barba =
+  | 'nenhuma'
+  | 'rala'
+  | 'bigode'
+  | 'bigodao'
+  | 'cavanhaque'
+  | 'cheia'
+  | 'bigodaoRala'
+  | 'bigodaoCheia'
+/** Como a barba encontra o cabelo: pela costeleta (`conecta`), pela
+ *  costeleta esmaecendo para cima (`degrade`), ou não encontra (`solta`).
+ *  Só vale para as barbas que cobrem a mandíbula — bigode não tem lado. */
+export type LadoDaBarba = 'conecta' | 'degrade' | 'solta'
 export type Tronco =
   | 'colado'
   | 'golaV'
@@ -78,6 +112,10 @@ export type CorDaBarba = 'cabelo' | CorCabelo
  *  escolha existir), ou uma das cores de boné — mais vivas que as de roupa,
  *  porque boné roxo é boné e camisa roxa é fantasia. */
 export type CorDoChapeu = 'roupa' | 'roxo' | 'vermelho' | 'azul' | 'verde' | 'amarelo' | 'preto' | 'branco'
+/** A armação dos óculos: escura (o padrão de sempre) ou uma cor. */
+export type CorDosOculos = 'escuro' | 'roxo' | 'azul' | 'verde' | 'laranja' | 'vermelho' | 'rosa' | 'creme'
+/** O headset é equipamento: preto ou branco, e só. */
+export type CorDoHeadset = 'preto' | 'branco'
 
 export interface Avatar {
   rosto: Rosto
@@ -88,11 +126,14 @@ export interface Avatar {
   olhos: Olhos
   barba: Barba
   corBarba: CorDaBarba
+  ladoBarba: LadoDaBarba
   tronco: Tronco
   roupa: CorRoupa
   oculos: Oculos
+  corOculos: CorDosOculos
   acessorio: Acessorio
   corChapeu: CorDoChapeu
+  corHeadset: CorDoHeadset
   /** O crachá no cordão: a peça que mais diz "CLT" e que não ocupa a cabeça,
    *  então combina com chapéu, boné e headset. */
   cracha: boolean
@@ -113,13 +154,16 @@ export const AVATAR_PADRAO: Avatar = {
   olhos: 'amendoa',
   barba: 'nenhuma',
   corBarba: 'cabelo',
+  ladoBarba: 'conecta',
   // o tronco sem pescoço é o padrão de quem escolhe agora; quem já tinha
   // avatar mantém a gola de antes, pela tradução em `lerAvatar`
   tronco: 'colado',
   roupa: 'azul',
   oculos: 'nenhum',
+  corOculos: 'escuro',
   acessorio: 'nenhum',
   corChapeu: 'roupa',
+  corHeadset: 'preto',
   cracha: false,
   fundo: 'papel',
 }
@@ -183,14 +227,37 @@ export const OLHOS: Opcao<Olhos>[] = [
   { valor: 'emPe', rotulo: 'Decidida' },
   { valor: 'surpreso', rotulo: 'Surpresa' },
   { valor: 'feliz', rotulo: 'Feliz' },
+  // as caras do estresse, para quem quer o perfil cansado. Na mesa elas não
+  // valem: lá a cara é a do estresse da hora, e a run começa tranquila
+  { valor: 'cansado', rotulo: 'Cansada' },
+  { valor: 'suando', rotulo: 'Suando' },
+  { valor: 'chorando', rotulo: 'Chorando' },
+  { valor: 'burnout', rotulo: 'Burnout' },
+  { valor: 'vitoria', rotulo: 'Vitória' },
 ]
+
+/** As expressões que são caras do estresse: o avatar as mostra no perfil, e
+ *  a mesa as ignora. */
+export const EXPRESSOES_DE_HUMOR: readonly Olhos[] = ['cansado', 'suando', 'chorando', 'burnout', 'vitoria']
 
 export const BARBAS: Opcao<Barba>[] = [
   { valor: 'nenhuma', rotulo: 'Nenhuma' },
   { valor: 'rala', rotulo: 'Por fazer' },
-  { valor: 'bigode', rotulo: 'Bigode' },
-  { valor: 'cavanhaque', rotulo: 'Cavanhaque' },
   { valor: 'cheia', rotulo: 'Cheia' },
+  { valor: 'bigode', rotulo: 'Bigode' },
+  { valor: 'bigodao', rotulo: 'Bigodão' },
+  { valor: 'bigodaoRala', rotulo: 'Bigodão e barba por fazer' },
+  { valor: 'bigodaoCheia', rotulo: 'Bigodão e barba cheia' },
+  { valor: 'cavanhaque', rotulo: 'Cavanhaque' },
+]
+
+/** As barbas que cobrem a mandíbula: só elas têm lado para encontrar o cabelo. */
+export const BARBAS_COM_LADO: readonly Barba[] = ['rala', 'cheia', 'bigodaoRala', 'bigodaoCheia']
+
+export const LADOS_DA_BARBA: Opcao<LadoDaBarba>[] = [
+  { valor: 'conecta', rotulo: 'Chega no cabelo' },
+  { valor: 'degrade', rotulo: 'Some subindo' },
+  { valor: 'solta', rotulo: 'Não chega' },
 ]
 
 export const TRONCOS: Opcao<Tronco>[] = [
@@ -245,6 +312,22 @@ export const CORES_DO_CHAPEU: Opcao<CorDoChapeu>[] = [
   { valor: 'branco', rotulo: 'Branco' },
 ]
 
+export const CORES_DOS_OCULOS: Opcao<CorDosOculos>[] = [
+  { valor: 'escuro', rotulo: 'Escuro' },
+  { valor: 'roxo', rotulo: 'Roxo' },
+  { valor: 'azul', rotulo: 'Azul' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'laranja', rotulo: 'Laranja' },
+  { valor: 'vermelho', rotulo: 'Vermelho' },
+  { valor: 'rosa', rotulo: 'Rosa' },
+  { valor: 'creme', rotulo: 'Creme' },
+]
+
+export const CORES_DO_HEADSET: Opcao<CorDoHeadset>[] = [
+  { valor: 'preto', rotulo: 'Preto' },
+  { valor: 'branco', rotulo: 'Branco' },
+]
+
 export const CRACHAS: Opcao<boolean>[] = [
   { valor: false, rotulo: 'Sem crachá' },
   { valor: true, rotulo: 'Com crachá' },
@@ -258,6 +341,13 @@ export const FUNDOS: Opcao<CorFundo>[] = [
   { valor: 'lavanda', rotulo: 'Lavanda' },
   { valor: 'pessego', rotulo: 'Pêssego' },
   { valor: 'poeira', rotulo: 'Poeira' },
+  { valor: 'papelEscuro', rotulo: 'Papel escuro' },
+  { valor: 'kraftEscuro', rotulo: 'Kraft escuro' },
+  { valor: 'mentaEscuro', rotulo: 'Menta escuro' },
+  { valor: 'ceuEscuro', rotulo: 'Céu escuro' },
+  { valor: 'lavandaEscuro', rotulo: 'Lavanda escuro' },
+  { valor: 'pessegoEscuro', rotulo: 'Pêssego escuro' },
+  { valor: 'poeiraEscuro', rotulo: 'Poeira escuro' },
 ]
 
 function um<T extends string>(lista: Opcao<T>[], bruto: unknown, padrao: T): T {
@@ -300,11 +390,16 @@ export function lerAvatar(bruto: unknown): Avatar {
     olhos: um(OLHOS, a.olhos, AVATAR_PADRAO.olhos),
     barba: um(BARBAS, a.barba, AVATAR_PADRAO.barba),
     corBarba: um(CORES_DA_BARRA, a.corBarba, AVATAR_PADRAO.corBarba),
+    // antes desta escolha existir, só a barba cheia tinha costeleta: quem
+    // gravou a por fazer abre com ela solta, como já era
+    ladoBarba: um(LADOS_DA_BARBA, a.ladoBarba, a.barba === 'rala' ? 'solta' : AVATAR_PADRAO.ladoBarba),
     tronco: um(TRONCOS, a.tronco, TRONCO_DO_CORPO[corpoAntigo] ?? AVATAR_PADRAO.tronco),
     roupa: um(ROUPAS, a.roupa, AVATAR_PADRAO.roupa),
     oculos: um(OCULOS, a.oculos, AVATAR_PADRAO.oculos),
+    corOculos: um(CORES_DOS_OCULOS, a.corOculos, AVATAR_PADRAO.corOculos),
     acessorio: um(ACESSORIOS, a.acessorio, AVATAR_PADRAO.acessorio),
     corChapeu: um(CORES_DO_CHAPEU, a.corChapeu, AVATAR_PADRAO.corChapeu),
+    corHeadset: um(CORES_DO_HEADSET, a.corHeadset, AVATAR_PADRAO.corHeadset),
     cracha: a.cracha === true,
     fundo: um(FUNDOS, a.fundo, AVATAR_PADRAO.fundo),
   }
@@ -334,15 +429,20 @@ export function avatarAleatorio(): Avatar {
     pele: sorteio(PELES).valor,
     cabelo: sorteio(CORTES).valor,
     cor: sorteio(CORES).valor,
-    olhos: sorteio(OLHOS).valor,
+    // as caras do estresse não entram no sorteio: ele é para conhecer o
+    // editor, e um avatar chorando à toa assusta
+    olhos: sorteio(OLHOS.filter((o) => !EXPRESSOES_DE_HUMOR.includes(o.valor))).valor,
     barba: talvez(BARBAS, 'nenhuma', 0.35),
     // quase sempre a do cabelo; às vezes grisalha, que é o caso comum
     corBarba: Math.random() < 0.15 ? 'grisalho' : 'cabelo',
+    ladoBarba: sorteio(LADOS_DA_BARBA).valor,
     tronco: sorteio(TRONCOS).valor,
     roupa: sorteio(ROUPAS).valor,
     oculos: talvez(OCULOS, 'nenhum', 0.25),
+    corOculos: Math.random() < 0.6 ? 'escuro' : sorteio(CORES_DOS_OCULOS).valor,
     acessorio: talvez(ACESSORIOS, 'nenhum', 0.15),
     corChapeu: sorteio(CORES_DO_CHAPEU).valor,
+    corHeadset: sorteio(CORES_DO_HEADSET).valor,
     cracha: Math.random() < 0.3,
     fundo: sorteio(FUNDOS).valor,
   }

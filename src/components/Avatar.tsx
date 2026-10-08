@@ -7,9 +7,11 @@ import type {
   Barba,
   CorCabelo,
   CorDoChapeu,
+  CorDosOculos,
   CorFundo,
   CorRoupa,
   Corte,
+  LadoDaBarba,
   Oculos,
   Olhos,
   Pele,
@@ -116,6 +118,13 @@ export function corDoChapeu(cor: CorDoChapeu, roupa: CorRoupa): string {
 }
 
 export const TONS_DE_FUNDO: Record<CorFundo, string> = {
+  papelEscuro: '#7c7462',
+  kraftEscuro: '#7a6448',
+  mentaEscuro: '#5d7a66',
+  ceuEscuro: '#55697d',
+  lavandaEscuro: '#665f80',
+  pessegoEscuro: '#94674a',
+  poeiraEscuro: '#7a6870',
   papel: '#d8cfba',
   kraft: '#c9b596',
   menta: '#b7c9bb',
@@ -249,17 +258,43 @@ export interface FormaCabelo {
   mechas?: boolean
   /** Desenho por cima de TUDO do cabelo, mechas inclusive — o trançado. */
   textura?: (d: DesenhoDeCabelo) => ReactNode
-  /** O cabelo tem COMPRIMENTO abaixo da cabeça. É o único que continua
-   *  aparecendo embaixo do boné e do chapéu — veja o componente. */
-  comprido?: boolean
+  /**
+   * O que aparece embaixo do boné e do chapéu. Sem isto, valem as LATERAIS
+   * da peça da frente, da aba para baixo (`lados` decide outra peça, ou
+   * `null` para nenhuma), e nada atrás. `atras` é o comprimento, num volume
+   * menor: o boné aperta o cabelo, e o longo com o volume de sempre
+   * parecia um boné apoiado em cima de uma peruca.
+   */
+  sobChapeu?: {
+    atras?: (d: DesenhoDeCabelo) => ReactNode
+    lados?: ((d: DesenhoDeCabelo) => ReactNode) | null
+  }
 }
 
-// Boné e chapéu SOMEM com o cabelo, como no Duolingo. Já houve um
-// `sobChapeu` por corte, e depois o cabelo inteiro recortado da aba para
-// baixo — e o que sobrava embaixo da aba (franja, laterais, pontas) brigava
-// com ela em quase todo corte. Hoje o chapéu cobre a cabeça e embaixo dele é
-// testa; só os cortes `comprido` mostram o comprimento, recortado da aba para
-// baixo, porque sem ele o cabelo comprido viraria careca de boné.
+// Boné e chapéu APERTAM o cabelo. Já foram três regras: um `sobChapeu` por
+// corte brigando com a aba; o cabelo inteiro recortado da aba para baixo (a
+// franja e o volume do longo continuavam lá, como se o boné não apertasse
+// nada); e o cabelo sumindo inteiro (todo mundo de boné parecia careca).
+// Hoje embaixo da aba aparecem só as LATERAIS de cada corte — recortadas pelo
+// componente —, e os compridos ganham um volume menor, rente à cabeça e
+// caindo atrás do pescoço.
+
+/** O comprimento embaixo do chapéu: rente à cabeça, descendo até `ate`, por
+ *  trás do rosto e da roupa — o que passa do ombro some atrás dela. */
+function comprimentoSobChapeu(ate: (m: Medidas) => number, folga = 2.6): (d: DesenhoDeCabelo) => ReactNode {
+  return ({ m, cor }) => {
+    const L = m.larg + folga
+    const y = ate(m)
+    return <path d={`M${50 - L} ${m.topo} L${50 + L} ${m.topo} L${50 + L} ${y - 4} Q${50 + L} ${y} ${50 + L - 4} ${y} L${50 - L + 4} ${y} Q${50 - L} ${y} ${50 - L} ${y - 4} Z`} fill={cor} />
+  }
+}
+
+/** As laterais de um cabelo volumoso embaixo do chapéu: as de um curto, um
+ *  pouco mais largas. Sem isto, o cacheado e o black power mostravam a borda
+ *  inteira da massa saindo da aba. */
+function ladosVolumosos({ m, cor }: DesenhoDeCabelo): ReactNode {
+  return <path d={capaceteDe(m, { folga: 2.4, sobe: 0, lado: 3.6, testa: 0.2 })} fill={cor} />
+}
 
 // --- os dois cortes antigos, desenhados a partir da elipse solta (rx/ry/cy)
 
@@ -698,7 +733,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   longo: {
     rotulo: 'Longo',
-    comprido: true,
+    sobChapeu: { atras: comprimentoSobChapeu(() => 100), lados: null },
     atras: ({ m, cor }) => <path d={silhuetaDe(m)} fill={cor} />,
     frente: ({ m, cor }) => <path d={franjaDe(m)} fill={cor} />,
     mechas: true,
@@ -730,6 +765,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   cacheado: {
     rotulo: 'Cacheado',
+    sobChapeu: { lados: ladosVolumosos },
     atras: ({ m, cor }) => {
       const f = cacheadoForma(m)
       return <path d={bordaCrespa(f.cx, f.cy, f.rx, f.ry, f.n, f.onda)} fill={cor} />
@@ -795,7 +831,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   chanel: {
     rotulo: 'Chanel',
-    comprido: true,
+    sobChapeu: { atras: comprimentoSobChapeu((m) => m.queixo + 2, 3), lados: null },
     // a franja reta tinha cantos em ângulo reto sobre uma silhueta redonda, e
     // os cantos saíam por cima como duas pontas. Hoje as duas peças nascem da
     // mesma `capaDe`, e a franja só difere na borda de baixo
@@ -834,6 +870,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   // e nenhum cabelo crespo — o cacheado é um cacho curto, liso por baixo
   blackPower: {
     rotulo: 'Black power',
+    sobChapeu: { lados: ladosVolumosos },
     atras: ({ m, cor }) => (
       <path
         d={bordaCrespa(50, m.topo + altura(m) * 0.3, m.larg + 10, altura(m) * 0.55, 16, 0.045)}
@@ -844,6 +881,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   puff: {
     rotulo: 'Puff',
+    sobChapeu: { lados: ladosVolumosos },
     // só o puff atrás: a peça de trás tinha também uma coroa de base reta,
     // que aparecia dos lados do rosto como um corte de tesoura
     atras: ({ m, cor }) => (
@@ -853,7 +891,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   trancas: {
     rotulo: 'Tranças',
-    comprido: true,
+    sobChapeu: { atras: comprimentoSobChapeu(() => 100), lados: null },
     // o comprimento do longo, com divisão no meio e o trançado desenhado por
     // cima das mechas: sem o trançado, era só o longo de novo
     atras: ({ m, cor }) => <path d={silhuetaDe(m)} fill={cor} />,
@@ -894,9 +932,8 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
  * o cabelo nem com o rosto para errar — o oposto exato do cabelo, que custou
  * três tentativas.
  *
- * `aba` é a linha onde o chapéu pousa. Quem tem `aba` cobre a cabeça, e o
- * cabelo some debaixo dele (só o comprimento dos cortes compridos continua
- * aparecendo, da aba para baixo).
+ * `aba` é a linha onde o chapéu pousa. Quem tem `aba` cobre a cabeça, e
+ * embaixo dele aparecem só as laterais do cabelo (veja `sobChapeu`).
  */
 export const ACESSORIOS: Record<Acessorio, {
   rotulo: string
@@ -912,23 +949,25 @@ export const ACESSORIOS: Record<Acessorio, {
     // uma FAIXA curva de espessura constante, mais escura, atravessando a
     // testa de ponta a ponta e passando um pouco da cabeça. A versão
     // anterior desenhava a aba como meia-lua cheia caindo da copa, e ela
-    // lia como uma segunda copa
+    // lia como uma segunda copa. A faixa faz a curva PARA CIMA — as pontas
+    // descem e o meio sobe —, que é a aba vista de frente, de baixo. Curvada
+    // para baixo, ela lia como sorriso e o boné virava tigela
     desenhar: (m, cor, sombra) => {
       const a = altura(m)
       const T = m.topo
       const y = T + a * 0.2
-      const desce = 3.2
+      const sobe = 3.4
       const C = m.larg + 2
       const A = m.larg + 4.2
       const alto = T - 8
       return (
         <>
           <path
-            d={`M${50 - C} ${y} C${50 - C} ${alto + 2} ${50 - C * 0.55} ${alto} 50 ${alto} C${50 + C * 0.55} ${alto} ${50 + C} ${alto + 2} ${50 + C} ${y} Q50 ${y + desce * 2} ${50 - C} ${y} Z`}
+            d={`M${50 - C} ${y + 1.4} C${50 - C} ${alto + 2} ${50 - C * 0.55} ${alto} 50 ${alto} C${50 + C * 0.55} ${alto} ${50 + C} ${alto + 2} ${50 + C} ${y + 1.4} Q50 ${y - sobe} ${50 - C} ${y + 1.4} Z`}
             fill={cor}
           />
           <path
-            d={`M${50 - 2.6} ${alto + 1.4} Q${50 - C * 0.58} ${alto + 4} ${50 - C * 0.55} ${y + desce * 0.6} M${50 + 2.6} ${alto + 1.4} Q${50 + C * 0.58} ${alto + 4} ${50 + C * 0.55} ${y + desce * 0.6}`}
+            d={`M${50 - 2.6} ${alto + 1.4} Q${50 - C * 0.58} ${alto + 4} ${50 - C * 0.55} ${y - 1} M${50 + 2.6} ${alto + 1.4} Q${50 + C * 0.58} ${alto + 4} ${50 + C * 0.55} ${y - 1}`}
             fill="none"
             stroke={sombra}
             strokeWidth={0.9}
@@ -937,7 +976,7 @@ export const ACESSORIOS: Record<Acessorio, {
           />
           <circle cx="50" cy={alto + 0.6} r="2" fill={sombra} />
           <path
-            d={`M${50 - A} ${y - 0.6} Q50 ${y + desce * 2 + 0.6} ${50 + A} ${y - 0.6}`}
+            d={`M${50 - A} ${y + 1.8} Q50 ${y - sobe - 0.4} ${50 + A} ${y + 1.8}`}
             fill="none"
             stroke={sombra}
             strokeWidth={5.4}
@@ -973,13 +1012,12 @@ export const ACESSORIOS: Record<Acessorio, {
     // o fone de call center: arco por cima da cabeça, as duas conchas na
     // altura da orelha e o microfone descendo até a boca. Sem `aba`: ele não
     // cobre o topo, e o cabelo aparece inteiro por baixo do arco. A cor é
-    // grafite fixa, como a armação dos óculos — equipamento não veste roupa
-    desenhar: (m) => {
+    // preta ou branca (`corHeadset`): equipamento não veste roupa
+    desenhar: (m, cor, sombra) => {
       const L = m.larg + 2
       const a = altura(m)
       const y = m.topo + a * 0.55
       const boca = m.topo + a * 0.81
-      const cor = '#33302b'
       return (
         <g>
           <path
@@ -989,8 +1027,8 @@ export const ACESSORIOS: Record<Acessorio, {
             strokeWidth={2.4}
             strokeLinecap="round"
           />
-          <rect x={50 - L - 3.2} y={y - 5.5} width={6} height={11} rx={2.6} fill={cor} />
-          <rect x={50 + L - 2.8} y={y - 5.5} width={6} height={11} rx={2.6} fill={cor} />
+          <rect x={50 - L - 3.2} y={y - 5.5} width={6} height={11} rx={2.6} fill={cor} stroke={sombra} strokeWidth={0.6} />
+          <rect x={50 + L - 2.8} y={y - 5.5} width={6} height={11} rx={2.6} fill={cor} stroke={sombra} strokeWidth={0.6} />
           <path
             d={`M${50 - L + 1} ${y + 4} Q${50 - L + 2} ${boca + 1} ${50 - 7} ${boca}`}
             fill="none"
@@ -998,7 +1036,7 @@ export const ACESSORIOS: Record<Acessorio, {
             strokeWidth={1.4}
             strokeLinecap="round"
           />
-          <circle cx={50 - 6.5} cy={boca} r={1.9} fill={cor} />
+          <circle cx={50 - 6.5} cy={boca} r={1.9} fill={sombra} />
         </g>
       )
     },
@@ -1057,12 +1095,21 @@ const FAIXA_REFLETIVA = '#d9d8cf'
  * desenhado depois, a borda de cima dessas peças passava atravessada no
  * pescoço, e a emenda entre ela e a gola sobrava como um fio de 1px.
  */
-function pescoco({ m, pele, sombra }: DesenhoDeTronco): ReactNode {
+function pescoco({ m, pele, sombra, id }: DesenhoDeTronco): ReactNode {
   const N = m.pescocoLarg
+  const y0 = m.queixo - 8
+  const alto = m.ombro + 1.2 - y0
+  // a sombra é recortada pelo pescoço: mais larga que ele, as pontas dela
+  // apareciam dos dois lados, no fundo
   return (
     <>
-      <rect x={50 - N} y={m.queixo - 8} width={N * 2} height={m.ombro + 1.2 - (m.queixo - 8)} fill={pele} />
-      <ellipse cx="50" cy={m.queixo + 0.5} rx={N + 0.6} ry={3.2} fill={sombra} />
+      <defs>
+        <clipPath id={`${id}-pescoco`}>
+          <rect x={50 - N} y={y0} width={N * 2} height={alto} />
+        </clipPath>
+      </defs>
+      <rect x={50 - N} y={y0} width={N * 2} height={alto} fill={pele} />
+      <ellipse cx="50" cy={m.queixo + 0.5} rx={N + 0.6} ry={3.2} fill={sombra} clipPath={`url(#${id}-pescoco)`} />
     </>
   )
 }
@@ -1431,9 +1478,20 @@ function comPalpebra(o: DesenhoDeOlho, fora: number, dentro: number): ReactNode 
   )
 }
 
+/** A boca: a curva (positivo sorri, zero é reto, negativo desce), `'o'`
+ *  aberta de espanto, `'torta'` subindo de um lado só, ou `'aberta'` — o
+ *  sorriso de boca aberta da vitória. */
+export type Boca = number | 'o' | 'torta' | 'aberta'
+
 export const OLHOS: Record<Olhos, {
   rotulo: string
   teste?: boolean
+  /** A boca da expressão. A boca já foi uma só — o sorriso —, e a surpresa
+   *  sorria de espanto. */
+  boca?: Boca
+  /** As caras do estresse escolhidas no perfil: a amêndoa com o humor por
+   *  cima. Na mesa elas não valem (veja o componente). */
+  humor?: Humor
   /** A sobrancelha da expressão: `sobe` em unidades (negativo é para cima)
    *  e `giro` em graus — positivo levanta a ponta de DENTRO. O humor do
    *  estresse, quando aflito, passa por cima disto. */
@@ -1442,10 +1500,12 @@ export const OLHOS: Record<Olhos, {
 }> = {
   amendoa: {
     rotulo: 'Neutra',
+    boca: 4.5,
     desenhar: (o) => olhoComIris(o, AMENDOA),
   },
   esperto: {
     rotulo: 'De lado',
+    boca: 'torta',
     // a pálpebra reta e a íris encostada no canto: olhando de lado
     desenhar: (o) => (
       <g transform={`translate(${o.x} ${o.y}) rotate(${-8 * o.lado}) scale(${o.t})`}>
@@ -1460,17 +1520,20 @@ export const OLHOS: Record<Olhos, {
     // era o olho oval "em pé"; virou a amêndoa com a pálpebra caindo para o
     // lado do nariz, e a sobrancelha descendo junto
     rotulo: 'Decidida',
+    boca: 0.8,
     sobrancelha: { sobe: 0.6, giro: -10 },
     desenhar: (o) => comPalpebra(o, -2.6, -0.3),
   },
   surpreso: {
     // a amêndoa mais aberta, quase sem giro, e a sobrancelha lá em cima
     rotulo: 'Surpresa',
+    boca: 'o',
     sobrancelha: { sobe: -2.4 },
     desenhar: (o) => olhoComIris(o, { rx: 5.8, ry: 4.6, giro: 4, ix: 0.7, iy: 0, irx: 2.1, iry: 2.6 }),
   },
   feliz: {
     rotulo: 'Feliz',
+    boca: 'aberta',
     // sem branco e sem íris: só o arco. É a expressão que mais se lê e a que
     // tem menos desenho — a prova de que expressão aqui não é detalhe
     desenhar: ({ x, y, t }) => (
@@ -1483,6 +1546,12 @@ export const OLHOS: Record<Olhos, {
       />
     ),
   },
+  // as caras do estresse, para o perfil: a amêndoa, e o humor faz o resto
+  cansado: { rotulo: 'Cansada', humor: 'cansado', desenhar: (o) => olhoComIris(o, AMENDOA) },
+  suando: { rotulo: 'Suando', humor: 'suando', desenhar: (o) => olhoComIris(o, AMENDOA) },
+  chorando: { rotulo: 'Chorando', humor: 'chorando', desenhar: (o) => olhoComIris(o, AMENDOA) },
+  burnout: { rotulo: 'Burnout', humor: 'burnout', desenhar: (o) => olhoComIris(o, AMENDOA) },
+  vitoria: { rotulo: 'Vitória', humor: 'vitoria', desenhar: (o) => olhoComIris(o, AMENDOA) },
   // os olhos que saíram da receita continuam desenhados, de teste, para o
   // lab: quem os tinha gravado abre com a amêndoa (`lerAvatar`)
   simples: {
@@ -1513,9 +1582,11 @@ export const OLHOS: Record<Olhos, {
  * rosto o que segue os cantos dele —, e é por isso que a barba cheia fecha
  * certinho no queixo quadrado e no redondo sem uma linha por rosto.
  *
- * A boca fica à mostra de dois jeitos: a barba rala é translúcida, e a cheia
- * leva por cima uma elipse da COR DA PELE onde a boca é desenhada depois —
- * o truque da pálpebra do "De lado" de novo, sem recorte nenhum.
+ * O LADO da barba é escolha (`ladoBarba`): a costeleta sobe até o cabelo
+ * (`conecta`), sobe esmaecendo (`degrade`), ou não existe (`solta`). Ela era
+ * só da cheia, e terminava num ponto fixo da têmpora que não batia com a
+ * lateral de corte nenhum. Hoje ela sobe até `fimDoLado` — onde a lateral do
+ * cabelo termina —, e passa um pouco por baixo dela.
  */
 export interface DesenhoDeBarba {
   m: Medidas
@@ -1523,7 +1594,8 @@ export interface DesenhoDeBarba {
   pele: string
   /** A linha da boca: a barba se organiza em volta dela. */
   bocaY: number
-  /** Para o padrão de pontos da barba por fazer, único por avatar. */
+  lado: LadoDaBarba
+  /** Para o gradiente da costeleta, único por avatar. */
   id: string
 }
 
@@ -1533,30 +1605,133 @@ function mandibulaDe(m: Medidas, lados: number, meio: number, desce = 0): string
   return `M${50 - L} ${lados} L${50 - L} ${Q - cantoY} Q${50 - L} ${fundo} ${50 - L + cantoX} ${fundo} L${50 + L - cantoX} ${fundo} Q${50 + L} ${fundo} ${50 + L} ${Q - cantoY} L${50 + L} ${lados} Q50 ${meio} ${50 - L} ${lados} Z`
 }
 
+/** Onde a costeleta começa: um pouco acima do fim da lateral do cabelo, para
+ *  passar por baixo dela em vez de encostar. */
+function topoDaCosteleta(m: Medidas): number {
+  return fimDoLado(m) - 4
+}
+
+/**
+ * As duas costeletas, terminando EXATAMENTE na borda de cima da mandíbula:
+ * a base de cada uma é o mesmo arco que a mandíbula faz entre `lados` e
+ * `meio`, então as duas peças encostam sem se sobrepor — sobrepostas, a barba
+ * por fazer (translúcida) ficava mais escura na emenda.
+ */
+function costeletasDe(m: Medidas, lados: number, meio: number, w = 3.4): string {
+  const L = m.larg
+  const t = w / (2 * L)
+  const yIn = (1 - t) ** 2 * lados + 2 * t * (1 - t) * meio + t * t * lados
+  const de = topoDaCosteleta(m)
+  return [-1, 1]
+    .map((s) => `M${50 + s * L} ${de} L${50 + s * (L - w)} ${de} L${50 + s * (L - w)} ${yIn} Q${50 + s * (L - w / 2)} ${(lados + yIn) / 2} ${50 + s * L} ${lados} Z`)
+    .join(' ')
+}
+
+/**
+ * Uma barba que cobre a mandíbula, com o lado escolhido. `opacidade` é o que
+ * separa a por fazer (a cor da barba bem fraca) da cheia.
+ */
+function barbaComLado(d: DesenhoDeBarba, lados: number, meio: number, desce: number, opacidade = 1): ReactNode {
+  const { m, cor, lado, id } = d
+  const queixo = mandibulaDe(m, lados, meio, desce)
+  const costeletas = costeletasDe(m, lados, meio)
+  if (lado === 'conecta') {
+    // num caminho só: dois caminhos translúcidos escureceriam onde encostam
+    return <path d={`${queixo} ${costeletas}`} fill={cor} opacity={opacidade} />
+  }
+  if (lado === 'solta') return <path d={queixo} fill={cor} opacity={opacidade} />
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${id}-costeleta`} gradientUnits="userSpaceOnUse" x1="0" y1={topoDaCosteleta(m)} x2="0" y2={lados}>
+          <stop offset="0" stopColor={cor} stopOpacity="0" />
+          <stop offset="1" stopColor={cor} stopOpacity={opacidade} />
+        </linearGradient>
+      </defs>
+      <path d={queixo} fill={cor} opacity={opacidade} />
+      <path d={costeletas} fill={`url(#${id}-costeleta)`} />
+    </>
+  )
+}
+
 // mais largo e mais grosso do que era: com 12 de largura e 3 de altura ele
 // sumia em 32px, e é nesse tamanho que o avatar vive na mesa
 function bigodeDe(b: number): string {
   return `M42.5 ${b - 0.8} C43.5 ${b - 5.8} 48.6 ${b - 5.8} 50 ${b - 3.9} C51.4 ${b - 5.8} 56.5 ${b - 5.8} 57.5 ${b - 0.8} Q50 ${b - 2.9} 42.5 ${b - 0.8} Z`
 }
 
+/** O bigodão: largo, caindo nas pontas e cobrindo a boca inteira — a boca
+ *  nem é desenhada (`escondeBoca`). */
+function bigodaoDe(b: number): string {
+  return `M39.6 ${b + 2.8} C39.4 ${b - 2.2} 44 ${b - 6.2} 50 ${b - 4.6} C56 ${b - 6.2} 60.6 ${b - 2.2} 60.4 ${b + 2.8} C59.2 ${b + 5} 56.6 ${b + 4} 55.2 ${b + 2.6} Q50 ${b + 1.4} 44.8 ${b + 2.6} C43.4 ${b + 4} 40.8 ${b + 5} 39.6 ${b + 2.8} Z`
+}
+
+const RALA = { lados: 0.64, meio: -4, desce: 0, opacidade: 0.26 }
+const CHEIA = { lados: 0.62, meio: -4.5, desce: 3, opacidade: 1 }
+
+function mandibula(d: DesenhoDeBarba, b: typeof RALA): ReactNode {
+  return barbaComLado(d, d.m.topo + altura(d.m) * b.lados, d.bocaY + b.meio, b.desce, b.opacidade)
+}
+
 export const BARBAS: Record<Barba, {
   rotulo: string
   teste?: boolean
+  /** Cobre a mandíbula, e por isso tem lado (`ladoBarba`). */
+  temLado?: boolean
+  /** Cobre a boca: ela nem é desenhada. */
+  escondeBoca?: boolean
   desenhar: (d: DesenhoDeBarba) => ReactNode
 }> = {
   nenhuma: { rotulo: 'Nenhuma', desenhar: () => null },
   rala: {
     rotulo: 'Por fazer',
+    temLado: true,
     // a cor da barba, bem fraca, e só. Ela já foi um padrão de pontos — mais
     // "realista", e lia como rede na pele clara e como textura de tecido em
     // tamanho grande. Barba por fazer de desenho é sombra
-    desenhar: ({ m, cor, bocaY }) => (
-      <path d={mandibulaDe(m, m.topo + altura(m) * 0.64, bocaY - 4)} fill={cor} opacity={0.26} />
-    ),
+    desenhar: (d) => mandibula(d, RALA),
+  },
+  cheia: {
+    rotulo: 'Cheia',
+    temLado: true,
+    // sem recorte de pele em volta da boca: a boca é desenhada POR CIMA da
+    // barba, na cor dela mais escura (`corDaBoca` no componente). O recorte
+    // em elipse lia como uma máscara aberta. Ela desce 3 abaixo do queixo:
+    // barba tem volume, e sem isso pareceria pintada no rosto
+    desenhar: (d) => mandibula(d, CHEIA),
   },
   bigode: {
     rotulo: 'Bigode',
     desenhar: ({ cor, bocaY }) => <path d={bigodeDe(bocaY)} fill={cor} />,
+  },
+  bigodao: {
+    rotulo: 'Bigodão',
+    escondeBoca: true,
+    desenhar: ({ cor, bocaY }) => <path d={bigodaoDe(bocaY)} fill={cor} />,
+  },
+  bigodaoRala: {
+    rotulo: 'Bigodão e barba por fazer',
+    temLado: true,
+    escondeBoca: true,
+    desenhar: (d) => (
+      <>
+        {mandibula(d, RALA)}
+        <path d={bigodaoDe(d.bocaY)} fill={d.cor} />
+      </>
+    ),
+  },
+  bigodaoCheia: {
+    rotulo: 'Bigodão e barba cheia',
+    temLado: true,
+    escondeBoca: true,
+    // o bigodão por cima da cheia, num tom mais escuro: da mesma cor ele
+    // sumia dentro dela
+    desenhar: (d) => (
+      <>
+        {mandibula(d, CHEIA)}
+        <path d={bigodaoDe(d.bocaY)} fill={escurecer(d.cor, 0.8)} />
+      </>
+    ),
   },
   cavanhaque: {
     rotulo: 'Cavanhaque',
@@ -1567,31 +1742,13 @@ export const BARBAS: Record<Barba, {
       </g>
     ),
   },
-  cheia: {
-    rotulo: 'Cheia',
-    // sem recorte de pele em volta da boca: a boca é desenhada POR CIMA da
-    // barba, na cor dela mais escura (`bocaNaBarba` no componente). O recorte
-    // em elipse lia como uma máscara aberta
-    desenhar: ({ m, cor, bocaY }) => (
-      <>
-        {/* desce 3 abaixo do queixo: barba tem volume, e sem isso ela
-            pareceria pintada no rosto */}
-        <path d={mandibulaDe(m, m.topo + altura(m) * 0.62, bocaY - 4.5, 3)} fill={cor} />
-        {/* as costeletas ligam a barba ao cabelo. Sem elas sobrava um vão de
-            pele na altura da orelha, e a barba cheia lia como barba de queixo */}
-        <rect x={50 - m.larg} y={m.topo + altura(m) * 0.3} width={3.4} height={altura(m) * 0.36} fill={cor} />
-        <rect x={50 + m.larg - 3.4} y={m.topo + altura(m) * 0.3} width={3.4} height={altura(m) * 0.36} fill={cor} />
-      </>
-    ),
-  },
 }
 
 // ------------------------------------------------------------------ óculos
 
 /**
- * Óculos: armação escura FIXA, e não na cor da roupa como o chapéu. Óculos
- * da cor da camisa lê como fantasia; armação escura lê como óculos em
- * qualquer roupa.
+ * Óculos: a armação é escura por padrão, e a cor é escolha (`corOculos`).
+ * As lentes são um véu branco quase transparente, em qualquer armação.
  */
 export interface DesenhoDeOculos {
   m: Medidas
@@ -1599,16 +1756,27 @@ export interface DesenhoDeOculos {
   olhoX: number
   olhoY: number
   t: number
+  /** A cor da armação. */
+  cor: string
 }
 
-const ARMACAO = '#2b2622'
+export const TONS_DOS_OCULOS: Record<CorDosOculos, string> = {
+  escuro: '#2b2622',
+  roxo: '#7d5aa8',
+  azul: '#2f5f9e',
+  verde: '#4d7f3a',
+  laranja: '#d9792b',
+  vermelho: '#c6463d',
+  rosa: '#e58fb8',
+  creme: '#e4d6c3',
+}
 
 function lentes(d: DesenhoDeOculos, lente: (x: number) => ReactNode, meia: number): ReactNode {
   const { m, olhoX, olhoY: y } = d
   const e = 50 - olhoX
   const dd = 50 + olhoX
   return (
-    <g stroke={ARMACAO} strokeWidth={1.3} strokeLinecap="round">
+    <g stroke={d.cor} strokeWidth={1.3} strokeLinecap="round">
       {lente(e)}
       {lente(dd)}
       {/* a ponte e as hastes: é a haste chegando na orelha que faz o objeto
@@ -1686,8 +1854,8 @@ export function humorDoEstresse(estresse: number, maximo: number): Humor {
 }
 
 const HUMORES: Record<Humor, {
-  /** A curva da boca: positivo sorri, zero é reto, negativo desce. */
-  boca: number
+  /** A boca do humor. Sem ela (o tranquilo), vale a da expressão escolhida. */
+  boca?: Boca
   olheira?: boolean
   suor?: boolean
   lagrima?: boolean
@@ -1701,12 +1869,12 @@ const HUMORES: Record<Humor, {
    *  esquenta conforme o estresse sobe. */
   fundo?: string
 }> = {
-  tranquilo: { boca: 4.5 },
+  tranquilo: {},
   cansado: { boca: 1.8, olheira: true, fundo: '#ddc9a4' },
   suando: { boca: 0, olheira: true, suor: true, aflito: true, fundo: '#e3b48a' },
   chorando: { boca: -3, olheira: true, lagrima: true, aflito: true, fundo: '#df9a84' },
   burnout: { boca: -1.5, olhosX: true, aflito: true, fundo: '#c9705f' },
-  vitoria: { boca: 7, sorriso: true, fundo: '#bcd3a3' },
+  vitoria: { boca: 'aberta', sorriso: true, fundo: '#bcd3a3' },
 }
 
 /** Luminância relativa de um `#rrggbb` (WCAG), para comparar cabelo e pele. */
@@ -1834,29 +2002,41 @@ export default function Avatar({
   const acessorio = manequim
     ? ACESSORIOS.nenhum
     : (ACESSORIOS[ajustes?.teste?.acessorio ?? avatar.acessorio] ?? ACESSORIOS.nenhum)
-  const olhos = OLHOS[ajustes?.teste?.olhos ?? avatar.olhos] ?? OLHOS.amendoa
+  const escolhida = OLHOS[ajustes?.teste?.olhos ?? avatar.olhos] ?? OLHOS.amendoa
+  // a expressão escolhida é a do perfil. Na mesa (`humor` dado) quem manda é
+  // o estresse: uma cara de estresse escolhida no perfil vira a amêndoa, para
+  // a run não começar em burnout
+  const olhos = humor && escolhida.humor ? OLHOS.amendoa : escolhida
   const tronco = manequim
     ? TRONCOS.manequim
     : (TRONCOS[ajustes?.teste?.tronco ?? avatar.tronco] ?? TRONCOS.colado)
   const barba = BARBAS[ajustes?.teste?.barba ?? avatar.barba] ?? BARBAS.nenhuma
   const oculos = OCULOS[ajustes?.teste?.oculos ?? avatar.oculos] ?? OCULOS.nenhum
-  const cara = humor ? HUMORES[humor] : undefined
+  const humorDaCara = humor ?? escolhida.humor
+  const cara = humorDaCara ? HUMORES[humorDaCara] : undefined
+  const boca: Boca = cara?.boca ?? olhos.boca ?? 4.5
 
   const chapeuY = acessorio.aba?.(m)
   const comChapeu = chapeuY !== undefined
   const cabelo: DesenhoDeCabelo = { m, cor: c, sombra: cs, pele: p, id }
-  // com chapéu o cabelo SOME (veja o comentário de `FormaCabelo`): só o
-  // comprimento dos cortes compridos fica, recortado da aba para baixo
+  // com chapéu, só as LATERAIS do corte (veja `sobChapeu`), recortadas da
+  // aba para baixo e dos lados do rosto para fora
   const recorteDoChapeu = comChapeu ? `url(#${id}-chapeu)` : undefined
-  const atrasDoCabelo = comChapeu && !forma.comprido ? null : forma.atras(cabelo)
-  const frenteDoCabelo = comChapeu ? null : forma.frente(cabelo)
+  const sob = forma.sobChapeu
+  const ladosSob = sob?.lados === null ? null : (sob?.lados ?? forma.frente)
+  const atrasDoCabelo = comChapeu ? (sob?.atras?.(cabelo) ?? null) : forma.atras(cabelo)
+  const frenteDoCabelo = comChapeu
+    ? ladosSob
+      ? <g clipPath={`url(#${id}-lados)`}>{ladosSob(cabelo)}</g>
+      : null
+    : forma.frente(cabelo)
   const texturaDoCabelo = comChapeu || !forma.textura ? null : forma.textura(cabelo)
   const corDaBarba =
     avatar.corBarba && avatar.corBarba !== 'cabelo' ? TONS_DE_CABELO[avatar.corBarba][0] : c
   // a boca dentro da barba cheia é da cor da barba, mais escura. Numa barba
   // quase preta "mais escuro" não existe, e a boca sumiria: ali ela clareia
   const corDaBoca =
-    avatar.barba === 'cheia' && !manequim
+    (avatar.barba === 'cheia' || avatar.barba === 'bigodaoCheia') && !manequim
       ? luminancia(corDaBarba) > 0.05
         ? escurecer(corDaBarba, 0.58)
         : clarear(corDaBarba, 0.4)
@@ -1876,7 +2056,9 @@ export default function Avatar({
   // em 32px ou menos a figura ocupava metade do quadrado, e o resto era
   // fundo e ombro. Ali o desenho se aproxima da cabeça
   const caixa = tamanho <= 32 ? '8 0 84 84' : '0 0 100 100'
-  const fundoDoHumor = cara?.fundo ?? fundo
+  // o fundo esquenta com o estresse só na mesa: no perfil, uma cara de
+  // estresse escolhida não troca o fundo que a pessoa escolheu
+  const fundoDoHumor = (humor ? cara?.fundo : undefined) ?? fundo
 
   const olhoX = larg * 0.47
   const olhoY = topo + alt * 0.53
@@ -1903,9 +2085,17 @@ export default function Avatar({
       <svg width={tamanho} height={tamanho} viewBox={caixa} role="img" aria-label="Avatar">
         <defs>
           {comChapeu ? (
-            <clipPath id={`${id}-chapeu`}>
-              <rect x={-20} y={chapeuY} width={140} height={140} />
-            </clipPath>
+            <>
+              <clipPath id={`${id}-chapeu`}>
+                <rect x={-20} y={chapeuY} width={140} height={140} />
+              </clipPath>
+              {/* as laterais: o que fica fora da testa. 4 por dentro do rosto
+                  cobre a lateral mais larga dos cortes */}
+              <clipPath id={`${id}-lados`}>
+                <rect x={-20} y={-20} width={70 - larg + 4} height={140} />
+                <rect x={50 + larg - 4} y={-20} width={70} height={140} />
+              </clipPath>
+            </>
           ) : null}
           {contrasteBaixo || barbaBaixa ? (
             <>
@@ -2030,7 +2220,7 @@ export default function Avatar({
           {/* 7. barba, ANTES das feições: o nariz e a boca vêm por cima dela */}
           {manequim ? null : (
             <g filter={barbaBaixa ? filtroContorno : undefined}>
-              {barba.desenhar({ m, cor: corDaBarba, pele: p, bocaY, id })}
+              {barba.desenhar({ m, cor: corDaBarba, pele: p, bocaY, lado: avatar.ladoBarba ?? 'conecta', id })}
             </g>
           )}
 
@@ -2098,13 +2288,21 @@ export default function Avatar({
                 d={`M50 ${narizY} q${3.2 * m.nariz} ${5 * m.nariz} 0 ${5.6 * m.nariz} q${-3.2 * m.nariz} ${-0.6 * m.nariz} 0 ${-5.6 * m.nariz} Z`}
                 fill={pss}
               />
-              {cara?.sorriso ? (
-                // a vitória é a única boca aberta do jogo, e é isso que a faz
-                // ler como alegria em 24 px — uma curva mais funda não bastaria
+              {/* a boca da expressão (ou a do humor, por cima). O bigodão a
+                  cobre inteira, e ela nem é desenhada */}
+              {barba.escondeBoca ? null : boca === 'aberta' ? (
+                // o sorriso aberto é o que faz a alegria ler em 24 px — uma
+                // curva mais funda não bastaria
                 <path d={`M44 ${bocaY - 0.5} Q50 ${bocaY + 9} 56 ${bocaY - 0.5} Z`} fill={corDaBoca} />
+              ) : boca === 'o' ? (
+                <ellipse cx="50" cy={bocaY + 1.2} rx={2.3} ry={2.8} fill={corDaBoca} />
               ) : (
                 <path
-                  d={`M44.5 ${bocaY} Q50 ${bocaY + (cara?.boca ?? 4.5)} 55.5 ${bocaY}`}
+                  d={
+                    boca === 'torta'
+                      ? `M44.8 ${bocaY + 0.6} Q51 ${bocaY + 3.4} 55.6 ${bocaY - 1.6}`
+                      : `M44.5 ${bocaY} Q50 ${bocaY + boca} 55.5 ${bocaY}`
+                  }
                   fill="none"
                   stroke={corDaBoca}
                   strokeWidth="2"
@@ -2113,7 +2311,7 @@ export default function Avatar({
               )}
 
               {/* 9. óculos, por cima dos olhos */}
-              {oculos.desenhar({ m, olhoX, olhoY, t: m.olho })}
+              {oculos.desenhar({ m, olhoX, olhoY, t: m.olho, cor: TONS_DOS_OCULOS[avatar.corOculos] ?? TONS_DOS_OCULOS.escuro })}
 
               {/* 10. o que o estresse deixa no rosto, por cima de tudo que é
                       rosto — mas embaixo do chapéu, que é roupa */}
@@ -2142,7 +2340,9 @@ export default function Avatar({
           ) : null}
 
           {/* 11. acessório, por cima de tudo — é o que o torna barato */}
-          {acessorio.desenhar(m, corAcessorio, sombraDoAcessorio)}
+          {acessorio === ACESSORIOS.headset
+            ? acessorio.desenhar(m, ...(avatar.corHeadset === 'branco' ? ['#ece8df', '#b5ae9f'] : ['#33302b', '#1c1a17']) as [string, string])
+            : acessorio.desenhar(m, corAcessorio, sombraDoAcessorio)}
         </g>
       </svg>
     </span>

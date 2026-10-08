@@ -480,7 +480,11 @@ opções. O que ele escolheu, e que deve ser preservado:
   óculos, acessório e a cor dele, crachá, fundo) num `jsonb`; o SVG é montado na hora. Trocar de avatar é um `update` numa
   linha, o desenho é nítido em qualquer tamanho, e não existe imagem imprópria
   para moderar porque ninguém sobe imagem. Ele aparece no perfil, em
-  `/jogador` e na mesa. **No ranking e nos relatos, ainda não:** `ranking()` e
+  `/jogador` e na mesa. No perfil e em `/jogador` ele é a CAPA da página
+  (`AvatarHero`: faixa na cor do fundo, figura saindo pela borda de baixo), e
+  editar é o lápis no canto dela; o editor põe a figura grande ao lado das
+  opções, que são miniaturas e amostras quadradas SEM nome escrito (o nome
+  vai no `title` e no leitor de tela). **No ranking e nos relatos, ainda não:** `ranking()` e
   as funções de feedback não devolvem o avatar, e pôr ali exige mudar o
   `schema.sql` (o que traz as conquistas junto) e estender o `ranking()` a uma
   coluna nova — que a regra de segurança abaixo proíbe sem decisão do autor.
@@ -590,11 +594,15 @@ opções. O que ele escolheu, e que deve ser preservado:
     recorte vêm todos de `useId()` **sem pontuação** (os dois-pontos não
     sobrevivem a um `url(#...)`, e id repetido pinta todos os avatares da
     página com a cor do primeiro).
-  - **Boné e chapéu somem com o cabelo**, como no Duolingo. Foi um
-    `sobChapeu` por corte e depois o cabelo recortado da aba para baixo, e o
-    que sobrava embaixo da aba brigava com ela em quase todo corte. Só os
-    cortes `comprido` (longo, tranças, chanel) mostram o comprimento, da aba
-    (`ACESSORIOS.aba`) para baixo. A aba do chapéu fica em 0,22 da cabeça
+  - **Boné e chapéu apertam o cabelo.** Foram quatro regras: um `sobChapeu`
+    por corte brigando com a aba; o cabelo inteiro recortado da aba para
+    baixo (o volume continuava, como se o boné não apertasse); e o cabelo
+    sumindo inteiro (todo mundo parecia careca). Hoje embaixo da aba
+    (`ACESSORIOS.aba`) aparecem só as LATERAIS de cada corte, recortadas pelo
+    componente; os volumosos usam laterais de curto, e os compridos
+    (`FormaCabelo.sobChapeu.atras`) um comprimento rente à cabeça, caindo
+    atrás do pescoço. A aba do boné curva PARA CIMA — para baixo ela lia
+    como sorriso. A aba do chapéu fica em 0,22 da cabeça
     porque mais baixa ela cobria a sobrancelha, que é metade da expressão.
     A cor é escolha própria (`corChapeu`); "a da roupa" é o padrão de quem
     gravou antes de ela existir.
@@ -617,6 +625,17 @@ opções. O que ele escolheu, e que deve ser preservado:
     também (`emPe` é a "Decidida", `surpreso` a "Surpresa"); "Ponto" saiu, e
     quem o tinha cai na amêndoa pela leitura. **Sem brilho na íris**: no
     tamanho do perfil ele lia como o único reflexo de luz num desenho chapado.
+    **Cada expressão tem a sua boca** (`OLHOS[].boca`: curva, `'o'`,
+    `'torta'`, `'aberta'`) — a surpresa sorria. As caras do estresse
+    (cansada, suando, chorando, burnout, vitória) também são expressões
+    (`OLHOS[].humor`), para o PERFIL: na mesa, com `humor` dado, elas viram
+    a amêndoa e quem manda é o estresse, então a run começa tranquila. O
+    humor `tranquilo` não tem boca: vale a da expressão.
+  - **A barba encontra o cabelo como a pessoa escolher** (`ladoBarba`):
+    costeleta até o fim da lateral do cabelo (`fimDoLado`), costeleta
+    esmaecendo para cima, ou nada. Só as barbas `temLado` (as que cobrem a
+    mandíbula); bigode não tem lado. O bigodão `escondeBoca`: a boca nem é
+    desenhada.
   - **O olho é FORMA, não detalhe.** A primeira tentativa foi realista —
     branco, íris, pupila e um brilho — e ficou pior: em 24px o brilho some,
     a pupila vira um ponto, e o rosto foge do estilo chapado do resto. O que
