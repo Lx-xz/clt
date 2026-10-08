@@ -4,7 +4,7 @@ import { ArrowLeft, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
-import Avatar from '@/components/Avatar'
+import AvatarHero from '@/components/AvatarHero'
 import ListaDeJogos from '@/components/ListaDeJogos'
 import { jogosDoJogador, perfilPublico, type JogoResumo, type PerfilPublico } from '@/data/jogadores'
 import styles from './jogador.module.sass'
@@ -52,8 +52,8 @@ function Conteudo() {
 
   return (
     <>
+      <AvatarHero avatar={perfil.avatar} className={styles.hero} />
       <div className={styles.cabecalho}>
-        <Avatar avatar={perfil.avatar} tamanho={112} className={styles.retrato} />
         <div className={styles.quem}>
           <span className={styles.nick}>{perfil.nick}</span>
           <span className={styles.desde}>por aqui desde {desde}</span>
