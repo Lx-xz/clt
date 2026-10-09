@@ -32,6 +32,9 @@ export type Corte =
   | 'cacheado'
   | 'chanel'
   | 'coque'
+  | 'blackPower'
+  | 'trancas'
+  | 'puff'
 export type Pele = 'clara' | 'areia' | 'mel' | 'media' | 'canela' | 'escura' | 'ebano'
 export type CorCabelo = 'preto' | 'branco' | 'castanho' | 'loiro' | 'ruivo' | 'grisalho' | 'mel'
 export type CorRoupa =
@@ -43,7 +46,23 @@ export type CorRoupa =
   | 'terracota'
   | 'petroleo'
   | 'mostarda'
-export type CorFundo = 'papel' | 'kraft' | 'menta' | 'ceu' | 'poeira' | 'lavanda' | 'pessego'
+/** Cada fundo tem a sua versão escura (`…Escuro`), para quem quer o avatar
+ *  num fundo de contraste alto. */
+export type CorFundo =
+  | 'papel'
+  | 'kraft'
+  | 'menta'
+  | 'ceu'
+  | 'poeira'
+  | 'lavanda'
+  | 'pessego'
+  | 'papelEscuro'
+  | 'kraftEscuro'
+  | 'mentaEscuro'
+  | 'ceuEscuro'
+  | 'poeiraEscuro'
+  | 'lavandaEscuro'
+  | 'pessegoEscuro'
 export type Olhos =
   | 'amendoa'
   | 'desenho'
@@ -53,31 +72,71 @@ export type Olhos =
   | 'esperto'
   | 'feliz'
   | 'simples'
-export type Barba = 'nenhuma' | 'rala' | 'bigode' | 'cavanhaque' | 'cheia'
-export type Tronco = 'colado' | 'golaV' | 'decote' | 'camiseta' | 'golaAlta' | 'social'
+  // as caras do estresse, que a mesa usa, também podem ficar no perfil
+  | 'cansado'
+  | 'suando'
+  | 'chorando'
+  | 'burnout'
+  | 'vitoria'
+export type Barba =
+  | 'nenhuma'
+  | 'rala'
+  | 'bigode'
+  | 'bigodao'
+  | 'cavanhaque'
+  | 'cheia'
+  | 'bigodaoRala'
+  | 'bigodaoCheia'
+/** Como a barba encontra o cabelo: pela costeleta (`conecta`), pela
+ *  costeleta esmaecendo para cima (`degrade`), ou não encontra (`solta`).
+ *  Só vale para as barbas que cobrem a mandíbula — bigode não tem lado. */
+export type LadoDaBarba = 'conecta' | 'degrade' | 'solta'
+export type Tronco =
+  | 'colado'
+  | 'golaV'
+  | 'decote'
+  | 'camiseta'
+  | 'golaAlta'
+  | 'social'
+  | 'gravata'
+  | 'colete'
+  | 'jaleco'
 /** Óculos e chapéu são campos SEPARADOS: um é do rosto e o outro da cabeça, e
  *  quem quer os dois não deveria ter que escolher. */
 export type Oculos = 'nenhum' | 'redondo' | 'quadrado'
-export type Acessorio = 'nenhum' | 'bone' | 'chapeu'
+export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'headset'
+/** A cor da barba: a do cabelo (o padrão), ou outra — barba grisalha com o
+ *  cabelo ainda escuro é a combinação mais comum que a receita não deixava. */
+export type CorDaBarba = 'cabelo' | CorCabelo
+/** A cor do boné e do chapéu: a da roupa (o padrão, e o que valia antes de a
+ *  escolha existir), ou uma das cores de boné — mais vivas que as de roupa,
+ *  porque boné roxo é boné e camisa roxa é fantasia. */
+export type CorDoChapeu = 'roupa' | 'roxo' | 'vermelho' | 'azul' | 'verde' | 'amarelo' | 'preto' | 'branco'
+/** A armação dos óculos: escura (o padrão de sempre) ou uma cor. */
+export type CorDosOculos = 'escuro' | 'roxo' | 'azul' | 'verde' | 'laranja' | 'vermelho' | 'rosa' | 'creme'
+/** O headset é equipamento: preto ou branco, e só. */
+export type CorDoHeadset = 'preto' | 'branco'
 
 export interface Avatar {
   rosto: Rosto
   pele: Pele
   cabelo: Corte
-  /** A cor do cabelo. */
+  /** A cor do cabelo — e da barba, que é da mesma pessoa. */
   cor: CorCabelo
   olhos: Olhos
   barba: Barba
-  /** `'cabelo'` acompanha a cor do cabelo — é o padrão, e o que quase todo
-   *  mundo quer; as outras são para a barba grisalha de quem tem o cabelo
-   *  pintado, e o contrário. */
-  corBarba: CorBarba
+  corBarba: CorDaBarba
+  ladoBarba: LadoDaBarba
   tronco: Tronco
-  /** A cor da roupa — e do chapéu, que herda dela: uma sétima escolha de cor
-   *  só para o chapéu seria um controle a mais para quase ninguém. */
   roupa: CorRoupa
   oculos: Oculos
+  corOculos: CorDosOculos
   acessorio: Acessorio
+  corChapeu: CorDoChapeu
+  corHeadset: CorDoHeadset
+  /** O crachá no cordão: a peça que mais diz "CLT" e que não ocupa a cabeça,
+   *  então combina com chapéu, boné e headset. */
+  cracha: boolean
   fundo: CorFundo
 }
 
@@ -95,12 +154,17 @@ export const AVATAR_PADRAO: Avatar = {
   olhos: 'amendoa',
   barba: 'nenhuma',
   corBarba: 'cabelo',
+  ladoBarba: 'conecta',
   // o tronco sem pescoço é o padrão de quem escolhe agora; quem já tinha
   // avatar mantém a gola de antes, pela tradução em `lerAvatar`
   tronco: 'colado',
   roupa: 'azul',
   oculos: 'nenhum',
+  corOculos: 'escuro',
   acessorio: 'nenhum',
+  corChapeu: 'roupa',
+  corHeadset: 'preto',
+  cracha: false,
   fundo: 'papel',
 }
 
@@ -126,7 +190,10 @@ export const CORTES: Opcao<Corte>[] = [
   { valor: 'cacheado', rotulo: 'Cacheado' },
   { valor: 'chanel', rotulo: 'Chanel' },
   { valor: 'coque', rotulo: 'Coque' },
+  { valor: 'puff', rotulo: 'Puff' },
+  { valor: 'blackPower', rotulo: 'Black power' },
   { valor: 'longo', rotulo: 'Longo' },
+  { valor: 'trancas', rotulo: 'Tranças' },
 ]
 
 export const PELES: Opcao<Pele>[] = [
@@ -139,8 +206,6 @@ export const PELES: Opcao<Pele>[] = [
   { valor: 'ebano', rotulo: 'Ébano' },
 ]
 
-export type CorBarba = CorCabelo | 'cabelo'
-
 export const CORES: Opcao<CorCabelo>[] = [
   { valor: 'preto', rotulo: 'Preto' },
   { valor: 'castanho', rotulo: 'Castanho' },
@@ -151,30 +216,48 @@ export const CORES: Opcao<CorCabelo>[] = [
   { valor: 'branco', rotulo: 'Branco' },
 ]
 
-/** A primeira opção é "igual ao cabelo" — no editor ela é um pente, e não uma
- *  cor, porque ela não É uma cor: muda junto quando o cabelo muda. */
-export const CORES_DE_BARBA: Opcao<CorBarba>[] = [
-  { valor: 'cabelo', rotulo: 'Igual ao cabelo' },
-  ...CORES,
+// O campo se chama `olhos` por história, mas a escolha é de EXPRESSÃO: o olho
+// é sempre a amêndoa, e o que muda é a pálpebra, a abertura e a sobrancelha.
+// As chaves antigas (`emPe`, `surpreso`) continuam para os avatares gravados
+// valerem. "Ponto", "Desenho" e "Deitado" saíram: quem os tinha cai na
+// amêndoa pela leitura
+export const OLHOS: Opcao<Olhos>[] = [
+  { valor: 'amendoa', rotulo: 'Neutra' },
+  { valor: 'esperto', rotulo: 'De lado' },
+  { valor: 'emPe', rotulo: 'Decidida' },
+  { valor: 'surpreso', rotulo: 'Surpresa' },
+  { valor: 'feliz', rotulo: 'Feliz' },
+  // as caras do estresse, para quem quer o perfil cansado. Na mesa elas não
+  // valem: lá a cara é a do estresse da hora, e a run começa tranquila
+  { valor: 'cansado', rotulo: 'Cansada' },
+  { valor: 'suando', rotulo: 'Suando' },
+  { valor: 'chorando', rotulo: 'Chorando' },
+  { valor: 'burnout', rotulo: 'Burnout' },
+  { valor: 'vitoria', rotulo: 'Vitória' },
 ]
 
-export const OLHOS: Opcao<Olhos>[] = [
-  { valor: 'amendoa', rotulo: 'Amêndoa' },
-  { valor: 'desenho', rotulo: 'Desenho' },
-  { valor: 'emPe', rotulo: 'Em pé' },
-  { valor: 'deitado', rotulo: 'Deitado' },
-  { valor: 'surpreso', rotulo: 'Surpreso' },
-  { valor: 'esperto', rotulo: 'De lado' },
-  { valor: 'feliz', rotulo: 'Feliz' },
-  { valor: 'simples', rotulo: 'Ponto' },
-]
+/** As expressões que são caras do estresse: o avatar as mostra no perfil, e
+ *  a mesa as ignora. */
+export const EXPRESSOES_DE_HUMOR: readonly Olhos[] = ['cansado', 'suando', 'chorando', 'burnout', 'vitoria']
 
 export const BARBAS: Opcao<Barba>[] = [
   { valor: 'nenhuma', rotulo: 'Nenhuma' },
   { valor: 'rala', rotulo: 'Por fazer' },
-  { valor: 'bigode', rotulo: 'Bigode' },
-  { valor: 'cavanhaque', rotulo: 'Cavanhaque' },
   { valor: 'cheia', rotulo: 'Cheia' },
+  { valor: 'bigode', rotulo: 'Bigode' },
+  { valor: 'bigodao', rotulo: 'Bigodão' },
+  { valor: 'bigodaoRala', rotulo: 'Bigodão e barba por fazer' },
+  { valor: 'bigodaoCheia', rotulo: 'Bigodão e barba cheia' },
+  { valor: 'cavanhaque', rotulo: 'Cavanhaque' },
+]
+
+/** As barbas que cobrem a mandíbula: só elas têm lado para encontrar o cabelo. */
+export const BARBAS_COM_LADO: readonly Barba[] = ['rala', 'cheia', 'bigodaoRala', 'bigodaoCheia']
+
+export const LADOS_DA_BARBA: Opcao<LadoDaBarba>[] = [
+  { valor: 'conecta', rotulo: 'Chega no cabelo' },
+  { valor: 'degrade', rotulo: 'Some subindo' },
+  { valor: 'solta', rotulo: 'Não chega' },
 ]
 
 export const TRONCOS: Opcao<Tronco>[] = [
@@ -184,6 +267,9 @@ export const TRONCOS: Opcao<Tronco>[] = [
   { valor: 'decote', rotulo: 'Decote' },
   { valor: 'golaAlta', rotulo: 'Gola alta' },
   { valor: 'social', rotulo: 'Social' },
+  { valor: 'gravata', rotulo: 'Gravata' },
+  { valor: 'jaleco', rotulo: 'Jaleco' },
+  { valor: 'colete', rotulo: 'Colete' },
 ]
 
 export const ROUPAS: Opcao<CorRoupa>[] = [
@@ -207,6 +293,44 @@ export const ACESSORIOS: Opcao<Acessorio>[] = [
   { valor: 'nenhum', rotulo: 'Nada' },
   { valor: 'bone', rotulo: 'Boné' },
   { valor: 'chapeu', rotulo: 'Chapéu' },
+  { valor: 'headset', rotulo: 'Headset' },
+]
+
+export const CORES_DA_BARRA: Opcao<CorDaBarba>[] = [
+  { valor: 'cabelo', rotulo: 'A do cabelo' },
+  ...CORES,
+]
+
+export const CORES_DO_CHAPEU: Opcao<CorDoChapeu>[] = [
+  { valor: 'roupa', rotulo: 'A da roupa' },
+  { valor: 'roxo', rotulo: 'Roxo' },
+  { valor: 'vermelho', rotulo: 'Vermelho' },
+  { valor: 'azul', rotulo: 'Azul' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'amarelo', rotulo: 'Amarelo' },
+  { valor: 'preto', rotulo: 'Preto' },
+  { valor: 'branco', rotulo: 'Branco' },
+]
+
+export const CORES_DOS_OCULOS: Opcao<CorDosOculos>[] = [
+  { valor: 'escuro', rotulo: 'Escuro' },
+  { valor: 'roxo', rotulo: 'Roxo' },
+  { valor: 'azul', rotulo: 'Azul' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'laranja', rotulo: 'Laranja' },
+  { valor: 'vermelho', rotulo: 'Vermelho' },
+  { valor: 'rosa', rotulo: 'Rosa' },
+  { valor: 'creme', rotulo: 'Creme' },
+]
+
+export const CORES_DO_HEADSET: Opcao<CorDoHeadset>[] = [
+  { valor: 'preto', rotulo: 'Preto' },
+  { valor: 'branco', rotulo: 'Branco' },
+]
+
+export const CRACHAS: Opcao<boolean>[] = [
+  { valor: false, rotulo: 'Sem crachá' },
+  { valor: true, rotulo: 'Com crachá' },
 ]
 
 export const FUNDOS: Opcao<CorFundo>[] = [
@@ -217,6 +341,13 @@ export const FUNDOS: Opcao<CorFundo>[] = [
   { valor: 'lavanda', rotulo: 'Lavanda' },
   { valor: 'pessego', rotulo: 'Pêssego' },
   { valor: 'poeira', rotulo: 'Poeira' },
+  { valor: 'papelEscuro', rotulo: 'Papel escuro' },
+  { valor: 'kraftEscuro', rotulo: 'Kraft escuro' },
+  { valor: 'mentaEscuro', rotulo: 'Menta escuro' },
+  { valor: 'ceuEscuro', rotulo: 'Céu escuro' },
+  { valor: 'lavandaEscuro', rotulo: 'Lavanda escuro' },
+  { valor: 'pessegoEscuro', rotulo: 'Pêssego escuro' },
+  { valor: 'poeiraEscuro', rotulo: 'Poeira escuro' },
 ]
 
 function um<T extends string>(lista: Opcao<T>[], bruto: unknown, padrao: T): T {
@@ -258,12 +389,18 @@ export function lerAvatar(bruto: unknown): Avatar {
     cor: um(CORES, a.cor, AVATAR_PADRAO.cor),
     olhos: um(OLHOS, a.olhos, AVATAR_PADRAO.olhos),
     barba: um(BARBAS, a.barba, AVATAR_PADRAO.barba),
-    // receita de antes da v0.14 não tem o campo: a barba seguia o cabelo
-    corBarba: um(CORES_DE_BARBA, a.corBarba, AVATAR_PADRAO.corBarba),
+    corBarba: um(CORES_DA_BARRA, a.corBarba, AVATAR_PADRAO.corBarba),
+    // antes desta escolha existir, só a barba cheia tinha costeleta: quem
+    // gravou a por fazer abre com ela solta, como já era
+    ladoBarba: um(LADOS_DA_BARBA, a.ladoBarba, a.barba === 'rala' ? 'solta' : AVATAR_PADRAO.ladoBarba),
     tronco: um(TRONCOS, a.tronco, TRONCO_DO_CORPO[corpoAntigo] ?? AVATAR_PADRAO.tronco),
     roupa: um(ROUPAS, a.roupa, AVATAR_PADRAO.roupa),
     oculos: um(OCULOS, a.oculos, AVATAR_PADRAO.oculos),
+    corOculos: um(CORES_DOS_OCULOS, a.corOculos, AVATAR_PADRAO.corOculos),
     acessorio: um(ACESSORIOS, a.acessorio, AVATAR_PADRAO.acessorio),
+    corChapeu: um(CORES_DO_CHAPEU, a.corChapeu, AVATAR_PADRAO.corChapeu),
+    corHeadset: um(CORES_DO_HEADSET, a.corHeadset, AVATAR_PADRAO.corHeadset),
+    cracha: a.cracha === true,
     fundo: um(FUNDOS, a.fundo, AVATAR_PADRAO.fundo),
   }
 }
@@ -292,15 +429,21 @@ export function avatarAleatorio(): Avatar {
     pele: sorteio(PELES).valor,
     cabelo: sorteio(CORTES).valor,
     cor: sorteio(CORES).valor,
-    // o olho de ponto é o do avatar antigo; ele fica disponível para quem
-    // quiser, mas não entra no sorteio de quem está conhecendo o editor
-    olhos: sorteio(OLHOS.filter((o) => o.valor !== 'simples')).valor,
+    // as caras do estresse não entram no sorteio: ele é para conhecer o
+    // editor, e um avatar chorando à toa assusta
+    olhos: sorteio(OLHOS.filter((o) => !EXPRESSOES_DE_HUMOR.includes(o.valor))).valor,
     barba: talvez(BARBAS, 'nenhuma', 0.35),
-    corBarba: Math.random() < 0.8 ? 'cabelo' : sorteio(CORES).valor,
+    // quase sempre a do cabelo; às vezes grisalha, que é o caso comum
+    corBarba: Math.random() < 0.15 ? 'grisalho' : 'cabelo',
+    ladoBarba: sorteio(LADOS_DA_BARBA).valor,
     tronco: sorteio(TRONCOS).valor,
     roupa: sorteio(ROUPAS).valor,
     oculos: talvez(OCULOS, 'nenhum', 0.25),
+    corOculos: Math.random() < 0.6 ? 'escuro' : sorteio(CORES_DOS_OCULOS).valor,
     acessorio: talvez(ACESSORIOS, 'nenhum', 0.15),
+    corChapeu: sorteio(CORES_DO_CHAPEU).valor,
+    corHeadset: sorteio(CORES_DO_HEADSET).valor,
+    cracha: Math.random() < 0.3,
     fundo: sorteio(FUNDOS).valor,
   }
 }

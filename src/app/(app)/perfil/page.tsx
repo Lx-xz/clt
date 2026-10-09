@@ -3,7 +3,7 @@
 import { Pencil, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import Avatar from '@/components/Avatar'
+import AvatarHero from '@/components/AvatarHero'
 import Conquistas from '@/components/Conquistas'
 import ListaDeAmigos from '@/components/ListaDeAmigos'
 import ListaDeJogos from '@/components/ListaDeJogos'
@@ -65,15 +65,15 @@ export default function PerfilPage() {
     <main className="page">
       <h1 className={styles.titulo}>Perfil</h1>
 
-      <div className={styles.cabecalho}>
-        <Avatar avatar={sessao.avatar} tamanho={112} className={styles.retrato} />
-        <div className={styles.quem}>
-          <span className={styles.destaque}>{sessao.nick}</span>
-          <Link className={`${buttons.button} ${styles.editar}`} href="/perfil/editar">
-            <Pencil size={14} aria-hidden />
-            Editar avatar
-          </Link>
-        </div>
+      {/* o avatar como capa da página; editar é o lápis no canto, e não um
+          botão a mais ao lado do nick */}
+      <AvatarHero avatar={sessao.avatar} className={styles.hero}>
+        <Link className={styles.editar} href="/perfil/editar" aria-label="Editar avatar" title="Editar avatar">
+          <Pencil size={18} aria-hidden />
+        </Link>
+      </AvatarHero>
+      <div className={styles.quem}>
+        <span className={styles.destaque}>{sessao.nick}</span>
       </div>
 
       {posto ? (
