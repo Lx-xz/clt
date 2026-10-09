@@ -33,7 +33,7 @@ export interface ActionCard {
    *  (a regra dela também é dado); serve para o editor avisar que mexer só
    *  nos números não conta a carta inteira. */
   especial?: boolean
-  /** Cartas iniciais já vêm desbloqueadas; as demais entram como recompensa semanal. */
+  /** Cartas iniciais já vêm desbloqueadas; as demais saem como recompensa no fim da run. */
   starter: boolean
   /** Quantas cópias entram no baralho inicial. */
   copies?: number
@@ -47,6 +47,9 @@ export interface ActionCard {
   /** Quão difícil é ganhar a carta no fim da run, e quantas cópias dela
    *  cabem na coleção (`copiasMaximas`). Ausente é `comum`. */
   raridade?: Raridade
+  /** Custo em R$, pago ao jogar, além da energia. Sem saldo, a carta não sai
+   *  da mão — é o que separa custo de efeito que tira dinheiro. */
+  custoDinheiro?: number
 }
 
 export type Raridade = 'comum' | 'incomum' | 'rara'
@@ -136,6 +139,9 @@ export interface DayLog {
   money: number
 }
 
+/** `recompensa` é a fase da recompensa semanal, que saiu na v0.15. Continua
+ *  no tipo porque um save gravado no meio dela ainda pode chegar —
+ *  `pularRecompensaSemanal` o tira de lá. */
 export type Phase = 'evento' | 'dia' | 'sexta' | 'recompensa' | 'fim'
 
 export type FridayStep = 'salario' | 'contas' | 'descanso' | null
@@ -271,7 +277,13 @@ export interface GameState {
    *  para o resumo do dia entrar em `history` com a escolha certa. */
   lastEventChoice: 0 | 1 | null
 
+  /** As cartas que o recibo de fim oferece para a coleção. Vazia durante a
+   *  run: desde a v0.15 a recompensa é do FIM, não da semana. */
   rewardOptions: CardId[]
+  /** `undefined`: o fim ainda não ofereceu nada. `null`: ofereceu e a
+   *  pessoa não escolheu. Opcional para o save de antes dela continuar
+   *  válido sem subir a chave do localStorage. */
+  recompensaEscolhida?: CardId | null
   /** Um resumo por dia fechado, para reabrir a run jogada por jogada depois. */
   history: DayLog[]
   /** A narrativa da run, em ordem cronológica. Era `string[]` com teto de 40

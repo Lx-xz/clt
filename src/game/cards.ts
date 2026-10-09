@@ -88,7 +88,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'cafe-duplo', name: 'Café Duplo', cost: 0, kind: 'descanso',
+    id: 'cafe-duplo', raridade: 'rara', name: 'Café Duplo', cost: 0, kind: 'descanso',
     text: '+5 energia, +2 estresse', starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'energia', quanto: 5 },
@@ -96,7 +96,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'terapia', name: 'Terapia', cost: 2, kind: 'descanso',
+    id: 'terapia', raridade: 'incomum', name: 'Terapia', cost: 2, kind: 'descanso',
     text: '−3 estresse', starter: false,
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -3 }] }],
   },
@@ -106,7 +106,7 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'dinheiro', quanto: 20 }] }],
   },
   {
-    id: 'home-office', name: 'Home Office', cost: 2, kind: 'tarefa',
+    id: 'home-office', raridade: 'incomum', name: 'Home Office', cost: 2, kind: 'tarefa',
     text: '+2 produtividade, −1 estresse', starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'produtividade', quanto: 2 },
@@ -114,7 +114,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'foco-total', name: 'Foco Total', cost: 4, kind: 'tarefa',
+    id: 'foco-total', raridade: 'incomum', name: 'Foco Total', cost: 4, kind: 'tarefa',
     text: '+4 produtividade, mas descarta o resto da mão', especial: true, starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'produtividade', quanto: 4 },
@@ -123,7 +123,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'puxar-o-saco', name: 'Puxar o Saco', cost: 2, kind: 'social',
+    id: 'puxar-o-saco', raridade: 'rara', name: 'Puxar o Saco', cost: 2, kind: 'social',
     text: 'Cancela 1 advertência (uma vez por run)', especial: true, starter: false,
     // o "uma vez por run" e o "só serve se houver advertência" são RESTRIÇÃO,
     // não efeito: eles decidem se dá para jogar, não o que acontece depois
@@ -131,7 +131,7 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [{ faz: 'advertencia', quanto: -1 }] }],
   },
   {
-    id: 'freela-grande', name: 'Freela Grande', cost: 6, kind: 'grana',
+    id: 'freela-grande', raridade: 'incomum', name: 'Freela Grande', cost: 6, kind: 'grana',
     text: '+R$ 90, +2 estresse', starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'dinheiro', quanto: 90 },
@@ -147,7 +147,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'automatizar', name: 'Automatizar', cost: 5, kind: 'tarefa',
+    id: 'automatizar', raridade: 'rara', name: 'Automatizar', cost: 5, kind: 'tarefa',
     text: '+2 produtividade agora e +1 produtividade em todos os dias seguintes',
     especial: true, starter: false,
     efeitos: [{ acoes: [
@@ -172,7 +172,7 @@ export const CARTAS_BASE: ActionCard[] = [
     }] }],
   },
   {
-    id: 'pedir-aumento', name: 'Pedir Aumento', cost: 3, kind: 'social',
+    id: 'pedir-aumento', raridade: 'rara', name: 'Pedir Aumento', cost: 3, kind: 'social',
     text: '50%: salário +R$ 100 pelo resto da run. 50%: +3 estresse.',
     especial: true, starter: false,
     efeitos: [{ acoes: [{

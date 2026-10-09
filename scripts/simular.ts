@@ -159,10 +159,6 @@ function jogarUmaRun(semente: number): Relatorio {
       else state = engine.restWeekend(state)
       continue
     }
-    if (state.phase === 'recompensa') {
-      state = engine.chooseReward(state, state.rewardOptions[0])
-      continue
-    }
     break
   }
   if (passos >= 4000) throw new Error(`A run ${semente} não terminou: alguma pausa não foi limpa.`)

@@ -84,7 +84,23 @@ confirmado pelo jogador, para dar tempo de ver o dinheiro entrar antes de sair:
 2. **Contas** — desconta R$ 300 (aluguel + mercado). Se não tiver o valor, é
    derrota.
 3. **Fim de semana** — `−3 Estresse`.
-4. **Recompensa** — escolha 1 entre 3 cartas novas para adicionar ao baralho.
+
+### Entre uma run e outra
+
+A recompensa vem no **fim da run**, ganhando ou perdendo: escolha 1 carta para
+a coleção. Quanto mais longe a run foi, melhores as opções:
+
+| Chegou até | Opções |
+|---|---|
+| semana 1 | 3 comuns |
+| semanas 2–3 | 2 comuns e 1 incomum |
+| semana 4 | 1 comum, 1 incomum e 1 rara |
+| venceu | 2 incomuns, 1 rara e 1 comum (4 opções) |
+
+A coleção conta **cópias**: até 4 de uma comum, 3 de uma incomum e 2 de uma
+rara. Só aparece na recompensa a carta que ainda cabe. Com elas se montam até
+3 baralhos, cada um com **15 a 25 cartas e pelo menos 3 de cada naipe**
+(tarefa, descanso, grana e social).
 
 ### Progressão do mês
 
@@ -113,16 +129,16 @@ A pontuação final é o dinheiro que sobrou.
 
 | Qtd | Carta | Custo | Efeito |
 |---|---|---|---|
-| 4 | Tarefa Simples | 3 energia | +2 produtividade |
+| 3 | Tarefa Simples | 3 energia | +2 produtividade |
 | 2 | Planilha Infinita | 2 energia | +1 produtividade |
-| 2 | Reunião | 2 energia | +1 produtividade. Se for a 2ª reunião do dia: +1 estresse e nenhuma produtividade. |
+| 3 | Reunião | 2 energia | +1 produtividade. Se for a 2ª reunião do dia: +1 estresse e nenhuma produtividade. |
 | 2 | Café | 0 energia | +3 energia, +1 estresse |
 | 2 | Hora Extra | 4 energia | +R$ 30, +2 estresse |
 | 1 | Freela | 5 energia | +R$ 50 |
 | 1 | Enrolar no Corredor | 1 energia | −1 estresse |
 | 1 | Almoço Decente | 1 energia | +2 energia |
 
-## Cartas de Ação — desbloqueáveis (escolha 1 de 3 por semana)
+## Cartas de Ação — desbloqueáveis (recompensa do fim da run)
 
 | Carta | Custo | Efeito |
 |---|---|---|
@@ -214,7 +230,7 @@ npm run build   # build de produção (roda a checagem de tipos)
 |---|---|
 | `/` | Capa com dois botões: **Jogar** e **Baralho** |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas. Clique para equipar/desequipar |
-| `/jogar` | A run: evento do dia, mão, painel de recursos, sexta-feira, recompensa e diário |
+| `/jogar` | A run: evento do dia, mão, painel de recursos, sexta-feira, diário e a recompensa do fim |
 
 ### Estrutura
 
@@ -314,7 +330,7 @@ A chave da run é versionada de propósito: um save gravado por uma versão
 anterior não tem os campos que a mesa lê e derrubava a página. Hoje um save
 de formato incompatível é descartado, venha ele do espelho ou do banco.
 
-O botão **Desbloquear tudo (teste)** na página do baralho existe para testar as
+O botão **Desbloquear tudo (teste)** no `/lab` (só admin) existe para testar as
 cartas desbloqueáveis sem jogar quatro semanas.
 
 ### Deploy (GitHub Pages)

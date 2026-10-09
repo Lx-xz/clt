@@ -219,3 +219,50 @@ export function apagarBaralho(c: Collection, id: string): Collection {
 export function ativarBaralho(c: Collection, id: string): Collection {
   return c.baralhos.some((b) => b.id === id) ? { ...c, ativo: id } : c
 }
+
+// ---------------------------------------------------------------- recompensa
+
+const ORDEM_RARIDADE: Raridade[] = ['comum', 'incomum', 'rara']
+
+/**
+ * O que a run oferece no fim, pela DISTÂNCIA que ela foi. Era uma recompensa
+ * por semana, e ela mexia no baralho no meio da partida — "como estou indo"
+ * misturado com "o que eu tenho". Agora é uma só, no recibo, e vai para a
+ * coleção: quem morreu na terça ganha uma comum, quem venceu escolhe entre
+ * quatro, com uma rara no meio.
+ */
+export function raridadesDaRecompensa(semana: number, venceu: boolean): Raridade[] {
+  if (venceu) return ['incomum', 'incomum', 'rara', 'comum']
+  if (semana >= 4) return ['comum', 'incomum', 'rara']
+  if (semana >= 2) return ['comum', 'comum', 'incomum']
+  return ['comum', 'comum', 'comum']
+}
+
+/**
+ * Sorteia as opções. Só entra carta que ainda CABE (cópias abaixo do teto) —
+ * oferecer a quinta Tarefa Simples seria uma escolha falsa. Quando uma
+ * raridade esgota, a vaga cai para a de baixo; com a coleção cheia, a lista
+ * sai vazia e o recibo diz "coleção completa".
+ *
+ * Carta inicial entra também: mais uma Reunião é uma escolha de verdade.
+ * O sorteio vem de fora (`sorte`) pelo mesmo motivo do motor: o simulador
+ * precisa repetir a partida.
+ */
+export function opcoesDeRecompensa(
+  colecao: Collection,
+  semana: number,
+  venceu: boolean,
+  sorte: () => number = Math.random,
+): CardId[] {
+  const cabem = cartasDoJogo().filter((c) => (colecao.tenho[c.id] ?? 0) < copiasMaximas(c))
+  const escolhidas: CardId[] = []
+  for (const alvo of raridadesDaRecompensa(semana, venceu)) {
+    for (let i = ORDEM_RARIDADE.indexOf(alvo); i >= 0; i--) {
+      const pool = cabem.filter((c) => (c.raridade ?? 'comum') === ORDEM_RARIDADE[i] && !escolhidas.includes(c.id))
+      if (pool.length === 0) continue
+      escolhidas.push(pool[Math.floor(sorte() * pool.length)].id)
+      break
+    }
+  }
+  return escolhidas
+}

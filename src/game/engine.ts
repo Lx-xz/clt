@@ -9,10 +9,8 @@ import {
 // as cartas vêm do catálogo, não de um array importado: desde a v0.10 elas
 // moram no banco e podem mudar entre uma abertura do site e a próxima
 import {
-  cartasDesbloqueaveis,
   eventosDoJogo,
   fotografarBaralho,
-  fotografarCarta,
   getCard,
   getEvent,
   versaoDoBaralho,
@@ -772,24 +770,38 @@ export function restWeekend(input: GameState): GameState {
     return state
   }
 
-  state.phase = 'recompensa'
-  state.rewardOptions = shuffle(cartasDesbloqueaveis().map((c) => c.id)).slice(0, 3)
+  return startDay(state)
+}
+
+/**
+ * Tira de lá o save gravado no meio da recompensa SEMANAL, que saiu na
+ * v0.15: sem isto ele abriria numa fase que nada mais desenha.
+ */
+export function pularRecompensaSemanal(input: GameState): GameState {
+  if (input.phase !== 'recompensa') return input
+  const state = clone(input)
+  state.rewardOptions = []
+  return startDay(state)
+}
+
+/** O recibo de fim oferece as cartas (sorteadas por `opcoesDeRecompensa`,
+ *  que conhece a coleção — o motor não). Uma vez só por run. */
+export function oferecerRecompensa(input: GameState, opcoes: CardId[]): GameState {
+  if (input.phase !== 'fim' || input.recompensaEscolhida !== undefined) return input
+  const state = clone(input)
+  state.rewardOptions = opcoes
+  state.recompensaEscolhida = null
   return state
 }
 
-export function chooseReward(input: GameState, cardId: CardId): GameState {
+/** A escolha vai para a COLEÇÃO, não para a run, que já acabou: quem guarda
+ *  a cópia é quem chama (`ganharCopia`). Aqui só se marca que foi escolhida. */
+export function escolherRecompensa(input: GameState, cardId: CardId): GameState {
+  if (input.phase !== 'fim' || input.recompensaEscolhida !== null || !input.rewardOptions.includes(cardId)) return input
   const state = clone(input)
-  if (state.phase !== 'recompensa' || !state.rewardOptions.includes(cardId)) return input
-  state.discard.push(makeInstance(cardId))
-  // a recompensa entra no baralho DEPOIS do retrato inicial, então ela
-  // precisa ser fotografada aqui — senão o replay não saberia dizer como era
-  // a única carta que a pessoa ganhou no meio da run
-  if (!state.baralho.cartas.some((c) => c.id === cardId)) {
-    state.baralho.cartas.push(fotografarCarta(getCard(cardId)))
-  }
-  state.rewardOptions = []
-  log(state, `${getCard(cardId).name} entrou no baralho.`)
-  return startDay(state)
+  state.recompensaEscolhida = cardId
+  log(state, `${getCard(cardId).name} entrou na coleção.`)
+  return state
 }
 
 // -------------------------------------------------------------------- morte

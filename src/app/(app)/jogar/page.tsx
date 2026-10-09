@@ -17,7 +17,6 @@ import { getCard, getEvent } from '@/game/catalogo'
 import {
   canPlay,
   chooseEventOption,
-  chooseReward,
   createRun,
   currentWeek,
   dayLabel,
@@ -25,9 +24,12 @@ import {
   endDay,
   escolherOpcao,
   escolherParaDescartar,
+  escolherRecompensa,
+  oferecerRecompensa,
   payBills,
   paySalary,
   playCard,
+  pularRecompensaSemanal,
   restWeekend,
   revealEvent,
 } from '@/game/engine'
@@ -42,8 +44,8 @@ import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
 import { problemasDoBaralho } from '@/game/baralho'
-import { baralhoAtivo, cartasDoBaralho } from '@/game/colecao'
-import { regras } from '@/game/regras'
+import { baralhoAtivo, cartasDoBaralho, copiasMaximas, opcoesDeRecompensa } from '@/game/colecao'
+import { numeroDaSemana, regras } from '@/game/regras'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
 import type { CardInstance, GameState } from '@/game/types'
@@ -96,7 +98,7 @@ export default function JogarPage() {
       .then(({ run, collection }) => {
         if (!vivo) return
         if (run) {
-          setState(run)
+          setState(pularRecompensaSemanal(run))
           return
         }
         // run nova já nasce salva: sem isso, recarregar antes da primeira
@@ -120,13 +122,24 @@ export default function JogarPage() {
     }
   }, [sessao.id])
 
-  function update(next: GameState) {
+  function update(proximo: GameState) {
+    let next = proximo
+    // a run acabou agora: o recibo oferece a recompensa. As opções são
+    // sorteadas UMA vez e gravadas na run — recarregar a página não sorteia
+    // de novo
+    if (next.phase === 'fim' && next.recompensaEscolhida === undefined) {
+      const opcoes = opcoesDeRecompensa(loadCollection(), numeroDaSemana(next.modo, next.day), next.outcome === 'vitoria')
+      next = oferecerRecompensa(next, opcoes)
+    }
+    const acabouAgora = next.outcome !== 'jogando' && state?.outcome === 'jogando'
     setState(next)
     sincronizar(sessao.id, next, loadCollection(), setStatus)
     // a run terminada vai para o banco na hora, fora do timer do sincronizar:
     // o timer é cancelado por qualquer jogada seguinte, e era assim que uma
     // derrota sumia se o jogador clicasse em "nova run" rápido demais
-    if (next.outcome !== 'jogando') {
+    // (só na jogada que encerrou: escolher a recompensa depois também passa
+    // por aqui, e não é uma run nova)
+    if (acabouAgora && next.outcome !== 'jogando') {
       void registrarRunAgora(sessao.id, next, next.outcome, sessao.convidado).then((motivo) => {
         setRegistroFalhou(motivo)
         if (motivo) return
@@ -598,26 +611,6 @@ export default function JogarPage() {
         </Dialogo>
       ) : null}
 
-      {state.phase === 'recompensa' ? (
-        <Dialogo titulo="Recompensa da semana" estilo="nota" semTravarNav largo>
-          <p className={styles.painelTexto}>Escolha 1 carta entre 3 para entrar no baralho.</p>
-          <div className={styles.recompensas}>
-            {state.rewardOptions.map((id, i) => (
-              <Card
-                key={id}
-                card={getCard(id)}
-                className={styles.recompensa}
-                style={{ '--i': i } as React.CSSProperties}
-                onOpen={() => {
-                  unlockCard(id)
-                  update(chooseReward(state, id))
-                }}
-              />
-            ))}
-          </div>
-        </Dialogo>
-      ) : null}
-
       {acabou && !fimFechado ? (
         <Dialogo
           titulo={FIM[state.outcome as keyof typeof FIM].title}
@@ -646,6 +639,13 @@ export default function JogarPage() {
               <span className={styles.passoVal}>R$ {state.money}</span>
             </li>
           </ol>
+          <Recompensa
+            state={state}
+            onEscolher={(id) => {
+              unlockCard(id)
+              update(escolherRecompensa(state, id))
+            }}
+          />
           {conquistasNovas.length > 0 ? (
             <ul className={styles.conquistasNovas}>
               {conquistasNovas.map((c) => (
@@ -702,6 +702,50 @@ export default function JogarPage() {
       {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
       {historico ? <HistoricoDaRun state={state} onFechar={() => setHistorico(false)} /> : null}
     </main>
+  )
+}
+
+/**
+ * A recompensa da run, no recibo. Uma cópia para a COLEÇÃO — a run já
+ * acabou, então ela não entra em baralho nenhum sozinha; quem a põe é a
+ * pessoa, no /baralho. A quantidade e a raridade das opções dizem o quão
+ * longe a partida foi (`raridadesDaRecompensa`).
+ */
+function Recompensa({ state, onEscolher }: { state: GameState; onEscolher: (id: string) => void }) {
+  if (state.recompensaEscolhida === undefined) return null
+  if (state.rewardOptions.length === 0) {
+    return <p className={styles.recompensaTitulo}>Coleção completa: nenhuma carta cabe mais.</p>
+  }
+  const escolhida = state.recompensaEscolhida
+  const colecao = loadCollection()
+  return (
+    <div className={styles.recompensaFim}>
+      <p className={styles.recompensaTitulo}>
+        {escolhida ? `${getCard(escolhida).name} entrou na coleção.` : 'Escolha uma carta para a coleção:'}
+      </p>
+      <div className={styles.recompensas}>
+        {state.rewardOptions.map((id, i) => {
+          const carta = getCard(id)
+          return (
+            <div
+              key={id}
+              className={`${styles.opcao} ${escolhida && escolhida !== id ? styles.opcaoApagada : ''}`}
+            >
+              <Card
+                card={carta}
+                className={styles.recompensa}
+                style={{ '--i': i } as React.CSSProperties}
+                disabled={escolhida !== null && escolhida !== id}
+                onOpen={escolhida ? undefined : () => onEscolher(id)}
+              />
+              <span className={styles.opcaoRotulo}>
+                {carta.raridade ?? 'comum'} · tem {colecao.tenho[id] ?? 0}/{copiasMaximas(carta)}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

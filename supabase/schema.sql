@@ -272,6 +272,35 @@ create table if not exists public.cartas (
   constraint cartas_copias_ok check (copias is null or copias between 1 and 10)
 );
 
+-- v0.15: raridade (quantas cópias cabem na coleção, e quão cedo a carta sai
+-- na recompensa de fim de run) e custo em dinheiro (a carta que se PAGA, como
+-- a Terapia: sem saldo ela não sai da mão).
+--
+-- A raridade das cartas que já existiam é dada UMA vez, no bloco que cria a
+-- coluna: rodar o arquivo de novo não pode desfazer o que o admin escolheu
+-- depois no /lab.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'cartas' and column_name = 'raridade'
+  ) then
+    alter table public.cartas add column raridade text not null default 'comum';
+    update public.cartas set raridade = 'incomum'
+      where id in ('terapia', 'home-office', 'foco-total', 'freela-grande');
+    update public.cartas set raridade = 'rara'
+      where id in ('cafe-duplo', 'puxar-o-saco', 'automatizar', 'pedir-aumento');
+  end if;
+end;
+$$;
+alter table public.cartas add column if not exists custo_dinheiro smallint not null default 0;
+alter table public.cartas drop constraint if exists cartas_raridade_ok;
+alter table public.cartas add constraint cartas_raridade_ok
+  check (raridade in ('comum', 'incomum', 'rara'));
+alter table public.cartas drop constraint if exists cartas_custo_dinheiro_ok;
+alter table public.cartas add constraint cartas_custo_dinheiro_ok
+  check (custo_dinheiro between 0 and 1000);
+
 create table if not exists public.cartas_evento (
   id            text primary key,
   nome          text not null,
@@ -1542,7 +1571,8 @@ begin
   end if;
 
   insert into public.cartas as c
-    (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias, versao)
+    (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias,
+     raridade, custo_dinheiro, versao)
   values (
     v_id,
     coalesce(p_carta ->> 'nome', 'Sem nome'),
@@ -1554,12 +1584,15 @@ begin
     coalesce((p_carta ->> 'especial')::boolean, false),
     coalesce((p_carta ->> 'inicial')::boolean, false),
     nullif(p_carta ->> 'copias', '')::smallint,
+    coalesce(nullif(p_carta ->> 'raridade', ''), 'comum'),
+    coalesce((p_carta ->> 'custo_dinheiro')::smallint, 0),
     1
   )
   on conflict (id) do update set
     nome = excluded.nome, custo = excluded.custo, classe = excluded.classe,
     texto = excluded.texto, efeitos = excluded.efeitos, restricao = excluded.restricao,
     especial = excluded.especial, inicial = excluded.inicial, copias = excluded.copias,
+    raridade = excluded.raridade, custo_dinheiro = excluded.custo_dinheiro,
     versao = c.versao + 1, ativa = true, atualizada_em = now();
 
   -- carta nova também entra no histórico: "criada" é uma mudança de
@@ -1683,7 +1716,8 @@ begin
 
   for item in select * from jsonb_array_elements(p_cartas) loop
     insert into public.cartas
-      (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias, versao)
+      (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias,
+       raridade, custo_dinheiro, versao)
     values (
       item ->> 'id',
       item ->> 'nome',
@@ -1695,6 +1729,8 @@ begin
       coalesce((item ->> 'especial')::boolean, false),
       coalesce((item ->> 'inicial')::boolean, false),
       nullif(item ->> 'copias', '')::smallint,
+      coalesce(nullif(item ->> 'raridade', ''), 'comum'),
+      coalesce((item ->> 'custo_dinheiro')::smallint, 0),
       1
     )
     on conflict (id) do nothing;

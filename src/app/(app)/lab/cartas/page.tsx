@@ -23,7 +23,8 @@ import { EVENTOS_BASE } from '@/game/events'
 import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
 import type { Acao, Efeito, Recurso } from '@/game/acoes'
-import type { ActionCard, ClasseDaCarta } from '@/game/types'
+import { COPIAS_POR_RARIDADE } from '@/game/colecao'
+import type { ActionCard, ClasseDaCarta, Raridade } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './cartas.module.sass'
 
@@ -55,6 +56,12 @@ const CLASSES: { valor: string; rotulo: string }[] = [
   { valor: 'grana', rotulo: 'Grana' },
   { valor: 'social', rotulo: 'Social' },
   { valor: 'neutra', rotulo: 'Sem tipo' },
+]
+
+const RARIDADES: { valor: Raridade; rotulo: string }[] = [
+  { valor: 'comum', rotulo: 'Comum' },
+  { valor: 'incomum', rotulo: 'Incomum' },
+  { valor: 'rara', rotulo: 'Rara' },
 ]
 
 const RECURSOS: Recurso[] = ['produtividade', 'energia', 'estresse', 'dinheiro']
@@ -114,6 +121,12 @@ function resumoDaMudanca(antes: ActionCard | undefined, depois: ActionCard): str
   }
   if (antes.starter !== depois.starter) {
     partes.push(depois.starter ? 'Passou a vir no baralho inicial' : 'Saiu do baralho inicial')
+  }
+  if ((antes.raridade ?? 'comum') !== (depois.raridade ?? 'comum')) {
+    partes.push(`Raridade: ${antes.raridade ?? 'comum'} → ${depois.raridade ?? 'comum'}`)
+  }
+  if ((antes.custoDinheiro ?? 0) !== (depois.custoDinheiro ?? 0)) {
+    partes.push(`Custo R$ ${antes.custoDinheiro ?? 0} → R$ ${depois.custoDinheiro ?? 0}`)
   }
   if ((antes.copies ?? 1) !== (depois.copies ?? 1)) {
     partes.push(`Cópias ${antes.copies ?? 1} → ${depois.copies ?? 1}`)
@@ -276,6 +289,21 @@ export default function LabCartasPage() {
                 onChange={(e) => setEmEdicao({ ...emEdicao, cost: Number(e.target.value) || 0 })}
               />
             </label>
+
+            <label className={comuns.rotulo}>
+              Custo em R$
+              <input
+                className={comuns.campo}
+                type="number"
+                min={0}
+                max={1000}
+                step={5}
+                value={emEdicao.custoDinheiro ?? 0}
+                onChange={(e) =>
+                  setEmEdicao({ ...emEdicao, custoDinheiro: Math.max(0, Number(e.target.value) || 0) || undefined })
+                }
+              />
+            </label>
           </div>
 
           <label className={comuns.rotulo}>
@@ -293,6 +321,23 @@ export default function LabCartasPage() {
             <span className={comuns.dica}>
               Sem tipo é a carta neutra: nenhum evento de bloqueio a alcança, e ela não entra em
               embalo — jogar uma quebra o que estiver em pé.
+            </span>
+          </label>
+
+          <label className={comuns.rotulo}>
+            Raridade
+            <div className={styles.rolaLado}>
+              <Segmentado
+                rotulo="Raridade da carta"
+                opcoes={RARIDADES}
+                valor={emEdicao.raridade ?? 'comum'}
+                onChange={(v) => setEmEdicao({ ...emEdicao, raridade: v === 'comum' ? undefined : (v as Raridade) })}
+              />
+            </div>
+            <span className={comuns.dica}>
+              Quantas cópias cabem na coleção (comum {COPIAS_POR_RARIDADE.comum}, incomum{' '}
+              {COPIAS_POR_RARIDADE.incomum}, rara {COPIAS_POR_RARIDADE.rara}) e quão longe a run
+              precisa ir para a carta aparecer na recompensa: rara só da semana 4 em diante.
             </span>
           </label>
 
@@ -435,7 +480,7 @@ function Grade({ cartas, aoAbrir, esmaecida }: {
         <button key={c.id} type="button" className={styles.celula} onClick={() => aoAbrir(c)}>
           <Card card={c} />
           <span className={styles.rotulo}>
-            {c.starter ? `inicial ×${c.copies ?? 1}` : 'recompensa'}
+            {c.starter ? `inicial ×${c.copies ?? 1}` : (c.raridade ?? 'comum')}
             {c.kind === null ? ' · sem tipo' : ''}
           </span>
         </button>

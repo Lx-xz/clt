@@ -229,8 +229,9 @@ coisas diferentes:
    sempre, sem depender de nada externo. **É a única metade que não dá para
    acrescentar depois**: run jogada antes disto existir nunca vai saber quanto
    a carta custava — foi por isso que entrou antes de o balanceamento começar,
-   e não junto com ele. A recompensa de fim de semana é fotografada em
-   `chooseReward`, porque ela entra no baralho depois do retrato inicial.
+   e não junto com ele. (Até a v0.14 a recompensa semanal entrava no
+   baralho no meio da run e era fotografada à parte; desde a v0.15 a
+   recompensa é do fim e vai para a coleção, então o retrato inicial basta.)
 2. **O histórico, à mão.** `MUDANCAS` em `src/data/balanceamento.ts`, uma linha
    por ajuste, com `oQue` (o número) e `porque` (o motivo). É o que o jogador lê
    ao abrir uma carta no baralho (o histórico mora dentro do detalhe). Um diff automático saberia
@@ -333,6 +334,32 @@ quando as 13 desbloqueáveis acabavam. Hoje (`src/game/colecao.ts`):
 coringa, não naipe. Quem confere é uma função só, `problemasDoBaralho()` em
 `src/game/baralho.ts`, que devolve os MOTIVOS em português: a página do
 baralho os lista, e a mesa os mostra num popup em vez de começar a run.
+
+**A recompensa saiu da sexta e foi para o fim da run** (v0.15). A semanal
+mexia no baralho no meio da partida — "como estou indo" misturado com "o que
+eu tenho" — e morria quando as desbloqueáveis acabavam. Hoje:
+
+- `restWeekend` vai direto para a segunda. A fase `recompensa` continua no
+  tipo só para o save gravado no meio dela, que `pularRecompensaSemanal` tira
+  de lá na abertura da mesa.
+- No recibo de fim, `opcoesDeRecompensa(colecao, semana, venceu)` sorteia
+  pela DISTÂNCIA (`raridadesDaRecompensa`: semana 1 só comuns, a rara só da
+  semana 4 em diante, quem vence escolhe entre 4). Só entra carta abaixo do
+  teto de cópias; a raridade esgotada cai para a de baixo; coleção cheia é
+  lista vazia e o recibo diz.
+- As opções são sorteadas na jogada que encerra a run e gravadas nela
+  (`rewardOptions`, `recompensaEscolhida`): recarregar não sorteia de novo.
+  `recompensaEscolhida` é OPCIONAL de propósito — campo obrigatório novo em
+  `GameState` obrigaria a subir a chave do save e descartaria as runs em
+  andamento.
+- A raridade é coluna da carta (`cartas.raridade`), dada às cartas antigas
+  UMA vez, no bloco `do $$` que cria a coluna — rodar o `schema.sql` de novo
+  não desfaz o que o admin escolheu depois no `/lab`.
+
+**O preço disso, medido:** sem a recompensa semanal o bot mediano não tem mais
+como melhorar o baralho no meio do mês, e a vitória dele foi de 0,4% para 0%
+(burnout 100%, dia mediano 5). O jogo já estava duro demais; isto deixa a
+conta do rebalanceamento mais clara, não mais difícil de fazer.
 
 **A página do baralho move UMA cópia:** clique duplo ou arrastar para a outra
 coluna ("No baralho" ↔ "Fora", o mesmo `onPlay` + `dropRef` da mesa). O clique

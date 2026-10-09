@@ -9,6 +9,7 @@ import type {
   EventCard,
   EventChoice,
   MudancaDeCarta,
+  Raridade,
 } from '@/game/types'
 import { migrarAcoes, migrarEfeitos } from '@/game/acoes'
 import type { Acao, Efeito, Restricao } from '@/game/acoes'
@@ -38,6 +39,10 @@ interface LinhaCarta {
   especial: boolean
   inicial: boolean
   copias: number | null
+  /** v0.15. Opcionais porque o banco que ainda não rodou o schema novo não
+   *  os manda: caem em `comum` e 0. */
+  raridade?: string | null
+  custo_dinheiro?: number | null
   versao: number
   ativa: boolean
 }
@@ -63,6 +68,10 @@ function paraClasse(bruta: string | null): ClasseDaCarta {
   return CLASSES_VALIDAS.includes(bruta as CardKind) ? (bruta as CardKind) : null
 }
 
+function paraRaridade(bruta: string | null | undefined): Raridade | undefined {
+  return bruta === 'incomum' || bruta === 'rara' ? bruta : undefined
+}
+
 /**
  * A linha do banco vira carta — e é AQUI que o vocabulário antigo é traduzido.
  *
@@ -84,6 +93,8 @@ function paraCarta(linha: LinhaCarta): ActionCard {
     especial: linha.especial || undefined,
     starter: linha.inicial,
     copies: linha.copias ?? undefined,
+    raridade: paraRaridade(linha.raridade),
+    custoDinheiro: linha.custo_dinheiro || undefined,
     ativa: linha.ativa,
     versao: linha.versao,
   }
@@ -124,6 +135,8 @@ export function cartaParaBanco(c: ActionCard): Record<string, unknown> {
     especial: c.especial ?? false,
     inicial: c.starter,
     copias: c.copies ?? null,
+    raridade: c.raridade ?? 'comum',
+    custo_dinheiro: c.custoDinheiro ?? 0,
   }
 }
 
