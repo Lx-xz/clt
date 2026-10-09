@@ -27,6 +27,9 @@
  *   npm run simular -- --runs 2000     mais runs
  *   npm run simular -- --hash          imprime só o hash de cada run, para
  *                                      comparar duas versões do motor
+ *   npm run simular -- --tudo          baralho inicial + 1 cópia de cada
+ *                                      desbloqueável: é como as cartas novas
+ *                                      entram na medição
  */
 
 import { cartasDoJogo, catalogoVeioDoBanco } from '../src/game/catalogo'
@@ -51,6 +54,7 @@ function arg(nome: string, padrao: number): number {
 const QUANTAS = arg('runs', 500)
 const SEMENTE = arg('semente', 1)
 const SO_HASH = args.includes('--hash')
+const TUDO = args.includes('--tudo')
 
 
 if (catalogoVeioDoBanco()) {
@@ -88,6 +92,10 @@ function melhorJogada(state: GameState): string | null {
     const id = state.hand.find((h) => h.uid === uid)?.cardId
     const carta = cartasDoJogo().find((c) => c.id === id)
     if (!carta) return -99
+    // carta paga em R$: o bot paga se o saldo continuar cobrindo as contas
+    // da sexta. Abaixo disso, o despejo é certo e nenhum descanso vale isso
+    const preco = carta.custoDinheiro ?? 0
+    if (preco > 0 && state.money - preco < state.modo.contasSemanais) return -30
     const estresse = mexeEm(carta, 'estresse')
     // a regra que sustenta o jogo: Energia = 10 − Estresse, então chegar
     // perto do teto encolhe todos os dias seguintes. Um jogador mediano
@@ -122,7 +130,9 @@ interface Relatorio {
 
 function jogarUmaRun(semente: number): Relatorio {
   Math.random = lcg(semente)
-  let state = engine.createRun(cartasDoBaralho(baralhoAtivo(colecaoInicial())))
+  const inicial = cartasDoBaralho(baralhoAtivo(colecaoInicial()))
+  const extras = TUDO ? cartasDoJogo().filter((c) => !c.starter).map((c) => c.id) : []
+  let state = engine.createRun([...inicial, ...extras])
   let escolhas = 0
   // trava de segurança: com as pausas novas (escolha de descarte, pergunta de
   // carta), um caminho que não limpe a pausa travaria o script para sempre.

@@ -51,8 +51,8 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
 | `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` | A oficina. **Só admin**, pelo layout de `/lab` |
 
-**21 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 13
-desbloqueáveis) e **21 cartas de evento**, das quais 4 são ambíguas e pedem uma
+**33 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 25
+desbloqueáveis, em três raridades) e **21 cartas de evento**, das quais 4 são ambíguas e pedem uma
 escolha. Esses números são o baralho de REFERÊNCIA (`cards.ts`/`events.ts`);
 o que está no ar é o que estiver na tabela `cartas` — veja abaixo.
 
@@ -1369,6 +1369,23 @@ para o inicial ter 3 de cada naipe — custou um pouco: vitória 0,4%, burnout
 98,9%, cota batida 40,6%, 6,1 dias por run. Esperado: a Reunião rende menos
 produtividade que a Tarefa. É a regra de naipe pagando o preço, não o ajuste
 que o jogo precisa.
+
+**As cartas da v0.15** (baralho v3: 7 ajustes e 12 cartas novas, 5 delas
+pagas em R$). O bot paga R$ só se o saldo continuar cobrindo as contas da
+sexta. Medição de 1000 runs:
+
+| | baralho inicial | `--tudo` (inicial + 1 de cada desbloqueável) |
+|---|---|---|
+| vitória | 0% | 3,4% (pontuação mediana R$ 825) |
+| burnout | 99,9%, dia mediano 5 | 96,6%, dia mediano 5 |
+| cota batida | 42,2% dos dias | 49,8% dos dias |
+
+**Leitura:** as cartas mexem na margem, e não no problema. Com o baralho
+inicial a run continua morrendo na primeira semana — quem decide isso são as
+REGRAS (o `+2` de estresse por cota perdida, a cota da semana 1), e é por
+elas que o rebalanceamento tem que começar, no `/lab/regras`. As cartas
+pagas são jogadas pouco (0,2–0,3 por run) porque o bot quase nunca tem R$ 300
+de folga acima das contas: o dinheiro só sobra para quem chega à semana 2.
 
 Os números antigos do CLAUDE.md (309 burnouts em 500) eram anteriores ao Embalo
 e a um bot diferente — não compare os dois.

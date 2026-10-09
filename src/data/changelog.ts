@@ -45,6 +45,8 @@ export const VERSOES: Versao[] = [
       { tipo: 'novo', texto: 'A recompensa saiu da sexta e foi para o fim da run, ganhando ou perdendo: escolha uma carta para a coleção. Quanto mais longe a run foi, melhores as opções — a rara só aparece da semana 4 em diante, e quem vence escolhe entre quatro.' },
       { tipo: 'novo', texto: 'As cartas têm raridade: comum, incomum e rara.' },
       { tipo: 'novo', texto: 'Cartas que se pagam em dinheiro: o carimbo verde mostra o preço, e sem saldo a carta não sai da mão — antes, a Terapia de R$ deixava jogar no vermelho e o despejo vinha na sexta.' },
+      { tipo: 'novo', texto: 'Doze cartas novas: Delivery, Academia no Almoço, Uber pra Casa, Checklist, Prazo Apertado, Café com o Chefe, Mentoria, Happy Hour, Vender as Férias, Investimento, Bico de Fim de Semana e Pausa Estratégica.' },
+      { tipo: 'melhor', texto: 'Ajustes: Atalho no Sistema dá +1 estresse; Home Office custa 3; Planilha Infinita custa 1; Terapia custa R$ 80 e nenhuma energia; Vale-Refeição compra 1 carta; Hora Extra custa 3 e paga R$ 40; Café Duplo virou rara.' },
       { tipo: 'melhor', texto: 'O baralho inicial troca uma Tarefa Simples por uma Reunião, para já nascer com 3 de cada naipe.' },
       { tipo: 'correcao', texto: 'No celular, arrastar da borda em cima de uma carta bloqueada não abria o menu.' },
     ],

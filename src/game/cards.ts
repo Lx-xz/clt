@@ -20,7 +20,7 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 2 }] }],
   },
   {
-    id: 'planilha-infinita', name: 'Planilha Infinita', cost: 2, kind: 'tarefa',
+    id: 'planilha-infinita', name: 'Planilha Infinita', cost: 1, kind: 'tarefa',
     text: '+1 produtividade', starter: true, copies: 2,
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 1 }] }],
   },
@@ -50,10 +50,10 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'hora-extra', name: 'Hora Extra', cost: 4, kind: 'grana',
-    text: '+R$ 30, +2 estresse', starter: true, copies: 2,
+    id: 'hora-extra', name: 'Hora Extra', cost: 3, kind: 'grana',
+    text: '+R$ 40, +2 estresse', starter: true, copies: 2,
     efeitos: [{ acoes: [
-      { faz: 'recurso', qual: 'dinheiro', quanto: 30 },
+      { faz: 'recurso', qual: 'dinheiro', quanto: 40 },
       { faz: 'recurso', qual: 'estresse', quanto: 2 },
     ] }],
   },
@@ -73,11 +73,16 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }],
   },
 
-  // --- desbloqueáveis (recompensa semanal) ---
+  // --- desbloqueáveis (recompensa do fim da run) ---
   {
     id: 'atalho-no-sistema', name: 'Atalho no Sistema', cost: 3, kind: 'tarefa',
-    text: '+3 produtividade', starter: false,
-    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 3 }] }],
+    text: '+3 produtividade, +1 estresse', starter: false,
+    // o +1 de estresse é o que a separa da Tarefa Simples: sem ele, ela era
+    // a Tarefa melhor em tudo, pelo mesmo custo
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'produtividade', quanto: 3 },
+      { faz: 'recurso', qual: 'estresse', quanto: 1 },
+    ] }],
   },
   {
     id: 'delegar', name: 'Delegar', cost: 1, kind: 'social',
@@ -96,17 +101,20 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'terapia', raridade: 'incomum', name: 'Terapia', cost: 2, kind: 'descanso',
+    id: 'terapia', raridade: 'incomum', name: 'Terapia', cost: 0, custoDinheiro: 80, kind: 'descanso',
     text: '−3 estresse', starter: false,
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -3 }] }],
   },
   {
     id: 'vale-refeicao', name: 'Vale-Refeição', cost: 0, kind: 'grana',
-    text: '+R$ 20', starter: false,
-    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'dinheiro', quanto: 20 }] }],
+    text: '+R$ 20, compre 1', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'dinheiro', quanto: 20 },
+      { faz: 'comprar', quantas: 1 },
+    ] }],
   },
   {
-    id: 'home-office', raridade: 'incomum', name: 'Home Office', cost: 2, kind: 'tarefa',
+    id: 'home-office', raridade: 'incomum', name: 'Home Office', cost: 3, kind: 'tarefa',
     text: '+2 produtividade, −1 estresse', starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'produtividade', quanto: 2 },
@@ -187,6 +195,100 @@ export const CARTAS_BASE: ActionCard[] = [
       ],
     }] }],
   },
+
+  // --- v0.15: as que se pagam em R$, e as que faltavam ---
+  // As pagas ligam grana a descanso: até aqui o dinheiro só virava pontuação.
+  {
+    id: 'delivery', name: 'Delivery', cost: 0, custoDinheiro: 25, kind: 'descanso',
+    text: '+2 energia', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }],
+  },
+  {
+    id: 'academia-no-almoco', raridade: 'incomum', name: 'Academia no Almoço', cost: 1, custoDinheiro: 40,
+    kind: 'descanso', text: '−2 estresse. Amanhã: +1 energia', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'estresse', quanto: -2 },
+      { faz: 'amanha', acoes: [{ faz: 'recurso', qual: 'energia', quanto: 1 }] },
+    ] }],
+  },
+  {
+    id: 'uber-pra-casa', name: 'Uber pra Casa', cost: 0, custoDinheiro: 30, kind: 'descanso',
+    text: 'Amanhã: +2 energia', starter: false,
+    efeitos: [{ acoes: [{ faz: 'amanha', acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }] }],
+  },
+  {
+    id: 'checklist', name: 'Checklist', cost: 1, kind: 'tarefa',
+    text: '+1 produtividade, compre 1', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'produtividade', quanto: 1 },
+      { faz: 'comprar', quantas: 1 },
+    ] }],
+  },
+  {
+    id: 'prazo-apertado', raridade: 'incomum', name: 'Prazo Apertado', cost: 2, kind: 'tarefa',
+    text: '1ª do dia: +4 produtividade. Senão: +2 e +1 estresse',
+    especial: true, starter: false,
+    efeitos: [{ acoes: [{
+      faz: 'se', condicao: { se: 'cartasJogadasHoje', noMaximo: 0 },
+      entao: [{ faz: 'recurso', qual: 'produtividade', quanto: 4 }],
+      senao: [
+        { faz: 'recurso', qual: 'produtividade', quanto: 2 },
+        { faz: 'recurso', qual: 'estresse', quanto: 1 },
+      ],
+    }] }],
+  },
+  {
+    id: 'cafe-com-o-chefe', raridade: 'rara', name: 'Café com o Chefe', cost: 1, kind: 'social',
+    text: 'Com advertência: tira 1, +2 estresse. Sem: +1 produtividade',
+    especial: true, starter: false,
+    efeitos: [{ acoes: [{
+      faz: 'se', condicao: { se: 'advertencias', aoMenos: 1 },
+      entao: [
+        { faz: 'advertencia', quanto: -1 },
+        { faz: 'recurso', qual: 'estresse', quanto: 2 },
+      ],
+      senao: [{ faz: 'recurso', qual: 'produtividade', quanto: 1 }],
+    }] }],
+  },
+  {
+    id: 'mentoria', raridade: 'incomum', name: 'Mentoria', cost: 2, kind: 'social',
+    text: 'Compre 2', starter: false,
+    efeitos: [{ acoes: [{ faz: 'comprar', quantas: 2 }] }],
+  },
+  {
+    id: 'happy-hour', raridade: 'incomum', name: 'Happy Hour', cost: 0, custoDinheiro: 50, kind: 'social',
+    text: '−2 estresse. Amanhã: +1 carta na mão', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'estresse', quanto: -2 },
+      { faz: 'amanha', acoes: [{ faz: 'maoDoDia', quantas: 1, relativo: true }] },
+    ] }],
+  },
+  {
+    id: 'vender-as-ferias', raridade: 'incomum', name: 'Vender as Férias', cost: 0, kind: 'grana',
+    text: '+R$ 120, +3 estresse', starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'dinheiro', quanto: 120 },
+      { faz: 'recurso', qual: 'estresse', quanto: 3 },
+    ] }],
+  },
+  {
+    id: 'investimento', raridade: 'rara', name: 'Investimento', cost: 0, custoDinheiro: 100, kind: 'grana',
+    text: '+R$ 40 toda sexta, pelo resto da run', especial: true, starter: false,
+    efeitos: [{ acoes: [{ faz: 'recorrente', qual: 'dinheiro', quanto: 40, cada: 'semana' }] }],
+  },
+  {
+    id: 'bico-de-fim-de-semana', name: 'Bico de Fim de Semana', cost: 2, kind: 'grana',
+    text: 'Nesta sexta: +R$ 60', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recorrente', qual: 'dinheiro', quanto: 60, cada: 'semana', duracao: 1 }] }],
+  },
+  {
+    id: 'pausa-estrategica', raridade: 'incomum', name: 'Pausa Estratégica', cost: 0, kind: null,
+    text: 'Descarte a mão e compre 3', especial: true, starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'descartar', quantas: 'tudo', porque: 'Pausa Estratégica' },
+      { faz: 'comprar', quantas: 3 },
+    ] }],
+  },
 ]
 
 /**
@@ -198,7 +300,7 @@ export const CARTAS_BASE: ActionCard[] = [
  * tocam em carta nenhuma mantêm o mesmo número aqui, e é isso que o deixa
  * comparável entre runs.
  */
-export const VERSAO_BARALHO_BASE = 2
+export const VERSAO_BARALHO_BASE = 3
 
 /**
  * Os números do jogo (aluguel, cota, salário, energia base) NÃO moram mais
