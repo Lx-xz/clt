@@ -6,6 +6,7 @@ import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
 import { useSessao } from '@/components/SessaoGuard'
 import { cartasDoJogo } from '@/game/catalogo'
+import { copiasMaximas } from '@/game/colecao'
 import { clearRun, defaultCollection, loadCollection, saveCollection } from '@/game/storage'
 import { sincronizar } from '@/data/sync'
 import buttons from '@/styles/buttons.module.sass'
@@ -51,16 +52,14 @@ export default function LabPage() {
   const [recado, setRecado] = useState<string | null>(null)
 
   function desbloquearTudo() {
+    // todas as cartas, no teto de cópias; os baralhos montados não mudam
     const colecao = loadCollection()
-    const todas = cartasDoJogo().map((c) => c.id)
-    const nova = {
-      equipped: colecao.equipped,
-      unequipped: todas.filter((id) => !colecao.equipped.includes(id)),
-    }
+    const todas = cartasDoJogo()
+    const nova = { ...colecao, tenho: Object.fromEntries(todas.map((c) => [c.id, copiasMaximas(c)])) }
     saveCollection(nova)
     sincronizar(sessao.id, null, nova, () => {})
     setConfirmando(null)
-    setRecado(`Coleção com as ${todas.length} cartas. O baralho equipado não mudou.`)
+    setRecado(`Coleção com as ${todas.length} cartas, cada uma no teto de cópias. Os baralhos não mudaram.`)
   }
 
   function resetar() {

@@ -45,6 +45,9 @@ const NUMEROS: { campo: keyof Regras; rotulo: string; dica: string; min: number;
   { campo: 'dinheiroInicial', rotulo: 'Dinheiro inicial (R$)', dica: 'Quanto sobra da última quinzena.', min: 0, max: 5000 },
   { campo: 'descansoDoFimDeSemana', rotulo: 'Estresse que o fim de semana tira', dica: 'O único alívio garantido da semana.', min: 0, max: 10 },
   { campo: 'cartasNaMao', rotulo: 'Cartas na mão por dia', dica: 'O Dia Tranquilo continua dando duas a mais que isto, seja qual for o número.', min: 1, max: 12 },
+  { campo: 'baralhoMinimo', rotulo: 'Baralho: mínimo de cartas', dica: 'Abaixo disto a mesa não começa a run. O baralho inicial tem 15.', min: 1, max: 60 },
+  { campo: 'baralhoMaximo', rotulo: 'Baralho: máximo de cartas', dica: 'Acima disto também não: diluir o baralho com tudo é outro jeito de quebrar o jogo.', min: 1, max: 80 },
+  { campo: 'minimoPorNaipe', rotulo: 'Baralho: mínimo por naipe', dica: 'Cópias de cada naipe (tarefa, descanso, grana, social). Sem naipe fica livre.', min: 0, max: 10 },
   { campo: 'diasPorSemana', rotulo: 'Dias úteis por semana', dica: 'A sexta é o último dia da semana, então isto move o dia de pagamento.', min: 1, max: 7 },
 ]
 

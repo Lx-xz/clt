@@ -233,7 +233,7 @@ coisas diferentes:
    `chooseReward`, porque ela entra no baralho depois do retrato inicial.
 2. **O histórico, à mão.** `MUDANCAS` em `src/data/balanceamento.ts`, uma linha
    por ajuste, com `oQue` (o número) e `porque` (o motivo). É o que o jogador lê
-   ao clicar em **histórico** numa carta do baralho. Um diff automático saberia
+   ao abrir uma carta no baralho (o histórico mora dentro do detalhe). Um diff automático saberia
    dizer "custo 4 → 6" e não saberia dizer "porque Freela → Hora Extra fechava
    a semana 1 sozinha", que é a parte que importa.
 
@@ -304,6 +304,40 @@ carregamento do módulo congelaria o número de ontem.
 banco isso congelaria o 7 para sempre. Virou `{ faz: 'maoDoDia', quantas: 2,
 relativo: true }`. Qualquer carta nova que queira "a mais" ou "a menos" de
 uma regra precisa desse tipo de relativo, e não do total já somado.
+
+### A coleção conta cópias, e o baralho tem regras (v0.15)
+
+A coleção era `{ equipped, unequipped }`: binária. Cópia só existia para carta
+inicial (`card.copies`, lido em `createRun`), então tirar a Tarefa Simples
+tirava as quatro, toda desbloqueável existia uma vez só, e a recompensa morria
+quando as 13 desbloqueáveis acabavam. Hoje (`src/game/colecao.ts`):
+
+- `Collection = { tenho, baralhos, ativo }`: cópias possuídas por carta, até
+  `MAXIMO_DE_BARALHOS` (3) baralhos com nome, e qual está equipado.
+- **O teto de cópias é da raridade** (`COPIAS_POR_RARIDADE`: comum 4, incomum
+  3, rara 2), nunca abaixo das cópias iniciais da carta.
+- **`lerColecao()` traduz o formato antigo na LEITURA**, como `lerAvatar` e
+  `migrarAcoes`: inicial equipada vira as suas cópias, desbloqueável vira 1.
+  Ela roda no localStorage (`clt:collection:v2`, lendo a `v1` se a v2 não
+  existir) e no que vem do banco (`saves.collection` é lido cru). Sem migração.
+- **`garantirNaipes()` é rede, não regra.** O banco de produção ainda diz
+  Reunião ×2; com o mínimo de 3 por naipe, todo jogador abriria com um baralho
+  recusado. Ela completa cada naipe com cópias da carta inicial dele. Quando o
+  catálogo do banco tiver as cópias novas, ela para de ter o que fazer.
+- `createRun(cartas)` recebe UMA ENTRADA POR CÓPIA
+  (`cartasDoBaralho(baralhoAtivo(colecao))`). A troca foi conferida com o
+  `--hash` do simulador antes da troca da Reunião: idêntico.
+
+**As regras do baralho são do modo** (`baralhoMinimo` 15, `baralhoMaximo` 25,
+`minimoPorNaipe` 3, editáveis em `/lab/regras`). Carta sem naipe é livre: é
+coringa, não naipe. Quem confere é uma função só, `problemasDoBaralho()` em
+`src/game/baralho.ts`, que devolve os MOTIVOS em português: a página do
+baralho os lista, e a mesa os mostra num popup em vez de começar a run.
+
+**A página do baralho move UMA cópia:** clique duplo ou arrastar para a outra
+coluna ("No baralho" ↔ "Fora", o mesmo `onPlay` + `dropRef` da mesa). O clique
+simples abre o detalhe, que nesta página leva o seletor de cópias (− n +) e o
+histórico da carta (`MudancasDaCarta`), pelos `children` do `CardDetail`.
 
 ### A carta neutra
 
@@ -419,8 +453,10 @@ opções. O que ele escolheu, e que deve ser preservado:
   numa grade com leve rotação alternada, sem nome nem texto nenhum.
 - **Interação da carta:** hover cresce e levanta · clique simples abre o detalhe
   com o texto completo · clique duplo **ou** arraste até o tapete joga. Toda
-  carta carrega o atributo `data-carta` no elemento arrastável — é o que a barra
-  lateral usa para não roubar o gesto de arrastar uma carta (veja abaixo).
+  carta ARRASTÁVEL (com `onPlay`) carrega o atributo `data-carta` — é o que a
+  barra lateral usa para não roubar o gesto de arrastar uma carta (veja
+  abaixo). Carta parada (bloqueada, histórico) não leva o atributo: ela não
+  tem gesto para proteger, e com ele o arraste da borda morria em cima dela.
 - **Medidores compactos:** só ícone e valor (`⚡ 10`), com nome e explicação numa
   dica que aparece no hover, no foco e no toque. No celular o dinheiro perde o
   "R$" e os 6 medidores viram uma grade 3×2.
@@ -1287,6 +1323,12 @@ mediana morre na primeira semana: como `Energia = 10 − Estresse`, cada dia sem
 bater a cota custa `+2` de estresse, que vira menos energia no dia seguinte, que
 faz perder a cota de novo. O `−3` do fim de semana quase nunca chega a tempo. O
 despejo **nunca** acontece: a conta de R$ 300 é irrelevante perto disso.
+
+**A troca da Reunião (v0.15)** — 1 Tarefa Simples a menos, 1 Reunião a mais,
+para o inicial ter 3 de cada naipe — custou um pouco: vitória 0,4%, burnout
+98,9%, cota batida 40,6%, 6,1 dias por run. Esperado: a Reunião rende menos
+produtividade que a Tarefa. É a regra de naipe pagando o preço, não o ajuste
+que o jogo precisa.
 
 Os números antigos do CLAUDE.md (309 burnouts em 500) eram anteriores ao Embalo
 e a um bot diferente — não compare os dois.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from './Card'
@@ -16,9 +16,12 @@ interface CardDetailProps {
   onPlay?: () => void
   /** Motivo de a carta não poder ser jogada, para o jogador não ficar no escuro. */
   blockedReason?: string
+  /** O que a página põe embaixo do texto — no baralho, as cópias e o
+   *  histórico da carta. */
+  children?: ReactNode
 }
 
-export default function CardDetail({ card, cost, onClose, onPlay, blockedReason }: CardDetailProps) {
+export default function CardDetail({ card, cost, onClose, onPlay, blockedReason, children }: CardDetailProps) {
   const evento = 'tone' in card
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -66,6 +69,7 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason 
               ))
             : null}
           {blockedReason ? <p className={styles.nota}>{blockedReason}</p> : null}
+          {children}
           <div className={styles.acoes}>
             {onPlay ? (
               <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={onPlay}>

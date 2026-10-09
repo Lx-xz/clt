@@ -48,31 +48,144 @@
   gap: 12px
   --carta-h: 190px
 
-.celula
-  display: flex
-  flex-direction: column
-  align-items: center
-  gap: 4px
-
-// atalho discreto: o clique na carta continua sendo montar o baralho, que é o
-// que se faz aqui o tempo todo. O histórico é a visita rara
-.historico
-  border: 0
-  padding: 2px 6px
-  border-radius: 6px
-  background: none
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-  font-size: 11px
-  cursor: pointer
-
-  &:hover,
-  &:focus-visible
-    color: var(--tinta)
-    background: var(--papel-alto)
-
 .empty
   margin: 0
   color: var(--tinta-fraca)
   font-size: 13px
   font-style: italic
+
+// ------------------------------------------------------------ os baralhos
+.baralhos
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 10px
+  margin-bottom: 16px
+
+.acoesBaralho
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+
+  button
+    display: inline-flex
+    align-items: center
+    gap: 6px
+
+  // no celular os botões de sempre empilhavam um por linha: aqui são
+  // ferramenta secundária, e cabem lado a lado num tamanho menor
+  @media (max-width: 760px)
+    button
+      padding: 6px 10px
+      font-size: 13px
+
+.renomear
+  display: flex
+
+// 16 px: campo menor que isso dá zoom no iPhone, e o zoom não desfaz
+.campo
+  width: 200px
+  padding: 8px 10px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta)
+  font: inherit
+  font-size: 16px
+
+// --------------------------------------------------------------- a conta
+.conta
+  display: flex
+  flex-wrap: wrap
+  gap: 6px 14px
+  margin-bottom: 12px
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 13px
+
+  b
+    color: var(--tinta)
+
+.total b
+  font-size: 16px
+
+.ruim,
+.ruim b
+  color: var(--estresse)
+
+.problemas
+  margin-bottom: 20px
+  padding: 10px 14px
+  background: color-mix(in srgb, var(--estresse) 8%, var(--papel-alto))
+  border-left: 3px solid var(--estresse)
+  border-radius: 0 var(--raio) var(--raio) 0
+  font-size: 13px
+
+  ul
+    margin: 4px 0 0
+    padding-left: 18px
+
+// --------------------------------------------------------------- colunas
+// lado a lado no desktop: é entre elas que se arrasta
+.colunas
+  display: grid
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  gap: 20px
+
+  .section
+    min-width: 0
+    padding: 10px
+    border: 2px dashed transparent
+    border-radius: 10px
+    transition: border-color .12s ease, background .12s ease
+
+// a coluna em que a carta arrastada vai cair
+.alvo
+  border-color: var(--destaque) !important
+  background: color-mix(in srgb, var(--destaque) 8%, transparent)
+
+// ------------------------------------------------ cópias, dentro do detalhe
+.copias
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding: 10px 0
+  border-top: 1px dashed var(--linha)
+  border-bottom: 1px dashed var(--linha)
+
+.copiasRotulo
+  color: var(--tinta-fraca)
+  font-size: 11px
+  letter-spacing: .08em
+  text-transform: uppercase
+
+.seletor
+  display: flex
+  align-items: center
+  gap: 10px
+
+  button
+    display: grid
+    place-items: center
+    width: 38px
+    height: 38px
+    padding: 0
+
+.copiasNumero
+  min-width: 2ch
+  font-family: var(--mono)
+  font-size: 22px
+  text-align: center
+
+.copiasDica
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12.5px
+
+@media (max-width: 760px)
+  .colunas
+    grid-template-columns: minmax(0, 1fr)
+    gap: 8px
+
+  .grid
+    --carta-h: 150px

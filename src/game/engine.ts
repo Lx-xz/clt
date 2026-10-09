@@ -234,21 +234,23 @@ function reagirAoDescarte(state: GameState, ids: CardId[]) {
 
 // ------------------------------------------------------------ início da run
 
-export function createRun(equipped: CardId[]): GameState {
+/**
+ * `cartas` tem uma entrada por CÓPIA (`cartasDoBaralho` em `colecao.ts`). Era
+ * a lista de tipos equipados, e as cópias saíam de `card.copies` aqui dentro —
+ * só para as cartas iniciais; desbloqueável tinha uma cópia e pronto. Quem
+ * diz quantas cópias entram agora é o baralho montado.
+ */
+export function createRun(cartas: CardId[]): GameState {
   // as regras são COPIADAS aqui, uma vez. Daqui em diante esta run joga com
   // elas, mesmo que o aluguel mude no banco no meio da partida
   const modo = structuredClone(regras())
-  const deck = equipped.flatMap((id) => {
-    const card = getCard(id)
-    const copies = card.starter ? (card.copies ?? 1) : 1
-    return Array.from({ length: copies }, () => makeInstance(id))
-  })
+  const deck = cartas.map((id) => makeInstance(id))
 
   const state: GameState = {
     runId: crypto.randomUUID(),
     // o retrato do baralho é tirado AQUI, uma vez só: é a única parte do
     // versionamento que não dá para acrescentar depois
-    baralho: { versao: versaoDoBaralho(), cartas: fotografarBaralho(equipped) },
+    baralho: { versao: versaoDoBaralho(), cartas: fotografarBaralho([...new Set(cartas)]) },
     modo,
     startedAt: new Date().toISOString(),
     maxCombo: 0,

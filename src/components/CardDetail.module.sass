@@ -22,6 +22,10 @@
   // largura definida: com fit-content o painel encolhia e a coluna de texto
   // caía para baixo da carta mesmo sobrando espaço ao lado
   width: min(600px, 100%)
+  // com o histórico da carta dentro (no baralho) o painel pode passar da
+  // altura da tela: quem rola é ele, e a cortina continua parada
+  max-height: calc(100dvh - 40px)
+  overflow-y: auto
   padding: 22px
   background: var(--papel-alto)
   border: 1px solid var(--linha)

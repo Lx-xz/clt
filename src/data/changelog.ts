@@ -34,6 +34,19 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.15',
+    data: '2026-10-09',
+    titulo: 'A coleção ganhou cópias',
+    itens: [
+      { tipo: 'novo', texto: 'A coleção conta CÓPIAS: dá para ter até 4 de uma carta comum, 3 de uma incomum e 2 de uma rara, e escolher quantas delas vão para o baralho.' },
+      { tipo: 'novo', texto: 'Até três baralhos com nome, um equipado. "Novo" começa como cópia do atual.' },
+      { tipo: 'novo', texto: 'O baralho tem limites: de 15 a 25 cartas, com pelo menos 3 de cada naipe (tarefa, descanso, grana e social). A contagem fica sempre à vista, e a mesa diz o que falta em vez de começar.' },
+      { tipo: 'melhor', texto: 'Clique duplo ou arrastar para a outra coluna move UMA cópia — antes, tirar a Tarefa Simples tirava as quatro de uma vez. O clique abre a carta, com o seletor de cópias e o histórico dela.' },
+      { tipo: 'melhor', texto: 'O baralho inicial troca uma Tarefa Simples por uma Reunião, para já nascer com 3 de cada naipe.' },
+      { tipo: 'correcao', texto: 'No celular, arrastar da borda em cima de uma carta bloqueada não abria o menu.' },
+    ],
+  },
+  {
     versao: '0.14',
     data: '2026-10-09',
     titulo: 'Um início de verdade, amigos e conquistas',

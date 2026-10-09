@@ -44,7 +44,12 @@ export interface ActionCard {
   ativa?: boolean
   /** Em que versão do baralho este formato da carta passou a valer. */
   versao?: number
+  /** Quão difícil é ganhar a carta no fim da run, e quantas cópias dela
+   *  cabem na coleção (`copiasMaximas`). Ausente é `comum`. */
+  raridade?: Raridade
 }
+
+export type Raridade = 'comum' | 'incomum' | 'rara'
 
 /**
  * A carta como ela era no dia em que a run foi jogada. Vai gravada dentro da
@@ -303,12 +308,26 @@ export interface Recorrente {
   origem: CardId | null
 }
 
-/** Coleção persistida entre runs (o "baralho" fora da partida). */
+/**
+ * Um baralho montado: quantas cópias de cada carta. Cópia, e não "a carta":
+ * a coleção era binária (tem ou não tem) e por isso clicar na Tarefa Simples
+ * tirava as quatro de uma vez, e a recompensa morria quando as desbloqueáveis
+ * acabavam.
+ */
+export interface BaralhoMontado {
+  id: string
+  nome: string
+  cartas: Record<CardId, number>
+}
+
+/** Coleção persistida entre runs. Veja `src/game/colecao.ts`. */
 export interface Collection {
-  /** Cartas montadas no baralho da próxima run. */
-  equipped: CardId[]
-  /** Desbloqueadas, mas fora do baralho. */
-  unequipped: CardId[]
+  /** Cópias que o jogador TEM de cada carta. */
+  tenho: Record<CardId, number>
+  /** Os baralhos montados com elas — até três. */
+  baralhos: BaralhoMontado[]
+  /** O id do baralho equipado, que é o que a próxima run usa. */
+  ativo: string
 }
 
 export interface WeekConfig {

@@ -13,6 +13,7 @@ import { buscarMeusJogos, buscarRanking } from '@/data/analytics'
 import { minhasConquistas, type Conquista } from '@/data/conquistas'
 import type { JogoResumo } from '@/data/jogadores'
 import { dayLabel } from '@/game/engine'
+import { baralhoAtivo, foraDoBaralho } from '@/game/colecao'
 import { loadCollection, loadRun } from '@/game/storage'
 import type { GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
@@ -75,7 +76,10 @@ export default function InicioPage() {
   useEffect(() => {
     const salva = loadRun<GameState>()
     setRun(salva && salva.outcome === 'jogando' ? salva : null)
-    setNovas(loadCollection().unequipped.length)
+    // cópias que a pessoa tem e não estão no baralho equipado
+    const colecao = loadCollection()
+    const ativo = baralhoAtivo(colecao)
+    setNovas(Object.keys(colecao.tenho).reduce((t, id) => t + foraDoBaralho(colecao, ativo, id), 0))
   }, [])
 
   useEffect(() => {

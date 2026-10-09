@@ -16,7 +16,7 @@ export const CARTAS_BASE: ActionCard[] = [
   // --- baralho inicial (15 cartas) ---
   {
     id: 'tarefa-simples', name: 'Tarefa Simples', cost: 3, kind: 'tarefa',
-    text: '+2 produtividade', starter: true, copies: 4,
+    text: '+2 produtividade', starter: true, copies: 3,
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 2 }] }],
   },
   {
@@ -27,7 +27,7 @@ export const CARTAS_BASE: ActionCard[] = [
   {
     id: 'reuniao', name: 'Reunião', cost: 2, kind: 'social',
     text: '+1 produtividade. Se for a 2ª reunião do dia: +1 estresse e nenhuma produtividade.',
-    especial: true, starter: true, copies: 2,
+    especial: true, starter: true, copies: 3,
     // a carta que muda de poder ao se repetir: duas linhas excludentes,
     // separadas pela quantidade de vezes que ELA já saiu hoje
     efeitos: [

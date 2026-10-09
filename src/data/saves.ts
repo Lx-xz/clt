@@ -3,7 +3,8 @@ import { supabase } from './supabase'
 
 export interface SaveRemoto {
   run: GameState | null
-  collection: Collection | null
+  /** Cru, como veio do banco: quem lê é `lerColecao`, que traduz o formato antigo. */
+  collection: unknown
 }
 
 export async function baixarSave(playerId: string): Promise<SaveRemoto> {
@@ -14,7 +15,7 @@ export async function baixarSave(playerId: string): Promise<SaveRemoto> {
     .eq('player_id', playerId)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return { run: (data?.run as GameState) ?? null, collection: (data?.collection as Collection) ?? null }
+  return { run: (data?.run as GameState) ?? null, collection: data?.collection ?? null }
 }
 
 export async function subirSave(playerId: string, run: GameState | null, collection: Collection | null) {

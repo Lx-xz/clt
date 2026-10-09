@@ -1,7 +1,10 @@
-import { cartasDoJogo, cartasIniciais } from './catalogo'
+import { colecaoInicial, ganharCopia, lerColecao } from './colecao'
 import type { CardId, Collection } from './types'
 
-const COLLECTION_KEY = 'clt:collection:v1'
+// v2: a coleção passou a ter CÓPIAS e vários baralhos. A v1 continua sendo
+// lida (e traduzida por `lerColecao`), mas só a v2 é escrita
+const COLLECTION_KEY = 'clt:collection:v2'
+const COLLECTION_KEY_V1 = 'clt:collection:v1'
 // v8: as regras do jogo viraram modo. O estado ganhou `modo`, a cópia das
 // regras com que ESTA run está sendo jogada — e o motor lê dali, então uma
 // run da v7 não teria aluguel, cota nem energia base para continuar.
@@ -12,13 +15,7 @@ const RUN_KEYS_ANTIGAS = [
 ]
 
 export function defaultCollection(): Collection {
-  return { equipped: cartasIniciais().map((c) => c.id), unequipped: [] }
-}
-
-/** Cartas que ainda não foram desbloqueadas por nenhuma recompensa. */
-export function lockedCards(collection: Collection): CardId[] {
-  const owned = new Set([...collection.equipped, ...collection.unequipped])
-  return cartasDoJogo().filter((c) => !owned.has(c.id)).map((c) => c.id)
+  return colecaoInicial()
 }
 
 function read<T>(key: string): T | null {
@@ -41,14 +38,10 @@ function write(key: string, value: unknown) {
 }
 
 export function loadCollection(): Collection {
-  const stored = read<Partial<Collection>>(COLLECTION_KEY)
-  if (!stored || !Array.isArray(stored.equipped)) return defaultCollection()
-  // uma carta removida do jogo some do baralho salvo na próxima abertura —
-  // e é só isso que a remoção faz com quem já a tinha
-  const known = new Set(cartasDoJogo().map((c) => c.id))
-  const equipped = stored.equipped.filter((id) => known.has(id))
-  const unequipped = (stored.unequipped ?? []).filter((id) => known.has(id) && !equipped.includes(id))
-  return { equipped, unequipped }
+  // `lerColecao` traduz a v1 e descarta carta que saiu do jogo: uma carta
+  // removida some do baralho salvo na próxima abertura, e é só isso que a
+  // remoção faz com quem já a tinha
+  return lerColecao(read<unknown>(COLLECTION_KEY) ?? read<unknown>(COLLECTION_KEY_V1))
 }
 
 export function saveCollection(collection: Collection) {
@@ -180,10 +173,7 @@ export function limparLocalDoJogo() {
   }
 }
 
-/** Desbloqueia uma carta ganha como recompensa (entra fora do baralho). */
+/** Mais uma cópia de uma carta ganha (entra na coleção, fora dos baralhos). */
 export function unlockCard(cardId: CardId) {
-  const collection = loadCollection()
-  if (collection.equipped.includes(cardId) || collection.unequipped.includes(cardId)) return
-  collection.unequipped.push(cardId)
-  saveCollection(collection)
+  saveCollection(ganharCopia(loadCollection(), cardId))
 }

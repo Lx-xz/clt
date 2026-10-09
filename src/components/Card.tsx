@@ -182,7 +182,10 @@ export default function Card({
     <div className={`${styles.palco} ${className ?? ''}`} style={style}>
       <div
         ref={ref}
-        data-carta
+        // só a carta que ARRASTA se marca: é a marca que a barra lateral lê
+        // para não abrir com o gesto. Carta parada (bloqueada, de leitura)
+        // marcada roubava o arraste do menu sem ela mesma arrastar
+        data-carta={onPlay ? '' : undefined}
         className={classes.join(' ')}
         style={
           {

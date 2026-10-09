@@ -29,8 +29,9 @@
  *                                      comparar duas versões do motor
  */
 
-import { cartasDoJogo, cartasIniciais, catalogoVeioDoBanco } from '../src/game/catalogo'
+import { cartasDoJogo, catalogoVeioDoBanco } from '../src/game/catalogo'
 import * as engine from '../src/game/engine'
+import { baralhoAtivo, cartasDoBaralho, colecaoInicial } from '../src/game/colecao'
 import { regras, totalDeDias } from '../src/game/regras'
 import type { GameState } from '../src/game/types'
 
@@ -121,7 +122,7 @@ interface Relatorio {
 
 function jogarUmaRun(semente: number): Relatorio {
   Math.random = lcg(semente)
-  let state = engine.createRun(cartasIniciais().map((c) => c.id))
+  let state = engine.createRun(cartasDoBaralho(baralhoAtivo(colecaoInicial())))
   let escolhas = 0
   // trava de segurança: com as pausas novas (escolha de descarte, pergunta de
   // carta), um caminho que não limpe a pausa travaria o script para sempre.

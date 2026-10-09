@@ -23,16 +23,29 @@ const ROTULO = { criada: 'entrou no jogo', ajustada: 'ajustada', removida: 'saiu
  */
 export default function HistoricoDaCarta({ id, onFechar }: { id: CardId; onFechar: () => void }) {
   const carta = getCard(id)
-  const mudancas = mudancasDaCarta(id)
-
   return (
     <Dialogo titulo={carta.name} onFechar={onFechar}>
       <div className={styles.previa}>
         <Card card={carta} />
       </div>
+      <MudancasDaCarta id={id} />
+    </Dialogo>
+  )
+}
 
+/**
+ * Só a lista do que mudou — a parte que mora dentro do detalhe da carta, no
+ * baralho. Ela estava num link "histórico" embaixo de cada carta, uma
+ * segunda porta para a mesma carta; agora o clique abre o detalhe, e o
+ * histórico vem junto.
+ */
+export function MudancasDaCarta({ id }: { id: CardId }) {
+  const carta = getCard(id)
+  const mudancas = mudancasDaCarta(id)
+  return (
+    <div className={styles.bloco}>
       <p className={styles.versao}>
-        Baralho <b>v{versaoDoBaralho()}</b> · custo {carta.cost} · {carta.kind ?? 'sem tipo'}
+        Histórico · baralho <b>v{versaoDoBaralho()}</b> · custo {carta.cost} · {carta.kind ?? 'sem tipo'}
       </p>
 
       {mudancas.length === 0 ? (
@@ -62,6 +75,6 @@ export default function HistoricoDaCarta({ id, onFechar }: { id: CardId; onFecha
         As partidas que você já jogou não mudam: cada uma guarda as cartas como elas eram
         naquele dia.
       </p>
-    </Dialogo>
+    </div>
   )
 }

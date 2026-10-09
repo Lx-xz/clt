@@ -32,6 +32,15 @@ export interface Regras {
   /** Quanto estresse o fim de semana tira. */
   descansoDoFimDeSemana: number
   semanas: WeekConfig[]
+  /** O tamanho do baralho montado. Sem mínimo dava para começar com o
+   *  baralho VAZIO, ou tirar as cartas ruins até sobrar só o que presta; sem
+   *  máximo, diluir tudo. Moram no modo para dar para mexer sem publicar. */
+  baralhoMinimo: number
+  baralhoMaximo: number
+  /** Cópias de CADA naipe (tarefa, descanso, grana, social) no baralho. É o
+   *  que impede o baralho só de descanso. A carta sem naipe fica livre: ela é
+   *  coringa, não naipe. */
+  minimoPorNaipe: number
   versao: number
 }
 
@@ -54,6 +63,9 @@ export const MODO_NORMAL: Regras = {
     { week: 3, dailyQuota: 4, weeklyGoal: 22, fullSalary: 450, reducedSalary: 280 },
     { week: 4, dailyQuota: 4, weeklyGoal: 25, fullSalary: 450, reducedSalary: 280 },
   ],
+  baralhoMinimo: 15,
+  baralhoMaximo: 25,
+  minimoPorNaipe: 3,
   versao: 1,
 }
 

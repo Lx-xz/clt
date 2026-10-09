@@ -41,6 +41,9 @@ import {
 import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
+import { problemasDoBaralho } from '@/game/baralho'
+import { baralhoAtivo, cartasDoBaralho } from '@/game/colecao'
+import { regras } from '@/game/regras'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
 import type { CardInstance, GameState } from '@/game/types'
@@ -68,6 +71,8 @@ export default function JogarPage() {
   const [sobreTapete, setSobreTapete] = useState(false)
   const [status, setStatus] = useState<StatusSync>('ocioso')
   const [falha, setFalha] = useState<string | null>(null)
+  /** O baralho ativo não pode ir para a mesa, e por quê. */
+  const [recusa, setRecusa] = useState<string[] | null>(null)
   // o banco recusar o registro da run precisa aparecer na tela, com a
   // mensagem do Postgres junto: engolir isso foi o bug de "joguei até o fim e
   // não salvou", e no iPhone não há console para ler o motivo
@@ -96,7 +101,14 @@ export default function JogarPage() {
         }
         // run nova já nasce salva: sem isso, recarregar antes da primeira
         // jogada sorteava outra run
-        const nova = createRun(collection.equipped)
+        // baralho fora das regras (abaixo do mínimo, sem um naipe) não vira
+        // run: uma partida que não se joga é pior do que um aviso
+        const problemas = problemasDoBaralho(baralhoAtivo(collection), regras())
+        if (problemas.length > 0) {
+          setRecusa(problemas)
+          return
+        }
+        const nova = createRun(cartasDoBaralho(baralhoAtivo(collection)))
         setState(nova)
         sincronizar(sessao.id, nova, collection, setStatus)
       })
@@ -150,7 +162,14 @@ export default function JogarPage() {
     setAberta(null)
     setFimFechado(false)
     setConquistasNovas([])
-    update(createRun(loadCollection().equipped))
+    const ativo = baralhoAtivo(loadCollection())
+    const problemas = problemasDoBaralho(ativo, regras())
+    if (problemas.length > 0) {
+      setState(null)
+      setRecusa(problemas)
+      return
+    }
+    update(createRun(cartasDoBaralho(ativo)))
   }
 
   function jogar(uid: string) {
@@ -184,6 +203,25 @@ export default function JogarPage() {
             </div>
           </div>
         </div>
+      </main>
+    )
+  }
+
+  if (recusa) {
+    return (
+      <main className={styles.mesa}>
+        <Dialogo titulo="O baralho não está pronto" semTravarNav>
+          <ul className={styles.recusa}>
+            {recusa.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+          <div className={styles.acoes}>
+            <Link className={`${buttons.button} ${buttons.primary}`} href="/baralho">
+              Montar o baralho
+            </Link>
+          </div>
+        </Dialogo>
       </main>
     )
   }

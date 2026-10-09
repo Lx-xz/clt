@@ -1,3 +1,4 @@
+import { lerColecao } from '@/game/colecao'
 import { clearRun, loadCollection, loadRun, migrarRun, saveCollection, saveRun } from '@/game/storage'
 import type { Collection, GameState } from '@/game/types'
 import {
@@ -37,7 +38,9 @@ export async function carregarDoBanco(
   // anterior do vocabulário, e ela volta para o espelho local logo abaixo
   const runRemota = migrarRun<GameState>(remoto.run)
   const run = runRemota ?? loadRun<GameState>()
-  const collection = remoto.collection ?? loadCollection()
+  // o banco pode guardar a coleção no formato antigo (`equipped`): a
+  // tradução é na leitura, como a da run
+  const collection = remoto.collection ? lerColecao(remoto.collection) : loadCollection()
 
   // espelha o que veio do banco
   if (run) saveRun(run)
