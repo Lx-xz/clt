@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, CloudOff, DoorOpen, Loader, ScrollText } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, CloudOff, DoorOpen, Loader, Medal, ScrollText } from 'lucide-react'
 import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import Card from '@/components/Card'
 import ComoJogar from '@/components/ComoJogar'
@@ -40,6 +40,7 @@ import {
 } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
+import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
 import type { CardInstance, GameState } from '@/game/types'
@@ -76,6 +77,7 @@ export default function JogarPage() {
   // atravessar o jogo inteiro
   const [tutorial, setTutorial] = useState(false)
   const [historico, setHistorico] = useState(false)
+  const [conquistasNovas, setConquistasNovas] = useState<Conquista[]>([])
   /** O recibo de fim de run foi fechado para olhar a mesa como ficou. */
   const [fimFechado, setFimFechado] = useState(false)
   const tapete = useRef<HTMLDivElement>(null)
@@ -113,7 +115,17 @@ export default function JogarPage() {
     // o timer é cancelado por qualquer jogada seguinte, e era assim que uma
     // derrota sumia se o jogador clicasse em "nova run" rápido demais
     if (next.outcome !== 'jogando') {
-      void registrarRunAgora(sessao.id, next, next.outcome, sessao.convidado).then(setRegistroFalhou)
+      void registrarRunAgora(sessao.id, next, next.outcome, sessao.convidado).then((motivo) => {
+        setRegistroFalhou(motivo)
+        if (motivo) return
+        // a run chegou ao banco: é dela que as conquistas saem. O que veio
+        // de novo aparece no recibo de fim, que é a hora de comemorar
+        void conferirConquistas(sessao.id).then(async (novas) => {
+          if (novas.length === 0) return
+          const todas = await minhasConquistas(sessao.id).catch(() => null)
+          setConquistasNovas((todas ?? []).filter((c) => novas.includes(c.id)))
+        })
+      })
     }
   }
 
@@ -137,6 +149,7 @@ export default function JogarPage() {
     clearRun()
     setAberta(null)
     setFimFechado(false)
+    setConquistasNovas([])
     update(createRun(loadCollection().equipped))
   }
 
@@ -595,6 +608,19 @@ export default function JogarPage() {
               <span className={styles.passoVal}>R$ {state.money}</span>
             </li>
           </ol>
+          {conquistasNovas.length > 0 ? (
+            <ul className={styles.conquistasNovas}>
+              {conquistasNovas.map((c) => (
+                <li key={c.id}>
+                  <Medal size={16} aria-hidden />
+                  <span>
+                    <b>Conquista: {c.nome}</b>
+                    {c.descricao}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {registroFalhou ? (
             <div className={styles.painelAviso}>
               <p>

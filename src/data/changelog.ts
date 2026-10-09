@@ -23,10 +23,8 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
-  'Conquistas: um punhado de objetivos para perseguir além de ganhar o mês.',
   'Rebalancear: a medição com 1000 partidas simuladas mostrou 98% de burnout, quase sempre na primeira semana — o jogo está mais duro do que deveria.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
-  'O avatar aparecendo também no ranking e nos feedbacks.',
   'Recompensa para quem manda bom feedback — a nota que o admin dá já está virando pontos.',
   'Notificação de verdade (e-mail ou aviso no aparelho) quando o seu relato mudar de estado.',
   'Rebalancear o jogo depois do Embalo, em especial as cartas de grana — a medição já mostrou que o despejo quase não acontece e que o embalo de grana é caro demais para sair.',
@@ -35,6 +33,24 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.14',
+    data: '2026-10-09',
+    titulo: 'Um início de verdade, amigos e conquistas',
+    itens: [
+      { tipo: 'novo', texto: 'Tela inicial nova: o seu avatar, um botão grande de continuar a partida (dizendo em que dia ela parou), a última partida e os atalhos — com a barra lateral desde o primeiro minuto. Entrar e criar conta ficaram na porta, em /auth.' },
+      { tipo: 'novo', texto: 'Amigos: peça amizade no perfil de qualquer pessoa, aceite no seu perfil ou no início, e filtre o ranking só pelos amigos.' },
+      { tipo: 'novo', texto: 'Oito conquistas, do "Sobreviveu à primeira semana" ao "Nem chegou a terça". As que faltam aparecem apagadas no seu perfil, e a partida que destrava uma avisa no recibo de fim.' },
+      { tipo: 'novo', texto: 'Dá para abrir as partidas de outras pessoas e ver, dia a dia, as cartas que elas jogaram.' },
+      { tipo: 'melhor', texto: 'O histórico da partida mostra as CARTAS — o evento, as jogadas numeradas na ordem e as que sobraram na mão —, e não mais só frases. O replay usa o mesmo desenho.' },
+      { tipo: 'melhor', texto: 'A sexta, a recompensa e o fim da partida viraram notas fiscais; o resto dos popups, pranchetas.' },
+      { tipo: 'melhor', texto: 'Sair e pedir demissão confirmam com um segundo clique, sem popup. "Reiniciar run" virou "Pedir demissão", dentro da mesa. Sair mora nas Configurações.' },
+      { tipo: 'melhor', texto: 'O avatar da mesa virou um crachá no canto do tapete, grande o bastante para ver a cara mudar no celular.' },
+      { tipo: 'melhor', texto: 'O avatar aparece no ranking e ao lado dos relatos.' },
+      { tipo: 'melhor', texto: 'Editor do avatar: voltar, salvar, sortear e as abas ficam presos no topo; a barba ganhou cor própria; sair sem salvar avisa.' },
+      { tipo: 'correcao', texto: 'O fim da partida travava a barra lateral: só dava para sair começando outra run.' },
+    ],
+  },
   {
     versao: '0.13',
     data: '2026-09-30',

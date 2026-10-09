@@ -1,5 +1,6 @@
 import type { Regras } from '@/game/regras'
 import type { CartaSnapshot, DayLog, LinhaDoLog } from '@/game/types'
+import { faltaFuncao } from './jogadores'
 import { supabase } from './supabase'
 
 /**
@@ -29,6 +30,8 @@ export async function buscarEstatisticasGerais(): Promise<EstatisticasGerais> {
 
 export interface LinhaRanking {
   nick: string
+  /** Desde a v0.14. Banco antigo não manda, e `lerAvatar` cai no manequim. */
+  avatar?: unknown
   vitorias: number
   derrotas: number
   total_runs: number
@@ -83,6 +86,23 @@ export async function buscarDetalheDoJogo(runId: number, playerId: string): Prom
     .maybeSingle()
   if (error) throw new Error(error.message)
   return (data as DetalheDoJogo) ?? null
+}
+
+/** O replay de outra pessoa: o mesmo dia-a-dia, mais quem jogou. Null quando
+ *  a run não abre (largada no meio, não guardada) ou o banco é antigo. */
+export interface JogoPublico extends DetalheDoJogo {
+  nick: string
+  avatar: unknown
+}
+
+export async function buscarJogoPublico(runId: number): Promise<JogoPublico | null> {
+  if (!supabase) throw new Error('Banco não configurado.')
+  const { data, error } = await supabase.rpc('jogo_publico', { p_run_id: runId }).maybeSingle()
+  if (error) {
+    if (faltaFuncao(error)) return null
+    throw new Error(error.message)
+  }
+  return (data as JogoPublico) ?? null
 }
 
 // ------------------------------------------------------ estatísticas nerds

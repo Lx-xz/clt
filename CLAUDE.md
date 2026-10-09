@@ -37,15 +37,16 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 
 | Rota | O que é |
 |---|---|
-| `/` | Entrada: entrar, criar conta (e-mail/senha ou Google), ou jogar como convidado. Também abre o popup "Como jogar" |
+| `/auth` | A porta: entrar, criar conta (e-mail/senha ou Google), ou jogar como convidado. Fora de `(app)`; quem já tem sessão é mandado para `/` |
+| `/` | O início, dentro de `(app)`: avatar, "Continuar — semana 2, quarta" (ou "Começar o mês"), a última partida, amigos, conquistas recentes e atalhos |
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
 | `/ranking` | Placar público. O nick leva ao perfil daquela pessoa. No celular a linha mostra só nick/V/D e abre no toque com o resto |
-| `/perfil` | O seu: avatar, posição no ranking, dados, **suas partidas** e o botão de sair |
+| `/perfil` | O seu: avatar, posição no ranking, dados, amigos e pedidos, conquistas e **suas partidas**. Sair NÃO mora aqui: mora em Configurações |
 | `/perfil/editar` | O editor do avatar |
-| `/jogador?nick=` | O perfil de outra pessoa: avatar, placar e partidas. **Sem nome, e-mail ou pontos** |
-| `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run. Chega-se clicando numa partida no seu perfil |
+| `/jogador?nick=` | O perfil de outra pessoa: avatar, placar, o botão de amizade, conquistas e partidas (que abrem o replay). **Sem nome, e-mail ou pontos** |
+| `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
 | `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` | A oficina. **Só admin**, pelo layout de `/lab` |
@@ -98,10 +99,14 @@ src/data/     tudo que fala com o Supabase
   changelog.ts  o histórico de versões, escrito à mão
   cartas.ts     o catálogo do lado do banco: tradução, carga e as RPCs de admin
   balanceamento.ts  as perguntas que a interface faz sobre versões de carta
+  amizades.ts   pedir, aceitar, desfazer, listar
+  conquistas.ts conferir depois de uma run, e listar
+  pendencias.ts "há algo por salvar?" — quem navega pergunta antes
 src/components/  Card, CardDetail, Medidor, SideNav, SessaoGuard, Dialogo,
                  ComoJogar, icons
 src/app/
-  page.tsx           entrada: entrar, cadastrar, Google ou convidado
+  auth/              a porta: entrar, cadastrar, Google ou convidado
+  (app)/page.tsx     o início de quem já entrou
   termos/            termos de uso, fora da guarda de sessão
   (app)/layout.tsx   guarda de sessão + barra lateral
   (app)/jogar/       a mesa
@@ -428,11 +433,23 @@ opções. O que ele escolheu, e que deve ser preservado:
   arraste que começa em cima de uma carta (`[data-carta]`) é ignorado, porque a
   carta já usa esse mesmo gesto para ser jogada — sem essa exclusão, jogar uma
   carta no celular abriria o menu.
-  Muda de página fecha o gaveteiro sozinho. "Reiniciar run" mora aqui agora,
-  com confirmação — saiu do HUD da mesa. No fim da barra ficam "Lab" (só
-  admin), "Perfil", "Avisos" (o sininho, escondido para convidado),
-  "Configurações" e "Sair" (com confirmação, e com texto diferente para
-  convidado, que perde o progresso ao sair).
+  Muda de página fecha o gaveteiro sozinho. Os links vêm em dois grupos
+  separados por um fio — o JOGO (Início, Jogar, Baralho) e a GENTE (Ranking,
+  Comunidade) —, o "Jogar" ganha um ponto quando há run em andamento, e o
+  "Perfil" é desenhado com o avatar de quem está jogando. No fim da barra
+  ficam "Lab" (só admin), "Perfil", "Avisos" (o sininho, escondido para
+  convidado) e "Configurações".
+  **"Reiniciar run" e "Sair" saíram da barra (v0.14).** Reiniciar virou
+  "Pedir demissão", dentro da mesa, que é onde a vontade de desistir
+  aparece; Sair foi para o fim das Configurações — na barra ele ficava a um
+  clique errado de distância, e estava repetido no fim do perfil. Os dois
+  confirmam com o segundo clique (`BotaoConfirmar`, abaixo).
+  **Nada de barra inferior no celular** — foi proposta e recusada pelo
+  autor. A porta continua sendo o arraste, e o início tem tudo à mão.
+  **Sair com coisa por salvar avisa.** A barra pergunta a
+  `src/data/pendencias.ts` antes de navegar, e abre um `Dialogo` se a página
+  marcou pendência (hoje só o editor do avatar). Não existe "antes de sair
+  da rota" no App Router: é por isso que quem navega pergunta.
   **O menu encolheu de propósito:** "Meus jogos" virou parte do perfil (o
   seu e o dos outros), e Análise/Feedbacks/Novidades viraram abas de
   `/comunidade` — eram três entradas para o mesmo assunto, "o que está
@@ -452,6 +469,27 @@ opções. O que ele escolheu, e que deve ser preservado:
   `<html>` (a regra que congela a rolagem está em `shell.module.sass`). Não
   escreva popup novo à mão: os três que existiam antes erravam cada um uma
   dessas coisas. `largo` só muda a largura.
+  - **Dois papéis, por assunto (`estilo`):** `nota` (nota fiscal: estreita,
+    fonte mono, serrilha por `mask`) para dinheiro e resultado — a sexta, a
+    recompensa, o fim de run —, e `prancheta` (padrão: borda de papelão e a
+    presilha em `::before`) para o resto. A serrilha é máscara, e máscara
+    corta a `box-shadow` do próprio elemento: por isso a sombra mora num
+    invólucro (`.moldura`) com `filter: drop-shadow`.
+  - **`semTravarNav`** é o popup da MESA: não marca `data-popup` e a cortina
+    começa depois da barra recolhida (`left: 62px`, `z-index` abaixo da
+    barra). Foi o que consertou o fim de run que prendia o jogador — antes o
+    painel cobria a barra e só "Nova run" tirava dali.
+  - **Sem `onFechar` não fecha** (nem X, nem fora, nem Esc): é a sexta e a
+    recompensa, que pedem decisão.
+- **Ação destrutiva confirma com o segundo clique** (`BotaoConfirmar.tsx`),
+  não com popup: o primeiro clique arma (texto troca, fica vermelho, treme),
+  o segundo executa, e ele desarma sozinho em 3 s ou quando perde o foco. O
+  estado armado vai para o leitor de tela por `aria-live`. Vale para Sair,
+  Pedir demissão, desfazer amizade e o "voltar" do editor com alteração.
+- **O avatar da mesa é um crachá no canto do tapete** (`.cracha`), 56 px no
+  celular e 72 no desktop, abaixo das cartas jogadas no `z-index`. Morava no
+  header com 24 px e no celular não dava para ver a cara mudar. A `key` pelo
+  humor remonta o crachá quando a cara troca, e é isso que dispara o balanço.
 - **HUD do celular:** header colado nas bordas, dia à esquerda e nick à
   direita, "Próx. dia" ancorado abaixo do header, status de sync vira ícone
   (girando / check / sem conexão) em vez de texto. Baralho e descarte somem da
@@ -477,10 +515,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   num `jsonb`; o SVG é montado na hora. Trocar de avatar é um `update` numa
   linha, o desenho é nítido em qualquer tamanho, e não existe imagem imprópria
   para moderar porque ninguém sobe imagem. Ele aparece no perfil, em
-  `/jogador` e na mesa. **No ranking e nos relatos, ainda não:** `ranking()` e
-  as funções de feedback não devolvem o avatar, e pôr ali exige mudar o
-  `schema.sql` (o que traz as conquistas junto) e estender o `ranking()` a uma
-  coluna nova — que a regra de segurança abaixo proíbe sem decisão do autor.
+  `/jogador`, na mesa, no ranking, ao lado dos relatos e na lista de amigos.
+  O ranking e os relatos vieram na v0.14, com a decisão do autor de estender
+  `ranking()` a essa coluna (veja "Banco").
   - **A receita não tem gênero (v0.13).** Era `corpo: homem | mulher`, e o
     corpo decidia o rosto e a gola. O cadastro já tinha parado de perguntar
     gênero na v0.8, por ser dado pessoal, e o editor continuava perguntando.
@@ -492,7 +529,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   - **O avatar sente o estresse.** `humor` é uma camada por cima do rosto, não
     peça da receita: `humorDoEstresse()` escolhe a cara em FRAÇÕES do estresse
     máximo (olheira, suor, lágrima no 9, olhos em X no burnout). A mesa o
-    mostra ao lado do nick e no painel de fim; o perfil mostra sem humor. É o
+    mostra no crachá e no recibo de fim; o início, com o humor da run salva; o perfil mostra sem humor. É o
     medidor de estresse com cara — a conta `Energia = 10 − Estresse` só existia
     em texto antes dele.
   - **O fundo e a borda são CSS, não SVG.** Eram um `rect` dentro de um
@@ -597,8 +634,12 @@ opções. O que ele escolheu, e que deve ser preservado:
   timer do `DescarteNaMesa`, e num canto diferente porque o Foco Total dispara
   os dois na mesma jogada). E o botão **Histórico**, ao lado do "Como jogar",
   abre a run inteira agrupada por dia (`HistoricoDaRun.tsx`) — dia mais novo em
-  cima, linhas na ordem em que aconteceram, e os números do `DayLog` nos dias já
-  fechados. Ele aparece em TODA fase, inclusive depois da derrota: é aí que se
+  cima, com as CARTAS desenhadas (o evento, as jogadas numeradas na ordem, as
+  que sobraram na mão) e os números do `DayLog` numa fita de caixa; as frases
+  do `log` ficam recolhidas em "detalhes". A peça é `LinhaDoTempo.tsx`, a
+  MESMA do replay: as duas telas contavam a mesma história de jeitos
+  diferentes. As cartas saem do retrato da run (`cartaParaMostrar`), e o
+  `log` passou a subir em `runs.details.log` para o replay também tê-lo. Ele aparece em TODA fase, inclusive depois da derrota: é aí que se
   quer ler o que aconteceu. Os dois botões do canto esquerdo vivem num
   invólucro (`.cantoEsquerdo`) — com cada um preso em `left` por conta própria,
   o segundo precisaria de uma conta à mão.
@@ -658,7 +699,8 @@ Não encurte os textos em `cards.ts` por causa de espaço.
 
 **Sair (ou entrar como convidado) limpa o localStorage do jogo.**
 `limparLocalDoJogo()` (`storage.ts`) + `cancelarSync()` (`sync.ts`) rodam ao
-sair, na home e no perfil, e também ao entrar como convidado. Sem isso o save
+sair (nas Configurações e no "falta o nick" de `/auth`), e também ao entrar
+como convidado. Sem isso o save
 de um jogador vazava para o próximo que entrasse no mesmo navegador — o
 espelho local não sabe de quem é.
 
@@ -865,11 +907,14 @@ em vez de fingir que deu certo. Para testar rápido, desligue a confirmação em
 Authentication > Providers > Email.
 
 **O endereço de volta do Google precisa estar na lista do Supabase.**
-`redirectTo` é `window.location.origin + window.location.pathname` — a própria
-home, com o `/clt` do GitHub Pages incluso, sem remontar basePath à mão. Só que
-o Supabase recusa qualquer redirect que não esteja em Authentication > URL
-Configuration > Redirect URLs, e o sintoma é voltar para o site errado, sem
-erro nenhum. `localhost:3000/` e `lx-xz.github.io/clt/` precisam estar lá.
+`enderecoDeVolta()` (`conta.ts`) monta `<raiz>/auth/` — a raiz é o endereço
+atual sem o `auth/` do fim, com o `/clt` do GitHub Pages incluso, sem remontar
+basePath à mão. Só que o Supabase recusa qualquer redirect que não esteja em
+Authentication > URL Configuration > Redirect URLs, e o sintoma é voltar para
+o site errado, sem erro nenhum. **Desde a v0.14 a porta é `/auth`:**
+`localhost:3000/auth/` e `lx-xz.github.io/clt/auth/` precisam estar lá (além
+dos de `nova-senha/`). Mudar a rota da porta sem mexer na lista quebra o
+login do Google em silêncio.
 
 **Coluna nova e o cache do PostgREST.** A API que a `supabase-js` chama
 guarda o formato das tabelas em cache. Logo depois de um `alter table add
@@ -918,6 +963,8 @@ SQL Editor do projeto.
 | `cartas_antigas` | versões anteriores E cartas removidas, com `o_que` e `porque` de cada mudança |
 | `baralho` | uma linha só: a versão do baralho, que sobe a cada mudança de carta |
 | `modos` | os NÚMEROS do jogo: aluguel, cota, salário, energia base. Hoje só o `normal` |
+| `amizades` | um pedido por linha (`de`, `para`, `estado`). Recusar e desfazer apagam |
+| `conquistas` · `conquistas_do_jogador` | a lista (populada pelo próprio `schema.sql`) e quem ganhou o quê. `premio` é para os cosméticos de depois |
 
 Para apagar tudo e recomeçar do zero existe [`supabase/reset.sql`](supabase/reset.sql)
 — ele derruba as tabelas **e as contas do Auth**, e não tem desfazer.
@@ -1026,6 +1073,16 @@ Decisões de segurança que não devem ser desfeitas:
   navegador: virar admin é um `update` no banco, não uma ação do site, e o
   espelho local pode estar velho. O selo "modo admin" no título existe para
   isso ser visível — se ele não aparece, a conta não é admin, ponto.
+- **`amizades`, `conquistas` e `conquistas_do_jogador` seguem a mesma regra**
+  de `feedbacks`: sem política nem grant. `pedir_amizade()` confere
+  `auth.uid()` e recusa convidado (não há conta para receber o aviso); um
+  pedido de volta vira aceite, nunca uma segunda linha; recusar e desfazer
+  APAGAM a linha. O pedido e o aceite geram linha em `notificacoes`, e o
+  sininho os mostra. `conferir_conquistas(p_player_id)` recebe o id porque o
+  convidado não tem `auth.uid()` — o pior que alguém faz chamando com o id de
+  outra pessoa é dar a ela a conquista que os números dela já davam. Ela é
+  idempotente pela chave primária e lê só `runs` e `saves.collection`:
+  nenhum contador novo no motor.
 - **`feedbacks`, `feedback_comentarios` e `notificacoes` também não têm
   política nem grant.** Tudo passa por função `security definer` que confere
   `auth.uid()` por dentro: `criar_feedback` recusa quem não tem conta,
@@ -1041,16 +1098,22 @@ Decisões de segurança que não devem ser desfeitas:
 - **`runs` só aceita `insert` direto.** Toda leitura agregada ou por jogador
   passa por função `security definer`, nunca por `select` cru:
   - `estatisticas_gerais()` — agregados globais, usada por `/analytics`.
-  - `ranking()` — nick + vitórias/derrotas de todo mundo, usada por
+  - `ranking()` — nick, avatar e vitórias/derrotas de todo mundo, usada por
     `/ranking`. **Exceção deliberada:** esta função expõe o `nick` de todo
     jogador publicamente. É intencional — o nick já não protegia nada (não é
     senha, é só identificação) e virar uma lista pública é o que a rota
-    pede. Não estenda esse padrão para expor qualquer outra coluna.
+    pede. **O avatar entrou na v0.14 por decisão explícita do autor** (ele já
+    era público pelo `perfil_publico()`). Não estenda esse padrão para expor
+    qualquer outra coluna.
   - `meus_jogos(p_player_id)` — runs de um jogador específico, usada por
     `/meus-jogos`.
   - `jogo_detalhe(p_run_id, p_player_id)` — uma run específica, checando que
     pertence ao `p_player_id` informado (devolve vazio se não pertencer),
     usada por `/meus-jogos/detalhe`.
+  - `jogo_publico(p_run_id)` — o replay de outra pessoa: o `details`, mais o
+    nick e o avatar do dono. **Nunca** o `player_id`, o nome ou o e-mail, e
+    não abre run largada (`abandono`) nem run não guardada. Pelo mesmo motivo
+    `jogos_do_jogador()` deixou de listar abandono para os outros.
   Nenhuma delas dá `grant select` em `players` ou `runs` para `anon` — o
   acesso continua só pela função.
 
@@ -1157,24 +1220,20 @@ e a um bot diferente — não compare os dois.
   baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
   isso não acontece, editar carta é impossível (o botão fica desligado) e o
   jogo funciona normalmente — é o estado intencional, não um bug.
-- **Conquistas.** Pedido do autor, e combinado para entrar **junto com a
-  próxima mexida no `schema.sql`** — não vale abrir uma migração só para isso,
-  e não vale deixar passar a próxima. O esqueleto: uma tabela `conquistas`
-  (id, nome, descrição, como se ganha) e uma `conquistas_do_jogador`
-  (jogador, conquista, quando), com a checagem saindo de `runs.details`, que
-  já guarda o dia-a-dia — do mesmo jeito que `cartas_fatais()` e
-  `estatisticas_nerds()` saem de lá, sem contador novo no motor.
+- **Rodar o `schema.sql` da v0.14 em produção** e acrescentar `/auth/` nas
+  Redirect URLs do Supabase (veja a armadilha do Google). Até lá o site
+  funciona: amigos, conquistas e o replay alheio somem em silêncio
+  (`faltaFuncao()` em `jogadores.ts`) em vez de quebrar a página.
 
 - **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica.tsx`,
   `public/som/`), com os dois volumes em `src/data/som.ts`. Falta o resto: um
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,
   derrota). Quando entrarem, o volume deles é mais um multiplicador em
   `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
-- **Avatar no ranking e nos relatos, e cosméticos desbloqueáveis.** Vão
-  juntos com a migração das conquistas: os dois exigem `schema.sql`, e o
-  ranking exige a decisão do autor de estender `ranking()` ao avatar. Os
-  pontos de feedback e as conquistas comprando acessórios (crachá, caneca,
-  óculos da firma) resolvem a pendência "o que se compra com os pontos".
+- **Cosméticos desbloqueáveis.** `conquistas.premio` já existe, nulo: é
+  onde o acessório que a conquista destrava (crachá, caneca, óculos da
+  firma) vai morar. Junto com os pontos de feedback, resolve a pendência "o
+  que se compra com os pontos".
 - **Espiral visível e o jogo duro de propósito.** Decidido: meta de 10–20% de
   vitória para o bot mediano — e, por isso mesmo, junto com o que torna a
   espiral LEGÍVEL: o `+2` de estresse por cota perdida virando regra de

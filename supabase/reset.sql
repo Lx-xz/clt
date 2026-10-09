@@ -11,6 +11,9 @@ drop trigger if exists ao_criar_usuario on auth.users;
 
 -- ------------------------------------------------------------- tabelas
 -- cascade leva junto as políticas, os índices e as funções que dependem
+drop table if exists public.conquistas_do_jogador cascade;
+drop table if exists public.conquistas           cascade;
+drop table if exists public.amizades             cascade;
 drop table if exists public.cartas_antigas       cascade;
 drop table if exists public.cartas_evento        cascade;
 drop table if exists public.cartas               cascade;
@@ -53,6 +56,16 @@ drop function if exists public.editar_feedback(bigint, text, text, text);
 drop function if exists public.excluir_feedback(bigint);
 drop function if exists public.comentar_feedback(bigint, text);
 drop function if exists public.admin_atualizar_feedback(bigint, text, text, smallint);
+drop function if exists public.jogo_publico(bigint);
+drop function if exists public.pedir_amizade(text);
+drop function if exists public.responder_amizade(text, boolean);
+drop function if exists public.desfazer_amizade(text);
+drop function if exists public.amizade_com(text);
+drop function if exists public.meus_amigos();
+drop function if exists public.pedidos_de_amizade();
+drop function if exists public.conferir_conquistas(uuid);
+drop function if exists public.minhas_conquistas(uuid);
+drop function if exists public.conquistas_publicas(text);
 drop function if exists public.minhas_notificacoes();
 drop function if exists public.marcar_notificacoes_lidas();
 

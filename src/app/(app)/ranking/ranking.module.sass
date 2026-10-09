@@ -102,6 +102,20 @@
 // no desktop as colunas todas estão à vista: nada de seta, nada de expandir.
 // Estas três regras precisam vir ANTES da media query — mesma especificidade,
 // então quem vier por último ganha, media query ou não.
+.filtro
+  max-width: 320px
+  margin-bottom: 14px
+
+// a célula continua célula (flex numa <td> desmancha a tabela): o avatar vai
+// em linha, centrado na altura do texto
+.jogador
+  white-space: nowrap
+
+.avatar
+  display: inline-block !important
+  margin-right: 8px
+  vertical-align: middle
+
 .seta
   display: none
 

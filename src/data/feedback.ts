@@ -78,6 +78,8 @@ export interface Feedback {
   criado_em: string
   atualizado_em: string
   autor_nick: string
+  /** Desde a v0.14; banco antigo não manda e o desenho cai no manequim. */
+  autor_avatar?: unknown
   comentarios: number
   meu: boolean
 }
@@ -88,6 +90,7 @@ export interface Comentario {
   de_admin: boolean
   criado_em: string
   autor_nick: string
+  autor_avatar?: unknown
   meu: boolean
 }
 

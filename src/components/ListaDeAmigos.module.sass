@@ -1,0 +1,51 @@
+.lista
+  display: flex
+  flex-direction: column
+  gap: 6px
+
+.linha
+  display: flex
+  align-items: center
+  gap: 10px
+  padding: 8px 10px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+
+.pedido
+  border-color: var(--destaque)
+
+.quem
+  display: flex
+  flex: 1
+  flex-direction: column
+  gap: 1px
+  min-width: 0
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+  a:first-child
+    overflow: hidden
+    color: var(--tinta)
+    font-size: 14px
+    font-weight: 600
+    text-decoration: none
+    text-overflow: ellipsis
+    white-space: nowrap
+
+    &:hover
+      text-decoration: underline
+
+.ultima
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  text-decoration: none
+
+  &:hover
+    color: var(--tinta)
+    text-decoration: underline
+
+.botoes
+  display: flex
+  flex-wrap: wrap
+  gap: 6px

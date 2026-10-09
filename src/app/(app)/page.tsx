@@ -5,8 +5,12 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import ComoJogar from '@/components/ComoJogar'
+import Conquistas from '@/components/Conquistas'
+import ListaDeAmigos from '@/components/ListaDeAmigos'
 import { useSessao } from '@/components/SessaoGuard'
+import { meusAmigos, pedidosDeAmizade, type Amigo, type Pedido } from '@/data/amizades'
 import { buscarMeusJogos, buscarRanking } from '@/data/analytics'
+import { minhasConquistas, type Conquista } from '@/data/conquistas'
 import type { JogoResumo } from '@/data/jogadores'
 import { dayLabel } from '@/game/engine'
 import { loadCollection, loadRun } from '@/game/storage'
@@ -41,6 +45,30 @@ export default function InicioPage() {
   const [posicao, setPosicao] = useState<{ lugar: number; total: number } | null>(null)
   const [novas, setNovas] = useState(0)
   const [tutorial, setTutorial] = useState(false)
+  const [amigos, setAmigos] = useState<Amigo[] | null>(null)
+  const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [recentes, setRecentes] = useState<Conquista[]>([])
+
+  function carregarAmigos() {
+    if (sessao.convidado) return
+    void meusAmigos().then(setAmigos).catch(() => setAmigos(null))
+    void pedidosDeAmizade().then(setPedidos).catch(() => {})
+  }
+
+  useEffect(carregarAmigos, [sessao.convidado])
+  // as três últimas ganhas — a lista inteira, com as que faltam, é do perfil
+  useEffect(() => {
+    void minhasConquistas(sessao.id)
+      .then((lista) =>
+        setRecentes(
+          (lista ?? [])
+            .filter((c) => c.ganha_em)
+            .sort((a, b) => (b.ganha_em ?? '').localeCompare(a.ganha_em ?? ''))
+            .slice(0, 3),
+        ),
+      )
+      .catch(() => {})
+  }, [sessao.id])
 
   // o save e a coleção moram no espelho local; ler na montagem evita a
   // divergência entre o HTML do build e o primeiro render no navegador
@@ -138,6 +166,22 @@ export default function InicioPage() {
             </Link>
           ) : null}
         </section>
+
+        {amigos !== null && (amigos.length > 0 || pedidos.length > 0) ? (
+          <section className={styles.bloco}>
+            <h2 className={styles.titulo}>Amigos</h2>
+            <ListaDeAmigos amigos={amigos} pedidos={pedidos} aoMudar={carregarAmigos} limite={4} />
+          </section>
+        ) : null}
+
+        {recentes.length > 0 ? (
+          <section className={styles.bloco}>
+            <h2 className={styles.titulo}>
+              Conquistas · <Link href="/perfil">ver todas</Link>
+            </h2>
+            <Conquistas lista={recentes} />
+          </section>
+        ) : null}
 
         <nav className={styles.atalhos} aria-label="Atalhos">
           <Link className={styles.atalho} href="/baralho">

@@ -180,6 +180,64 @@ create table if not exists public.notificacoes (
 
 create index if not exists notificacoes_dono_idx on public.notificacoes (destinatario_id, lida_em);
 
+-- ------------------------------------------------------------- amizades
+-- Uma linha por pedido: `de` pediu, `para` recebe. Aceitar vira o estado, e
+-- recusar ou desfazer APAGA a linha — amizade desfeita não é histórico que
+-- alguém precise ler. O par é único nos dois sentidos, mas isso quem garante
+-- é `pedir_amizade()`: se o outro lado já tinha pedido, o pedido de volta é
+-- um aceite, e não uma segunda linha.
+--
+-- Convidado não entra: ele não tem conta para receber o aviso, e o perfil
+-- dele some quando ele sai.
+create table if not exists public.amizades (
+  de        uuid not null references public.players (id) on delete cascade,
+  para      uuid not null references public.players (id) on delete cascade,
+  estado    text not null default 'pendente' check (estado in ('pendente', 'aceita')),
+  criada_em timestamptz not null default now(),
+  aceita_em timestamptz,
+  primary key (de, para),
+  check (de <> para)
+);
+
+create index if not exists amizades_para_idx on public.amizades (para, estado);
+
+-- ------------------------------------------------------------- conquistas
+-- O que existe para ganhar, e quem ganhou o quê. A lista mora aqui (e não no
+-- site) porque é o banco quem confere: a checagem sai de `runs.details` e das
+-- colunas de `runs`, do mesmo jeito que `cartas_fatais()` — nenhum contador
+-- novo no motor. `premio` fica nulo por enquanto: é onde o cosmético que a
+-- conquista destrava (um crachá, uma caneca) vai morar, sem migração nova.
+create table if not exists public.conquistas (
+  id        text primary key,
+  nome      text not null,
+  descricao text not null,
+  icone     text not null,
+  ordem     smallint not null default 0,
+  premio    text
+);
+
+create table if not exists public.conquistas_do_jogador (
+  player_id   uuid not null references public.players (id) on delete cascade,
+  conquista   text not null references public.conquistas (id) on delete cascade,
+  run_id      bigint references public.runs (id) on delete set null,
+  ganha_em    timestamptz not null default now(),
+  primary key (player_id, conquista)
+);
+
+-- a lista em si: rodar o arquivo de novo atualiza o texto sem perder quem
+-- já ganhou
+insert into public.conquistas (id, nome, descricao, icone, ordem) values
+  ('primeira-semana', 'Sobreviveu à primeira semana', 'Chegar à semana 2 de algum mês.', 'calendar', 1),
+  ('mes-fechado',     'Mês fechado',                  'Chegar ao fim das quatro semanas empregado e com as contas pagas.', 'trophy', 2),
+  ('ficha-limpa',     'Ficha limpa',                  'Fechar um mês sem nenhuma advertência.', 'shield', 3),
+  ('zen',             'Zen',                          'Fechar um mês com o estresse em 3 ou menos.', 'leaf', 4),
+  ('embalo',          'No embalo',                    'Jogar 4 cartas seguidas da mesma classe num dia.', 'flame', 5),
+  ('rico',            'Pé-de-meia',                   'Terminar uma partida com R$ 1.000 ou mais.', 'piggy', 6),
+  ('segunda-feira',   'Nem chegou a terça',           'Ter um burnout logo no primeiro dia.', 'skull', 7),
+  ('colecionador',    'Colecionador',                 'Ter 12 cartas diferentes na coleção.', 'layers', 8)
+on conflict (id) do update
+  set nome = excluded.nome, descricao = excluded.descricao, icone = excluded.icone, ordem = excluded.ordem;
+
 -- ------------------------------------------------------------- o catálogo
 -- As cartas saíram do código e vieram para cá. O que torna isso seguro é que
 -- NADA é apagado de verdade: excluir uma carta é `ativa = false` mais uma
@@ -340,6 +398,9 @@ alter table public.cartas_evento        enable row level security;
 alter table public.cartas_antigas       enable row level security;
 alter table public.baralho              enable row level security;
 alter table public.modos                enable row level security;
+alter table public.amizades             enable row level security;
+alter table public.conquistas           enable row level security;
+alter table public.conquistas_do_jogador enable row level security;
 
 -- As quatro tabelas do catálogo entram na mesma regra: nenhuma política.
 -- Ler o catálogo é público (todo mundo precisa das cartas para jogar, e
@@ -451,6 +512,16 @@ drop function if exists public.admin_semear_catalogo(jsonb, jsonb, jsonb);
 drop function if exists public.admin_salvar_modo(jsonb, text, text);
 drop function if exists public.minhas_notificacoes();
 drop function if exists public.marcar_notificacoes_lidas();
+drop function if exists public.jogo_publico(bigint);
+drop function if exists public.pedir_amizade(text);
+drop function if exists public.responder_amizade(text, boolean);
+drop function if exists public.desfazer_amizade(text);
+drop function if exists public.amizade_com(text);
+drop function if exists public.meus_amigos();
+drop function if exists public.pedidos_de_amizade();
+drop function if exists public.conferir_conquistas(uuid);
+drop function if exists public.minhas_conquistas(uuid);
+drop function if exists public.conquistas_publicas(text);
 
 -- O perfil nasce junto com a conta. Fazer isso por gatilho, e não pelo
 -- site, garante que nunca exista conta sem perfil — nem se o navegador
@@ -839,9 +910,13 @@ $$;
 grant execute on function public.estatisticas_nerds() to anon, authenticated;
 
 -- placar público: só quem já terminou pelo menos uma run aparece
+-- O avatar entrou na v0.14, por decisão do autor: ele já era público pelo
+-- `perfil_publico()`, e o ranking só passou a desenhá-lo. É a ÚNICA coluna
+-- acrescentada a esta exceção — nome, e-mail e pontos continuam fora.
 create or replace function public.ranking()
 returns table (
   nick            text,
+  avatar          jsonb,
   vitorias        bigint,
   derrotas        bigint,
   total_runs      bigint,
@@ -854,6 +929,7 @@ set search_path = public, pg_temp
 as $$
   select
     p.nick,
+    p.avatar,
     count(*) filter (where r.outcome = 'vitoria')  as vitorias,
     count(*) filter (where r.outcome <> 'vitoria') as derrotas,
     count(*)                                       as total_runs,
@@ -865,7 +941,7 @@ as $$
   -- derrota, e a run que o jogador pediu para não guardar não aparece
   -- quem entrou pelo Google e ainda não escolheu nick não tem o que mostrar
   where r.visivel and r.outcome <> 'abandono' and p.nick is not null
-  group by p.nick
+  group by p.nick, p.avatar
   order by vitorias desc, total_runs desc;
 $$;
 
@@ -934,7 +1010,9 @@ $$;
 grant execute on function public.perfil_publico(text) to anon, authenticated;
 
 -- as partidas guardadas de um jogador, por nick. Mesma regra de visibilidade
--- de `meus_jogos`: run largada sem permissão não aparece para ninguém.
+-- de `meus_jogos`: run largada sem permissão não aparece para ninguém. E a
+-- partida da qual a pessoa pediu demissão (abandono) fica só no perfil dela:
+-- desde a v0.14 a lista abre o replay, e `jogo_publico()` não abre abandono
 create function public.jogos_do_jogador(p_nick text)
 returns table (
   id           bigint,
@@ -952,7 +1030,7 @@ as $$
   select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached
   from public.runs r
   join public.players p on p.id = r.player_id
-  where p.nick = lower(trim(p_nick)) and r.visivel
+  where p.nick = lower(trim(p_nick)) and r.visivel and r.outcome <> 'abandono'
   order by r.ended_at desc
   limit 200;
 $$;
@@ -1013,6 +1091,7 @@ returns table (
   criado_em     timestamptz,
   atualizado_em timestamptz,
   autor_nick    text,
+  autor_avatar  jsonb,
   comentarios   bigint,
   meu           boolean
 )
@@ -1025,6 +1104,7 @@ as $$
     f.id, f.tipo, f.titulo, f.corpo, f.status, f.urgencia, f.nota, f.pagina,
     f.criado_em, f.atualizado_em,
     coalesce(p.nick, 'anônimo')                       as autor_nick,
+    p.avatar                                          as autor_avatar,
     (select count(*) from public.feedback_comentarios c where c.feedback_id = f.id) as comentarios,
     f.autor_id is not distinct from auth.uid()        as meu
   from public.feedbacks f
@@ -1050,6 +1130,7 @@ returns table (
   de_admin   boolean,
   criado_em  timestamptz,
   autor_nick text,
+  autor_avatar jsonb,
   meu        boolean
 )
 language sql
@@ -1060,6 +1141,7 @@ as $$
   select
     c.id, c.corpo, c.de_admin, c.criado_em,
     coalesce(p.nick, 'anônimo') as autor_nick,
+    p.avatar as autor_avatar,
     c.autor_id is not distinct from auth.uid() as meu
   from public.feedback_comentarios c
   left join public.players p on p.id = c.autor_id
@@ -1713,6 +1795,294 @@ grant execute on function public.admin_salvar_evento(jsonb, text, text)  to auth
 grant execute on function public.admin_excluir_carta(text, text, text)   to authenticated;
 grant execute on function public.admin_salvar_modo(jsonb, text, text)    to authenticated;
 grant execute on function public.admin_semear_catalogo(jsonb, jsonb, jsonb) to authenticated;
+
+-- ---------------------------------------------------- replay de outra pessoa
+-- O replay de uma partida de qualquer jogador, pelo id. Ela já aparecia na
+-- lista de `jogos_do_jogador()` — o que se abre aqui é o dia-a-dia dela, as
+-- cartas jogadas. O que NÃO sai: o player_id, o nome, o e-mail. Run largada
+-- no meio (abandono) e run que o jogador pediu para não guardar não abrem.
+create function public.jogo_publico(p_run_id bigint)
+returns table (
+  id           bigint,
+  ended_at     timestamptz,
+  outcome      text,
+  day          smallint,
+  money        integer,
+  week_reached smallint,
+  details      jsonb,
+  nick         text,
+  avatar       jsonb
+)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached, r.details, p.nick, p.avatar
+  from public.runs r
+  join public.players p on p.id = r.player_id
+  where r.id = p_run_id and r.visivel and r.outcome <> 'abandono' and p.nick is not null;
+$$;
+
+grant execute on function public.jogo_publico(bigint) to anon, authenticated;
+
+-- ------------------------------------------------------------- amizades
+-- Tudo por função, com `auth.uid()` conferido por dentro. Quem pede precisa
+-- de conta — convidado não tem como ser avisado de nada.
+
+create function public.pedir_amizade(p_nick text)
+returns text
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_eu     uuid := auth.uid();
+  v_meu    text;
+  v_outro  uuid;
+  v_conv   boolean;
+  v_estado text;
+begin
+  select nick into v_meu from public.players where id = v_eu and not convidado;
+  if v_eu is null or v_meu is null then
+    raise exception 'Crie uma conta para ter amigos.' using errcode = '42501';
+  end if;
+  select id, convidado into v_outro, v_conv from public.players where nick = lower(trim(p_nick));
+  if v_outro is null then
+    raise exception 'Ninguém com esse nick.' using errcode = '02000';
+  end if;
+  if v_outro = v_eu then
+    raise exception 'Essa pessoa é você.' using errcode = '22023';
+  end if;
+  if v_conv then
+    raise exception 'Convidado não recebe pedido de amizade.' using errcode = '22023';
+  end if;
+
+  -- o outro lado já tinha pedido: pedir de volta é aceitar
+  update public.amizades set estado = 'aceita', aceita_em = now()
+  where de = v_outro and para = v_eu and estado = 'pendente';
+  if found then
+    insert into public.notificacoes (destinatario_id, tipo, titulo)
+    values (v_outro, 'amizade_aceita', v_meu || ' aceitou seu pedido de amizade');
+    return 'aceita';
+  end if;
+
+  select estado into v_estado from public.amizades
+  where (de = v_eu and para = v_outro) or (de = v_outro and para = v_eu);
+  if v_estado is not null then
+    return v_estado;
+  end if;
+
+  insert into public.amizades (de, para) values (v_eu, v_outro);
+  insert into public.notificacoes (destinatario_id, tipo, titulo, corpo)
+  values (v_outro, 'amizade_pedido', v_meu || ' quer ser seu amigo',
+          'Aceite no seu perfil, ou no perfil de ' || v_meu || '.');
+  return 'pendente';
+end;
+$$;
+
+grant execute on function public.pedir_amizade(text) to authenticated;
+
+-- aceitar ou recusar um pedido RECEBIDO. Recusar apaga, sem avisar ninguém
+create function public.responder_amizade(p_nick text, p_aceitar boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_eu    uuid := auth.uid();
+  v_meu   text;
+  v_outro uuid;
+begin
+  select nick into v_meu from public.players where id = v_eu;
+  select id into v_outro from public.players where nick = lower(trim(p_nick));
+  if v_eu is null or v_outro is null then
+    return;
+  end if;
+  if p_aceitar then
+    update public.amizades set estado = 'aceita', aceita_em = now()
+    where de = v_outro and para = v_eu and estado = 'pendente';
+    if found then
+      insert into public.notificacoes (destinatario_id, tipo, titulo)
+      values (v_outro, 'amizade_aceita', v_meu || ' aceitou seu pedido de amizade');
+    end if;
+  else
+    delete from public.amizades where de = v_outro and para = v_eu and estado = 'pendente';
+  end if;
+end;
+$$;
+
+grant execute on function public.responder_amizade(text, boolean) to authenticated;
+
+-- desfaz nos dois sentidos, e cancela pedido enviado também
+create function public.desfazer_amizade(p_nick text)
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  delete from public.amizades a
+  using public.players o
+  where o.nick = lower(trim(p_nick))
+    and ((a.de = auth.uid() and a.para = o.id) or (a.de = o.id and a.para = auth.uid()));
+$$;
+
+grant execute on function public.desfazer_amizade(text) to authenticated;
+
+-- o estado visto de quem pergunta: é o que o botão do perfil mostra
+create function public.amizade_com(p_nick text)
+returns text
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select case
+    when auth.uid() is null then 'sem_conta'
+    when o.id = auth.uid() then 'eu'
+    when a.estado = 'aceita' then 'amigos'
+    when a.de = auth.uid() then 'enviado'
+    when a.para = auth.uid() then 'recebido'
+    else 'nenhuma'
+  end
+  from public.players o
+  left join public.amizades a
+    on (a.de = auth.uid() and a.para = o.id) or (a.de = o.id and a.para = auth.uid())
+  where o.nick = lower(trim(p_nick));
+$$;
+
+grant execute on function public.amizade_com(text) to anon, authenticated;
+
+-- os amigos, com a última partida guardada de cada um. Só nick e avatar,
+-- como em qualquer outro lugar público
+create function public.meus_amigos()
+returns table (
+  nick           text,
+  avatar         jsonb,
+  ultima_id      bigint,
+  ultima_outcome text,
+  ultima_money   integer,
+  ultima_em      timestamptz
+)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select o.nick, o.avatar, u.id, u.outcome, u.money, u.ended_at
+  from public.amizades a
+  join public.players o on o.id = case when a.de = auth.uid() then a.para else a.de end
+  left join lateral (
+    select r.id, r.outcome, r.money, r.ended_at from public.runs r
+    where r.player_id = o.id and r.visivel and r.outcome <> 'abandono'
+    order by r.ended_at desc limit 1
+  ) u on true
+  where a.estado = 'aceita' and (a.de = auth.uid() or a.para = auth.uid())
+  order by u.ended_at desc nulls last, o.nick;
+$$;
+
+grant execute on function public.meus_amigos() to authenticated;
+
+create function public.pedidos_de_amizade()
+returns table (nick text, avatar jsonb, criada_em timestamptz)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select o.nick, o.avatar, a.criada_em
+  from public.amizades a
+  join public.players o on o.id = a.de
+  where a.para = auth.uid() and a.estado = 'pendente'
+  order by a.criada_em desc;
+$$;
+
+grant execute on function public.pedidos_de_amizade() to authenticated;
+
+-- ------------------------------------------------------------- conquistas
+-- Confere TUDO de um jogador de uma vez, a partir das runs e da coleção, e
+-- grava o que faltava. É idempotente (a chave primária impede a conquista
+-- repetida), então chamar duas vezes, ou depois de um registro que falhou e
+-- subiu mais tarde, não faz estrago. Recebe o id porque o convidado não tem
+-- auth.uid() — e o pior que alguém faz chamando com o id de outra pessoa é
+-- dar a ela uma conquista que os números dela já davam.
+create function public.conferir_conquistas(p_player_id uuid)
+returns setof text
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  return query
+  with candidatas as (
+    select 'primeira-semana' as c, (select r.id from public.runs r where r.player_id = p_player_id and r.week_reached >= 2 order by r.ended_at limit 1) as run
+    union all
+    select 'mes-fechado', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at limit 1)
+    union all
+    select 'ficha-limpa', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' and coalesce(r.warnings, 1) = 0 order by r.ended_at limit 1)
+    union all
+    select 'zen', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria'
+                   and (r.details -> 'history' -> -1 ->> 'stress')::int <= 3 order by r.ended_at limit 1)
+    union all
+    select 'embalo', (select r.id from public.runs r where r.player_id = p_player_id and r.max_combo >= 4 order by r.ended_at limit 1)
+    union all
+    select 'rico', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' and r.money >= 1000 order by r.ended_at limit 1)
+    union all
+    select 'segunda-feira', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'burnout' and r.day = 1 order by r.ended_at limit 1)
+    union all
+    -- da coleção, não de uma run: o run_id fica nulo
+    select 'colecionador', case when (
+      select count(distinct x) from public.saves s,
+        jsonb_array_elements_text(coalesce(s.collection -> 'equipped', '[]') || coalesce(s.collection -> 'unequipped', '[]')) x
+      where s.player_id = p_player_id
+    ) >= 12 then 0::bigint end
+  )
+  insert into public.conquistas_do_jogador (player_id, conquista, run_id)
+  select p_player_id, c.c, nullif(c.run, 0)
+  from candidatas c
+  where c.run is not null and exists (select 1 from public.players where id = p_player_id)
+  on conflict do nothing
+  returning conquista;
+end;
+$$;
+
+grant execute on function public.conferir_conquistas(uuid) to anon, authenticated;
+
+-- todas as conquistas, com a data para as que este jogador já tem — a tela
+-- mostra as que faltam apagadas, porque saber o que existe é metade da graça
+create function public.minhas_conquistas(p_player_id uuid)
+returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select c.id, c.nome, c.descricao, c.icone, j.ganha_em
+  from public.conquistas c
+  left join public.conquistas_do_jogador j on j.conquista = c.id and j.player_id = p_player_id
+  order by c.ordem;
+$$;
+
+grant execute on function public.minhas_conquistas(uuid) to anon, authenticated;
+
+-- as de outra pessoa: só as ganhas
+create function public.conquistas_publicas(p_nick text)
+returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select c.id, c.nome, c.descricao, c.icone, j.ganha_em
+  from public.conquistas_do_jogador j
+  join public.conquistas c on c.id = j.conquista
+  join public.players p on p.id = j.player_id
+  where p.nick = lower(trim(p_nick))
+  order by c.ordem;
+$$;
+
+grant execute on function public.conquistas_publicas(text) to anon, authenticated;
 
 -- ------------------------------------------------------------------ admin
 -- Não existe tela para promover ninguém, e é de propósito: admin se dá aqui,

@@ -1,0 +1,55 @@
+.vazio
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-style: italic
+
+.grade
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.selo
+  display: flex
+  align-items: flex-start
+  gap: 10px
+  padding: 10px 12px
+  background: var(--papel-alto)
+  border: 1px dashed var(--linha)
+  border-radius: 8px
+  color: var(--tinta-fraca)
+  opacity: .6
+
+// ganha: o carimbo aparece — borda cheia e o ícone na cor do destaque
+.ganha
+  border-style: solid
+  border-color: var(--destaque)
+  opacity: 1
+
+  .icone
+    background: var(--destaque)
+    color: var(--papel-alto)
+
+.icone
+  flex: none
+  display: grid
+  place-items: center
+  width: 34px
+  height: 34px
+  border-radius: 50%
+  background: var(--papel-baixo)
+
+.texto
+  display: flex
+  flex-direction: column
+  gap: 2px
+  min-width: 0
+  font-size: 12px
+  line-height: 1.35
+
+  b
+    color: var(--tinta)
+    font-size: 13px

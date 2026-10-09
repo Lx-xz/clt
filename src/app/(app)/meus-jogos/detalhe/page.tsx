@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
-import { buscarDetalheDoJogo, type DetalheDoJogo } from '@/data/analytics'
+import Avatar from '@/components/Avatar'
+import { buscarDetalheDoJogo, buscarJogoPublico, type DetalheDoJogo } from '@/data/analytics'
+import { lerAvatar, type Avatar as Receita } from '@/data/avatar'
 import LinhaDoTempo from '@/components/LinhaDoTempo'
 import { useSessao } from '@/components/SessaoGuard'
 import buttons from '@/styles/buttons.module.sass'
@@ -27,7 +29,7 @@ type Estado =
   | { tipo: 'carregando' }
   | { tipo: 'erro'; mensagem: string }
   | { tipo: 'nao-encontrado' }
-  | { tipo: 'pronto'; jogo: DetalheDoJogo }
+  | { tipo: 'pronto'; jogo: DetalheDoJogo; dono: { nick: string; avatar: Receita } | null }
 
 const ROTULO: Record<DetalheDoJogo['outcome'], string> = {
   vitoria: 'Vitória',
@@ -54,8 +56,15 @@ function Detalhe() {
       return
     }
     setEstado({ tipo: 'carregando' })
+    // primeiro como SUA (é o caso comum, e o único que abre a run que você
+    // largou no meio); não sendo, como partida pública de outra pessoa
     buscarDetalheDoJogo(id, sessao.id)
-      .then((jogo) => setEstado(jogo ? { tipo: 'pronto', jogo } : { tipo: 'nao-encontrado' }))
+      .then(async (jogo) => {
+        if (jogo) return setEstado({ tipo: 'pronto', jogo, dono: null })
+        const alheio = await buscarJogoPublico(id)
+        if (!alheio) return setEstado({ tipo: 'nao-encontrado' })
+        setEstado({ tipo: 'pronto', jogo: alheio, dono: { nick: alheio.nick, avatar: lerAvatar(alheio.avatar) } })
+      })
       .catch((e: unknown) =>
         setEstado({ tipo: 'erro', mensagem: e instanceof Error ? e.message : 'Não deu para falar com o banco.' }),
       )
@@ -67,16 +76,31 @@ function Detalhe() {
   return (
     <main className="page">
       <div className={styles.top}>
-        <Link className={styles.voltar} href="/perfil">
-          ← Meu perfil
-        </Link>
+        {estado.tipo === 'pronto' && estado.dono ? (
+          <Link className={styles.voltar} href={`/jogador?nick=${encodeURIComponent(estado.dono.nick)}`}>
+            ← Perfil de {estado.dono.nick}
+          </Link>
+        ) : (
+          <Link className={styles.voltar} href="/perfil">
+            ← Meu perfil
+          </Link>
+        )}
       </div>
-      <h1 className={styles.title}>Replay da partida</h1>
+      <h1 className={styles.title}>
+        {estado.tipo === 'pronto' && estado.dono ? (
+          <span className={styles.dono}>
+            <Avatar avatar={estado.dono.avatar} tamanho={40} />
+            A partida de {estado.dono.nick}
+          </span>
+        ) : (
+          'Replay da partida'
+        )}
+      </h1>
 
       {estado.tipo === 'carregando' ? <p className={styles.empty}>Carregando…</p> : null}
 
       {estado.tipo === 'nao-encontrado' ? (
-        <p className={styles.empty}>Essa run não existe, ou não é sua.</p>
+        <p className={styles.empty}>Essa partida não existe, ou não está aberta.</p>
       ) : null}
 
       {estado.tipo === 'erro' ? (

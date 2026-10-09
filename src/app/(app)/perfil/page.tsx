@@ -4,9 +4,13 @@ import { Pencil, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import Avatar from '@/components/Avatar'
+import Conquistas from '@/components/Conquistas'
+import ListaDeAmigos from '@/components/ListaDeAmigos'
 import ListaDeJogos from '@/components/ListaDeJogos'
 import { useSessao } from '@/components/SessaoGuard'
 import { buscarMeusJogos, buscarRanking } from '@/data/analytics'
+import { meusAmigos, pedidosDeAmizade, type Amigo, type Pedido } from '@/data/amizades'
+import { minhasConquistas, type Conquista } from '@/data/conquistas'
 import type { JogoResumo } from '@/data/jogadores'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './perfil.module.sass'
@@ -22,6 +26,20 @@ export default function PerfilPage() {
   const sessao = useSessao()
   const [jogos, setJogos] = useState<JogoResumo[] | null>(null)
   const [posto, setPosto] = useState<Posto | null>(null)
+  const [amigos, setAmigos] = useState<Amigo[] | null>(null)
+  const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [conquistas, setConquistas] = useState<Conquista[] | null>(null)
+
+  function carregarAmigos() {
+    if (sessao.convidado) return
+    void meusAmigos().then(setAmigos).catch(() => setAmigos(null))
+    void pedidosDeAmizade().then(setPedidos).catch(() => {})
+  }
+
+  useEffect(carregarAmigos, [sessao.convidado])
+  useEffect(() => {
+    void minhasConquistas(sessao.id).then(setConquistas).catch(() => {})
+  }, [sessao.id])
 
   // as partidas e a posição no ranking vieram para cá: "os jogos de fulano" é
   // informação de perfil, não uma seção do site
@@ -110,13 +128,36 @@ export default function PerfilPage() {
         </p>
       ) : null}
 
+      {/* amigos: só com conta, e só quando o banco já as tem */}
+      {!sessao.convidado && amigos !== null ? (
+        <>
+          <h2 className={styles.secao}>Amigos</h2>
+          {amigos.length === 0 && pedidos.length === 0 ? (
+            <p className={styles.nota}>
+              Ninguém ainda. Abra o perfil de alguém pelo <Link href="/ranking">ranking</Link> e
+              peça amizade.
+            </p>
+          ) : (
+            <ListaDeAmigos amigos={amigos} pedidos={pedidos} aoMudar={carregarAmigos} />
+          )}
+        </>
+      ) : null}
+
+      {conquistas ? (
+        <>
+          <h2 className={styles.secao}>
+            Conquistas · {conquistas.filter((c) => c.ganha_em).length} de {conquistas.length}
+          </h2>
+          <Conquistas lista={conquistas} />
+        </>
+      ) : null}
+
       <h2 className={styles.secao}>Minhas partidas</h2>
       {jogos === null ? (
         <p className={styles.nota}>Carregando…</p>
       ) : (
         <ListaDeJogos
           jogos={jogos}
-          comReplay
           vazio="Nenhuma run terminada ainda — jogue até o fim para aparecer aqui."
         />
       )}

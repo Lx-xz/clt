@@ -47,3 +47,12 @@ export async function jogosDoJogador(nick: string): Promise<JogoResumo[]> {
   if (error) throw new Error(error.message)
   return (data as JogoResumo[]) ?? []
 }
+
+/**
+ * A função ainda não existe no banco — o `schema.sql` novo não foi rodado.
+ * As telas que dependem da v0.14 (amigos, conquistas, replay alheio) somem
+ * em silêncio nesse caso, em vez de derrubar a página que as contém.
+ */
+export function faltaFuncao(error: { code?: string; message?: string }): boolean {
+  return error.code === 'PGRST202' || Boolean(error.message?.includes('Could not find the function'))
+}

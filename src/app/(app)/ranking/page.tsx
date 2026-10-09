@@ -3,7 +3,11 @@
 import Link from 'next/link'
 import { Fragment, useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import Avatar from '@/components/Avatar'
+import Segmentado from '@/components/Segmentado'
+import { meusAmigos } from '@/data/amizades'
 import { buscarRanking, type LinhaRanking } from '@/data/analytics'
+import { lerAvatar } from '@/data/avatar'
 import { useSessao } from '@/components/SessaoGuard'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './ranking.module.sass'
@@ -21,6 +25,17 @@ export default function RankingPage() {
   // tem efeito nenhum (a linha extra fica display:none)
   const [aberto, setAberto] = useState<string | null>(null)
   const sessao = useSessao()
+  // "amigos" filtra no cliente: o ranking já vem inteiro, e uma função
+  // nova no banco só para isso seria uma viagem a mais para a mesma lista
+  const [filtro, setFiltro] = useState<'todos' | 'amigos'>('todos')
+  const [amigos, setAmigos] = useState<Set<string> | null>(null)
+
+  useEffect(() => {
+    if (sessao.convidado) return
+    void meusAmigos()
+      .then((lista) => setAmigos(new Set(lista.map((a) => a.nick))))
+      .catch(() => {})
+  }, [sessao.convidado])
 
   function carregar() {
     setEstado({ tipo: 'carregando' })
@@ -42,6 +57,20 @@ export default function RankingPage() {
         Todo mundo que já terminou pelo menos uma run, ordenado por vitórias. O nick não é senha — é
         só quem está jogando cada save.
       </p>
+
+      {amigos && amigos.size > 0 ? (
+        <div className={styles.filtro}>
+          <Segmentado
+            rotulo="Quem mostrar"
+            valor={filtro}
+            onChange={setFiltro}
+            opcoes={[
+              { valor: 'todos', rotulo: 'Todos' },
+              { valor: 'amigos', rotulo: `Amigos (${amigos.size})` },
+            ]}
+          />
+        </div>
+      ) : null}
 
       {estado.tipo === 'carregando' ? <p className={styles.empty}>Carregando…</p> : null}
 
@@ -80,6 +109,9 @@ export default function RankingPage() {
           <tbody>
             {estado.linhas.map((linha, i) => {
               const euMesmo = linha.nick === sessao.nick
+              // a posição continua a do ranking geral: filtrar é olhar, não
+              // reordenar — o amigo em 14º continua em 14º
+              if (filtro === 'amigos' && !euMesmo && !amigos?.has(linha.nick)) return null
               const expandida = aberto === linha.nick
               return (
                 <Fragment key={linha.nick}>
@@ -88,7 +120,8 @@ export default function RankingPage() {
                     onClick={() => setAberto(expandida ? null : linha.nick)}
                   >
                     <td className={styles.posicao}>{i + 1}</td>
-                    <td>
+                    <td className={styles.jogador}>
+                      <Avatar avatar={lerAvatar(linha.avatar)} tamanho={28} className={styles.avatar} />
                       {/* o nick abre o perfil daquela pessoa; o resto da
                           linha continua servindo para expandir no celular,
                           então o clique do link não pode subir para a <tr> */}

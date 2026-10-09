@@ -26,12 +26,21 @@ export default function Termos() {
           dois dados de lá.
         </li>
         <li>
-          <b>Nick e avatar</b>, que são públicos: o nick aparece no ranking e ao lado dos seus
-          relatos, e o avatar no seu perfil e na sua página pública.
+          <b>Nick e avatar</b>, que são públicos: os dois aparecem no ranking, ao lado dos seus
+          relatos, no seu perfil e na sua página pública.
         </li>
         <li>
           <b>Suas partidas</b> — o dia a dia de cada run, para o histórico e para balancear o jogo.
-          Elas aparecem no seu perfil, que qualquer pessoa pode abrir.
+          Elas aparecem no seu perfil, que qualquer pessoa pode abrir, e qualquer pessoa pode ver
+          as cartas que você jogou em cada uma. A partida da qual você pediu demissão fica só com
+          você.
+        </li>
+        <li>
+          <b>Seus amigos</b>: quem você pediu em amizade e quem aceitou. Quem pede só vê o seu nick
+          e o seu avatar, como qualquer outra pessoa; o aviso do pedido chega pelo sininho.
+        </li>
+        <li>
+          <b>Suas conquistas</b>, que aparecem no seu perfil.
         </li>
         <li>
           <b>O que você relatar</b> na página de feedbacks, junto com o seu nick.

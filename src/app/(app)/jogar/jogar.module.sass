@@ -606,6 +606,40 @@
   flex-wrap: wrap
   gap: 8px
 
+// as conquistas que a partida destravou, como cupom carimbado no recibo
+.conquistasNovas
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 0
+  padding: 0
+  list-style: none
+
+  li
+    display: flex
+    align-items: flex-start
+    gap: 8px
+    padding: 8px 10px
+    border: 2px dashed var(--destaque)
+    border-radius: 4px
+    color: var(--tinta-fraca)
+    font-size: 12px
+    animation: passo-entra .4s ease
+
+  svg
+    flex: none
+    margin-top: 1px
+    color: var(--destaque)
+
+  span
+    display: flex
+    flex-direction: column
+    gap: 1px
+
+  b
+    color: var(--tinta)
+    font-size: 13px
+
 // o fim de run com o recibo fechado: a mesa fica como estava, e esta faixa é
 // o caminho de volta
 .faixaFim

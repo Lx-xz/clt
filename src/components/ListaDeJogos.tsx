@@ -24,15 +24,15 @@ function formatarData(iso: string): string {
   )
 }
 
+// Todo jogo abre o replay, o seu e o de qualquer pessoa: desde a v0.14 a
+// partida guardada de outra pessoa abre por `jogo_publico()`, que devolve o
+// dia-a-dia e nada do dono além de nick e avatar.
 export default function ListaDeJogos({
   jogos,
   vazio,
-  /** O replay só abre para o dono: `jogo_detalhe()` confere o player_id. */
-  comReplay,
 }: {
   jogos: JogoResumo[]
   vazio: string
-  comReplay: boolean
 }) {
   if (jogos.length === 0) return <p className={styles.empty}>{vazio}</p>
 
@@ -54,14 +54,10 @@ export default function ListaDeJogos({
             <span className={styles.dinheiro}>R$ {jogo.money}</span>
           </>
         )
-        return comReplay ? (
+        return (
           <Link key={jogo.id} className={styles.jogo} href={`/meus-jogos/detalhe?id=${jogo.id}`}>
             {miolo}
           </Link>
-        ) : (
-          <div key={jogo.id} className={styles.jogo}>
-            {miolo}
-          </div>
         )
       })}
     </div>
