@@ -253,11 +253,13 @@ export async function entrarComoConvidado(): Promise<Sessao> {
  * Este endereço precisa estar na lista de "Redirect URLs" do painel do
  * Supabase, senão o login volta para o site errado.
  */
-function enderecoDeVolta(rota = ''): string {
+function enderecoDeVolta(rota = 'auth'): string {
   if (typeof window === 'undefined') return ''
-  const base = window.location.origin + window.location.pathname
-  if (!rota) return base
-  return `${base.replace(/\/$/, '')}/${rota}/`
+  // a raiz do site, com o `/clt` do GitHub Pages incluso, sem remontar o
+  // basePath à mão: é o endereço atual sem o `auth/` do fim, que é de onde
+  // o login e a recuperação de senha são chamados
+  const raiz = (window.location.origin + window.location.pathname.replace(/auth\/?$/, '')).replace(/\/$/, '')
+  return `${raiz}/${rota}/`
 }
 
 /** As mensagens do Auth chegam em inglês; as comuns viram português aqui. */

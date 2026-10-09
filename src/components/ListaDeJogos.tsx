@@ -15,7 +15,7 @@ const ROTULO: Record<string, string> = {
   burnout: 'Burnout',
   demissao: 'Demissão',
   despejo: 'Despejo',
-  abandono: 'Largada no meio',
+  abandono: 'Pediu demissão',
 }
 
 function formatarData(iso: string): string {

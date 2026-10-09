@@ -1,0 +1,243 @@
+.inicio
+  display: flex
+  flex-direction: column
+  gap: 20px
+  max-width: 880px
+
+// o cartão de cima: quem é você e o que fazer agora
+.cartao
+  display: grid
+  grid-template-columns: auto 1fr auto
+  align-items: center
+  gap: 20px
+  padding: 20px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 10px
+  box-shadow: var(--sombra)
+
+.avatar
+  box-shadow: var(--sombra)
+
+.quem
+  display: flex
+  flex-direction: column
+  gap: 2px
+  min-width: 0
+
+.ola
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.nick
+  overflow: hidden
+  font-size: clamp(22px, 4vw, 30px)
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.posto
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+  a
+    display: inline-flex
+    align-items: center
+    gap: 4px
+    text-decoration: none
+
+    &:hover
+      color: var(--tinta)
+      text-decoration: underline
+
+// o botão grande: é a razão de a página existir
+.jogar
+  display: flex
+  align-items: center
+  gap: 12px
+  padding: 14px 22px
+  font-size: 16px
+
+.jogarTexto
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  line-height: 1.2
+
+  b
+    font-size: 18px
+
+  span
+    font-size: 12px
+    font-weight: 400
+    opacity: .85
+
+.aviso
+  margin: 0
+  padding: 10px 14px
+  background: var(--papel-alto)
+  border-left: 3px solid var(--destaque)
+  border-radius: 0 var(--raio) var(--raio) 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+
+.comoJogar
+  display: flex
+  align-items: center
+  gap: 14px
+  padding: 14px 16px
+  background: color-mix(in srgb, var(--destaque) 14%, var(--papel-alto))
+  border: 1px solid var(--destaque)
+  border-radius: 10px
+  color: var(--tinta)
+  font-size: 13px
+  text-align: left
+  cursor: pointer
+
+  span
+    display: flex
+    flex: 1
+    flex-direction: column
+    gap: 2px
+
+  b
+    font-size: 15px
+
+.grade
+  display: grid
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  gap: 20px
+
+.bloco
+  display: flex
+  flex-direction: column
+  gap: 10px
+
+.titulo
+  color: var(--tinta-fraca)
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: .1em
+  text-transform: uppercase
+
+.nota
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-style: italic
+
+// o bilhete da última partida, com a serrilha de recibo embaixo
+.bilhete
+  display: flex
+  flex-direction: column
+  gap: 10px
+  padding: 16px 16px 20px
+  background: var(--papel-nota)
+  color: var(--tinta)
+  font-family: var(--mono)
+  text-decoration: none
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .15))
+  mask: radial-gradient(circle at 50% 100%, transparent 4px, #000 4.5px) bottom / 14px 51% repeat-x, linear-gradient(#000, #000) top / 100% 50% no-repeat
+  transition: transform .15s ease
+
+  &:hover
+    transform: translateY(-2px)
+
+.bilheteLinha
+  display: flex
+  justify-content: space-between
+  gap: 12px
+  padding-top: 8px
+  border-top: 1px dashed var(--linha)
+  font-size: 13px
+
+  b
+    font-size: 16px
+
+.verReplay
+  display: inline-flex
+  align-items: center
+  gap: 2px
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.selo
+  align-self: flex-start
+  padding: 3px 10px
+  border-radius: 999px
+  background: var(--papel-baixo)
+  font-size: 11px
+  font-weight: 700
+  letter-spacing: .06em
+  text-transform: uppercase
+
+.vitoria
+  background: color-mix(in srgb, var(--produtividade) 22%, transparent)
+  color: var(--produtividade)
+
+.burnout
+  background: color-mix(in srgb, var(--estresse) 20%, transparent)
+  color: var(--estresse)
+
+.demissao
+  background: color-mix(in srgb, var(--destaque) 22%, transparent)
+  color: var(--destaque)
+
+.atalhos
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: 10px
+  align-content: start
+
+.atalho
+  display: flex
+  align-items: center
+  gap: 10px
+  padding: 14px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  color: var(--tinta)
+  font-size: 12px
+  text-align: left
+  text-decoration: none
+  cursor: pointer
+  transition: border-color .12s ease, transform .12s ease
+
+  &:hover
+    border-color: var(--tinta-fraca)
+    transform: translateY(-1px)
+
+  span
+    display: flex
+    flex-direction: column
+    gap: 2px
+    min-width: 0
+    color: var(--tinta-fraca)
+
+  b
+    color: var(--tinta)
+    font-size: 14px
+
+@media (max-width: 760px)
+  .cartao
+    grid-template-columns: auto 1fr
+    gap: 14px
+    padding: 16px
+
+  .avatar
+    width: 80px !important
+    height: 80px !important
+
+    svg
+      width: 100%
+      height: 100%
+
+  // o botão grande vira uma faixa inteira embaixo do cartão: é o alvo do
+  // polegar
+  .jogar
+    grid-column: 1 / -1
+    justify-content: center
+
+  .grade
+    grid-template-columns: minmax(0, 1fr)

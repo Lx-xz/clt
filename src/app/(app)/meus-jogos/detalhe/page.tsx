@@ -4,9 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 import { buscarDetalheDoJogo, type DetalheDoJogo } from '@/data/analytics'
-import Card from '@/components/Card'
-import { cartaParaMostrar } from '@/data/balanceamento'
-import { getEvent } from '@/game/catalogo'
+import LinhaDoTempo from '@/components/LinhaDoTempo'
 import { useSessao } from '@/components/SessaoGuard'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './detalhe.module.sass'
@@ -36,7 +34,7 @@ const ROTULO: Record<DetalheDoJogo['outcome'], string> = {
   burnout: 'Burnout',
   demissao: 'Demissão',
   despejo: 'Despejo',
-  abandono: 'Largada no meio',
+  abandono: 'Pediu demissão',
 }
 
 function formatarData(iso: string): string {
@@ -126,40 +124,12 @@ function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
           Essa run é de antes de o replay existir — só o resumo acima foi guardado.
         </p>
       ) : (
-        <ol className={styles.linha}>
-          {historico.map((dia) => {
-            const evento = dia.eventId ? getEvent(dia.eventId) : null
-            const escolha = evento?.choices && dia.eventChoice !== null ? evento.choices[dia.eventChoice] : null
-            return (
-              <li key={dia.day} className={styles.diaBloco}>
-                <div className={styles.diaHead}>
-                  <span className={styles.diaNum}>Dia {dia.day}</span>
-                  {evento ? <span className={styles.eventoNome}>· {evento.name}</span> : null}
-                </div>
-                {evento ? <p className={styles.eventoTexto}>{evento.text}</p> : null}
-                {escolha ? <span className={styles.escolha}>Escolheu: {escolha.label}</span> : null}
-
-                {dia.cardsPlayed.length === 0 ? (
-                  <p className={styles.semCartas}>Nenhuma carta jogada.</p>
-                ) : (
-                  <div className={styles.cartas}>
-                    {dia.cardsPlayed.map((id, i) => (
-                      <Card key={`${id}-${i}`} card={cartaParaMostrar(id, retrato)} />
-                    ))}
-                  </div>
-                )}
-
-                <div className={styles.numeros}>
-                  <span className={dia.metQuota ? styles.cotaOk : styles.cotaFalhou}>
-                    produtividade {dia.productivity}/{dia.quota}
-                  </span>
-                  <span>estresse {dia.stress}</span>
-                  <span>R$ {dia.money}</span>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
+        <LinhaDoTempo
+          dias={historico}
+          retrato={retrato}
+          modo={jogo.details?.modo}
+          log={jogo.details?.log}
+        />
       )}
     </>
   )

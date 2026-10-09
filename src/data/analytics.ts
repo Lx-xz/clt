@@ -1,5 +1,5 @@
 import type { Regras } from '@/game/regras'
-import type { CartaSnapshot, DayLog } from '@/game/types'
+import type { CartaSnapshot, DayLog, LinhaDoLog } from '@/game/types'
 import { supabase } from './supabase'
 
 /**
@@ -69,6 +69,9 @@ export interface DetalheDoJogo extends LinhaMeuJogo {
     /** As regras com que esta partida foi jogada. O replay lê daqui, e não
      *  das regras de hoje. */
     modo?: Regras
+    /** As frases do histórico da mesa. Só existe nas runs gravadas a partir
+     *  da v0.14; antes disso o replay mostra só as cartas. */
+    log?: LinhaDoLog[]
   } | null
 }
 

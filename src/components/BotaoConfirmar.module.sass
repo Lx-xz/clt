@@ -1,0 +1,50 @@
+.botao
+  position: relative
+
+// o vermelho é o do estresse: é a mesma cor do "isso vai doer" do jogo
+.armado
+  background: var(--estresse) !important
+  border-color: var(--estresse) !important
+  color: var(--papel-alto) !important
+  animation: treme .32s ease
+
+// a barra que esvazia mostra quanto tempo falta para desarmar
+.armado::after
+  content: ""
+  position: absolute
+  left: 0
+  bottom: 0
+  height: 2px
+  width: 100%
+  background: var(--papel-alto)
+  opacity: .7
+  transform-origin: left
+  animation: esvazia 3s linear forwards
+  pointer-events: none
+
+@keyframes treme
+  0%, 100%
+    transform: none
+  25%
+    transform: translateX(-3px)
+  75%
+    transform: translateX(3px)
+
+@keyframes esvazia
+  from
+    transform: scaleX(1)
+  to
+    transform: scaleX(0)
+
+.leitor
+  position: absolute
+  width: 1px
+  height: 1px
+  overflow: hidden
+  clip-path: inset(50%)
+  white-space: nowrap
+
+@media (prefers-reduced-motion: reduce)
+  .armado,
+  .armado::after
+    animation: none

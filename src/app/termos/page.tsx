@@ -12,7 +12,7 @@ export const metadata = { title: 'Termos de uso — CLT' }
 export default function TermosPage() {
   return (
     <main className={styles.pagina}>
-      <Link className={styles.voltar} href="/">
+      <Link className={styles.voltar} href="/auth">
         ← voltar
       </Link>
       <h1 className={styles.titulo}>Termos de uso</h1>

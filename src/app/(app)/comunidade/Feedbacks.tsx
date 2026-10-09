@@ -187,7 +187,7 @@ export default function Feedbacks() {
         <p className={styles.avisoConvidado}>
           Você está como convidado: dá para ler tudo, mas para relatar é preciso ter conta — é o
           único jeito de te responder e de você acompanhar o que aconteceu com o seu relato.{' '}
-          <Link href="/">criar conta</Link>
+          <Link href="/auth">criar conta</Link>
         </p>
       ) : null}
 

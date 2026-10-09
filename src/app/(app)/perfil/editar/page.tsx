@@ -3,18 +3,21 @@
 import { ArrowLeft, Dices } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Avatar, {
   TONS_DE_CABELO,
   TONS_DE_FUNDO,
   TONS_DE_PELE,
   TONS_DE_ROUPA,
 } from '@/components/Avatar'
+import BotaoConfirmar from '@/components/BotaoConfirmar'
+import { PenteIcon } from '@/components/icons'
 import { useDefinirSessao, useSessao } from '@/components/SessaoGuard'
 import {
   ACESSORIOS,
   BARBAS,
   CORES,
+  CORES_DE_BARBA,
   CORTES,
   FUNDOS,
   OCULOS,
@@ -28,6 +31,7 @@ import {
   type Opcao,
 } from '@/data/avatar'
 import { trocarAvatar } from '@/data/conta'
+import { marcarPendencia } from '@/data/pendencias'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './editar.module.sass'
 
@@ -81,6 +85,20 @@ export default function EditarAvatarPage() {
   const [erro, setErro] = useState<string | null>(null)
 
   const mudou = JSON.stringify(receita) !== JSON.stringify(sessao.avatar)
+
+  // sair com coisa por salvar avisa — pela barra lateral (que lê a
+  // pendência), pelo "voltar" (que pede o segundo clique) e fechando a aba
+  // (o `beforeunload`, que é o navegador quem desenha)
+  useEffect(() => {
+    if (!mudou) return
+    marcarPendencia('As alterações no seu avatar ainda não foram salvas e vão se perder.')
+    const aoFechar = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', aoFechar)
+    return () => {
+      marcarPendencia(null)
+      window.removeEventListener('beforeunload', aoFechar)
+    }
+  }, [mudou])
   const manequim = receita.rosto === 'manequim'
   const abas = manequim ? ABAS.filter((a) => ABAS_DO_MANEQUIM.includes(a.id)) : ABAS
   const abaAtual = abas.some((a) => a.id === aba) ? aba : 'rosto'
@@ -94,6 +112,7 @@ export default function EditarAvatarPage() {
     setErro(null)
     trocarAvatar(sessao, receita)
       .then((nova) => {
+        marcarPendencia(null)
         definirSessao(nova)
         router.push('/perfil')
       })
@@ -105,53 +124,82 @@ export default function EditarAvatarPage() {
 
   return (
     <main className="page">
-      <Link className={styles.voltar} href="/perfil">
-        <ArrowLeft size={14} aria-hidden />
-        voltar ao perfil
-      </Link>
-
+      {/* TUDO o que se usa enquanto se escolhe fica preso no topo: voltar,
+          a prévia, sortear, salvar e as abas. Eram só a prévia e o sortear —
+          e no celular, rolando até a última fileira de cores, o salvar
+          estava no fim da página e as abas tinham ido embora com o topo */}
+      <h1 className={styles.escondido}>Seu avatar</h1>
       <div className={styles.topo}>
-        <Avatar avatar={receita} tamanho={132} className={styles.previa} />
-        <div className={styles.topoTexto}>
-          <h1 className={styles.titulo}>Seu avatar</h1>
-          <p className={styles.intro}>
-            Ele aparece no seu perfil, na sua página pública e na mesa — e na mesa ele sente o
-            estresse junto com você.
-          </p>
-          {sessao.convidado ? (
-            <p className={styles.aviso}>
-              Você está como convidado: este avatar fica só neste navegador e se perde ao sair.
-            </p>
-          ) : null}
-          <button
-            type="button"
-            className={`${buttons.button} ${styles.sortear}`}
-            onClick={() => setReceita(avatarAleatorio())}
-          >
-            <Dices size={15} aria-hidden />
-            Sortear
-          </button>
+        <div className={styles.barra}>
+          {mudou ? (
+            <BotaoConfirmar
+              className={styles.voltar}
+              armado="Descartar?"
+              rotulo="Voltar ao perfil sem salvar"
+              onConfirmar={() => {
+                marcarPendencia(null)
+                router.push('/perfil')
+              }}
+            >
+              <ArrowLeft size={16} aria-hidden />
+              <span className={styles.voltarTexto}>perfil</span>
+            </BotaoConfirmar>
+          ) : (
+            <Link className={styles.voltar} href="/perfil" aria-label="Voltar ao perfil">
+              <ArrowLeft size={16} aria-hidden />
+              <span className={styles.voltarTexto}>perfil</span>
+            </Link>
+          )}
+
+          <Avatar avatar={receita} tamanho={120} className={styles.previa} />
+
+          <div className={styles.botoesTopo}>
+            <button
+              type="button"
+              className={`${buttons.button} ${styles.sortear}`}
+              onClick={() => setReceita(avatarAleatorio())}
+              aria-label="Sortear"
+              title="Sortear"
+            >
+              <Dices size={18} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={`${buttons.button} ${buttons.primary}`}
+              disabled={!mudou || salvando}
+              onClick={salvar}
+            >
+              {salvando ? 'Salvando…' : 'Salvar'}
+            </button>
+          </div>
+        </div>
+
+        {/* as abas rolam de lado no celular: sete não cabem em 390 px, e
+            quebrar em duas linhas esconderia qual está ativa */}
+        <div className={styles.rolaLado}>
+          <div className={styles.abas} role="tablist" aria-label="Partes do avatar">
+            {abas.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                role="tab"
+                aria-selected={abaAtual === a.id}
+                className={`${styles.aba} ${abaAtual === a.id ? styles.abaAtiva : ''}`}
+                onClick={() => setAba(a.id)}
+              >
+                {a.rotulo}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* as abas rolam de lado no celular: sete não cabem em 390 px, e
-          quebrar em duas linhas esconderia qual está ativa */}
-      <div className={styles.rolaLado}>
-        <div className={styles.abas} role="tablist" aria-label="Partes do avatar">
-          {abas.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              role="tab"
-              aria-selected={abaAtual === a.id}
-              className={`${styles.aba} ${abaAtual === a.id ? styles.abaAtiva : ''}`}
-              onClick={() => setAba(a.id)}
-            >
-              {a.rotulo}
-            </button>
-          ))}
-        </div>
-      </div>
+      {erro ? <p className={styles.erro}>{erro}</p> : null}
+      {sessao.convidado ? (
+        <p className={styles.aviso}>
+          Você está como convidado: este avatar fica só neste navegador e se perde ao sair.
+        </p>
+      ) : null}
 
       <section className={styles.painel} role="tabpanel">
         {abaAtual === 'rosto' ? (
@@ -182,7 +230,17 @@ export default function EditarAvatarPage() {
         {abaAtual === 'barba' ? (
           <>
             <Formas titulo="Barba" campo="barba" opcoes={BARBAS} receita={receita} aoMudar={mudar} enquadrar="rosto" />
-            <p className={styles.dica}>A barba tem a cor do cabelo — ela é da mesma pessoa.</p>
+            {receita.barba !== 'nenhuma' ? (
+              <Cores
+                titulo="Cor"
+                campo="corBarba"
+                opcoes={CORES_DE_BARBA}
+                tons={(v) => TONS_DE_CABELO[v === 'cabelo' ? receita.cor : v][0]}
+                conteudo={(v) => (v === 'cabelo' ? <PenteIcon size={18} className={styles.pente} /> : null)}
+                receita={receita}
+                aoMudar={mudar}
+              />
+            ) : null}
           </>
         ) : null}
 
@@ -206,21 +264,10 @@ export default function EditarAvatarPage() {
         ) : null}
       </section>
 
-      {erro ? <p className={styles.erro}>{erro}</p> : null}
-
-      <div className={styles.acoes}>
-        <button
-          type="button"
-          className={`${buttons.button} ${buttons.primary}`}
-          disabled={!mudou || salvando}
-          onClick={salvar}
-        >
-          {salvando ? 'Salvando…' : mudou ? 'Salvar' : 'Nada mudou'}
-        </button>
-        <Link className={buttons.button} href="/perfil">
-          Cancelar
-        </Link>
-      </div>
+      <p className={styles.intro}>
+        Ele aparece no seu perfil, na sua página pública e na mesa — e na mesa ele sente o
+        estresse junto com você.
+      </p>
     </main>
   )
 }
@@ -268,11 +315,13 @@ function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMud
 
 /** Uma fileira de CORES, em amostras. O nome aparece no toque e no leitor de
  *  tela — escrito embaixo de cada bolinha, ele ocuparia mais do que a cor. */
-function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, receita, aoMudar }: {
+function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, conteudo, receita, aoMudar }: {
   titulo: string
   campo: C
   opcoes: Opcao<Receita[C]>[]
   tons: (valor: Receita[C]) => string
+  /** Algo desenhado DENTRO da amostra — o pente do "igual ao cabelo". */
+  conteudo?: (valor: Receita[C]) => ReactNode
   receita: Receita
   aoMudar: (campo: C, valor: Receita[C]) => void
 }) {
@@ -296,7 +345,9 @@ function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, receita, 
               aria-label={o.rotulo}
               title={o.rotulo}
               onClick={() => aoMudar(campo, o.valor)}
-            />
+            >
+              {conteudo?.(o.valor)}
+            </button>
           )
         })}
       </div>

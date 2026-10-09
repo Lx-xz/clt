@@ -14,12 +14,12 @@ import {
   LogOut,
   MessageSquareWarning,
   Play,
-  RotateCcw,
   Settings,
   TestTube,
   Trophy,
-  User,
 } from 'lucide-react'
+import Avatar from './Avatar'
+import BotaoConfirmar from './BotaoConfirmar'
 import Check from './Check'
 import Slider from './Slider'
 import Dialogo, { popupAberto } from './Dialogo'
@@ -30,7 +30,9 @@ import { gravarTema, lerTema, TEMAS, type Tema } from '@/data/tema'
 import { souAdmin } from '@/data/feedback'
 import { sair } from '@/data/conta'
 import { cancelarSync } from '@/data/sync'
-import { limparLocalDoJogo } from '@/game/storage'
+import { limparLocalDoJogo, loadRun } from '@/game/storage'
+import type { GameState } from '@/game/types'
+import { marcarPendencia, pendencia } from '@/data/pendencias'
 import { marcarNotificacoesLidas, minhasNotificacoes, type Notificacao } from '@/data/notificacoes'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './SideNav.module.sass'
@@ -38,21 +40,25 @@ import styles from './SideNav.module.sass'
 // "Meus jogos" saiu daqui e virou parte do perfil (o seu e o dos outros).
 // Análise, Feedbacks e Novidades viraram abas de /comunidade: eram três
 // entradas para o mesmo assunto — o que está acontecendo com o jogo.
-const LINKS = [
-  { href: '/', label: 'Início', Icon: House },
-  { href: '/jogar', label: 'Jogar', Icon: Play },
-  { href: '/baralho', label: 'Baralho', Icon: Layers },
-  { href: '/ranking', label: 'Ranking', Icon: Trophy },
-  { href: '/comunidade', label: 'Comunidade', Icon: MessageSquareWarning },
+//
+// Em dois grupos, separados por um fio: o JOGO (o que você faz sozinho) e a
+// GENTE (o que os outros fazem). Recolhida, a barra não tem espaço para o nome
+// do grupo, e o fio basta para o olho agrupar os ícones.
+const GRUPOS = [
+  [
+    { href: '/', label: 'Início', Icon: House },
+    { href: '/jogar', label: 'Jogar', Icon: Play },
+    { href: '/baralho', label: 'Baralho', Icon: Layers },
+  ],
+  [
+    { href: '/ranking', label: 'Ranking', Icon: Trophy },
+    { href: '/comunidade', label: 'Comunidade', Icon: MessageSquareWarning },
+  ],
 ]
-
-/** Disparado ao confirmar o reinício; a mesa escuta e começa uma run nova. */
-export const EVENTO_REINICIAR = 'clt:reiniciar-run'
 
 export default function SideNav() {
   const pathname = usePathname()
   const [aberta, setAberta] = useState(false)
-  const [confirmando, setConfirmando] = useState(false)
   const [configurando, setConfigurando] = useState(false)
   const [avisos, setAvisos] = useState<(Notificacao & { novo: boolean })[] | null>(null)
   const [naoLidosNaAbertura, setNaoLidosNaAbertura] = useState(0)
@@ -64,7 +70,9 @@ export default function SideNav() {
   // mesmo motivo do volume: ler o localStorage só depois de montar evita a
   // divergência entre o HTML do build e o primeiro render do navegador
   const [tema, setTema] = useState<Tema>('sistema')
-  const [confirmandoSaida, setConfirmandoSaida] = useState(false)
+  /** Há uma run no meio: o "Jogar" ganha um ponto, como uma aba com algo
+   *  por terminar. */
+  const [runEmAndamento, setRunEmAndamento] = useState(false)
   // o laboratório do avatar é ferramenta de dono do jogo: quem diz se você é
   // admin é o banco, não o perfil espelhado no navegador
   const [admin, setAdmin] = useState(sessao.admin)
@@ -72,14 +80,24 @@ export default function SideNav() {
   const [saindo, setSaindo] = useState(false)
   const painelRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  /** Para onde ia o clique que esbarrou numa alteração por salvar. */
+  const [destinoPendente, setDestinoPendente] = useState<{ href: string; aviso: string } | null>(null)
+
+  /** Antes de trocar de página, pergunta se há algo por salvar na atual. */
+  function navegar(e: React.MouseEvent, href: string) {
+    const aviso = pendencia()
+    if (!aviso) return
+    e.preventDefault()
+    setDestinoPendente({ href, aviso })
+  }
 
   // ao mudar de página o gaveteiro do celular se fecha sozinho
   useEffect(() => {
     setAberta(false)
-    setConfirmando(false)
     setConfigurando(false)
     setAvisos(null)
-    setConfirmandoSaida(false)
+    const run = loadRun<GameState>()
+    setRunEmAndamento(Boolean(run && run.outcome === 'jogando'))
   }, [pathname])
 
   useEffect(() => {
@@ -125,12 +143,14 @@ export default function SideNav() {
     gravarTema(novo)
   }
 
+  // Sair mora nas Configurações, com dois cliques. Estava na barra, ao alcance
+  // de um clique errado ao passar o mouse, e repetido no fim do perfil
   function sairDaConta() {
     setSaindo(true)
     // o espelho local do jogo não pode sobrar para o próximo que entrar
     cancelarSync()
     limparLocalDoJogo()
-    void sair().finally(() => router.replace('/'))
+    void sair().finally(() => router.replace('/auth'))
   }
 
   // no celular a barra fica escondida: arrastar da esquerda para a direita em
@@ -211,14 +231,6 @@ export default function SideNav() {
     }
   }, [aberta])
 
-  const naMesa = pathname.startsWith('/jogar')
-
-  function confirmarReinicio(guardar: boolean) {
-    setConfirmando(false)
-    setAberta(false)
-    window.dispatchEvent(new CustomEvent(EVENTO_REINICIAR, { detail: { guardar } }))
-  }
-
   return (
     <>
       <button
@@ -237,7 +249,7 @@ export default function SideNav() {
       <nav className={`${styles.nav} ${aberta ? styles.aberta : ''}`} aria-label="Navegação principal">
         <div ref={painelRef} className={styles.painel}>
           <div className={styles.corpo}>
-            <Link className={styles.marca} href="/">
+            <Link className={styles.marca} href="/" onClick={(e) => navegar(e, '/')}>
               <span className={styles.logo} aria-hidden>
                 <Coffee size={15} />
                 <Hammer size={15} />
@@ -249,34 +261,37 @@ export default function SideNav() {
               </span>
             </Link>
 
-            {LINKS.map(({ href, label, Icon }) => {
-              const ativo = href === '/' ? pathname === '/' : pathname.startsWith(href)
-              return (
-                <Link
-                  key={href}
-                  className={`${styles.link} ${ativo ? styles.ativo : ''}`}
-                  href={href}
-                  aria-current={ativo ? 'page' : undefined}
-                >
-                  <Icon size={18} aria-hidden />
-                  <span className={styles.rotulo}>{label}</span>
-                </Link>
-              )
-            })}
+            {GRUPOS.map((grupo, g) => (
+              <div key={g} className={styles.grupoNav}>
+                {grupo.map(({ href, label, Icon }) => {
+                  const ativo = href === '/' ? pathname === '/' : pathname.startsWith(href)
+                  const ponto = href === '/jogar' && runEmAndamento && !ativo
+                  return (
+                    <Link
+                      key={href}
+                      className={`${styles.link} ${ativo ? styles.ativo : ''}`}
+                      href={href}
+                      aria-current={ativo ? 'page' : undefined}
+                      onClick={(e) => navegar(e, href)}
+                    >
+                      <span className={styles.comSino}>
+                        <Icon size={18} aria-hidden />
+                        {ponto ? <span className={styles.ponto} aria-label="run em andamento" /> : null}
+                      </span>
+                      <span className={styles.rotulo}>{label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            ))}
 
             <span className={styles.empurra} />
-
-            {naMesa ? (
-              <button type="button" className={styles.link} onClick={() => setConfirmando(true)}>
-                <RotateCcw size={18} aria-hidden />
-                <span className={styles.rotulo}>Reiniciar run</span>
-              </button>
-            ) : null}
 
             {admin ? (
               <Link
                 className={`${styles.link} ${pathname.startsWith('/lab') ? styles.ativo : ''}`}
                 href="/lab"
+                onClick={(e) => navegar(e, '/lab')}
               >
                 <TestTube size={18} aria-hidden />
                 <span className={styles.rotulo}>Lab</span>
@@ -286,8 +301,10 @@ export default function SideNav() {
             <Link
               className={`${styles.link} ${pathname.startsWith('/perfil') ? styles.ativo : ''}`}
               href="/perfil"
+              onClick={(e) => navegar(e, '/perfil')}
             >
-              <User size={18} aria-hidden />
+              {/* o "você" da barra é o seu rosto, não um bonequinho genérico */}
+              <Avatar avatar={sessao.avatar} tamanho={22} className={styles.avatarNav} />
               <span className={styles.rotulo}>Perfil</span>
             </Link>
 
@@ -306,17 +323,6 @@ export default function SideNav() {
             <button type="button" className={styles.link} onClick={() => setConfigurando(true)}>
               <Settings size={18} aria-hidden />
               <span className={styles.rotulo}>Configurações</span>
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.link} ${styles.sair}`}
-              onClick={() => setConfirmandoSaida(true)}
-            >
-              <LogOut size={18} aria-hidden />
-              <span className={styles.rotulo}>
-                {sessao.convidado ? 'Sair (e criar conta)' : 'Sair'}
-              </span>
             </button>
 
           </div>
@@ -424,75 +430,56 @@ export default function SideNav() {
               />
             </label>
           </div>
+
+          <div className={styles.grupo}>
+            <span className={styles.grupoTitulo}>Conta</span>
+            <span className={styles.grupoDica}>
+              {sessao.convidado
+                ? 'Você está sem conta: ao sair, a partida em andamento e as cartas ganhas ficam para trás, e não há como recuperá-las.'
+                : 'Sua partida está salva no banco e volta quando você entrar de novo. Este navegador é que fica limpo.'}
+            </span>
+            <BotaoConfirmar
+              className={`${buttons.button} ${styles.botaoSair}`}
+              armado={sessao.convidado ? 'Confirmar: perder tudo e sair' : 'Confirmar saída'}
+              desabilitado={saindo}
+              onConfirmar={sairDaConta}
+            >
+              <LogOut size={15} aria-hidden />
+              {saindo ? 'Saindo…' : sessao.convidado ? 'Sair (e criar conta)' : 'Sair da conta'}
+            </BotaoConfirmar>
+          </div>
         </Dialogo>
       ) : null}
 
-      {confirmandoSaida ? (
+      {destinoPendente ? (
         <Dialogo
-          titulo={sessao.convidado ? 'Sair como convidado?' : 'Sair da conta?'}
-          onFechar={() => setConfirmandoSaida(false)}
+          titulo="Sair sem salvar?"
+          onFechar={() => setDestinoPendente(null)}
           acoes={
             <>
               <button
                 type="button"
-                className={`${buttons.button} ${buttons.primary}`}
-                disabled={saindo}
-                onClick={sairDaConta}
+                className={`${buttons.button} ${styles.botaoSair}`}
+                onClick={() => {
+                  marcarPendencia(null)
+                  const { href } = destinoPendente
+                  setDestinoPendente(null)
+                  router.push(href)
+                }}
               >
-                {saindo ? 'Saindo…' : 'Sair'}
+                Descartar e sair
               </button>
               <button
                 type="button"
-                className={buttons.button}
-                onClick={() => setConfirmandoSaida(false)}
+                className={`${buttons.button} ${buttons.primary}`}
+                onClick={() => setDestinoPendente(null)}
               >
-                Ficar
+                Continuar editando
               </button>
             </>
           }
         >
-          <p className={styles.dialogoTexto}>
-            {sessao.convidado
-              ? 'Você está sem conta: a partida em andamento e as cartas ganhas ficam para trás, e não há como recuperá-las. Criar conta agora leva um minuto e guarda tudo daqui para a frente.'
-              : 'Sua partida está salva no banco e volta quando você entrar de novo. Este navegador é que fica limpo.'}
-          </p>
-        </Dialogo>
-      ) : null}
-
-      {confirmando ? (
-        <Dialogo
-          titulo="Reiniciar a run?"
-          onFechar={() => setConfirmando(false)}
-          acoes={
-            <>
-              <button
-                type="button"
-                className={`${buttons.button} ${buttons.primary}`}
-                onClick={() => confirmarReinicio(true)}
-              >
-                Guardar e reiniciar
-              </button>
-              <button
-                type="button"
-                className={buttons.button}
-                onClick={() => confirmarReinicio(false)}
-              >
-                Reiniciar sem guardar
-              </button>
-              <button
-                type="button"
-                className={buttons.button}
-                onClick={() => setConfirmando(false)}
-              >
-                Cancelar
-              </button>
-            </>
-          }
-        >
-          <p className={styles.dialogoTexto}>
-            O mês atual é descartado e um novo começa do dia 1. Não dá para desfazer. Quer guardar
-            este mês no seu histórico antes?
-          </p>
+          <p className={styles.dialogoTexto}>{destinoPendente.aviso}</p>
         </Dialogo>
       ) : null}
     </>

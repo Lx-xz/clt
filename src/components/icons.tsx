@@ -59,3 +59,28 @@ export const TONE_ICONS: Record<EventTone, LucideIcon> = {
 }
 
 export { Lock as LockIcon, Moon as EndDayIcon }
+
+/**
+ * Um pente — o lucide não tem. É a amostra "igual ao cabelo" da cor da barba:
+ * ela não é uma cor, é "a mesma do cabelo", e uma bolinha pintada seria lida
+ * como mais uma cor para escolher.
+ */
+export function PenteIcon({ size = 18, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3" y="5" width="18" height="5" rx="1.5" />
+      <path d="M5.5 10v8M9 10v8M12.5 10v8M16 10v8M19.5 10v6" />
+    </svg>
+  )
+}

@@ -1,7 +1,8 @@
 'use client'
 
-import { BookOpen, Layers, LogIn, MessageSquareWarning, Play, Trophy, User, UserRound } from 'lucide-react'
+import { BookOpen, LogIn, UserRound } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import Check from '@/components/Check'
 import ComoJogar from '@/components/ComoJogar'
@@ -29,14 +30,8 @@ import styles from './page.module.sass'
 
 type Aba = 'entrar' | 'criar'
 
-/** Os mesmos destinos da barra lateral, na porta de entrada. */
-const ATALHOS = [
-  { href: '/perfil', label: 'Perfil', Icon: User },
-  { href: '/ranking', label: 'Ranking', Icon: Trophy },
-  { href: '/comunidade', label: 'Comunidade', Icon: MessageSquareWarning },
-]
-
-export default function Home() {
+export default function Entrada() {
+  const router = useRouter()
   const [conta, setConta] = useState<Conta | null>(null)
   const [aba, setAba] = useState<Aba>('entrar')
   const [ocupado, setOcupado] = useState(false)
@@ -202,6 +197,13 @@ export default function Home() {
 
   const dentro = conta?.tipo === 'conta' || conta?.tipo === 'convidado'
 
+  // esta é só a PORTA: quem já entrou vai para o início, que tem a barra
+  // lateral, o avatar e o último jogo. Antes a página era a porta e o
+  // saguão ao mesmo tempo, e o saguão era um beco — sem barra, sem nada
+  useEffect(() => {
+    if (dentro) router.replace('/')
+  }, [dentro, router])
+
   return (
     <main className={styles.home}>
       {/* no computador a marca fica à esquerda e o que se faz aqui à direita;
@@ -221,53 +223,7 @@ export default function Home() {
       <div className={styles.painel}>
       {conta === null ? <p className={styles.aviso}>Batendo o ponto…</p> : null}
 
-      {dentro && conta ? (
-        <>
-          <span className={styles.quem}>
-            Jogando como <span className={styles.nick}>{conta.perfil.nick}</span>
-            <button type="button" className={styles.trocar} onClick={trocar} disabled={ocupado}>
-              {conta.perfil.convidado ? 'sair' : 'trocar de conta'}
-            </button>
-          </span>
-          {conta.perfil.convidado ? (
-            <p className={styles.avisoForte}>
-              Você está como <b>convidado</b>. As partidas e as cartas ganhas ficam só neste
-              navegador: ao sair, ou ao entrar de novo, <b>tudo isto se perde</b> — e sem conta não
-              dá para relatar bug nem acompanhar o que foi corrigido.{' '}
-              <button type="button" className={styles.trocar} onClick={trocar} disabled={ocupado}>
-                criar uma conta
-              </button>
-            </p>
-          ) : null}
-          <div className={styles.actions}>
-            <Link className={`${buttons.button} ${buttons.primary}`} href="/jogar">
-              <Play size={16} aria-hidden />
-              Jogar
-            </Link>
-            <Link className={buttons.button} href="/baralho">
-              <Layers size={16} aria-hidden />
-              Baralho
-            </Link>
-          </div>
-
-          <button type="button" className={styles.tutorial} onClick={() => setTutorial(true)}>
-            <BookOpen size={20} aria-hidden />
-            <span>
-              <b>Como jogar</b>
-              Regras, cartas e o que faz perder — em um minuto
-            </span>
-          </button>
-
-          <nav className={styles.atalhos} aria-label="Atalhos">
-            {ATALHOS.map(({ href, label, Icon }) => (
-              <Link key={href} className={styles.atalho} href={href}>
-                <Icon size={15} aria-hidden />
-                {label}
-              </Link>
-            ))}
-          </nav>
-        </>
-      ) : null}
+      {dentro ? <p className={styles.aviso}>Entrando…</p> : null}
 
       {conta?.tipo === 'incompleto' ? (
         <form className={styles.forma} onSubmit={completar}>

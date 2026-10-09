@@ -56,7 +56,7 @@ export interface RunRegistravel {
   /** O dia a dia da run e o retrato do baralho usado nela. O retrato é o que
    *  mantém a partida legível depois de a carta mudar de custo ou sumir —
    *  veja `src/data/balanceamento.ts`. */
-  details: { history: GameState['history']; baralho?: GameState['baralho']; modo?: GameState['modo'] }
+  details: { history: GameState['history']; baralho?: GameState['baralho']; modo?: GameState['modo']; log?: GameState['log'] }
 }
 
 export function montarRun(
@@ -82,7 +82,7 @@ export function montarRun(
     modo: run.modo?.id ?? 'normal',
     visivel,
     convidado,
-    details: { history: run.history, baralho: run.baralho, modo: run.modo },
+    details: { history: run.history, baralho: run.baralho, modo: run.modo, log: run.log },
   }
 }
 

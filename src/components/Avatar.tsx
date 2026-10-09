@@ -1048,6 +1048,8 @@ export default function Avatar({
   const [cBase, csBase] = TONS_DE_CABELO[avatar.cor]
   const c = ajustes?.cores?.cabelo ?? cBase
   const cs = ajustes?.cores?.cabelo ? escurecer(ajustes.cores.cabelo, 0.75) : csBase
+  // 'cabelo' segue a cor de cima, inclusive a do slot de cor livre do lab
+  const corBarba = avatar.corBarba && avatar.corBarba !== 'cabelo' ? TONS_DE_CABELO[avatar.corBarba][0] : c
   const roupa = ajustes?.cores?.roupa ?? TONS_DE_ROUPA[avatar.roupa]
   const fundo = ajustes?.cores?.fundo ?? TONS_DE_FUNDO[avatar.fundo]
   // o chapéu herda a roupa, um pouco mais escuro: da mesma cor, ele some na
@@ -1170,7 +1172,7 @@ export default function Avatar({
           ) : null}
 
           {/* 7. barba, ANTES das feições: o nariz e a boca vêm por cima dela */}
-          {manequim ? null : barba.desenhar({ m, cor: c, pele: p, bocaY })}
+          {manequim ? null : barba.desenhar({ m, cor: corBarba, pele: p, bocaY })}
 
           {/* 8. rosto: sobrancelha, olho, nariz, boca. O manequim não tem
                  nenhum deles — é justamente a cara vazia que diz "ainda não

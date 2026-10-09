@@ -146,10 +146,63 @@
 
 // o avatar do HUD: pequeno, mas no tamanho em que o humor foi desenhado para
 // ser lido. A borda do Avatar some aqui — na faixa do HUD ela vira ruído
-.avatarHud
-  flex: none
-  margin-right: 2px
+// o crachá pendurado no canto do tapete. Fica ABAIXO das cartas jogadas
+// (z 1): numa mesa cheia no celular, a carta é o que importa
+.cracha
+  position: absolute
+  z-index: 1
+  top: 14px
+  left: 14px
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 4px
+  padding: 12px 6px 6px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
   border-radius: 7px
+  box-shadow: var(--sombra)
+  transform-origin: 50% -16px
+  animation: balanca .9s cubic-bezier(.3, .6, .4, 1)
+  pointer-events: none
+
+  // o furo do cordão
+  &::before
+    content: ""
+    position: absolute
+    top: 4px
+    left: 50%
+    width: 18px
+    height: 4px
+    transform: translateX(-50%)
+    border-radius: 999px
+    background: var(--linha)
+
+.crachaAvatar
+  border-radius: 5px
+
+.crachaNome
+  max-width: 72px
+  overflow: hidden
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 9px
+  letter-spacing: .04em
+  text-overflow: ellipsis
+  text-transform: uppercase
+  white-space: nowrap
+
+@keyframes balanca
+  0%
+    transform: rotate(0)
+  25%
+    transform: rotate(-6deg)
+  55%
+    transform: rotate(4deg)
+  80%
+    transform: rotate(-2deg)
+  100%
+    transform: rotate(0)
 
 // o avatar do fim da run, com a cara do desfecho
 .avatarFim
@@ -500,6 +553,16 @@
 .passoNovo
   animation: passo-entra .4s ease
 
+// a última linha da nota: o total, com a linha dupla de recibo em cima
+.total
+  border-top: 3px double var(--tinta-fraca)
+  border-bottom: none
+
+  .passoRot
+    color: var(--tinta)
+    font-weight: 700
+    text-transform: uppercase
+
 @keyframes passo-entra
   from
     opacity: 0
@@ -542,6 +605,28 @@
   display: flex
   flex-wrap: wrap
   gap: 8px
+
+// o fim de run com o recibo fechado: a mesa fica como estava, e esta faixa é
+// o caminho de volta
+.faixaFim
+  position: fixed
+  z-index: 34
+  left: 50%
+  bottom: 18px
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  justify-content: center
+  gap: 10px
+  max-width: calc(100% - 24px)
+  padding: 10px 14px
+  transform: translateX(-50%)
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  box-shadow: var(--sombra)
+  font-family: var(--mono)
+  font-size: 13px
 
 @media (max-width: 760px)
   // baralho e descarte saem da mesa no celular: hoje não pesam em decisão
@@ -607,6 +692,25 @@
   .rotuloCanto
     display: none
 
+  // 56 px no celular: o tamanho em que a lágrima e a olheira ainda se leem
+  .cracha
+    top: 8px
+    left: 8px
+    padding: 10px 5px 5px
+
+  // o tamanho vem inline do componente; aqui ele é sobrescrito, e o SVG
+  // (que leva width/height próprios) acompanha a caixa
+  .crachaAvatar
+    width: 56px !important
+    height: 56px !important
+
+    svg
+      width: 100%
+      height: 100%
+
+  .crachaNome
+    max-width: 56px
+
   // "Próx. dia" no celular
   .proximoDia
     right: 8px
@@ -654,6 +758,7 @@
     --carta-arte: calc(var(--carta-h) * .39)
 
 @media (prefers-reduced-motion: reduce)
+  .cracha,
   .revelavel,
   .jogada,
   .recompensa,

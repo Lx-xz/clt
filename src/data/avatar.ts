@@ -64,10 +64,14 @@ export interface Avatar {
   rosto: Rosto
   pele: Pele
   cabelo: Corte
-  /** A cor do cabelo — e da barba, que é da mesma pessoa. */
+  /** A cor do cabelo. */
   cor: CorCabelo
   olhos: Olhos
   barba: Barba
+  /** `'cabelo'` acompanha a cor do cabelo — é o padrão, e o que quase todo
+   *  mundo quer; as outras são para a barba grisalha de quem tem o cabelo
+   *  pintado, e o contrário. */
+  corBarba: CorBarba
   tronco: Tronco
   /** A cor da roupa — e do chapéu, que herda dela: uma sétima escolha de cor
    *  só para o chapéu seria um controle a mais para quase ninguém. */
@@ -90,6 +94,7 @@ export const AVATAR_PADRAO: Avatar = {
   cor: 'castanho',
   olhos: 'amendoa',
   barba: 'nenhuma',
+  corBarba: 'cabelo',
   // o tronco sem pescoço é o padrão de quem escolhe agora; quem já tinha
   // avatar mantém a gola de antes, pela tradução em `lerAvatar`
   tronco: 'colado',
@@ -134,6 +139,8 @@ export const PELES: Opcao<Pele>[] = [
   { valor: 'ebano', rotulo: 'Ébano' },
 ]
 
+export type CorBarba = CorCabelo | 'cabelo'
+
 export const CORES: Opcao<CorCabelo>[] = [
   { valor: 'preto', rotulo: 'Preto' },
   { valor: 'castanho', rotulo: 'Castanho' },
@@ -142,6 +149,13 @@ export const CORES: Opcao<CorCabelo>[] = [
   { valor: 'ruivo', rotulo: 'Ruivo' },
   { valor: 'grisalho', rotulo: 'Grisalho' },
   { valor: 'branco', rotulo: 'Branco' },
+]
+
+/** A primeira opção é "igual ao cabelo" — no editor ela é um pente, e não uma
+ *  cor, porque ela não É uma cor: muda junto quando o cabelo muda. */
+export const CORES_DE_BARBA: Opcao<CorBarba>[] = [
+  { valor: 'cabelo', rotulo: 'Igual ao cabelo' },
+  ...CORES,
 ]
 
 export const OLHOS: Opcao<Olhos>[] = [
@@ -244,6 +258,8 @@ export function lerAvatar(bruto: unknown): Avatar {
     cor: um(CORES, a.cor, AVATAR_PADRAO.cor),
     olhos: um(OLHOS, a.olhos, AVATAR_PADRAO.olhos),
     barba: um(BARBAS, a.barba, AVATAR_PADRAO.barba),
+    // receita de antes da v0.14 não tem o campo: a barba seguia o cabelo
+    corBarba: um(CORES_DE_BARBA, a.corBarba, AVATAR_PADRAO.corBarba),
     tronco: um(TRONCOS, a.tronco, TRONCO_DO_CORPO[corpoAntigo] ?? AVATAR_PADRAO.tronco),
     roupa: um(ROUPAS, a.roupa, AVATAR_PADRAO.roupa),
     oculos: um(OCULOS, a.oculos, AVATAR_PADRAO.oculos),
@@ -280,6 +296,7 @@ export function avatarAleatorio(): Avatar {
     // quiser, mas não entra no sorteio de quem está conhecendo o editor
     olhos: sorteio(OLHOS.filter((o) => o.valor !== 'simples')).valor,
     barba: talvez(BARBAS, 'nenhuma', 0.35),
+    corBarba: Math.random() < 0.8 ? 'cabelo' : sorteio(CORES).valor,
     tronco: sorteio(TRONCOS).valor,
     roupa: sorteio(ROUPAS).valor,
     oculos: talvez(OCULOS, 'nenhum', 0.25),

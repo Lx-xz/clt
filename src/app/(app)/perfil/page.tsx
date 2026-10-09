@@ -2,16 +2,12 @@
 
 import { Pencil, Trophy } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Avatar from '@/components/Avatar'
 import ListaDeJogos from '@/components/ListaDeJogos'
 import { useSessao } from '@/components/SessaoGuard'
 import { buscarMeusJogos, buscarRanking } from '@/data/analytics'
-import { sair } from '@/data/conta'
 import type { JogoResumo } from '@/data/jogadores'
-import { cancelarSync } from '@/data/sync'
-import { limparLocalDoJogo } from '@/game/storage'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './perfil.module.sass'
 
@@ -24,8 +20,6 @@ interface Posto {
 
 export default function PerfilPage() {
   const sessao = useSessao()
-  const router = useRouter()
-  const [saindo, setSaindo] = useState(false)
   const [jogos, setJogos] = useState<JogoResumo[] | null>(null)
   const [posto, setPosto] = useState<Posto | null>(null)
 
@@ -48,14 +42,6 @@ export default function PerfilPage() {
       })
       .catch(() => {})
   }, [sessao.id, sessao.nick])
-
-  function sairDaConta() {
-    setSaindo(true)
-    // o espelho local do jogo não pode sobrar para o próximo que entrar
-    cancelarSync()
-    limparLocalDoJogo()
-    void sair().finally(() => router.replace('/'))
-  }
 
   return (
     <main className="page">
@@ -135,11 +121,6 @@ export default function PerfilPage() {
         />
       )}
 
-      <div className={styles.acoes}>
-        <button type="button" className={buttons.button} onClick={sairDaConta} disabled={saindo}>
-          {saindo ? 'Saindo…' : sessao.convidado ? 'Sair e criar conta' : 'Sair da conta'}
-        </button>
-      </div>
     </main>
   )
 }

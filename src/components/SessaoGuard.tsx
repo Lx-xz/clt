@@ -53,15 +53,15 @@ export default function SessaoGuard({ children }: { children: React.ReactNode })
           setPronto(true)
           return
         }
-        // fora, ou cadastro pela metade: as duas coisas se resolvem na home
+        // fora, ou cadastro pela metade: as duas coisas se resolvem na entrada
         setSessao(null)
-        router.replace('/')
+        router.replace('/auth')
       })
       .catch(() => {
         // banco fora do ar: quem já tem espelho local continua jogando (o
         // save local segura a run), quem não tem volta para a entrada
         if (lerSessao()) setPronto(true)
-        else router.replace('/')
+        else router.replace('/auth')
       })
   }, [router])
 

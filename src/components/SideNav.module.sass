@@ -118,6 +118,36 @@ $painel-largo: 216px
 .empurra
   flex: 1
 
+// os dois grupos de links, separados por um fio
+.grupoNav
+  display: flex
+  flex-direction: column
+  gap: 2px
+
+  & + &
+    margin-top: 6px
+    padding-top: 8px
+    border-top: 1px solid var(--linha)
+
+// a run no meio: um ponto no "Jogar", como aba com coisa por terminar
+.ponto
+  position: absolute
+  top: -3px
+  right: -4px
+  width: 8px
+  height: 8px
+  border: 2px solid var(--papel-alto)
+  border-radius: 50%
+  background: var(--destaque)
+
+// o avatar ocupa o lugar do ícone, então tem o tamanho dele
+.avatarNav
+  flex: none
+  border-radius: 6px
+  // 22 px de avatar no lugar de 18 de ícone: recua 2 px de cada lado para os
+  // rótulos continuarem alinhados com os de cima
+  margin: -2px
+
 .rodape
   padding: 8px 8px 0
   color: var(--tinta-fraca)
@@ -191,10 +221,15 @@ $painel-largo: 216px
 .desligado
   opacity: .45
 
-// sair fica com a cor de alerta, para não ser clicado junto com o de cima
-.sair:hover
-  background: color-mix(in srgb, var(--estresse) 14%, transparent)
+// o Sair das Configurações: a cor do perigo já em repouso, porque é a única
+// ação da janela que não se desfaz
+.botaoSair
+  align-self: flex-start
+  display: inline-flex
+  align-items: center
+  gap: 6px
   color: var(--estresse)
+  border-color: color-mix(in srgb, var(--estresse) 45%, var(--linha))
 
 .controleRotulo
   display: flex

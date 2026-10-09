@@ -1,11 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, CloudOff, Loader, ScrollText } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, CloudOff, DoorOpen, Loader, ScrollText } from 'lucide-react'
 import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import Card from '@/components/Card'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
+import Dialogo from '@/components/Dialogo'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
 import HistoricoDaRun from '@/components/HistoricoDaRun'
 import MensagemNaMesa from '@/components/MensagemNaMesa'
@@ -37,7 +39,7 @@ import {
   type StatusSync,
 } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
-import { EVENTO_REINICIAR } from '@/components/SideNav'
+import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { clearRun, loadCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
 import type { CardInstance, GameState } from '@/game/types'
@@ -74,6 +76,8 @@ export default function JogarPage() {
   // atravessar o jogo inteiro
   const [tutorial, setTutorial] = useState(false)
   const [historico, setHistorico] = useState(false)
+  /** O recibo de fim de run foi fechado para olhar a mesa como ficou. */
+  const [fimFechado, setFimFechado] = useState(false)
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -114,34 +118,27 @@ export default function JogarPage() {
   }
 
   /**
-   * `guardar` é a resposta do jogador à pergunta do menu. Dizer não tira a run
-   * de "meus jogos" e do ranking — ela ainda é registrada, invisível, porque
-   * quantas runs são largadas no meio é justamente um dado de balanceamento.
+   * Começa outra run. Chamado com a run ainda em andamento, é o "Pedir
+   * demissão": a partida é registrada como `abandono` — fora do ranking, mas
+   * em "meus jogos", porque quantas runs são largadas no meio, e em que dia,
+   * é justamente um dado de balanceamento.
+   *
+   * Antes isto morava no menu lateral, com um popup perguntando se era para
+   * guardar. Na mesa, ao lado do Histórico, é onde a vontade de desistir
+   * aparece; e a pergunta saiu porque ninguém sabia o que "guardar" mudava.
    */
-  function recomecar(guardar = true) {
+  function recomecar() {
     // abaixo do dia 3 não registra nada: reiniciar no primeiro minuto é
     // "ainda estou escolhendo o baralho", não desistência — e encheria a
     // análise de abandono que não diz nada
     if (state && state.outcome === 'jogando' && state.day >= 3) {
-      void registrarRunAgora(sessao.id, state, 'abandono', sessao.convidado, guardar)
+      void registrarRunAgora(sessao.id, state, 'abandono', sessao.convidado)
     }
     clearRun()
     setAberta(null)
+    setFimFechado(false)
     update(createRun(loadCollection().equipped))
   }
-
-  // o botão de reiniciar vive no menu lateral (com confirmação); ele avisa por
-  // evento e a mesa recomeça aqui
-  const recomecarRef = useRef(recomecar)
-  recomecarRef.current = recomecar
-  useEffect(() => {
-    const aoReiniciar = (e: Event) => {
-      const guardar = (e as CustomEvent<{ guardar?: boolean }>).detail?.guardar ?? true
-      recomecarRef.current(guardar)
-    }
-    window.addEventListener(EVENTO_REINICIAR, aoReiniciar)
-    return () => window.removeEventListener(EVENTO_REINICIAR, aoReiniciar)
-  }, [])
 
   function jogar(uid: string) {
     if (!state) return
@@ -244,15 +241,6 @@ export default function JogarPage() {
         </div>
         <span className={styles.espaco} />
         <span className={`${styles.sync} ${status === 'erro' ? styles.syncErro : ''}`}>
-          {/* o medidor de estresse com CARA: ele cansa junto com o jogador.
-              A conta "Energia = 10 − Estresse" é o jogo inteiro, e antes dele
-              ela só existia em texto */}
-          <Avatar
-            avatar={sessao.avatar}
-            tamanho={28}
-            className={styles.avatarHud}
-            humor={humorDoEstresse(state.stress, state.modo.estresseMaximo)}
-          />
           <span className={styles.nick}>{sessao.nick}</span>
           {status === 'salvando' ? (
             <Loader size={13} className={styles.girando} aria-label="salvando" />
@@ -286,6 +274,24 @@ export default function JogarPage() {
             <ScrollText size={15} aria-hidden />
             <span className={styles.rotuloCanto}>Histórico</span>
           </button>
+          {/* desistir é com dois cliques, sem popup: o primeiro arma, o
+              segundo confirma — o popup cobria a mesa da qual se desistia */}
+          {!acabou ? (
+            <BotaoConfirmar
+              className={styles.botaoCanto}
+              rotulo="Pedir demissão"
+              armado={
+                <>
+                  <DoorOpen size={15} aria-hidden />
+                  <span>Confirmar<span className={styles.rotuloCanto}> demissão</span>?</span>
+                </>
+              }
+              onConfirmar={() => recomecar()}
+            >
+              <DoorOpen size={15} aria-hidden />
+              <span className={styles.rotuloCanto}>Pedir demissão</span>
+            </BotaoConfirmar>
+          ) : null}
         </div>
 
         {state.phase === 'dia' ? (
@@ -331,6 +337,23 @@ export default function JogarPage() {
       </div>
 
       <div ref={tapete} className={`${styles.tapete} ${sobreTapete ? styles.alvo : ''}`}>
+        {/* o crachá: o medidor de estresse com CARA. Ele cansa junto com o
+            jogador — a conta "Energia = 10 − Estresse" é o jogo inteiro, e
+            antes dele ela só existia em texto. Morava no header, com 24 px,
+            e no celular não dava para ver a cara mudar; aqui, no canto do
+            tapete, ele tem espaço. A `key` pelo humor faz o crachá balançar
+            quando a cara troca */}
+        {(() => {
+          const humor = acabou && state.outcome === 'vitoria'
+            ? 'vitoria'
+            : humorDoEstresse(state.stress, state.modo.estresseMaximo)
+          return (
+            <div key={humor} className={styles.cracha} aria-label={`Seu avatar: ${humor}`}>
+              <Avatar avatar={sessao.avatar} tamanho={72} className={styles.crachaAvatar} humor={humor} />
+              <span className={styles.crachaNome}>{sessao.nick}</span>
+            </div>
+          )
+        })()}
         {state.playedToday.length === 0 ? (
           <span className={styles.dicaTapete}>{dicaDoTapete(state, esperandoEvento)}</span>
         ) : (
@@ -465,120 +488,151 @@ export default function JogarPage() {
         />
       ) : null}
 
+      {/* os três painéis da mesa são NOTAS FISCAIS (é dinheiro e resultado) e
+          não travam a barra lateral: antes, o de fim de run cobria a barra, e
+          o único jeito de sair dele era começar outra partida */}
       {state.phase === 'sexta' ? (
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
-            <h2 className={styles.painelTitulo}>Sexta-feira</h2>
+        <Dialogo titulo="Sexta-feira" estilo="nota" semTravarNav>
+          <ol className={styles.passos}>
+            <li className={styles.passo}>
+              <span className={styles.passoRot}>Produtividade da semana</span>
+              <span className={styles.passoVal}>
+                {state.weekProductivity} / {week.weeklyGoal}
+              </span>
+            </li>
 
-            <ol className={styles.passos}>
-              <li className={styles.passo}>
-                <span className={styles.passoRot}>Produtividade da semana</span>
-                <span className={styles.passoVal}>
-                  {state.weekProductivity} / {week.weeklyGoal}
+            {state.fridayResult ? (
+              <li className={`${styles.passo} ${styles.passoNovo}`}>
+                <span className={styles.passoRot}>
+                  {state.fridayResult.metGoal ? 'Meta batida · salário cheio' : 'Meta falhou · salário reduzido e +1 advertência'}
                 </span>
+                <span className={`${styles.passoVal} ${styles.entrada}`}>+R$ {state.fridayResult.salary}</span>
               </li>
+            ) : null}
 
-              {state.fridayResult ? (
-                <li className={`${styles.passo} ${styles.passoNovo}`}>
-                  <span className={styles.passoRot}>
-                    {state.fridayResult.metGoal ? 'Meta batida · salário cheio' : 'Meta falhou · salário reduzido e +1 advertência'}
-                  </span>
-                  <span className={`${styles.passoVal} ${styles.entrada}`}>+R$ {state.fridayResult.salary}</span>
-                </li>
-              ) : null}
+            {state.fridayStep === 'descanso' ? (
+              <li className={`${styles.passo} ${styles.passoNovo}`}>
+                <span className={styles.passoRot}>Aluguel e mercado</span>
+                <span className={`${styles.passoVal} ${styles.saida}`}>−R$ {state.modo.contasSemanais}</span>
+              </li>
+            ) : null}
 
-              {state.fridayStep === 'descanso' ? (
-                <li className={`${styles.passo} ${styles.passoNovo}`}>
-                  <span className={styles.passoRot}>Aluguel e mercado</span>
-                  <span className={`${styles.passoVal} ${styles.saida}`}>−R$ {state.modo.contasSemanais}</span>
-                </li>
-              ) : null}
-            </ol>
+            {state.fridayStep === 'descanso' ? (
+              <li className={`${styles.passo} ${styles.total} ${styles.passoNovo}`}>
+                <span className={styles.passoRot}>Saldo</span>
+                <span className={styles.passoVal}>R$ {state.money}</span>
+              </li>
+            ) : null}
+          </ol>
 
-            <p className={styles.painelTexto}>{textoDaSexta(state)}</p>
+          <p className={styles.painelTexto}>{textoDaSexta(state)}</p>
 
-            <div className={styles.acoes}>
-              {state.fridayStep === 'salario' ? (
-                <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(paySalary(state))}>
-                  Bater o ponto
-                </button>
-              ) : null}
-              {state.fridayStep === 'contas' ? (
-                <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(payBills(state))}>
-                  Pagar as contas
-                </button>
-              ) : null}
-              {state.fridayStep === 'descanso' ? (
-                <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(restWeekend(state))}>
-                  Ir para o fim de semana
-                </button>
-              ) : null}
-            </div>
+          <div className={styles.acoes}>
+            {state.fridayStep === 'salario' ? (
+              <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(paySalary(state))}>
+                Bater o ponto
+              </button>
+            ) : null}
+            {state.fridayStep === 'contas' ? (
+              <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(payBills(state))}>
+                Pagar as contas
+              </button>
+            ) : null}
+            {state.fridayStep === 'descanso' ? (
+              <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(restWeekend(state))}>
+                Ir para o fim de semana
+              </button>
+            ) : null}
           </div>
-        </div>
+        </Dialogo>
       ) : null}
 
       {state.phase === 'recompensa' ? (
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
-            <h2 className={styles.painelTitulo}>Recompensa da semana</h2>
-            <p className={styles.painelTexto}>Escolha 1 carta entre 3 para entrar no baralho.</p>
-            <div className={styles.recompensas}>
-              {state.rewardOptions.map((id, i) => (
-                <Card
-                  key={id}
-                  card={getCard(id)}
-                  className={styles.recompensa}
-                  style={{ '--i': i } as React.CSSProperties}
-                  onOpen={() => {
-                    unlockCard(id)
-                    update(chooseReward(state, id))
-                  }}
-                />
-              ))}
-            </div>
+        <Dialogo titulo="Recompensa da semana" estilo="nota" semTravarNav largo>
+          <p className={styles.painelTexto}>Escolha 1 carta entre 3 para entrar no baralho.</p>
+          <div className={styles.recompensas}>
+            {state.rewardOptions.map((id, i) => (
+              <Card
+                key={id}
+                card={getCard(id)}
+                className={styles.recompensa}
+                style={{ '--i': i } as React.CSSProperties}
+                onOpen={() => {
+                  unlockCard(id)
+                  update(chooseReward(state, id))
+                }}
+              />
+            ))}
           </div>
-        </div>
+        </Dialogo>
       ) : null}
 
-      {acabou ? (
-        <div className={styles.fundo}>
-          <div className={styles.painel}>
-            <Avatar
-              avatar={sessao.avatar}
-              tamanho={88}
-              className={styles.avatarFim}
-              humor={state.outcome === 'vitoria' ? 'vitoria' : humorDoEstresse(state.stress, state.modo.estresseMaximo)}
-            />
-            <h2 className={styles.painelTitulo}>{FIM[state.outcome as keyof typeof FIM].title}</h2>
-            <p className={styles.painelTexto}>
-              {FIM[state.outcome as keyof typeof FIM].text} Pontuação final: R$ {state.money}.
-            </p>
-            {registroFalhou ? (
-              <div className={styles.painelAviso}>
-                <p>
-                  Esta partida não chegou ao banco. Ela ficou guardada aqui e sobe sozinha da
-                  próxima vez que você abrir a mesa.
-                </p>
-                <p className={styles.painelMotivo}>{registroFalhou}</p>
-              </div>
-            ) : null}
-            <div className={styles.acoes}>
-              <button
-                type="button"
-                className={`${buttons.button} ${buttons.primary}`}
-                onClick={() => recomecar()}
-              >
-                Nova run
-              </button>
-              {/* o botão Histórico do canto fica DEBAIXO deste painel — e é
-                  justamente agora que se quer ler o que aconteceu. O Dialogo
-                  do histórico abre por cima do painel */}
-              <button type="button" className={buttons.button} onClick={() => setHistorico(true)}>
-                Ver o que aconteceu
-              </button>
+      {acabou && !fimFechado ? (
+        <Dialogo
+          titulo={FIM[state.outcome as keyof typeof FIM].title}
+          estilo="nota"
+          semTravarNav
+          onFechar={() => setFimFechado(true)}
+        >
+          <Avatar
+            avatar={sessao.avatar}
+            tamanho={88}
+            className={styles.avatarFim}
+            humor={state.outcome === 'vitoria' ? 'vitoria' : humorDoEstresse(state.stress, state.modo.estresseMaximo)}
+          />
+          <p className={styles.painelTexto}>{FIM[state.outcome as keyof typeof FIM].text}</p>
+          <ol className={styles.passos}>
+            <li className={styles.passo}>
+              <span className={styles.passoRot}>Dias trabalhados</span>
+              <span className={styles.passoVal}>{state.history.length}</span>
+            </li>
+            <li className={styles.passo}>
+              <span className={styles.passoRot}>Cartas jogadas</span>
+              <span className={styles.passoVal}>{state.cardsPlayed}</span>
+            </li>
+            <li className={`${styles.passo} ${styles.total}`}>
+              <span className={styles.passoRot}>Pontuação final</span>
+              <span className={styles.passoVal}>R$ {state.money}</span>
+            </li>
+          </ol>
+          {registroFalhou ? (
+            <div className={styles.painelAviso}>
+              <p>
+                Esta partida não chegou ao banco. Ela ficou guardada aqui e sobe sozinha da
+                próxima vez que você abrir a mesa.
+              </p>
+              <p className={styles.painelMotivo}>{registroFalhou}</p>
             </div>
+          ) : null}
+          <div className={styles.acoes}>
+            <button
+              type="button"
+              className={`${buttons.button} ${buttons.primary}`}
+              onClick={() => recomecar()}
+            >
+              Nova run
+            </button>
+            <button type="button" className={buttons.button} onClick={() => setHistorico(true)}>
+              Ver o que aconteceu
+            </button>
+            <Link className={buttons.button} href="/">
+              Voltar ao início
+            </Link>
           </div>
+        </Dialogo>
+      ) : null}
+
+      {/* fechar o recibo deixa a mesa como ficou, para ler; a faixa é o
+          caminho de volta, sem precisar adivinhar onde começa outra run */}
+      {acabou && fimFechado ? (
+        <div className={styles.faixaFim} role="status">
+          <span>Run encerrada · R$ {state.money}</span>
+          <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => recomecar()}>
+            Nova run
+          </button>
+          <button type="button" className={buttons.button} onClick={() => setFimFechado(false)}>
+            Resumo
+          </button>
         </div>
       ) : null}
       {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
