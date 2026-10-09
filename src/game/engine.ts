@@ -155,6 +155,10 @@ export function canPlay(state: GameState, instance: CardInstance) {
   const restricao = card.restricao
   if (restricao?.umaVezPorRun && state.usadasNaRun.includes(card.id)) return false
   if (restricao?.exige && !condicaoVale(state, restricao.exige, contexto(card.id))) return false
+  // o custo em R$ é CUSTO, não efeito: sem saldo a carta não sai da mão. Um
+  // efeito de −R$ deixaria jogar no vermelho e cobrar o despejo na sexta,
+  // sem aviso nenhum na hora da jogada
+  if ((card.custoDinheiro ?? 0) > state.money) return false
   return effectiveCost(state, card.id) <= state.energy
 }
 
@@ -455,6 +459,9 @@ export function playCard(input: GameState, uid: string): GameState {
 
   const card = getCard(instance.cardId)
   state.energy -= effectiveCost(state, card.id)
+  // pago antes dos efeitos: uma carta que ganha dinheiro não pode se pagar
+  // com o que ela mesma vai render
+  state.money -= card.custoDinheiro ?? 0
   state.hand = state.hand.filter((c) => c.uid !== uid)
   state.discard.push(instance)
 

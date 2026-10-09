@@ -781,6 +781,9 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   if (carta.restricao?.exige) {
     return `Esta carta pede: ${textoDaCondicao(carta.restricao.exige)}.`
   }
+  if ((carta.custoDinheiro ?? 0) > state.money) {
+    return `Dinheiro insuficiente: custa R$ ${carta.custoDinheiro} e você tem R$ ${state.money}.`
+  }
   return `Energia insuficiente: custa ${effectiveCost(state, carta.id)} e você tem ${state.energy}.`
 }
 

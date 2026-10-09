@@ -65,6 +65,8 @@ export interface CartaSnapshot {
   cost: number
   kind: ClasseDaCarta
   text: string
+  /** Só existe na carta que se paga em R$ (v0.15). */
+  custoDinheiro?: number
 }
 
 export type TipoDeMudanca = 'criada' | 'ajustada' | 'removida'

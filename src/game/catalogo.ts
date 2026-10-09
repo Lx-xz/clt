@@ -168,7 +168,11 @@ export function getEvent(id: CardId): EventCard {
 
 /** A carta reduzida ao que a run precisa lembrar. Veja `CartaSnapshot`. */
 export function fotografarCarta(card: ActionCard): CartaSnapshot {
-  return { id: card.id, name: card.name, cost: card.cost, kind: card.kind, text: card.text }
+  const retrato: CartaSnapshot = { id: card.id, name: card.name, cost: card.cost, kind: card.kind, text: card.text }
+  // só quando existe: o retrato das cartas que não custam R$ fica idêntico
+  // ao de antes, e o simulador continua comparando byte a byte
+  if (card.custoDinheiro) retrato.custoDinheiro = card.custoDinheiro
+  return retrato
 }
 
 /**

@@ -72,6 +72,7 @@ export default function Card({
   const Icon = evento ? TONE_ICONS[card.tone] : iconeDaClasse(card.kind)
   const custo = evento ? null : (cost ?? card.cost)
   const custoAlto = !evento && custo !== null && custo > card.cost
+  const reais = evento ? 0 : (card.custoDinheiro ?? 0)
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
 
   /** Informa só o deslocamento do ponteiro; o CSS compõe o resto. */
@@ -176,7 +177,7 @@ export default function Card({
     ? faceDown
       ? 'Carta de evento virada para baixo. Clique para revelar.'
       : `${card.name}. ${card.text}`
-    : `${card.name}, custa ${custo} de energia. Clique para ver o detalhe, clique duplo para jogar.`
+    : `${card.name}, custa ${custo} de energia${reais ? ` e R$ ${reais}` : ''}. Clique para ver o detalhe, clique duplo para jogar.`
 
   return (
     <div className={`${styles.palco} ${className ?? ''}`} style={style}>
@@ -213,7 +214,14 @@ export default function Card({
           ].join(' ')}
         >
           {custo !== null ? (
-            <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>{custo}</span>
+            // a carta que só se paga em R$ não mostra o "0" de energia: o
+            // carimbo diz o que ela COBRA, e zero não é cobrança
+            <span className={styles.custos}>
+              {custo > 0 || !reais ? (
+                <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>{custo}</span>
+              ) : null}
+              {reais ? <span className={`${styles.custo} ${styles.custoReais}`}>R${reais}</span> : null}
+            </span>
           ) : null}
           <span className={styles.selo} aria-label={locked ? 'bloqueada' : undefined} aria-hidden={!locked}>
             {locked ? <LockIcon size={13} /> : <Icon size={13} />}

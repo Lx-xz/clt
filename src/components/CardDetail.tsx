@@ -56,6 +56,9 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason,
                   {custo} de energia
                   {custo !== card.cost ? ` (base ${card.cost})` : ''}
                 </span>
+                {card.custoDinheiro ? (
+                  <span className={`${styles.chip} ${styles.chipDinheiro}`}>R$ {card.custoDinheiro}</span>
+                ) : null}
                 <span className={styles.chip}>{nomeDaClasse(card.kind)}</span>
               </>
             )}

@@ -44,6 +44,7 @@ export const VERSOES: Versao[] = [
       { tipo: 'melhor', texto: 'Clique duplo ou arrastar para a outra coluna move UMA cópia — antes, tirar a Tarefa Simples tirava as quatro de uma vez. O clique abre a carta, com o seletor de cópias e o histórico dela.' },
       { tipo: 'novo', texto: 'A recompensa saiu da sexta e foi para o fim da run, ganhando ou perdendo: escolha uma carta para a coleção. Quanto mais longe a run foi, melhores as opções — a rara só aparece da semana 4 em diante, e quem vence escolhe entre quatro.' },
       { tipo: 'novo', texto: 'As cartas têm raridade: comum, incomum e rara.' },
+      { tipo: 'novo', texto: 'Cartas que se pagam em dinheiro: o carimbo verde mostra o preço, e sem saldo a carta não sai da mão — antes, a Terapia de R$ deixava jogar no vermelho e o despejo vinha na sexta.' },
       { tipo: 'melhor', texto: 'O baralho inicial troca uma Tarefa Simples por uma Reunião, para já nascer com 3 de cada naipe.' },
       { tipo: 'correcao', texto: 'No celular, arrastar da borda em cima de uma carta bloqueada não abria o menu.' },
     ],

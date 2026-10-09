@@ -53,7 +53,10 @@ export function cartaComoEra(id: CardId, retrato?: CartaSnapshot[]): CartaSnapsh
   const removida = cartasRemovidas().find((c) => c.id === id)
   if (removida) return removida
   const hoje = getCard(id)
-  return { id, name: hoje.name, cost: hoje.cost, kind: hoje.kind, text: hoje.text }
+  return {
+    id, name: hoje.name, cost: hoje.cost, kind: hoje.kind, text: hoje.text,
+    ...(hoje.custoDinheiro ? { custoDinheiro: hoje.custoDinheiro } : {}),
+  }
 }
 
 /**

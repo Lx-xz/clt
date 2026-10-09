@@ -373,6 +373,16 @@ export default function LabCartasPage() {
             ))}
           </div>
 
+          {/* o efeito que tira dinheiro deixa jogar sem saldo, e a conta só
+              chega na sexta, como despejo. Quase sempre o que se quer é o
+              custo em R$, que trava a carta na mão */}
+          {Number(somaDe(cartaParaGravar() ?? emEdicao, 'dinheiro')) < 0 ? (
+            <p className={comuns.aviso}>
+              Efeito que tira dinheiro não é custo: a carta sai mesmo sem saldo, e a conta só
+              aparece na sexta. Para cobrar, use o campo Custo em R$.
+            </p>
+          ) : null}
+
           <div className={comuns.rotulo}>
             O que a carta faz
             <span className={comuns.dica}>

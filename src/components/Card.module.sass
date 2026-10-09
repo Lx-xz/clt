@@ -124,18 +124,24 @@ $levantada: 18px
 
 // custo preso ao canto superior esquerdo da carta; tipo, ao canto direito —
 // nenhum dos dois flutua sobre a arte, e o texto ganha o espaço que sobra
-.custo
+// energia e R$ lado a lado, na mesma aba: a carta que cobra os dois mostra
+// os dois carimbos colados
+.custos
   position: absolute
   top: 0
   left: 0
   z-index: 3
+  display: flex
+  overflow: hidden
+  border-bottom-right-radius: 7px
+
+.custo
   display: grid
   place-items: center
   min-width: 22px
   height: 21px
   padding: 0 5px
   background: var(--energia)
-  border-bottom-right-radius: 7px
   color: #f4efe3
   font-family: var(--mono)
   font-size: 12px
@@ -144,6 +150,10 @@ $levantada: 18px
 
 .custoAlto
   background: var(--estresse)
+
+.custoReais
+  background: var(--dinheiro)
+  font-size: 11px
 
 .selo
   position: absolute

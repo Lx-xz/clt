@@ -366,6 +366,19 @@ coluna ("No baralho" ↔ "Fora", o mesmo `onPlay` + `dropRef` da mesa). O clique
 simples abre o detalhe, que nesta página leva o seletor de cópias (− n +) e o
 histórico da carta (`MudancasDaCarta`), pelos `children` do `CardDetail`.
 
+### O custo em dinheiro (v0.15)
+
+`ActionCard.custoDinheiro` (coluna `custo_dinheiro`) é CUSTO, não efeito:
+`canPlay` recusa sem saldo, `playCard` paga ANTES dos efeitos (uma carta que
+rende dinheiro não se paga com o próprio rendimento), e o carimbo mostra
+`R$80` em verde ao lado do custo em energia — ou no lugar dele, quando a
+energia é zero. Um efeito `recurso dinheiro −80` continua possível, mas deixa
+jogar no vermelho e só cobra na sexta, como despejo; o `/lab/cartas` avisa.
+`effectiveCost` não mexe no R$: evento de custo é sobre energia.
+
+O retrato da run só ganha `custoDinheiro` quando ele existe, para o retrato
+das cartas de sempre continuar idêntico — o `--hash` do simulador não mudou.
+
 ### A carta neutra
 
 `ActionCard.kind` aceita `null`, e isso é a AUSÊNCIA de classe, não uma
