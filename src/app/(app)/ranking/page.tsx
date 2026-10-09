@@ -54,8 +54,8 @@ export default function RankingPage() {
         <h1 className={styles.title}>Ranking</h1>
       </div>
       <p className={styles.hint}>
-        Todo mundo que já terminou pelo menos uma run, ordenado por vitórias. O nick não é senha — é
-        só quem está jogando cada save.
+        Todo mundo com conta que já terminou pelo menos uma run, ordenado por vitórias. Convidado
+        não entra: o nick dele é sorteado e some quando ele sai.
       </p>
 
       {amigos && amigos.size > 0 ? (

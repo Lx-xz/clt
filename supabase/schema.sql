@@ -940,7 +940,12 @@ as $$
   -- o placar é de partida terminada e guardada: abandono não conta como
   -- derrota, e a run que o jogador pediu para não guardar não aparece
   -- quem entrou pelo Google e ainda não escolheu nick não tem o que mostrar
+  -- convidado também fica de fora: o nick é sorteado (`convidado-a3f2`), o
+  -- progresso some quando ele sai, e o placar se enchia de gente que não
+  -- existe mais. As duas marcas, porque o perfil do convidado é apagável e a
+  -- run guarda a dela na própria linha
   where r.visivel and r.outcome <> 'abandono' and p.nick is not null
+    and not p.convidado and not r.convidado
   group by p.nick, p.avatar
   order by vitorias desc, total_runs desc;
 $$;

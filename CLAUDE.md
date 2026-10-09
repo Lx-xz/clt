@@ -471,8 +471,12 @@ opções. O que ele escolheu, e que deve ser preservado:
   dessas coisas. `largo` só muda a largura.
   - **Dois papéis, por assunto (`estilo`):** `nota` (nota fiscal: estreita,
     fonte mono, serrilha por `mask`) para dinheiro e resultado — a sexta, a
-    recompensa, o fim de run —, e `prancheta` (padrão: borda de papelão e a
-    presilha em `::before`) para o resto. A serrilha é máscara, e máscara
+    recompensa, o fim de run —, e `prancheta` (padrão) para o resto. **A
+    prancheta é o papel de sempre do site** (borda fina, mesmo raio, mesma
+    sombra) com uma presilha pequena na cor da linha, e só. A primeira
+    versão, com borda grossa de papelão e presilha de metal, foi recusada
+    pelo autor por destoar da paleta — popup não pode chamar mais atenção
+    que a mesa. A serrilha é máscara, e máscara
     corta a `box-shadow` do próprio elemento: por isso a sombra mora num
     invólucro (`.moldura`) com `filter: drop-shadow`.
   - **`semTravarNav`** é o popup da MESA: não marca `data-popup` e a cortina
@@ -1183,6 +1187,10 @@ Decisões de segurança que não devem ser desfeitas:
     pede. **O avatar entrou na v0.14 por decisão explícita do autor** (ele já
     era público pelo `perfil_publico()`). Não estenda esse padrão para expor
     qualquer outra coluna.
+    **Convidado não entra no ranking** (`not p.convidado and not
+    r.convidado`, as duas marcas porque o perfil do convidado é apagável e a
+    run guarda a dela): o nick dele é sorteado e some quando ele sai, e o
+    placar se enchia de `convidado-xxxx`.
   - `meus_jogos(p_player_id)` — runs de um jogador específico, usada por
     `/meus-jogos`.
   - `jogo_detalhe(p_run_id, p_player_id)` — uma run específica, checando que
