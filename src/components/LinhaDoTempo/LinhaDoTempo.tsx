@@ -5,8 +5,8 @@ import { cartaParaMostrar } from '@/data/balanceamento'
 import { getEvent } from '@/game/catalogo'
 import { diaDaSemana, numeroDaSemana, type Regras } from '@/game/regras'
 import type { ActionCard, CardId, CartaSnapshot, DayLog, EventCard, LinhaDoLog } from '@/game/types'
-import Card from './Card'
-import CardDetail from './CardDetail'
+import Card from '../Card'
+import CardDetail from '../CardDetail'
 import styles from './LinhaDoTempo.module.sass'
 
 /** O dia que ainda não fechou: não tem `DayLog`, então vem montado da mesa. */

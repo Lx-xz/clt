@@ -18,13 +18,13 @@ import {
   TestTube,
   Trophy,
 } from 'lucide-react'
-import Avatar from './Avatar'
-import BotaoConfirmar from './BotaoConfirmar'
-import Check from './Check'
-import Slider from './Slider'
-import Dialogo, { popupAberto } from './Dialogo'
-import Segmentado from './Segmentado'
-import { useSessao } from './SessaoGuard'
+import Avatar, { TONS_DE_FUNDO, tintaSobre } from '../Avatar'
+import BotaoConfirmar from '../BotaoConfirmar'
+import Check from '../Check'
+import Slider from '../Slider'
+import Dialogo, { popupAberto } from '../Dialogo'
+import Segmentado from '../Segmentado'
+import { useSessao } from '../SessaoGuard'
 import { gravarVolumes, lerVolumes, VOLUMES_PADRAO, type Volumes } from '@/data/som'
 import { gravarTema, lerTema, TEMAS, type Tema } from '@/data/tema'
 import { souAdmin } from '@/data/feedback'
@@ -58,12 +58,14 @@ const GRUPOS = [
 
 export default function SideNav() {
   const pathname = usePathname()
+  const noPerfil = pathname.startsWith('/perfil')
   const [aberta, setAberta] = useState(false)
   const [configurando, setConfigurando] = useState(false)
   const [avisos, setAvisos] = useState<(Notificacao & { novo: boolean })[] | null>(null)
   const [naoLidosNaAbertura, setNaoLidosNaAbertura] = useState(0)
   const [naoLidas, setNaoLidas] = useState(0)
   const sessao = useSessao()
+  const fundoDoPerfil = TONS_DE_FUNDO[sessao.avatar.fundo]
   // o padrão é o do servidor: ler o localStorage na montagem evita a
   // divergência entre o HTML gerado no build e o primeiro render no navegador
   const [volumes, setVolumes] = useState<Volumes>(VOLUMES_PADRAO)
@@ -298,13 +300,17 @@ export default function SideNav() {
               </Link>
             ) : null}
 
+            {/* o "você" da barra é o seu rosto, redondo como no ranking. Aberto,
+                o item não fica preto como os outros: ele ganha a cor do fundo
+                do avatar, e o rosto parece sair dela */}
             <Link
-              className={`${styles.link} ${pathname.startsWith('/perfil') ? styles.ativo : ''}`}
+              className={`${styles.link} ${styles.linkPerfil} ${noPerfil ? styles.perfilAtivo : ''}`}
+              style={noPerfil ? { background: fundoDoPerfil, color: tintaSobre(fundoDoPerfil) } : undefined}
               href="/perfil"
+              aria-current={noPerfil ? 'page' : undefined}
               onClick={(e) => navegar(e, '/perfil')}
             >
-              {/* o "você" da barra é o seu rosto, não um bonequinho genérico */}
-              <Avatar avatar={sessao.avatar} tamanho={30} className={styles.avatarNav} />
+              <Avatar avatar={sessao.avatar} tamanho={38} redondo className={styles.avatarNav} />
               <span className={styles.rotulo}>Perfil</span>
             </Link>
 

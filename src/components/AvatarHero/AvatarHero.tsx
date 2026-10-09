@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import type { Avatar as Receita } from '@/data/avatar'
-import Avatar, { TONS_DE_FUNDO } from './Avatar'
+import Avatar, { TONS_DE_FUNDO } from '../Avatar'
 import styles from './AvatarHero.module.sass'
 
 /**
@@ -17,15 +17,19 @@ import styles from './AvatarHero.module.sass'
 export default function AvatarHero({
   avatar,
   className,
+  classeDaFigura,
   children,
 }: {
   avatar: Receita
   className?: string
+  /** Para quem quer a figura de outro tamanho dentro da mesma faixa (o
+   *  editor, onde a faixa é alta e a figura em 108% dela passava da tela). */
+  classeDaFigura?: string
   children?: ReactNode
 }) {
   return (
     <div className={`${styles.hero} ${className ?? ''}`} style={{ background: TONS_DE_FUNDO[avatar.fundo] }}>
-      <Avatar avatar={avatar} tamanho={320} className={styles.figura} />
+      <Avatar avatar={avatar} tamanho={320} className={`${styles.figura} ${classeDaFigura ?? ''}`} />
       {children}
     </div>
   )

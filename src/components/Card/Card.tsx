@@ -3,7 +3,7 @@
 import { Coffee, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
-import { LockIcon, TONE_ICONS, iconeDaClasse } from './icons'
+import { LockIcon, TONE_ICONS, iconeDaClasse } from '../icons'
 import styles from './Card.module.sass'
 
 /** Distância em px que separa um clique de um arraste. */

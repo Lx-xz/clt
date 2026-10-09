@@ -1,17 +1,10 @@
-.titulo
-  font-size: clamp(26px, 5vw, 36px)
-  margin-bottom: 20px
-
 .hero
-  max-width: 640px
   margin-bottom: 14px
 
 .quem
   margin-bottom: 22px
   min-width: 0
 
-// o lápis no canto da capa: quadrado claro de borda grossa, como um botão do
-// próprio desenho — e alvo de 44 px, que é de dedo
 .editar
   position: absolute
   top: 12px
@@ -20,14 +13,16 @@
   place-items: center
   width: 44px
   height: 44px
-  background: rgba(255, 255, 255, .55)
-  border: 2px solid rgba(0, 0, 0, .22)
+  border: 2px solid #ffffff81
   border-radius: 12px
-  color: #2b2622
+  color: #fff
   transition: background .12s ease, transform .1s ease
+  opacity: 0.3
 
   &:hover
-    background: rgba(255, 255, 255, .8)
+    background: #ffffff21
+    opacity: 0.7
+
 
   &:active
     transform: translateY(1px)
@@ -54,7 +49,6 @@
   display: flex
   align-items: center
   gap: 12px
-  max-width: 640px
   margin-bottom: 22px
   padding: 14px 18px
   background: var(--papel-alto)

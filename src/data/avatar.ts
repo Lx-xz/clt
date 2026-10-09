@@ -116,6 +116,9 @@ export type CorDoChapeu = 'roupa' | 'roxo' | 'vermelho' | 'azul' | 'verde' | 'am
 export type CorDosOculos = 'escuro' | 'roxo' | 'azul' | 'verde' | 'laranja' | 'vermelho' | 'rosa' | 'creme'
 /** O headset é equipamento: preto ou branco, e só. */
 export type CorDoHeadset = 'preto' | 'branco'
+/** Brinco: uma argola na orelha — em nenhuma, numa só ou nas duas — e o metal. */
+export type Brinco = 'nenhum' | 'um' | 'dois'
+export type CorDoBrinco = 'dourado' | 'prateado'
 
 export interface Avatar {
   rosto: Rosto
@@ -134,6 +137,8 @@ export interface Avatar {
   acessorio: Acessorio
   corChapeu: CorDoChapeu
   corHeadset: CorDoHeadset
+  brinco: Brinco
+  corBrinco: CorDoBrinco
   /** O crachá no cordão: a peça que mais diz "CLT" e que não ocupa a cabeça,
    *  então combina com chapéu, boné e headset. */
   cracha: boolean
@@ -164,6 +169,8 @@ export const AVATAR_PADRAO: Avatar = {
   acessorio: 'nenhum',
   corChapeu: 'roupa',
   corHeadset: 'preto',
+  brinco: 'nenhum',
+  corBrinco: 'dourado',
   cracha: false,
   fundo: 'papel',
 }
@@ -323,6 +330,17 @@ export const CORES_DOS_OCULOS: Opcao<CorDosOculos>[] = [
   { valor: 'creme', rotulo: 'Creme' },
 ]
 
+export const BRINCOS: Opcao<Brinco>[] = [
+  { valor: 'nenhum', rotulo: 'Sem brinco' },
+  { valor: 'um', rotulo: 'Numa orelha' },
+  { valor: 'dois', rotulo: 'Nas duas orelhas' },
+]
+
+export const CORES_DO_BRINCO: Opcao<CorDoBrinco>[] = [
+  { valor: 'dourado', rotulo: 'Dourado' },
+  { valor: 'prateado', rotulo: 'Prateado' },
+]
+
 export const CORES_DO_HEADSET: Opcao<CorDoHeadset>[] = [
   { valor: 'preto', rotulo: 'Preto' },
   { valor: 'branco', rotulo: 'Branco' },
@@ -400,6 +418,8 @@ export function lerAvatar(bruto: unknown): Avatar {
     acessorio: um(ACESSORIOS, a.acessorio, AVATAR_PADRAO.acessorio),
     corChapeu: um(CORES_DO_CHAPEU, a.corChapeu, AVATAR_PADRAO.corChapeu),
     corHeadset: um(CORES_DO_HEADSET, a.corHeadset, AVATAR_PADRAO.corHeadset),
+    brinco: um(BRINCOS, a.brinco, AVATAR_PADRAO.brinco),
+    corBrinco: um(CORES_DO_BRINCO, a.corBrinco, AVATAR_PADRAO.corBrinco),
     cracha: a.cracha === true,
     fundo: um(FUNDOS, a.fundo, AVATAR_PADRAO.fundo),
   }
@@ -443,6 +463,8 @@ export function avatarAleatorio(): Avatar {
     acessorio: talvez(ACESSORIOS, 'nenhum', 0.15),
     corChapeu: sorteio(CORES_DO_CHAPEU).valor,
     corHeadset: sorteio(CORES_DO_HEADSET).valor,
+    brinco: talvez(BRINCOS, 'nenhum', 0.2),
+    corBrinco: sorteio(CORES_DO_BRINCO).valor,
     cracha: Math.random() < 0.3,
     fundo: sorteio(FUNDOS).valor,
   }

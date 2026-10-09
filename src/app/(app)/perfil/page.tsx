@@ -65,10 +65,6 @@ export default function PerfilPage() {
 
   return (
     <main className="page">
-      <h1 className={styles.titulo}>Perfil</h1>
-
-      {/* o avatar como capa da página; editar é o lápis no canto, e não um
-          botão a mais ao lado do nick */}
       <AvatarHero avatar={sessao.avatar} className={styles.hero}>
         <Link className={styles.editar} href="/perfil/editar" aria-label="Editar avatar" title="Editar avatar">
           <Pencil size={18} aria-hidden />

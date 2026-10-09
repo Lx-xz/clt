@@ -102,8 +102,12 @@ src/data/     tudo que fala com o Supabase
   amizades.ts   pedir, aceitar, desfazer, listar
   conquistas.ts conferir depois de uma run, e listar
   pendencias.ts "há algo por salvar?" — quem navega pergunta antes
-src/components/  Card, CardDetail, Medidor, SideNav, SessaoGuard, Dialogo,
-                 ComoJogar, icons
+src/components/  uma PASTA por componente: X/X.tsx, X/X.module.sass e um
+                 X/index.ts que reexporta tudo — quem importa continua
+                 escrevendo `@/components/X`. Componente novo nasce assim;
+                 de um componente para outro, o import é `../X`
+                 (Card, CardDetail, Medidor, SideNav, SessaoGuard, Dialogo,
+                 ComoJogar, icons e o resto)
 src/app/
   auth/              a porta: entrar, cadastrar, Google ou convidado
   (app)/page.tsx     o início de quem já entrou
@@ -540,7 +544,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   pode deixar o tutorial mentindo. As cores dos recursos são as mesmas do HUD:
   o jogador reconhece o medidor pela cor antes de ler o nome, e o tutorial não
   pode falar outra língua.
-- **Todo popup é o `Dialogo`** (`src/components/Dialogo.tsx`). Ele fecha ao
+- **Todo popup é o `Dialogo`** (`src/components/Dialogo/Dialogo.tsx`). Ele fecha ao
   clicar fora e no Esc, e trava a página atrás marcando `data-popup` no
   `<html>` (a regra que congela a rolagem está em `shell.module.sass`). Não
   escreva popup novo à mão: os três que existiam antes erravam cada um uma
@@ -599,7 +603,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   `+escuras`. O tema é aplicado por um **script em linha no `<head>`**
   (`SCRIPT_TEMA`): sem ele o site abre claro e pisca para escuro quando o
   React monta — justamente no tema que a pessoa não quer ver.
-- **O avatar é uma receita, não uma imagem** (`src/components/Avatar.tsx` +
+- **O avatar é uma receita, não uma imagem** (`src/components/Avatar/Avatar.tsx` +
   `src/data/avatar.ts`). O que vai para o banco é um punhado de palavras
   (rosto, pele, cabelo, cor, expressão, barba e a cor dela, tronco, roupa,
   óculos, acessório e a cor dele, crachá, fundo) num `jsonb`; o SVG é montado na hora. Trocar de avatar é um `update` numa
@@ -632,13 +636,12 @@ opções. O que ele escolheu, e que deve ser preservado:
     24px é a COR do fundo**, que esquenta com o estresse (`HUMORES.fundo`):
     olheira e suor só aparecem do tamanho do perfil para cima. Em 32px ou
     menos o `viewBox` se aproxima da cabeça.
-  - **Contraste baixo entre cabelo e pele ganha contorno — e só ele.** Dez
-    das 49 combinações ficavam abaixo de 1,35:1 (mel em canela era 1,01:1) e
-    a cabeça virava uma mancha só. Abaixo de 1,45:1 o rosto ganha borda e o
-    cabelo da frente ganha um ANEL, que é a peça engrossada por filtro e
-    **recortada pelo rosto**: contornando a peça inteira, o anel aparecia onde
-    a franja passa por cima do cabelo de trás (uma tiara dentro do black
-    power). O resto dos avatares continua chapado como sempre foi.
+  - **Nenhum contorno, nem com contraste baixo.** Dez das 49 combinações de
+    cabelo e pele ficam abaixo de 1,35:1 (mel em canela é 1,01:1), e por um
+    tempo elas ganharam borda no rosto e um anel escuro no cabelo e na barba.
+    O autor recusou: o traço em volta destoava de um desenho todo chapado e
+    lia pior que a mancha que consertava. Não volte com contorno — se o
+    contraste for problema, a saída é a cor.
   - **O fundo e a borda são CSS, não SVG.** Eram um `rect` dentro de um
     `clipPath` e outro `rect` com `stroke` por cima; o stroke de um retângulo
     colado na borda do viewBox é **cortado ao meio pela própria caixa**, e
@@ -762,7 +765,14 @@ opções. O que ele escolheu, e que deve ser preservado:
     costeleta até o fim da lateral do cabelo (`fimDoLado`), costeleta
     esmaecendo para cima, ou nada. Só as barbas `temLado` (as que cobrem a
     mandíbula); bigode não tem lado. O bigodão `escondeBoca`: a boca nem é
-    desenhada.
+    desenhada. **A barba é desenhada ANTES do cabelo da frente, e a
+    costeleta sobe por baixo dele até a linha do cabelo, com a largura da
+    lateral do corte** (`FormaCabelo.lateral`). As duas peças encostando
+    uma na outra deixavam degrau, emenda e faixa de pele em centenas de
+    combinações; por baixo, o cabelo cobre o encontro e não há emenda para
+    errar. Corte novo com lateral declara a `lateral`; no careca a costeleta
+    para na orelha. A grade "Barba × cabelo" do `/lab/avatar` mostra a
+    têmpora de toda combinação.
   - **O olho é FORMA, não detalhe.** A primeira tentativa foi realista —
     branco, íris, pupila e um brilho — e ficou pior: em 24px o brilho some,
     a pupila vira um ponto, e o rosto foge do estilo chapado do resto. O que
@@ -781,6 +791,10 @@ opções. O que ele escolheu, e que deve ser preservado:
     campos SEPARADOS da receita (um é do rosto, o outro da cabeça); o chapéu
     tem cor própria, e os óculos têm armação escura fixa. O crachá passa POR
     TRÁS do pescoço: o cordão sai dos lados da base dele, já sobre a roupa.
+    O brinco (`brinco`: nenhum, numa orelha — a da direita de quem olha — ou
+    nas duas; `corBrinco` dourado ou prateado) é uma argola no lobo,
+    desenhada ANTES do acessório: a concha do headset o esconde junto com a
+    orelha. Sem orelha (manequim, ou a medida `orelha` em zero), sem brinco.
 - **`/lab` é a oficina, e nenhuma bancada dela grava no jogo.** A trava é o
   layout de `/lab` (`GuardaAdmin`), que pergunta ao banco — mas ela é
   conveniência, não segurança: o código vai no mesmo bundle para todo mundo,
@@ -840,7 +854,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   numa lista, com os passos de código que faltam para promovê-la. Ver peça de
   teste e achar que já está no jogo é o erro caro aqui, e é por isso que o
   tracejado, o frasco e o aviso do topo dizem a mesma coisa três vezes.
-- **Escolha curta e excludente é o `Segmentado`** (`src/components/Segmentado.tsx`):
+- **Escolha curta e excludente é o `Segmentado`** (`src/components/Segmentado/Segmentado.tsx`):
   tema, abas de entrar/criar, gênero no cadastro, novos/todos nos avisos. O
   fundo do selecionado é **um elemento só que desliza**, posicionado por
   medição do botão ativo (`offsetLeft`/`offsetWidth`) e não por fração da
@@ -1419,7 +1433,7 @@ e a um bot diferente — não compare os dois.
   funciona: amigos, conquistas e o replay alheio somem em silêncio
   (`faltaFuncao()` em `jogadores.ts`) em vez de quebrar a página.
 
-- **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica.tsx`,
+- **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica/Musica.tsx`,
   `public/som/`), com os dois volumes em `src/data/som.ts`. Falta o resto: um
   som por evento do jogo (carta jogada, cota batida, advertência, vitória,
   derrota). Quando entrarem, o volume deles é mais um multiplicador em

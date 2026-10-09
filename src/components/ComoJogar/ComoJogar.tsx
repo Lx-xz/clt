@@ -1,8 +1,8 @@
 'use client'
 
-import Card from './Card'
-import Dialogo from './Dialogo'
-import { RESOURCE_ICONS, iconeDaClasse } from './icons'
+import Card from '../Card'
+import Dialogo from '../Dialogo'
+import { RESOURCE_ICONS, iconeDaClasse } from '../icons'
 
 /** O ícone de tarefa, citado no texto que explica o canto da carta. */
 const IconeDeTarefa = iconeDaClasse('tarefa')

@@ -103,7 +103,7 @@ export default function RankingPage() {
                   >
                     {posicao}
                   </span>
-                  <Avatar avatar={lerAvatar(linha.avatar)} tamanho={52} className={styles.avatar} />
+                  <Avatar avatar={lerAvatar(linha.avatar)} tamanho={64} redondo className={styles.avatar} />
                   <span className={styles.quem}>
                     <span className={styles.nick}>{linha.nick}</span>
                     <span className={styles.sub}>

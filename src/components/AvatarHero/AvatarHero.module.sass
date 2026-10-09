@@ -10,12 +10,16 @@
 // a figura ocupa a altura inteira da faixa e passa um pouco por cima: o topo
 // do quadrado do avatar é fundo, e cortá-lo põe a cabeça mais perto da borda.
 // O tamanho e o fundo do Avatar vêm inline; aqui eles são trocados pelos da
-// faixa (por isso o !important)
+// faixa (por isso o !important). Borda e canto vão com `.hero .figura`: só
+// `.figura` empatava com a `.moldura` do Avatar, que vencia por vir depois
+// na folha, e a moldura de 1px com canto de 16% aparecia DENTRO da capa
 .figura
   width: auto !important
   height: 108% !important
   aspect-ratio: 1
   background: transparent !important
+
+.hero .figura
   border: 0
   border-radius: 0
 

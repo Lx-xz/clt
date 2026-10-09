@@ -2,6 +2,9 @@
 // lado não cabiam nos 1040 px de sempre
 :global(.page).pagina
   max-width: 1240px
+  display: flex
+  flex-flow: column
+  height: 100vh
   // a altura do cabeçalho preso: é dela que a figura e as abas descontam o
   // próprio `top` para não ficarem embaixo dele
   --topo-h: 64px
@@ -22,7 +25,14 @@
   background: var(--papel)
   border-bottom: 1px solid var(--linha)
 
-.voltar
+// os seletores que SOBRESCREVEM peça compartilhada (o botão do site, o
+// BotaoConfirmar, a capa do avatar) levam o pai junto, para valerem por
+// especificidade e não pela ordem das folhas. Entrando no editor por um link,
+// a folha compartilhada podia carregar DEPOIS desta e vencer o empate: o
+// `padding: 10px 20px` do botão espremia o dado a 0 px num botão de 42, e a
+// altura da capa (no máximo 280 px) encurtava a prévia. Recarregando, a
+// ordem invertia e tudo voltava — daí o "às vezes"
+.cabecalho .voltar
   display: grid
   place-items: center
   min-width: 40px
@@ -47,12 +57,12 @@
   min-width: 0
   font-size: clamp(20px, 3.4vw, 28px)
 
-.voltarArmado
+.cabecalho .voltarArmado
   padding: 0 10px
   font-size: 13px
   font-weight: 600
 
-.sortear
+.cabecalho .sortear
   display: grid
   place-items: center
   width: 42px
@@ -79,18 +89,25 @@
   grid-template-columns: minmax(300px, 440px) minmax(0, 1fr)
   align-items: start
   gap: 28px
+  flex: 1
+
 
 // a figura fica PARADA enquanto as opções rolam
 .palco
   position: sticky
   top: calc(var(--topo-h) + 16px)
+  height: 100%
 
 // quase quadrada: alta demais, a figura (que ocupa a altura) passava muito
 // da largura da coluna e os ombros sumiam
-.previa
-  height: auto
-  aspect-ratio: 5 / 6
-  max-height: 72vh
+.palco .previa
+  height: 100%
+
+// a figura menor que a faixa: em 108% da altura (o da capa do perfil) ela
+// passava da largura da coluna e mostrava só o rosto. Em 78% cabem o cabelo
+// inteiro e os ombros, e a faixa continua do mesmo tamanho
+.previa .figura
+  height: 78% !important
 
 .lado
   min-width: 0
@@ -104,6 +121,12 @@
 // rolava junto com o resto. Em bloco, quem limita o `sticky` é o `.editor`
 // inteiro
 @media (max-width: 899px)
+  // no celular a página ROLA (as abas e a figura grudam no topo): a altura
+  // presa na janela, que é a do computador, cortava o painel
+  :global(.page).pagina
+    height: auto
+    overflow: visible
+
   .pagina
     --topo-h: 56px
     --palco-h: clamp(150px, 26vh, 210px)
@@ -125,10 +148,13 @@
   .palco
     top: var(--topo-h)
     z-index: 6
+    // a altura é a da prévia: com o `height: 100%` de cima, o palco tomava a
+    // página inteira e as abas iam parar no pé da tela, com o painel vazio
+    height: auto
     padding-bottom: 8px
     background: var(--papel)
 
-  .previa
+  .palco .previa
     aspect-ratio: auto
     height: var(--palco-h)
 
@@ -148,19 +174,23 @@
   overflow-x: auto
   margin-bottom: 18px
 
+// a linha de baixo vai até o fim da coluna (`min-width: 100%`), e não só
+// até a última aba; `max-content` continua valendo quando elas não cabem
 .abas
   display: flex
-  gap: 4px
+  gap: 2px
   width: max-content
+  min-width: 100%
   border-bottom: 1px solid var(--linha)
 
 .aba
+  display: grid
+  place-items: center
   padding: 10px 14px
   border: none
   border-bottom: 3px solid transparent
   background: none
   color: var(--tinta-fraca)
-  font-size: 15px
   cursor: pointer
 
   &:hover
@@ -173,7 +203,6 @@
 .abaAtiva
   border-bottom-color: var(--tinta)
   color: var(--tinta)
-  font-weight: 600
 
 .painel
   min-height: 240px
@@ -189,15 +218,19 @@
   font-size: 15px
   font-weight: 600
 
+// as miniaturas têm tamanho FIXO e quebram linha: numa grade de colunas
+// `1fr` elas esticavam para encher a linha, e sobrava uma borda larga em
+// volta do desenho
 .opcoes
-  display: grid
-  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr))
+  display: flex
+  flex-wrap: wrap
   gap: 10px
 
 // a miniatura é o botão inteiro, sem nome embaixo: o nome está no `title`
 .opcao
   display: grid
   place-items: center
+  flex: none
   padding: 4px
   background: var(--papel-alto)
   border: 2px solid var(--linha)
@@ -304,3 +337,44 @@
   color: var(--estresse)
   font-size: 13px
 
+
+// ------------------------------------------------- só as opções rolam
+// No computador a página tem a altura da janela e NÃO rola: quem rola é só o
+// painel de opções, embaixo das abas. Com a página inteira rolando, as abas
+// com mais fileiras (barba, extras) empurravam tudo para cima e a figura
+// descolava do cabeçalho — a quebra que se via no fim da rolagem.
+// Fica no fim da folha de propósito: regra base depois do `@media` ganharia
+// dele (veja as armadilhas no CLAUDE.md).
+@media (min-width: 900px)
+  // `clip`, e não `hidden`: caixa com `hidden` ainda rola por programa —
+  // clicar numa opção lá embaixo do painel fazia o navegador rolar a PÁGINA
+  // para mostrá-la, o cabeçalho preso ficava e o resto subia por baixo dele,
+  // cortando a figura e as abas. A altura é a do contêiner (`100%`), não
+  // `100dvh`: uma fração de pixel a mais já deixava o contêiner rolar
+  :global(.page).pagina
+    height: 100%
+    overflow: clip
+
+  .editor
+    flex: 1
+    min-height: 0
+    grid-template-rows: minmax(0, 1fr)
+    align-items: stretch
+
+  .palco
+    position: static
+    min-height: 0
+
+  .lado
+    display: flex
+    flex-direction: column
+    min-height: 0
+
+  .painel
+    flex: 1
+    min-height: 0
+    overflow-y: auto
+    overscroll-behavior: contain
+    // o respiro é para o anel da opção escolhida (2px por fora) não ser
+    // cortado pela borda do rolamento
+    padding: 4px 6px 16px 4px

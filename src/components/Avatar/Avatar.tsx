@@ -265,6 +265,10 @@ export interface FormaCabelo {
    * menor: o boné aperta o cabelo, e o longo com o volume de sempre
    * parecia um boné apoiado em cima de uma peruca.
    */
+  /** A largura da lateral do corte por dentro do rosto (o `lado` do
+   *  capacete). A costeleta da barba usa a MESMA largura, para continuar
+   *  exatamente embaixo dela — mais estreita, sobrava um degrau por dentro. */
+  lateral?: number
   sobChapeu?: {
     atras?: (d: DesenhoDeCabelo) => ReactNode
     lados?: ((d: DesenhoDeCabelo) => ReactNode) | null
@@ -356,8 +360,12 @@ function fimDoLado(m: Medidas): number {
  * O cabelo curto inteiro numa peça só, como no Duolingo: a capa por cima da
  * cabeça, as LATERAIS descendo rente ao rosto até a orelha — afinando numa
  * ponta, e não cortadas retas —, e a linha do cabelo na testa, que é o que
- * mais muda de um corte para outro. Não há peça de trás: a capa já passa da
- * cabeça pelos lados (`folga`), e o resto ficaria escondido atrás do rosto.
+ * mais muda de um corte para outro. Não há peça de trás: o que ficaria atrás
+ * do rosto não aparece.
+ *
+ * **A capa é RENTE à cabeça pelos lados** (`folga` 0,3 — só o bastante para
+ * cobrir a borda serrilhada do rosto). Ela já passou 0,8 a 1,8 da cabeça, e
+ * o cabelo lia como maior que ela; o volume, quando existe, é para CIMA.
  *
  * A testa é o recorte entre as duas laterais (`lado` é a largura delas por
  * DENTRO do rosto), na altura `testa` — e a testa grande que se via em quase
@@ -365,7 +373,8 @@ function fimDoLado(m: Medidas): number {
  * sobrancelha em 0,37.
  */
 interface Capacete {
-  /** Quanto a capa passa da cabeça dos lados, e quanto sobe por cima. */
+  /** Quanto a capa passa da cabeça dos lados (rente: 0,3), e quanto sobe
+   *  por cima. */
   folga: number
   sobe: number
   /** A largura de cada lateral, medida por dentro do rosto. */
@@ -426,9 +435,20 @@ function esmaecido(d: DesenhoDeCabelo, forma: string, de: number): ReactNode {
       <path d={forma} fill={`url(#${d.id}-fade)`} clipPath={`url(#${d.id}-rosto)`} />
       {/* o recorte pelo rosto deixava um fio de pele na borda de cima, que é
           o antisserrilhado do rosto aparecendo em volta do cabelo. O contorno
-          do rosto no mesmo gradiente cobre o fio — e some sozinho embaixo,
-          onde o gradiente já é transparente */}
-      <path d={rostoDe(d.m)} fill="none" stroke={`url(#${d.id}-fade)`} strokeWidth={1.2} />
+          do rosto na cor do cabelo cobre o fio — só até onde o fade começa.
+          Descendo pelas laterais, metade dele ficava FORA do rosto e virava
+          uma faixa esmaecida passando da cabeça: o cabelo parecia maior que
+          ela, em todo formato de rosto */}
+      <path
+        d={rostoDe(d.m)}
+        fill="none"
+        // no mesmo gradiente do cabelo, e com 0,6: metade fica fora do rosto,
+        // e fora ela é a sobra de 0,3 dos cortes rentes. Com 1,2 o cabelo
+        // passava da cabeça nas laterais; cortada onde o fade começa, sobrava
+        // um degrau ali. No gradiente ela esmaece junto com o cabelo
+        stroke={`url(#${d.id}-fade)`}
+        strokeWidth={0.6}
+      />
     </>
   )
 }
@@ -708,7 +728,7 @@ function topeteDe(m: Medidas): string {
   const L = m.larg
   const T = m.topo
   return capaceteDe(m, {
-    folga: 1.5,
+    folga: 0.3,
     sobe: 0,
     lado: 3.4,
     testa: 0.21,
@@ -723,10 +743,11 @@ function topeteDe(m: Medidas): string {
 export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   curto: {
     rotulo: 'Curto',
+    lateral: 3.2,
     atras: () => null,
     frente: ({ m, cor }) => (
       <path
-        d={capaceteDe(m, { folga: 1.8, sobe: 3, lado: 3.2, testa: 0.27, raio: 0, linha: franjaDeMechas(m) })}
+        d={capaceteDe(m, { folga: 0.3, sobe: 3, lado: 3.2, testa: 0.27, raio: 0, linha: franjaDeMechas(m) })}
         fill={cor}
       />
     ),
@@ -740,6 +761,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   espetado: {
     rotulo: 'Espetado',
+    lateral: 3.6,
     // dentro do rosto ele é o degradê com a testa em dentes; as pontas ficam
     // por fora, por cima do contorno da cabeça. É o espetado da referência
     // (com fade nas laterais), e é o que o separa do curto
@@ -760,6 +782,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   topete: {
     rotulo: 'Topete',
+    lateral: 3.4,
     atras: () => null,
     frente: ({ m, cor }) => <path d={topeteDe(m)} fill={cor} />,
   },
@@ -777,9 +800,10 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   quadrado: {
     rotulo: 'Quadrado',
+    lateral: 2.6,
     // o flat-top: reto em cima, com canto pequeno — no canto vivo ele lia
-    // como chapéu de lego —, um pouco mais largo em cima do que embaixo, e as
-    // laterais descendo rentes até a orelha. A testa é reta, de canto curto,
+    // como chapéu de lego —, da largura da cabeça (abrindo em cima, ele
+    // passava dela), e as laterais descendo rentes até a orelha. A testa é reta, de canto curto,
     // que é a linha de cabelo de quem acabou de passar a máquina
     atras: () => null,
     frente: ({ m, cor }) => {
@@ -787,13 +811,13 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
       return (
         <path
           d={capaceteDe(m, {
-            folga: 0.8,
+            folga: 0.3,
             sobe: 4.5,
             lado: 2.6,
             testa: 0.2,
             raio: 2.5,
             copa: (Lo) =>
-              `L${50 - Lo - 1.4} ${T + 3} Q${50 - Lo - 1.4} ${T} ${50 - Lo + 1.6} ${T} L${50 + Lo - 1.6} ${T} Q${50 + Lo + 1.4} ${T} ${50 + Lo + 1.4} ${T + 3}`,
+              `L${50 - Lo} ${T + 3} Q${50 - Lo} ${T} ${50 - Lo + 3} ${T} L${50 + Lo - 3} ${T} Q${50 + Lo} ${T} ${50 + Lo} ${T + 3}`,
           })}
           fill={cor}
         />
@@ -812,6 +836,7 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   degrade: {
     rotulo: 'Degradê',
+    lateral: 3.6,
     // **O degradê é o único corte que pinta a PELE, e custou seis versões.**
     // Duas elipses atrás do rosto (dois tons com a emenda escondida), a testa
     // inteira em gradiente (mancha no meio), faixas nas têmporas com a borda
@@ -848,13 +873,14 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   coque: {
     rotulo: 'Coque',
+    lateral: 3,
     // o cabelo puxado para trás: testa em arco liso e laterais rentes até a
     // orelha, como os curtos. Atrás, só o coque
-    atras: ({ m, cor }) => <circle cx="50" cy={m.topo - 8} r={m.larg * 0.42} fill={cor} />,
+    atras: ({ m, cor }) => <circle cx="50" cy={m.topo - 5} r={m.larg * 0.36} fill={cor} />,
     frente: ({ m, cor }) => (
       <path
         d={capaceteDe(m, {
-          folga: 1.5,
+          folga: 0.3,
           sobe: 3,
           lado: 3,
           testa: 0.22,
@@ -1585,8 +1611,17 @@ export const OLHOS: Record<Olhos, {
  * O LADO da barba é escolha (`ladoBarba`): a costeleta sobe até o cabelo
  * (`conecta`), sobe esmaecendo (`degrade`), ou não existe (`solta`). Ela era
  * só da cheia, e terminava num ponto fixo da têmpora que não batia com a
- * lateral de corte nenhum. Hoje ela sobe até `fimDoLado` — onde a lateral do
- * cabelo termina —, e passa um pouco por baixo dela.
+ * lateral de corte nenhum.
+ *
+ * **A barba é desenhada ANTES do cabelo da frente, e a costeleta sobe até a
+ * linha do cabelo** (`costeletaAte`). Ela já terminou encostando no fim da
+ * lateral do cabelo, e as duas peças — desenhadas sem saber uma da outra —
+ * deixavam degrau, emenda e, com dois degradês, uma faixa de pele entre eles,
+ * em centenas de combinações. Por baixo, o cabelo cobre o encontro: não
+ * existe emenda para errar, e o cabelo degradê esmaecendo revela a barba,
+ * que é o fade de verdade. Ela é mais estreita que a lateral mais estreita
+ * dos cortes (2,6), para nunca aparecer ao lado dela. No careca, que não tem
+ * lateral para cobri-la, ela para na orelha.
  */
 export interface DesenhoDeBarba {
   m: Medidas
@@ -1595,6 +1630,10 @@ export interface DesenhoDeBarba {
   /** A linha da boca: a barba se organiza em volta dela. */
   bocaY: number
   lado: LadoDaBarba
+  /** Até onde a costeleta sobe: a linha do cabelo, por baixo dele. */
+  costeletaAte: number
+  /** A largura dela: a da lateral do corte, ou 2,6 nos cortes sem lateral. */
+  costeletaLarg: number
   /** Para o gradiente da costeleta, único por avatar. */
   id: string
 }
@@ -1605,8 +1644,8 @@ function mandibulaDe(m: Medidas, lados: number, meio: number, desce = 0): string
   return `M${50 - L} ${lados} L${50 - L} ${Q - cantoY} Q${50 - L} ${fundo} ${50 - L + cantoX} ${fundo} L${50 + L - cantoX} ${fundo} Q${50 + L} ${fundo} ${50 + L} ${Q - cantoY} L${50 + L} ${lados} Q50 ${meio} ${50 - L} ${lados} Z`
 }
 
-/** Onde a costeleta começa: um pouco acima do fim da lateral do cabelo, para
- *  passar por baixo dela em vez de encostar. */
+/** Onde a costeleta que SOME SUBINDO já é transparente: um pouco acima do
+ *  fim da lateral do cabelo. Acima disso ela continua existindo, invisível. */
 function topoDaCosteleta(m: Medidas): number {
   return fimDoLado(m) - 4
 }
@@ -1617,13 +1656,14 @@ function topoDaCosteleta(m: Medidas): number {
  * `meio`, então as duas peças encostam sem se sobrepor — sobrepostas, a barba
  * por fazer (translúcida) ficava mais escura na emenda.
  */
-function costeletasDe(m: Medidas, lados: number, meio: number, w = 3.4): string {
+function costeletasDe(m: Medidas, lados: number, meio: number, de: number, w: number): string {
   const L = m.larg
   const t = w / (2 * L)
   const yIn = (1 - t) ** 2 * lados + 2 * t * (1 - t) * meio + t * t * lados
-  const de = topoDaCosteleta(m)
+  // o topo é arredondado para dentro: embaixo do cabelo ninguém o vê, e no
+  // careca (onde ela para na orelha) o corte reto lia como um adesivo
   return [-1, 1]
-    .map((s) => `M${50 + s * L} ${de} L${50 + s * (L - w)} ${de} L${50 + s * (L - w)} ${yIn} Q${50 + s * (L - w / 2)} ${(lados + yIn) / 2} ${50 + s * L} ${lados} Z`)
+    .map((s) => `M${50 + s * L} ${de} Q${50 + s * (L - w)} ${de} ${50 + s * (L - w)} ${de + w} L${50 + s * (L - w)} ${yIn} Q${50 + s * (L - w / 2)} ${(lados + yIn) / 2} ${50 + s * L} ${lados} Z`)
     .join(' ')
 }
 
@@ -1634,7 +1674,7 @@ function costeletasDe(m: Medidas, lados: number, meio: number, w = 3.4): string 
 function barbaComLado(d: DesenhoDeBarba, lados: number, meio: number, desce: number, opacidade = 1): ReactNode {
   const { m, cor, lado, id } = d
   const queixo = mandibulaDe(m, lados, meio, desce)
-  const costeletas = costeletasDe(m, lados, meio)
+  const costeletas = costeletasDe(m, lados, meio, d.costeletaAte, d.costeletaLarg)
   if (lado === 'conecta') {
     // num caminho só: dois caminhos translúcidos escureceriam onde encostam
     return <path d={`${queixo} ${costeletas}`} fill={cor} opacity={opacidade} />
@@ -1878,6 +1918,12 @@ const HUMORES: Record<Humor, {
 }
 
 /** Luminância relativa de um `#rrggbb` (WCAG), para comparar cabelo e pele. */
+/** A tinta que se lê em cima de uma cor: escura nas claras, clara nas escuras.
+ *  É o texto em cima do fundo do avatar (o "Perfil" ativo da barra). */
+export function tintaSobre(hex: string): string {
+  return luminancia(hex) > 0.3 ? '#2b2622' : '#f6f1e7'
+}
+
 function luminancia(hex: string): number {
   const n = hex.replace('#', '')
   const [r, g, b] = [0, 2, 4].map((i) => {
@@ -1887,10 +1933,6 @@ function luminancia(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-function contraste(a: string, b: string): number {
-  const [x, y] = [luminancia(a), luminancia(b)]
-  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
-}
 
 /**
  * O crachá no cordão — o objeto que mais diz "carteira assinada". Ele vai por
@@ -1959,10 +2001,15 @@ export default function Avatar({
   className,
   ajustes,
   humor,
+  redondo,
 }: {
   avatar: Receita
   tamanho?: number
   className?: string
+  /** Avatar em CÍRCULO (barra lateral, ranking): o enquadramento sobe e
+   *  aperta um pouco, com cabeça e ombros. Com o quadro de sempre a cabeça
+   *  ficava no alto do círculo; só com a cabeça, o corpo sumia. */
+  redondo?: boolean
   /** Dev-only: usado pelo `/lab/avatar` para experimentar. */
   ajustes?: Ajustes
   /** A cara do momento — a mesa passa o do estresse. Sem ele, o de sempre. */
@@ -2042,20 +2089,19 @@ export default function Avatar({
         : clarear(corDaBarba, 0.4)
       : pss
 
-  // CONTRASTE. Dez das 49 combinações de cabelo e pele ficavam abaixo de
-  // 1,35:1 (mel em canela é 1,01:1): o corte sumia no rosto e a cabeça virava
-  // uma mancha só. Nesses casos — e só neles, para o resto continuar chapado
-  // como sempre foi — o cabelo ganha um contorno, e o rosto também. A cor do
-  // contorno sai do MAIS ESCURO dos dois, para ela se separar dos dois
-  const contrasteBaixo = !manequim && contraste(c, p) < 1.45
-  const barbaBaixa = !manequim && avatar.barba !== 'rala' && contraste(corDaBarba, p) < 1.45
-  const contorno = escurecer(luminancia(c) < luminancia(p) ? c : p, 0.55)
-  const filtroContorno = `url(#${id}-contorno)`
+  // SEM CONTORNO. Abaixo de 1,45:1 de contraste entre cabelo e pele (mel em
+  // canela, branco em clara) o rosto ganhava borda, e o cabelo e a barba um
+  // anel escuro. Foi recusado pelo autor: o traço preto em volta destoava de
+  // um desenho todo chapado, e lia pior que a mancha que ele consertava. Não
+  // volte com contorno — se o contraste for o problema, a saída é a cor.
   const rostoD = rostoDe(m)
+  // a costeleta sobe por baixo do cabelo até a linha dele; no careca não há
+  // cabelo para cobri-la, e ela para na orelha
+  const costeletaAte = forma === CABELOS_FORMA.careca ? fimDoLado(m) - 4 : topo + alt * 0.18
 
   // em 32px ou menos a figura ocupava metade do quadrado, e o resto era
   // fundo e ombro. Ali o desenho se aproxima da cabeça
-  const caixa = tamanho <= 32 ? '8 0 84 84' : '0 0 100 100'
+  const caixa = redondo ? '6 4 88 88' : tamanho <= 32 ? '8 0 84 84' : '0 0 100 100'
   // o fundo esquenta com o estresse só na mesa: no perfil, uma cara de
   // estresse escolhida não troca o fundo que a pessoa escolheu
   const fundoDoHumor = (humor ? cara?.fundo : undefined) ?? fundo
@@ -2079,7 +2125,7 @@ export default function Avatar({
 
   return (
     <span
-      className={`${styles.moldura} ${className ?? ''}`}
+      className={`${styles.moldura} ${redondo ? styles.redondo : ''} ${className ?? ''}`}
       style={{ background: fundoDoHumor, width: tamanho, height: tamanho }}
     >
       <svg width={tamanho} height={tamanho} viewBox={caixa} role="img" aria-label="Avatar">
@@ -2097,30 +2143,7 @@ export default function Avatar({
               </clipPath>
             </>
           ) : null}
-          {contrasteBaixo || barbaBaixa ? (
-            <>
-              {/* o contorno da barba: a peça engrossada, na cor do contorno,
-                  com a peça por cima */}
-              <filter id={`${id}-contorno`} x="-20%" y="-20%" width="140%" height="140%">
-                <feMorphology in="SourceAlpha" operator="dilate" radius={0.9} result="grosso" />
-                <feFlood floodColor={contorno} />
-                <feComposite in2="grosso" operator="in" result="borda" />
-                <feMerge>
-                  <feMergeNode in="borda" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              {/* o do cabelo: SÓ a peça engrossada, sem ela por cima. Ela é
-                  desenhada depois, normal, e o que sobra é o anel */}
-              <filter id={`${id}-anel`} x="-20%" y="-20%" width="140%" height="140%">
-                <feMorphology in="SourceAlpha" operator="dilate" radius={0.9} result="grosso" />
-                <feFlood floodColor={contorno} />
-                <feComposite in2="grosso" operator="in" />
-              </filter>
-            </>
-          ) : null}
-          {/* o rosto como recorte: o degradê e o espetado pintam DENTRO dele,
-              e o anel de contraste baixo também */}
+          {/* o rosto como recorte: o degradê e o espetado pintam DENTRO dele */}
           <clipPath id={`${id}-rosto`}>
             <path d={rostoD} />
           </clipPath>
@@ -2168,31 +2191,19 @@ export default function Avatar({
               ))
             : null}
 
-          {/* 4. rosto. Com contraste baixo ele ganha a borda: é ela que separa
-                 o rosto do cabelo de TRÁS, que fica em volta dele */}
-          <path
-            d={rostoD}
-            fill={p}
-            stroke={contrasteBaixo ? contorno : undefined}
-            strokeWidth={contrasteBaixo ? 0.9 : undefined}
-          />
+          {/* 4. rosto */}
+          <path d={rostoD} fill={p} />
+
+          {/* 4b. barba: DEPOIS do rosto e ANTES do cabelo da frente, que cai
+                  por cima dela e cobre o encontro da costeleta com a lateral.
+                  O nariz e a boca vêm depois, por cima */}
+          {manequim ? null : (
+            <g>{barba.desenhar({ m, cor: corDaBarba, pele: p, bocaY, lado: avatar.ladoBarba ?? 'conecta', costeletaAte, costeletaLarg: forma.lateral ?? 2.6, id })}</g>
+          )}
 
           {/* 5 e 6. cabelo da frente e mechas, num grupo só, com o recorte do
-                 chapéu valendo para todos. O contorno de baixo contraste é uma
-                 camada ANTES, recortada pelo rosto: contornando a peça
-                 inteira, o anel aparecia também onde a franja passa por cima
-                 do cabelo de trás — uma tiara dentro do black power. Recortado
-                 pelo rosto, sobra só a linha do cabelo, que é onde o contraste
-                 faltava */}
+                 chapéu valendo para todos */}
           <g clipPath={recorteDoChapeu}>
-            {contrasteBaixo && !ajustes?.pecas?.franja ? (
-              <g clipPath={`url(#${id}-rosto)`}>
-                <g filter={`url(#${id}-anel)`}>
-                  {frenteDoCabelo}
-                  {forma.mechas ? [-1, 1].map((s) => <path key={s} d={mechaDe(m, s)} fill={c} />) : null}
-                </g>
-              </g>
-            ) : null}
             {manequim ? null : ajustes?.pecas?.franja ? (
               <path d={ajustes.pecas.franja} fill={c} />
             ) : (
@@ -2217,12 +2228,6 @@ export default function Avatar({
             {manequim ? null : texturaDoCabelo}
           </g>
 
-          {/* 7. barba, ANTES das feições: o nariz e a boca vêm por cima dela */}
-          {manequim ? null : (
-            <g filter={barbaBaixa ? filtroContorno : undefined}>
-              {barba.desenhar({ m, cor: corDaBarba, pele: p, bocaY, lado: avatar.ladoBarba ?? 'conecta', id })}
-            </g>
-          )}
 
           {/* 8. rosto: sobrancelha, olho, nariz, boca. O manequim não tem
                  nenhum deles — é justamente a cara vazia que diz "ainda não
@@ -2338,6 +2343,27 @@ export default function Avatar({
               opacity=".5"
             />
           ) : null}
+
+          {/* 10b. brincos: uma argola presa no lobo da orelha, por cima do
+                  rosto, do cabelo e da barba (é joia, vai por fora), e
+                  ANTES do acessório — a concha do headset cobre a orelha e
+                  esconde o brinco junto, que é o que aconteceria de verdade.
+                  Numa orelha só, é a da direita de quem olha. Sem orelha
+                  (`orelha` zero, manequim), sem brinco */}
+          {m.orelha > 0 && !manequim && avatar.brinco && avatar.brinco !== 'nenhum'
+            ? (avatar.brinco === 'um' ? [1] : [-1, 1]).map((s) => {
+                const metal = avatar.corBrinco === 'prateado' ? '#c8ccd2' : '#d8a93c'
+                const x = 50 + s * (larg + m.orelha * 0.4)
+                const lobo = orelhaY + m.orelha * 0.78
+                const r = m.orelha * 0.36
+                return (
+                  <g key={`brinco${s}`}>
+                    <circle cx={x} cy={lobo + r} r={r} fill="none" stroke={metal} strokeWidth={m.orelha * 0.2} />
+                    <circle cx={x} cy={lobo} r={m.orelha * 0.14} fill={escurecer(metal, 0.82)} />
+                  </g>
+                )
+              })
+            : null}
 
           {/* 11. acessório, por cima de tudo — é o que o torna barato */}
           {acessorio === ACESSORIOS.headset

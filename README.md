@@ -241,7 +241,7 @@ src/game/      regras puras (dados das cartas, motor, persistência) — sem Rea
   engine.ts    loop do dia/semana, efeitos, vitória e derrota
   storage.ts   leitura e escrita no localStorage
 src/app/       páginas
-src/components/Card.tsx
+src/components/Card/Card.tsx
 src/styles/    tokens de cor e botões
 ```
 

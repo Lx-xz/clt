@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSessao } from './SessaoGuard'
+import { useSessao } from '../SessaoGuard'
 import { souAdmin } from '@/data/feedback'
 import styles from './GuardaAdmin.module.sass'
 

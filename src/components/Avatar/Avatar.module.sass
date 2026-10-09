@@ -12,3 +12,12 @@
 
   svg
     display: block
+    // o desenho ocupa a caixa de DENTRO da borda. Com a largura do atributo
+    // (o `tamanho`), o SVG passava a borda de 1px em 2px, ficava 1px fora do
+    // centro e perdia uma lasca à direita e embaixo
+    width: 100%
+    height: 100%
+
+// em círculo (barra lateral, ranking), com o enquadramento da cabeça
+.redondo
+  border-radius: 50%

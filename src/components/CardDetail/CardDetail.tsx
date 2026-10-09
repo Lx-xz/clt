@@ -3,8 +3,8 @@
 import { useEffect, type ReactNode } from 'react'
 import type { ActionCard, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
-import Card from './Card'
-import { RESOURCE_ICONS, nomeDaClasse } from './icons'
+import Card from '../Card'
+import { RESOURCE_ICONS, nomeDaClasse } from '../icons'
 import styles from './CardDetail.module.sass'
 
 interface CardDetailProps {

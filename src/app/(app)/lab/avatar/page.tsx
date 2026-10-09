@@ -25,6 +25,7 @@ import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
   CORES,
+  LADOS_DA_BARBA,
   ROSTOS,
   FUNDOS,
   PELES,
@@ -215,7 +216,7 @@ export default function AvatarLabPage() {
       <h1 className={styles.titulo}>Lab do avatar</h1>
       <p className={styles.intro}>
         Bancada. Nada daqui é salvo no banco nem muda o avatar de ninguém: o resultado é o
-        <b> código para colar</b> em <code>src/components/Avatar.tsx</code>. O desenho usa o mesmo
+        <b> código para colar</b> em <code>src/components/Avatar/Avatar.tsx</code>. O desenho usa o mesmo
         componente do jogo, então o que você vê aqui é o que sai lá.
       </p>
       <p className={styles.avisoTeste}>
@@ -329,7 +330,7 @@ export default function AvatarLabPage() {
                         passos: f.teste
                           ? [
                               `Em src/data/avatar.ts: acrescente '${id}' ao tipo Corte e { valor: '${id}', rotulo: '${f.rotulo}' } em CORTES.`,
-                              `Em src/components/Avatar.tsx: tire o teste: true da linha '${id}' de CABELOS_FORMA.`,
+                              `Em src/components/Avatar/Avatar.tsx: tire o teste: true da linha '${id}' de CABELOS_FORMA.`,
                               'Em /perfil/editar a opção aparece sozinha, porque a tela lê CORTES.',
                               'Não precisa mexer no banco: salvar_avatar() não valida, e lerAvatar() já cai no padrão diante de peça desconhecida.',
                             ]
@@ -414,7 +415,7 @@ export default function AvatarLabPage() {
                           ? [
                               'Em src/data/avatar.ts: acrescente acessorio ao tipo Avatar (com ‘nenhum’ no AVATAR_PADRAO) e uma lista ACESSORIOS de rótulos.',
                               'Decida a COR: ou ela vira uma sexta escolha da receita, ou o acessório herda a cor da roupa. Herdar é mais barato e combina sozinho.',
-                              'Em src/components/Avatar.tsx: leia avatar.acessorio em vez de ajustes.teste.acessorio, e tire o teste: true.',
+                              'Em src/components/Avatar/Avatar.tsx: leia avatar.acessorio em vez de ajustes.teste.acessorio, e tire o teste: true.',
                               'Em /perfil/editar: mais um Segmentado, lendo a lista nova.',
                               'Sem migração: lerAvatar() cai no padrão para quem não tiver o campo.',
                             ]
@@ -690,6 +691,47 @@ export default function AvatarLabPage() {
             />
           )),
         )}
+      </div>
+
+      <h2 className={styles.blocoTitulo}>Barba × cabelo, na têmpora</h2>
+      <p className={styles.blocoDica}>
+        Toda barba que chega no cabelo, nos três jeitos de chegar, em todo corte — de perto, onde a
+        costeleta encontra a lateral. Os defeitos de barba com cabelo nunca foram de uma combinação
+        só: eram as duas peças sem saber uma da outra. Hoje a costeleta passa POR BAIXO do cabelo,
+        com a largura da lateral do corte (<code>lateral</code> em <code>CABELOS_FORMA</code>). Corte novo
+        aparece aqui sozinho; se algo destoar, é aqui que se vê antes do jogador.
+      </p>
+      <div className={styles.barbaCabelo}>
+        <span />
+        {(Object.keys(BARBAS) as Barba[])
+          .filter((b) => BARBAS[b].temLado)
+          .flatMap((b) =>
+            LADOS_DA_BARBA.map((l) => (
+              <span key={`${b}-${l.valor}`} className={styles.barbaCabeloRotulo}>
+                {BARBAS[b].rotulo}
+                <br />
+                {l.rotulo}
+              </span>
+            )),
+          )}
+        {(Object.keys(CABELOS_FORMA) as FormaDeCabelo[]).map((cab) => (
+          <div key={cab} className={styles.barbaCabeloLinha}>
+            <span className={styles.barbaCabeloRotulo}>{CABELOS_FORMA[cab].rotulo}</span>
+            {(Object.keys(BARBAS) as Barba[])
+              .filter((b) => BARBAS[b].temLado)
+              .flatMap((b) =>
+                LADOS_DA_BARBA.map((l) => (
+                  <span key={`${cab}-${b}-${l.valor}`} className={styles.tempora}>
+                    <Avatar
+                      tamanho={200}
+                      avatar={{ ...e.receita, barba: b, ladoBarba: l.valor }}
+                      ajustes={{ ...ajustes, teste: { ...e.teste, cabelo: cab, barba: b } }}
+                    />
+                  </span>
+                )),
+              )}
+          </div>
+        ))}
       </div>
 
       <h2 className={styles.blocoTitulo}>Os humores, com o avatar de cima</h2>

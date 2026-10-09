@@ -1,8 +1,8 @@
 'use client'
 
 import type { GameState } from '@/game/types'
-import Dialogo from './Dialogo'
-import LinhaDoTempo from './LinhaDoTempo'
+import Dialogo from '../Dialogo'
+import LinhaDoTempo from '../LinhaDoTempo'
 import styles from './HistoricoDaRun.module.sass'
 
 /**

@@ -17,6 +17,15 @@ import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { PenteIcon } from '@/components/icons'
 import { useDefinirSessao, useSessao } from '@/components/SessaoGuard'
 import {
+  BarbaIcon,
+  CabeloIcon,
+  ExpressaoIcon,
+  ExtrasIcon,
+  FundoIcon,
+  RostoIcon,
+  RoupaIcon,
+} from './IconesDasAbas'
+import {
   ACESSORIOS,
   BARBAS,
   BARBAS_COM_LADO,
@@ -24,6 +33,8 @@ import {
   CORES_DA_BARRA,
   CORES_DO_CHAPEU,
   CORES_DO_HEADSET,
+  BRINCOS,
+  CORES_DO_BRINCO,
   CORES_DOS_OCULOS,
   CORTES,
   CRACHAS,
@@ -61,14 +72,16 @@ import styles from './editar.module.sass'
 
 type Aba = 'rosto' | 'olhos' | 'cabelo' | 'barba' | 'roupa' | 'extras' | 'fundo'
 
-const ABAS: { id: Aba; rotulo: string }[] = [
-  { id: 'rosto', rotulo: 'Rosto' },
-  { id: 'olhos', rotulo: 'Expressão' },
-  { id: 'cabelo', rotulo: 'Cabelo' },
-  { id: 'barba', rotulo: 'Barba' },
-  { id: 'roupa', rotulo: 'Roupa' },
-  { id: 'extras', rotulo: 'Extras' },
-  { id: 'fundo', rotulo: 'Fundo' },
+// as abas são ÍCONES, como no Duolingo: com sete nomes escritos a fileira
+// não cabia e rolava de lado. O nome continua no `title` e no leitor de tela
+const ABAS: { id: Aba; rotulo: string; Icone: (p: { size?: number }) => ReactNode }[] = [
+  { id: 'rosto', rotulo: 'Rosto', Icone: RostoIcon },
+  { id: 'olhos', rotulo: 'Expressão', Icone: ExpressaoIcon },
+  { id: 'cabelo', rotulo: 'Cabelo', Icone: CabeloIcon },
+  { id: 'barba', rotulo: 'Barba', Icone: BarbaIcon },
+  { id: 'roupa', rotulo: 'Roupa', Icone: RoupaIcon },
+  { id: 'extras', rotulo: 'Acessórios', Icone: ExtrasIcon },
+  { id: 'fundo', rotulo: 'Fundo', Icone: FundoIcon },
 ]
 
 /** O manequim não tem rosto, cabelo nem roupa para escolher: oferecer essas
@@ -190,7 +203,7 @@ export default function EditarAvatarPage() {
 
       <div className={styles.editor}>
         <div className={styles.palco}>
-          <AvatarHero avatar={receita} className={styles.previa} />
+          <AvatarHero avatar={receita} className={styles.previa} classeDaFigura={styles.figura} />
         </div>
 
         <div className={styles.lado}>
@@ -205,9 +218,11 @@ export default function EditarAvatarPage() {
                   role="tab"
                   aria-selected={abaAtual === a.id}
                   className={`${styles.aba} ${abaAtual === a.id ? styles.abaAtiva : ''}`}
+                  aria-label={a.rotulo}
+                  title={a.rotulo}
                   onClick={() => setAba(a.id)}
                 >
-                  {a.rotulo}
+                  <a.Icone size={26} />
                 </button>
               ))}
             </div>
@@ -295,6 +310,16 @@ export default function EditarAvatarPage() {
                   />
                 ) : null}
                 <Formas titulo="Na cabeça" campo="acessorio" opcoes={ACESSORIOS} {...props} />
+                {receita.brinco !== 'nenhum' ? (
+                  <Cores
+                    titulo="Cor dos brincos"
+                    campo="corBrinco"
+                    opcoes={CORES_DO_BRINCO}
+                    tons={(v) => (v === 'prateado' ? '#c8ccd2' : '#d8a93c')}
+                    {...props}
+                  />
+                ) : null}
+                <Formas titulo="Brincos" campo="brinco" opcoes={BRINCOS} {...props} />
                 <Formas titulo="No pescoço" campo="cracha" opcoes={CRACHAS} enquadrar="inteiro" {...props} />
               </>
             ) : null}

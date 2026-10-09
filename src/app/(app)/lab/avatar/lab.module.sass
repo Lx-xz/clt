@@ -356,3 +356,35 @@
   gap: 4px
   font-size: 11px
   color: var(--tinta-fraca)
+
+// a grade barba × cabelo: uma linha por corte, uma coluna por barba e jeito
+// de chegar no cabelo. Cada célula é a TÊMPORA de perto — o avatar desenhado
+// em 200 px atrás de uma janela de 72, deslocado para o lado esquerdo do
+// rosto, que é onde a costeleta encontra a lateral do cabelo
+.barbaCabelo
+  display: grid
+  grid-template-columns: 84px repeat(12, 72px)
+  gap: 4px
+  padding-bottom: 40px
+  overflow-x: auto
+
+.barbaCabeloLinha
+  display: contents
+
+.barbaCabeloRotulo
+  align-self: center
+  color: var(--tinta-fraca)
+  font-size: 10px
+  line-height: 1.25
+
+.tempora
+  display: block
+  width: 72px
+  height: 72px
+  overflow: hidden
+  border-radius: 8px
+
+  > *
+    transform: translate(-36px, -64px)
+    border: 0
+    border-radius: 0

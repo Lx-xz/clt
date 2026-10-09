@@ -5,7 +5,7 @@ import { useState } from 'react'
 import type { Amigo, Pedido } from '@/data/amizades'
 import { responderAmizade } from '@/data/amizades'
 import buttons from '@/styles/buttons.module.sass'
-import Avatar from './Avatar'
+import Avatar from '../Avatar'
 import styles from './ListaDeAmigos.module.sass'
 
 const ROTULO: Record<string, string> = {

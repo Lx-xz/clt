@@ -141,13 +141,33 @@ $painel-largo: 216px
   background: var(--destaque)
 
 // o avatar ocupa o lugar do ícone, então tem o tamanho dele
-.avatarNav
+// o item do perfil: o avatar redondo de 38 px ocupa a largura inteira da
+// barra recolhida (62 − 2 × 12 de respiro), com o centro na mesma coluna dos
+// ícones de cima. Era um quadradinho de 30 px que lia como mais um ícone
+// o canto é o mesmo dos outros links (`.link`), e aberto o fundo do item é
+// o do avatar (inline). Sem respiro em cima e embaixo: o avatar ocupa a
+// altura inteira do item, e por isso já encosta na borda de baixo
+.linkPerfil
+  padding: 0
+  // a roupa chega na borda de baixo: sem o recorte, ela passava dos cantos
+  // arredondados do item
+  overflow: hidden
+
+  .rotulo
+    font-weight: 600
+
+// sem a borda da moldura: em cima do fundo do avatar ela virava um aro.
+// `.linkPerfil .avatarNav` e não só `.avatarNav`, que empatava com a
+// `.moldura` do Avatar e perdia
+.linkPerfil .avatarNav
   flex: none
-  border-radius: 8px
-  // 30 px de avatar no lugar de 18 de ícone: recua 6 px de cada lado para o
-  // centro e os rótulos continuarem alinhados com os ícones de cima. Com
-  // 22 px ele era menor que um polegar e lia como um borrão
-  margin: -6px
+  border: 0
+
+// aberto, o círculo some: o fundo do item já é o do avatar, e a borda do
+// círculo cortando o ombro lia como um contorno em volta do personagem
+.perfilAtivo .avatarNav
+  border-radius: 0
+  background: transparent !important
 
 .rodape
   padding: 8px 8px 0
