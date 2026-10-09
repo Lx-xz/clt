@@ -304,7 +304,7 @@ export default function SideNav() {
               onClick={(e) => navegar(e, '/perfil')}
             >
               {/* o "você" da barra é o seu rosto, não um bonequinho genérico */}
-              <Avatar avatar={sessao.avatar} tamanho={22} className={styles.avatarNav} />
+              <Avatar avatar={sessao.avatar} tamanho={30} className={styles.avatarNav} />
               <span className={styles.rotulo}>Perfil</span>
             </Link>
 
@@ -433,6 +433,41 @@ export default function SideNav() {
 
           <div className={styles.grupo}>
             <span className={styles.grupoTitulo}>Conta</span>
+            {/* os dados da conta moravam no perfil — que é a página que os
+                OUTROS veem. Aqui só você chega */}
+            <dl className={styles.dadosConta}>
+              {sessao.nome ? (
+                <div>
+                  <dt>Nome</dt>
+                  <dd>{sessao.nome}</dd>
+                </div>
+              ) : null}
+              {sessao.email ? (
+                <div>
+                  <dt>E-mail</dt>
+                  <dd className={styles.mono}>{sessao.email}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>Tipo</dt>
+                <dd>{sessao.convidado ? 'Convidado (sem conta)' : 'Conta própria'}</dd>
+              </div>
+              {sessao.convidado ? null : (
+                <div>
+                  <dt>Pontos de feedback</dt>
+                  <dd className={styles.mono}>{sessao.pontos}</dd>
+                </div>
+              )}
+              {sessao.admin ? (
+                <div>
+                  <dt>Permissão</dt>
+                  <dd>Admin</dd>
+                </div>
+              ) : null}
+            </dl>
+            <span className={styles.grupoDica}>
+              Só você vê isto: quem abre o seu perfil vê o nick, o avatar e as partidas.
+            </span>
             <span className={styles.grupoDica}>
               {sessao.convidado
                 ? 'Você está sem conta: ao sair, a partida em andamento e as cartas ganhas ficam para trás, e não há como recuperá-las.'

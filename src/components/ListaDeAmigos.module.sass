@@ -5,6 +5,7 @@
 
 .linha
   display: flex
+  flex-wrap: wrap
   align-items: center
   gap: 10px
   padding: 8px 10px
@@ -17,7 +18,9 @@
 
 .quem
   display: flex
-  flex: 1
+  // com menos que isto o nick e o "quer ser seu amigo" viram uma coluna de
+  // uma palavra por linha: aí quem desce são os botões
+  flex: 1 1 150px
   flex-direction: column
   gap: 1px
   min-width: 0
@@ -47,5 +50,6 @@
 
 .botoes
   display: flex
+  margin-left: auto
   flex-wrap: wrap
   gap: 6px

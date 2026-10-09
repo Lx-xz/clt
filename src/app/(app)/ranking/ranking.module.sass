@@ -33,179 +33,151 @@
   color: var(--tinta-fraca)
   font-size: 13px
 
-// ------------------------------------------------------------------ tabela
-.tabela
-  width: 100%
-  border-collapse: collapse
-  font-size: 13.5px
+// ------------------------------------------------------------------ lista
+.filtro
+  max-width: 320px
+  margin-bottom: 14px
 
-  th, td
-    padding: 10px 12px
-    text-align: left
-    border-bottom: 1px solid var(--linha)
+.lista
+  display: flex
+  flex-direction: column
+  margin: 0
+  padding: 0
+  list-style: none
 
-  th
-    color: var(--tinta-fraca)
-    font-size: 11px
-    font-weight: 600
-    letter-spacing: .05em
-    text-transform: uppercase
-
-  td.num, th.num
-    text-align: right
-    font-family: var(--mono)
-    font-variant-numeric: tabular-nums
-
+// a linha inteira é o link para o perfil
 .linha
+  display: grid
+  grid-template-columns: 40px auto minmax(0, 1fr) auto
+  align-items: center
+  gap: 14px
+  padding: 12px 14px
+  border-bottom: 1px solid var(--linha)
+  color: var(--tinta)
+  text-decoration: none
   transition: background .12s ease
 
   &:hover
     background: var(--papel-alto)
 
-// destaca a linha de quem está jogando agora
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: -2px
+
+// quem está jogando: fundo tingido e o nick na cor de destaque, como a linha
+// roxa do Duolingo. O selo "você" saiu — a cor já diz
 .euMesmo
   background: color-mix(in srgb, var(--destaque) 12%, transparent)
 
   &:hover
-    background: color-mix(in srgb, var(--destaque) 16%, transparent)
-
-.posicao
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-
-.nick
-  text-decoration: none
-
-  &:hover
-    text-decoration: underline
-  font-weight: 600
-
-.voce
-  margin-left: 6px
-  padding: 1px 7px
-  background: var(--destaque)
-  border-radius: 999px
-  color: #17150f
-  font-family: var(--mono)
-  font-size: 10px
-  letter-spacing: .04em
-  text-transform: uppercase
-
-.vitorias
-  color: var(--produtividade)
-  font-weight: 600
-
-.data
-  color: var(--tinta-fraca)
-  font-size: 12px
-
-// no desktop as colunas todas estão à vista: nada de seta, nada de expandir.
-// Estas três regras precisam vir ANTES da media query — mesma especificidade,
-// então quem vier por último ganha, media query ou não.
-.filtro
-  max-width: 320px
-  margin-bottom: 14px
-
-// a célula continua célula (flex numa <td> desmancha a tabela): o avatar vai
-// em linha, centrado na altura do texto
-.jogador
-  white-space: nowrap
-
-.avatar
-  display: inline-block !important
-  margin-right: 8px
-  vertical-align: middle
-
-.seta
-  display: none
-
-.curto
-  display: none
-
-.detalhe
-  display: none
-
-  td
-    padding-top: 0
-    background: var(--papel-alto)
-
-// ------------------------------------------------------------------ celular
-// Cabem três informações por linha e só. O resto (partidas, melhor R$, última
-// vez) sai das colunas e passa a viver numa linha que abre no toque — em vez
-// de uma tabela mais larga que a tela, que obrigaria a arrastar de lado.
-@media (max-width: 640px)
-  .tabela
-    font-size: 12.5px
-    table-layout: fixed
-
-    th, td
-      padding: 8px 6px
-      // a seta tem que ficar na mesma linha do nick; quem encolhe é o nick
-      white-space: nowrap
-
-    // sobra tudo que puder para a coluna do jogador
-    th:first-child, td:first-child
-      width: 26px
-      padding-right: 0
-
-    th:nth-child(3), td:nth-child(3),
-    th:nth-child(4), td:nth-child(4)
-      width: 34px
-
-  .colOculta
-    display: none
+    background: color-mix(in srgb, var(--destaque) 17%, transparent)
 
   .nick
-    display: inline-block
-    max-width: calc(100% - 22px)
-    overflow: hidden
-    text-overflow: ellipsis
-    vertical-align: bottom
+    color: var(--destaque)
 
-  // a linha de quem está jogando já vem destacada em cor; o selo só roubaria
-  // o espaço do nick
-  .voce
-    display: none
+.posicao
+  justify-self: center
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 15px
+  font-weight: 600
 
-  .longo
-    display: none
+// as três primeiras ganham medalha: um círculo com fita, em CSS
+.medalha
+  position: relative
+  display: grid
+  place-items: center
+  width: 28px
+  height: 28px
+  border-radius: 50%
+  color: #2a2116
+  font-size: 13px
+  font-weight: 700
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .35), 0 1px 2px rgba(0, 0, 0, .25)
 
-  .curto
-    display: inline
+  // a fita, saindo de baixo do círculo
+  &::after
+    content: ""
+    position: absolute
+    top: 25px
+    left: 50%
+    width: 16px
+    height: 10px
+    transform: translateX(-50%)
+    background: inherit
+    filter: brightness(.82)
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 62%, 0 100%)
 
+.medalha1
+  background: #e3b341
+
+.medalha2
+  background: #b9c2cc
+
+.medalha3
+  background: #cf8a4f
+
+// redondo, como no Duolingo: a moldura de canto 16% é a do resto do site
+.avatar
+  border-radius: 50% !important
+
+.quem
+  display: flex
+  flex-direction: column
+  gap: 2px
+  min-width: 0
+
+.nick
+  overflow: hidden
+  font-size: 17px
+  font-weight: 700
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.sub
+  overflow: hidden
+  color: var(--tinta-fraca)
+  font-size: 12px
+  text-overflow: ellipsis
+  white-space: nowrap
+
+// o placar no lugar do XP
+.placar
+  display: flex
+  align-items: baseline
+  gap: 14px
+  font-family: var(--mono)
+  font-size: 20px
+  font-weight: 700
+  font-variant-numeric: tabular-nums
+
+  small
+    font-size: 12px
+    font-weight: 600
+
+.v
+  color: var(--produtividade)
+
+.d
+  color: var(--tinta-fraca)
+
+@media (max-width: 640px)
   .linha
-    cursor: pointer
+    grid-template-columns: 30px auto minmax(0, 1fr) auto
+    gap: 10px
+    padding: 10px 6px
 
-  .seta
-    display: inline-block
-    margin-left: 4px
-    color: var(--tinta-fraca)
-    vertical-align: -2px
-    transition: transform .15s ease
+  .avatar
+    width: 44px !important
+    height: 44px !important
 
-  .setaAberta
-    transform: rotate(180deg)
+    svg
+      width: 100%
+      height: 100%
 
-  .detalhe
-    display: table-row
+  .nick
+    font-size: 15px
 
-    // o nowrap acima é para o nick; aqui a data precisa poder quebrar
-    td
-      white-space: normal
-
-  .campos
-    display: grid
-    grid-template-columns: repeat(3, 1fr)
-    gap: 8px
-    margin: 0
-
-    dt
-      color: var(--tinta-fraca)
-      font-size: 10px
-      letter-spacing: .04em
-      text-transform: uppercase
-
-    dd
-      margin: 2px 0 0
-      font-family: var(--mono)
-      font-size: 12px
+  .placar
+    gap: 10px
+    font-size: 17px

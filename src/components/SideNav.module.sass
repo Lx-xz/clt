@@ -143,10 +143,11 @@ $painel-largo: 216px
 // o avatar ocupa o lugar do ícone, então tem o tamanho dele
 .avatarNav
   flex: none
-  border-radius: 6px
-  // 22 px de avatar no lugar de 18 de ícone: recua 2 px de cada lado para os
-  // rótulos continuarem alinhados com os de cima
-  margin: -2px
+  border-radius: 8px
+  // 30 px de avatar no lugar de 18 de ícone: recua 6 px de cada lado para o
+  // centro e os rótulos continuarem alinhados com os ícones de cima. Com
+  // 22 px ele era menor que um polegar e lia como um borrão
+  margin: -6px
 
 .rodape
   padding: 8px 8px 0
@@ -361,3 +362,24 @@ $painel-largo: 216px
   .painel,
   .backdrop
     transition: none
+
+// os dados da conta, nas Configurações: rótulo pequeno em cima, valor embaixo
+.dadosConta
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))
+  gap: 10px 16px
+  margin: 0
+
+  dt
+    color: var(--tinta-fraca)
+    font-size: 10px
+    letter-spacing: .08em
+    text-transform: uppercase
+
+  dd
+    margin: 2px 0 0
+    font-size: 14px
+    overflow-wrap: anywhere
+
+.mono
+  font-family: var(--mono)

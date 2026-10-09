@@ -7,6 +7,7 @@ import { Suspense, useEffect, useState } from 'react'
 import AvatarHero from '@/components/AvatarHero'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
 import Conquistas from '@/components/Conquistas'
+import Dialogo from '@/components/Dialogo'
 import ListaDeJogos from '@/components/ListaDeJogos'
 import { useSessao } from '@/components/SessaoGuard'
 import {
@@ -39,6 +40,7 @@ function Conteudo() {
   const [perfil, setPerfil] = useState<PerfilPublico | null | 'nao-achou'>(null)
   const [jogos, setJogos] = useState<JogoResumo[]>([])
   const [conquistas, setConquistas] = useState<Conquista[] | null>(null)
+  const [vendo, setVendo] = useState<'partidas' | 'conquistas' | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
   useEffect(() => {
@@ -91,15 +93,40 @@ function Conteudo() {
         </div>
       </div>
 
+      {/* o mesmo arranjo do seu perfil: a última partida e os selos, e a
+          lista inteira no "ver todas" */}
+      <div className={styles.cabecaSecao}>
+        <h2 className={styles.secao}>Última partida</h2>
+        {jogos.length > 1 ? (
+          <button type="button" className={styles.verTodas} onClick={() => setVendo('partidas')}>
+            Ver todas ({jogos.length})
+          </button>
+        ) : null}
+      </div>
+      <ListaDeJogos jogos={jogos.slice(0, 1)} vazio="Ainda não terminou nenhuma partida." />
+
       {conquistas && conquistas.length > 0 ? (
         <>
-          <h2 className={styles.secao}>Conquistas</h2>
-          <Conquistas lista={conquistas} />
+          <div className={styles.cabecaSecao}>
+            <h2 className={styles.secao}>Conquistas · {conquistas.length}</h2>
+            <button type="button" className={styles.verTodas} onClick={() => setVendo('conquistas')}>
+              Ver todas
+            </button>
+          </div>
+          <Conquistas lista={conquistas} selos />
         </>
       ) : null}
 
-      <h2 className={styles.secao}>Partidas</h2>
-      <ListaDeJogos jogos={jogos} vazio="Ainda não terminou nenhuma partida." />
+      {vendo === 'partidas' ? (
+        <Dialogo titulo={`Partidas de ${perfil.nick}`} largo onFechar={() => setVendo(null)}>
+          <ListaDeJogos jogos={jogos} vazio="Nenhuma partida." />
+        </Dialogo>
+      ) : null}
+      {vendo === 'conquistas' && conquistas ? (
+        <Dialogo titulo={`Conquistas de ${perfil.nick}`} largo onFechar={() => setVendo(null)}>
+          <Conquistas lista={conquistas} />
+        </Dialogo>
+      ) : null}
     </>
   )
 }

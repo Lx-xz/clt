@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Fragment, useEffect, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import Avatar from '@/components/Avatar'
 import Segmentado from '@/components/Segmentado'
 import { meusAmigos } from '@/data/amizades'
@@ -14,16 +13,8 @@ import styles from './ranking.module.sass'
 
 type Estado = { tipo: 'carregando' } | { tipo: 'erro'; mensagem: string } | { tipo: 'pronto'; linhas: LinhaRanking[] }
 
-function formatarData(iso: string): string {
-  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso))
-}
-
 export default function RankingPage() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' })
-  // no celular só cabem nick/vitórias/derrotas; o resto vira uma linha que
-  // abre por toque. No desktop as colunas já estão todas à vista e isto não
-  // tem efeito nenhum (a linha extra fica display:none)
-  const [aberto, setAberto] = useState<string | null>(null)
   const sessao = useSessao()
   // "amigos" filtra no cliente: o ranking já vem inteiro, e uma função
   // nova no banco só para isso seria uma viagem a mais para a mesma lista
@@ -88,89 +79,55 @@ export default function RankingPage() {
       ) : null}
 
       {estado.tipo === 'pronto' && estado.linhas.length > 0 ? (
-        <table className={styles.tabela}>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Jogador</th>
-              <th className={styles.num}>
-                <span className={styles.longo}>Vitórias</span>
-                <span className={styles.curto}>V</span>
-              </th>
-              <th className={styles.num}>
-                <span className={styles.longo}>Derrotas</span>
-                <span className={styles.curto}>D</span>
-              </th>
-              <th className={`${styles.num} ${styles.colOculta}`}>Partidas</th>
-              <th className={`${styles.num} ${styles.colOculta}`}>Melhor R$</th>
-              <th className={styles.colOculta}>Última vez</th>
-            </tr>
-          </thead>
-          <tbody>
-            {estado.linhas.map((linha, i) => {
-              const euMesmo = linha.nick === sessao.nick
-              // a posição continua a do ranking geral: filtrar é olhar, não
-              // reordenar — o amigo em 14º continua em 14º
-              if (filtro === 'amigos' && !euMesmo && !amigos?.has(linha.nick)) return null
-              const expandida = aberto === linha.nick
-              return (
-                <Fragment key={linha.nick}>
-                  <tr
-                    className={`${styles.linha} ${euMesmo ? styles.euMesmo : ''}`}
-                    onClick={() => setAberto(expandida ? null : linha.nick)}
+        // uma lista de linhas, como o placar do Duolingo: medalha, rosto,
+        // nick e o placar à direita. A linha inteira leva ao perfil — o
+        // "abrir para ver mais" que existia antes mostrava partidas, melhor
+        // saldo e data, e isso agora mora no perfil de cada um
+        <ol className={styles.lista}>
+          {estado.linhas.map((linha, i) => {
+            const euMesmo = linha.nick === sessao.nick
+            // a posição continua a do ranking geral: filtrar é olhar, não
+            // reordenar — o amigo em 14º continua em 14º
+            if (filtro === 'amigos' && !euMesmo && !amigos?.has(linha.nick)) return null
+            const posicao = i + 1
+            return (
+              <li key={linha.nick}>
+                <Link
+                  className={`${styles.linha} ${euMesmo ? styles.euMesmo : ''}`}
+                  href={`/jogador?nick=${encodeURIComponent(linha.nick)}`}
+                  aria-current={euMesmo ? 'true' : undefined}
+                >
+                  <span
+                    className={`${styles.posicao} ${posicao <= 3 ? `${styles.medalha} ${styles[`medalha${posicao}`]}` : ''}`}
+                    aria-label={`${posicao}º lugar`}
                   >
-                    <td className={styles.posicao}>{i + 1}</td>
-                    <td className={styles.jogador}>
-                      <Avatar avatar={lerAvatar(linha.avatar)} tamanho={28} className={styles.avatar} />
-                      {/* o nick abre o perfil daquela pessoa; o resto da
-                          linha continua servindo para expandir no celular,
-                          então o clique do link não pode subir para a <tr> */}
-                      <Link
-                        className={styles.nick}
-                        href={`/jogador?nick=${encodeURIComponent(linha.nick)}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {linha.nick}
-                      </Link>
-                      {euMesmo ? <span className={styles.voce}>você</span> : null}
-                      <ChevronDown
-                        className={`${styles.seta} ${expandida ? styles.setaAberta : ''}`}
-                        size={14}
-                        aria-hidden
-                      />
-                    </td>
-                    <td className={`${styles.num} ${styles.vitorias}`}>{linha.vitorias}</td>
-                    <td className={styles.num}>{linha.derrotas}</td>
-                    <td className={`${styles.num} ${styles.colOculta}`}>{linha.total_runs}</td>
-                    <td className={`${styles.num} ${styles.colOculta}`}>R$ {linha.melhor_dinheiro}</td>
-                    <td className={`${styles.data} ${styles.colOculta}`}>{formatarData(linha.ultima_partida)}</td>
-                  </tr>
-
-                  {expandida ? (
-                    <tr className={styles.detalhe}>
-                      <td colSpan={4}>
-                        <dl className={styles.campos}>
-                          <div>
-                            <dt>Partidas</dt>
-                            <dd>{linha.total_runs}</dd>
-                          </div>
-                          <div>
-                            <dt>Melhor R$</dt>
-                            <dd>{linha.melhor_dinheiro}</dd>
-                          </div>
-                          <div>
-                            <dt>Última vez</dt>
-                            <dd>{formatarData(linha.ultima_partida)}</dd>
-                          </div>
-                        </dl>
-                      </td>
-                    </tr>
-                  ) : null}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
+                    {posicao}
+                  </span>
+                  <Avatar avatar={lerAvatar(linha.avatar)} tamanho={52} className={styles.avatar} />
+                  <span className={styles.quem}>
+                    <span className={styles.nick}>{linha.nick}</span>
+                    <span className={styles.sub}>
+                      {linha.total_runs} {linha.total_runs === 1 ? 'partida' : 'partidas'}
+                      {linha.melhor_dinheiro !== null ? ` · melhor R$ ${linha.melhor_dinheiro}` : ''}
+                    </span>
+                  </span>
+                  {/* no lugar do XP: vitórias e derrotas, que é o que o
+                      ranking ordena */}
+                  <span className={styles.placar}>
+                    <span className={styles.v}>
+                      {linha.vitorias}
+                      <small> V</small>
+                    </span>
+                    <span className={styles.d}>
+                      {linha.derrotas}
+                      <small> D</small>
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ol>
       ) : null}
     </main>
   )

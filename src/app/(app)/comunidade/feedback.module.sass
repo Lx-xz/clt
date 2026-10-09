@@ -194,17 +194,18 @@
   overflow-wrap: anywhere
 
 .rodapeCard
+  display: flex
+  align-items: center
+  gap: 8px
   margin: 0
   color: var(--tinta-fraca)
   font-size: 12px
 
-// o rosto de quem escreveu, do tamanho da letra: é para reconhecer, não
-// para enfeitar
+// o rosto de quem escreveu, na frente da linha: com 20 px no meio da frase
+// ele era um borrão desalinhado com o texto
 .avatarAutor
-  display: inline-block !important
-  margin-right: 6px
-  border-radius: 5px
-  vertical-align: middle
+  flex: none
+  border-radius: 8px
 
 .explicaStatus
   margin: 0

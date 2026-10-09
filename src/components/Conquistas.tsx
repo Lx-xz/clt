@@ -32,8 +32,32 @@ const ICONES: Record<string, LucideIcon> = {
  * como se ganha — saber o que existe para conquistar é metade da graça, e
  * esconder a lista faria dela uma surpresa que ninguém procura.
  */
-export default function Conquistas({ lista, vazio }: { lista: Conquista[]; vazio?: string }) {
+export default function Conquistas({ lista, vazio, selos = false }: {
+  lista: Conquista[]
+  vazio?: string
+  /** Só os selos, em linha: o ícone redondo, com o nome no `title` e no
+   *  leitor de tela. É o que o perfil mostra — a lista com descrição mora no
+   *  "ver todas". */
+  selos?: boolean
+}) {
   if (lista.length === 0) return vazio ? <p className={styles.vazio}>{vazio}</p> : null
+  if (selos) {
+    return (
+      <ul className={styles.selos}>
+        {lista.map((c) => {
+          const Icone = ICONES[c.icone] ?? Medal
+          const tem = c.ganha_em !== null
+          const rotulo = `${c.nome}${tem ? '' : ' (ainda não)'}: ${c.descricao}`
+          return (
+            <li key={c.id} className={`${styles.seloRedondo} ${tem ? styles.ganhaRedondo : ''}`} title={rotulo}>
+              <Icone size={20} aria-hidden />
+              <span className={styles.leitor}>{rotulo}</span>
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
   return (
     <ul className={styles.grade}>
       {lista.map((c) => {

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import AvatarHero from '@/components/AvatarHero'
 import Conquistas from '@/components/Conquistas'
+import Dialogo from '@/components/Dialogo'
 import ListaDeAmigos from '@/components/ListaDeAmigos'
 import ListaDeJogos from '@/components/ListaDeJogos'
 import { useSessao } from '@/components/SessaoGuard'
@@ -29,6 +30,7 @@ export default function PerfilPage() {
   const [amigos, setAmigos] = useState<Amigo[] | null>(null)
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [conquistas, setConquistas] = useState<Conquista[] | null>(null)
+  const [vendo, setVendo] = useState<'partidas' | 'conquistas' | null>(null)
 
   function carregarAmigos() {
     if (sessao.convidado) return
@@ -76,59 +78,68 @@ export default function PerfilPage() {
         <span className={styles.destaque}>{sessao.nick}</span>
       </div>
 
+      {/* o rank, com o placar no mesmo jeito do ranking */}
       {posto ? (
         <Link className={styles.posto} href="/ranking">
-          <Trophy size={20} aria-hidden />
+          <Trophy size={22} aria-hidden />
           <span className={styles.postoNumero}>#{posto.posicao}</span>
-          <span className={styles.postoTexto}>
-            de {posto.total} no ranking · {posto.vitorias} vitórias, {posto.derrotas} derrotas
+          <span className={styles.postoTexto}>de {posto.total} no ranking</span>
+          <span className={styles.placar}>
+            <span className={styles.v}>
+              {posto.vitorias}
+              <small> V</small>
+            </span>
+            <span className={styles.d}>
+              {posto.derrotas}
+              <small> D</small>
+            </span>
           </span>
         </Link>
-      ) : null}
-
-      <dl className={styles.dados}>
-        {sessao.nome ? (
-          <div>
-            <dt>Nome</dt>
-            <dd>{sessao.nome}</dd>
-          </div>
-        ) : null}
-        {sessao.email ? (
-          <div>
-            <dt>E-mail</dt>
-            <dd className={styles.mono}>{sessao.email}</dd>
-          </div>
-        ) : null}
-        <div>
-          <dt>Conta</dt>
-          <dd>{sessao.convidado ? 'Convidado (sem conta)' : 'Conta própria'}</dd>
-        </div>
-        {sessao.convidado ? null : (
-          <div>
-            <dt>Pontos de feedback</dt>
-            <dd className={styles.mono}>{sessao.pontos}</dd>
-          </div>
-        )}
-        {sessao.admin ? (
-          <div>
-            <dt>Permissão</dt>
-            <dd>Admin — você vê os controles de estado nos feedbacks e o Lab.</dd>
-          </div>
-        ) : null}
-      </dl>
-      <p className={styles.nota}>
-        Nome e e-mail são só seus: quem abrir o seu perfil vê o nick, o avatar e as partidas.
-      </p>
-
-      {sessao.convidado ? (
-        <p className={styles.aviso}>
-          Como convidado, tudo isto vive só neste navegador: ao sair, as partidas e as cartas
-          ganhas se perdem, e não dá para relatar bug. Criar conta leva um minuto e mantém o
-          histórico e o lugar no ranking.
+      ) : (
+        <p className={styles.nota}>
+          {sessao.convidado
+            ? 'Convidado não entra no ranking. Crie uma conta para ter um lugar no placar.'
+            : 'Fora do ranking por enquanto — termine um mês para entrar.'}
         </p>
+      )}
+
+      {/* a última partida e as conquistas mostram o RESUMO; a lista inteira
+          abre no "ver todas". O perfil era uma parede que se atravessava
+          rolando: dados da conta, amigos, todas as conquistas com
+          descrição e todas as partidas, uma embaixo da outra */}
+      <div className={styles.cabecaSecao}>
+        <h2 className={styles.secao}>Última partida</h2>
+        {jogos && jogos.length > 1 ? (
+          <button type="button" className={styles.verTodas} onClick={() => setVendo('partidas')}>
+            Ver todas ({jogos.length})
+          </button>
+        ) : null}
+      </div>
+      {jogos === null ? (
+        <p className={styles.nota}>Carregando…</p>
+      ) : (
+        <ListaDeJogos
+          jogos={jogos.slice(0, 1)}
+          vazio="Nenhuma run terminada ainda — jogue até o fim para aparecer aqui."
+        />
+      )}
+
+      {conquistas ? (
+        <>
+          <div className={styles.cabecaSecao}>
+            <h2 className={styles.secao}>
+              Conquistas · {conquistas.filter((c) => c.ganha_em).length} de {conquistas.length}
+            </h2>
+            <button type="button" className={styles.verTodas} onClick={() => setVendo('conquistas')}>
+              Ver todas
+            </button>
+          </div>
+          <Conquistas lista={conquistas} selos />
+        </>
       ) : null}
 
-      {/* amigos: só com conta, e só quando o banco já as tem */}
+      {/* amigos: só com conta, e só quando o banco já as tem. É aqui que se
+          aceita pedido, então fica inteiro */}
       {!sessao.convidado && amigos !== null ? (
         <>
           <h2 className={styles.secao}>Amigos</h2>
@@ -143,25 +154,16 @@ export default function PerfilPage() {
         </>
       ) : null}
 
-      {conquistas ? (
-        <>
-          <h2 className={styles.secao}>
-            Conquistas · {conquistas.filter((c) => c.ganha_em).length} de {conquistas.length}
-          </h2>
-          <Conquistas lista={conquistas} />
-        </>
+      {vendo === 'partidas' && jogos ? (
+        <Dialogo titulo="Minhas partidas" largo onFechar={() => setVendo(null)}>
+          <ListaDeJogos jogos={jogos} vazio="Nenhuma partida." />
+        </Dialogo>
       ) : null}
-
-      <h2 className={styles.secao}>Minhas partidas</h2>
-      {jogos === null ? (
-        <p className={styles.nota}>Carregando…</p>
-      ) : (
-        <ListaDeJogos
-          jogos={jogos}
-          vazio="Nenhuma run terminada ainda — jogue até o fim para aparecer aqui."
-        />
-      )}
-
+      {vendo === 'conquistas' && conquistas ? (
+        <Dialogo titulo="Conquistas" largo onFechar={() => setVendo(null)}>
+          <Conquistas lista={conquistas} />
+        </Dialogo>
+      ) : null}
     </main>
   )
 }

@@ -251,10 +251,12 @@ export default function Feedbacks() {
               <div className={styles.corpo}>
                 <p className={styles.texto}>{f.corpo}</p>
                 <p className={styles.rodapeCard}>
-                  <Avatar avatar={lerAvatar(f.autor_avatar)} tamanho={20} className={styles.avatarAutor} />
-                  por <b>{f.autor_nick}</b> em {dataCurta(f.criado_em)} ·{' '}
-                  {nomeDaEscala(f.tipo).toLowerCase()}: {rotuloUrgencia(f.tipo, f.urgencia)}
-                  {f.nota !== null ? ` · nota do admin ${f.nota}/5` : ''}
+                  <Avatar avatar={lerAvatar(f.autor_avatar)} tamanho={32} className={styles.avatarAutor} />
+                  <span>
+                    por <b>{f.autor_nick}</b> em {dataCurta(f.criado_em)} ·{' '}
+                    {nomeDaEscala(f.tipo).toLowerCase()}: {rotuloUrgencia(f.tipo, f.urgencia)}
+                    {f.nota !== null ? ` · nota do admin ${f.nota}/5` : ''}
+                  </span>
                 </p>
                 <p className={styles.explicaStatus}>
                   {STATUS.find((s) => s.valor === f.status)?.explica}
@@ -300,7 +302,7 @@ export default function Feedbacks() {
                       className={`${styles.comentario} ${c.de_admin ? styles.deAdmin : ''}`}
                     >
                       <span className={styles.comentarioQuem}>
-                        <Avatar avatar={lerAvatar(c.autor_avatar)} tamanho={20} className={styles.avatarAutor} />
+                        <Avatar avatar={lerAvatar(c.autor_avatar)} tamanho={32} className={styles.avatarAutor} />
                         {c.autor_nick}
                         {c.de_admin ? <span className={styles.seloAdmin}>admin</span> : null}
                         <span className={styles.mono}>{dataCurta(c.criado_em)}</span>

@@ -53,3 +53,38 @@
   b
     color: var(--tinta)
     font-size: 13px
+
+// ------------------------------------------------------------- só os selos
+.selos
+  display: flex
+  flex-wrap: wrap
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+// a que falta: tracejada e apagada; a ganha: o carimbo na cor de destaque
+.seloRedondo
+  display: grid
+  place-items: center
+  width: 44px
+  height: 44px
+  border: 2px dashed var(--linha)
+  border-radius: 50%
+  background: var(--papel-alto)
+  color: var(--tinta-fraca)
+  opacity: .55
+
+.ganhaRedondo
+  border: 2px solid var(--destaque)
+  background: var(--destaque)
+  color: var(--papel-alto)
+  opacity: 1
+
+.leitor
+  position: absolute
+  width: 1px
+  height: 1px
+  overflow: hidden
+  clip-path: inset(50%)
+  white-space: nowrap

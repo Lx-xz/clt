@@ -2,28 +2,6 @@
   font-size: clamp(26px, 5vw, 36px)
   margin-bottom: 20px
 
-.dados
-  display: flex
-  flex-direction: column
-  gap: 14px
-  max-width: 520px
-  margin: 0 0 22px
-  padding: 18px 20px
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: 8px
-
-  dt
-    color: var(--tinta-fraca)
-    font-size: 11px
-    letter-spacing: .1em
-    text-transform: uppercase
-
-  dd
-    margin: 2px 0 0
-    font-size: 15px
-    overflow-wrap: anywhere
-
 .hero
   max-width: 640px
   margin-bottom: 14px
@@ -64,20 +42,6 @@
   font-weight: 600
   overflow-wrap: anywhere
 
-.mono
-  font-family: var(--mono)
-
-.aviso
-  max-width: 58ch
-  margin: 0 0 20px
-  padding: 12px 14px
-  background: var(--papel-alto)
-  border-left: 3px solid var(--destaque)
-  border-radius: 0 var(--raio) var(--raio) 0
-  color: var(--tinta-fraca)
-  font-size: 13px
-  line-height: 1.55
-
 .nota
   max-width: 58ch
   margin: 0 0 20px
@@ -90,7 +54,7 @@
   display: flex
   align-items: center
   gap: 12px
-  max-width: 520px
+  max-width: 640px
   margin-bottom: 22px
   padding: 14px 18px
   background: var(--papel-alto)
@@ -111,9 +75,53 @@
   font-weight: 700
 
 .postoTexto
+  flex: 1
   color: var(--tinta-fraca)
   font-size: 13px
   line-height: 1.4
+
+// o mesmo placar do ranking: vitória na cor da produtividade, derrota fraca
+.placar
+  display: flex
+  align-items: baseline
+  gap: 12px
+  font-family: var(--mono)
+  font-size: 20px
+  font-weight: 700
+
+  small
+    font-size: 12px
+
+.v
+  color: var(--produtividade)
+
+.d
+  color: var(--tinta-fraca)
+
+// o título da seção com o "ver todas" do lado, como no Duolingo
+.cabecaSecao
+  display: flex
+  align-items: baseline
+  justify-content: space-between
+  gap: 12px
+  max-width: 640px
+
+  .secao
+    margin-bottom: 12px
+
+.verTodas
+  padding: 0
+  background: none
+  border: none
+  color: var(--destaque)
+  font-size: 13px
+  font-weight: 700
+  letter-spacing: .04em
+  text-transform: uppercase
+  cursor: pointer
+
+  &:hover
+    text-decoration: underline
 
 .secao
   margin: 28px 0 12px
@@ -122,8 +130,3 @@
   text-transform: uppercase
   color: var(--tinta-fraca)
 
-.acoes
-  display: flex
-  flex-wrap: wrap
-  gap: 8px
-  margin-top: 28px

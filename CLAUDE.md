@@ -42,8 +42,8 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
-| `/ranking` | Placar público. O nick leva ao perfil daquela pessoa. No celular a linha mostra só nick/V/D e abre no toque com o resto |
-| `/perfil` | O seu: avatar, posição no ranking, dados, amigos e pedidos, conquistas e **suas partidas**. Sair NÃO mora aqui: mora em Configurações |
+| `/ranking` | Placar público, no jeito do Duolingo: medalha nas três primeiras, avatar redondo, nick e V/D à direita. A linha inteira leva ao perfil; não há mais "abrir para ver mais" |
+| `/perfil` | O seu: avatar, rank, a ÚLTIMA partida e as conquistas em selos (cada um com "ver todas" num popup) e amigos. Nome, e-mail, pontos e Sair NÃO moram aqui: moram em Configurações |
 | `/perfil/editar` | O editor do avatar |
 | `/jogador?nick=` | O perfil de outra pessoa: avatar, placar, o botão de amizade, conquistas e partidas (que abrem o replay). **Sem nome, e-mail ou pontos** |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
@@ -490,6 +490,16 @@ opções. O que ele escolheu, e que deve ser preservado:
   o segundo executa, e ele desarma sozinho em 3 s ou quando perde o foco. O
   estado armado vai para o leitor de tela por `aria-live`. Vale para Sair,
   Pedir demissão, desfazer amizade e o "voltar" do editor com alteração.
+- **Avatar pequeno é a exceção, não a regra.** Abaixo de 33 px o `Avatar`
+  se aproxima da cabeça (`viewBox '8 0 84 84'`), e em 20–28 px os cortes
+  pareciam desalinhados entre si. Os tamanhos de lista subiram: barra lateral
+  30, relatos 32, amigos 44, ranking 52 (44 no celular, e redondo). Não volte
+  para menos que isso numa lista em que os rostos ficam lado a lado.
+- **O perfil é resumo; a lista inteira é popup.** Rank, a última partida e
+  os selos das conquistas (`<Conquistas selos />`), cada um com "ver todas"
+  abrindo um `Dialogo` — o mesmo em `/perfil` e `/jogador`. Os dados da
+  conta (nome, e-mail, tipo, pontos, admin) foram para as Configurações: o
+  perfil é a página que os OUTROS veem.
 - **O avatar da mesa é um crachá no canto do tapete** (`.cracha`), 56 px no
   celular e 72 no desktop, abaixo das cartas jogadas no `z-index`. Morava no
   header com 24 px e no celular não dava para ver a cara mudar. A `key` pelo
@@ -907,10 +917,9 @@ fixed com limite, ou vai ser cortado em algum lugar.
 
 **Regra depois de `@media` ganha da regra dentro dele.** Com a mesma
 especificidade, quem vem por último na folha vence — estar dentro de uma
-media query não conta como mais específico. Em `ranking.module.sass` as
-regras base (`.seta`, `.curto`, `.detalhe` em `display: none`) ficam **antes**
-do `@media (max-width: 640px)` de propósito; movê-las para baixo apagaria o
-comportamento do celular sem erro nenhum aparecer.
+media query não conta como mais específico. Regra base fica ANTES do
+`@media` que a sobrescreve; movida para baixo, ela apaga o comportamento do
+celular sem erro nenhum aparecer. (Mordeu no ranking antigo, de tabela.)
 
 **Run terminada não pode ser gravada por timer com debounce.** Foi bug em
 produção: o registro da run terminada morava no mesmo `setTimeout` de 900ms

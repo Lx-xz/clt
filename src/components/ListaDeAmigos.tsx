@@ -48,7 +48,7 @@ export default function ListaDeAmigos({
     <div className={styles.lista}>
       {pedidos.map((p) => (
         <div key={`p-${p.nick}`} className={`${styles.linha} ${styles.pedido}`}>
-          <Avatar avatar={p.avatar} tamanho={36} />
+          <Avatar avatar={p.avatar} tamanho={44} />
           <span className={styles.quem}>
             <Link href={`/jogador?nick=${encodeURIComponent(p.nick)}`}>{p.nick}</Link>
             <span>quer ser seu amigo</span>
@@ -76,7 +76,7 @@ export default function ListaDeAmigos({
 
       {mostrar.map((a) => (
         <div key={a.nick} className={styles.linha}>
-          <Avatar avatar={a.avatar} tamanho={36} />
+          <Avatar avatar={a.avatar} tamanho={44} />
           <span className={styles.quem}>
             <Link href={`/jogador?nick=${encodeURIComponent(a.nick)}`}>{a.nick}</Link>
             {a.ultima_id ? (
