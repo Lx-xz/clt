@@ -70,13 +70,30 @@ $levantada: 18px
   inset: 0
   display: flex
   flex-direction: column
+  // o lugar da borda: o conteúdo começa 2px para dentro, e o que é preso no
+  // canto (custo, selo) vai até a beirada, POR BAIXO da borda
+  padding: 2px
   background: var(--papel-alto)
-  border: 1px solid var(--linha)
   border-radius: var(--raio)
   box-shadow: var(--sombra)
   overflow: hidden
   backface-visibility: hidden
   -webkit-backface-visibility: hidden
+
+  // a borda é uma camada POR CIMA de tudo, e não a `border` da face. Com a
+  // borda de verdade, o selo e o custo ficavam dentro dela, recortados pela
+  // curva de dentro do canto — e entre a curva e o quadrado colorido sobrava
+  // uma fresta de papel de um pixel, que era o "ainda tem alguns pixels".
+  // Por cima, a borda cobre a emenda. E é 2px em TODA carta: com a comum em
+  // 1px, ela parecia mais fina que as outras
+  &::after
+    content: ""
+    position: absolute
+    inset: 0
+    z-index: 4
+    border: 2px solid var(--cor-borda, var(--linha))
+    border-radius: inherit
+    pointer-events: none
 
 .tras
   transform: rotateY(180deg)
@@ -132,6 +149,8 @@ $levantada: 18px
   left: 0
   z-index: 3
   display: flex
+  // a faixa de 2px fica embaixo da borda
+  padding: 2px 0 0 2px
   overflow: hidden
   border-bottom-right-radius: 7px
 
@@ -153,10 +172,8 @@ $levantada: 18px
   font-weight: 700
   font-variant-numeric: tabular-nums
 
-.custoAlto
-  // o evento encareceu a energia: continua azul (é energia, e o vermelho é
-  // do estresse), com um anel vermelho dizendo "mais caro que o normal"
-  box-shadow: inset 0 0 0 2px var(--estresse)
+.seta
+  margin-left: -1px
 
 .custo_dinheiro
   background: var(--dinheiro)
@@ -183,10 +200,8 @@ $levantada: 18px
   --cor-raridade: var(--raridade-lendaria)
 
 .comRaridade
-  // uma borda só, de 2px — e não 1px de borda mais um anel de `outline`
-  // por dentro: os dois não se encontravam, e sobrava uma fresta entre o
-  // anel e o selo do canto
-  border: 2px solid var(--cor-raridade)
+  // a mesma borda de 2px de toda carta, só que na cor da raridade
+  --cor-borda: var(--cor-raridade)
 
   .selo
     background: var(--cor-raridade)
@@ -199,8 +214,12 @@ $levantada: 18px
   z-index: 3
   display: grid
   place-items: center
-  width: 21px
-  height: 21px
+  // 2px a mais, que ficam embaixo da borda: o fundo do selo vai até a
+  // beirada da carta, e não sobra emenda entre ele e a borda
+  box-sizing: border-box
+  width: 23px
+  height: 23px
+  padding: 2px 2px 0 0
   background: color-mix(in srgb, var(--papel-baixo) 88%, var(--tinta))
   border-bottom-left-radius: 7px
   color: var(--tinta-fraca)
@@ -259,15 +278,25 @@ $levantada: 18px
   -webkit-box-orient: vertical
   overflow: hidden
 
-// o tom do evento colore a borda da carta
+// o tom do evento colore a borda e o selo do canto, como a raridade faz na
+// carta de ação
 .evNegativo
-  border-color: var(--estresse)
+  --cor-tom: var(--estresse)
 
 .evPositivo
-  border-color: var(--produtividade)
+  --cor-tom: var(--produtividade)
 
 .evAmbiguo
-  border-color: var(--destaque)
+  --cor-tom: var(--destaque)
+
+.evNegativo,
+.evPositivo,
+.evAmbiguo
+  --cor-borda: var(--cor-tom)
+
+  .selo
+    background: var(--cor-tom)
+    color: #fff
 
 .bloqueada
   .frente

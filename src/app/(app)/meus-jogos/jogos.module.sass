@@ -1,0 +1,51 @@
+.voltar
+  display: inline-block
+  margin-bottom: 8px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-decoration: none
+
+  &:hover
+    color: var(--tinta)
+
+.titulo
+  margin: 0 0 16px
+  font-size: 26px
+
+.controles
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  justify-content: space-between
+  gap: 10px 16px
+  margin-bottom: 20px
+
+.ordem
+  display: flex
+  align-items: center
+  gap: 8px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+  // 16px no campo: abaixo disso o iPhone dá zoom ao focar, e não desfaz
+  select
+    padding: 6px 8px
+    background: var(--papel-alto)
+    border: 1px solid var(--linha)
+    border-radius: var(--raio)
+    color: var(--tinta)
+    font: inherit
+    font-size: 16px
+
+// os recibos lado a lado
+.grade
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))
+  align-items: start
+  gap: 18px
+
+.vazio
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+  font-style: italic

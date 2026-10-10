@@ -4,6 +4,11 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 import Avatar from '@/components/Avatar'
+import Recibo, { lerEnvelopesGanhos } from '@/components/Recibo'
+import { conquistasDaRun, type Conquista } from '@/data/conquistas'
+import { sincronizar } from '@/data/sync'
+import { loadCollection, loadRun } from '@/game/storage'
+import type { Collection, GameState } from '@/game/types'
 import { buscarDetalheDoJogo, buscarJogoPublico, type DetalheDoJogo } from '@/data/analytics'
 import { lerAvatar, type Avatar as Receita } from '@/data/avatar'
 import LinhaDoTempo from '@/components/LinhaDoTempo'
@@ -31,18 +36,6 @@ type Estado =
   | { tipo: 'erro'; mensagem: string }
   | { tipo: 'nao-encontrado' }
   | { tipo: 'pronto'; jogo: DetalheDoJogo; dono: { nick: string; avatar: Receita } | null }
-
-const ROTULO: Record<DetalheDoJogo['outcome'], string> = {
-  vitoria: 'Vitória',
-  burnout: 'Burnout',
-  demissao: 'Demissão',
-  despejo: 'Despejo',
-  abandono: 'Pediu demissão',
-}
-
-function formatarData(iso: string): string {
-  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso))
-}
 
 function Detalhe() {
   const params = useSearchParams()
@@ -113,26 +106,62 @@ function Detalhe() {
         </div>
       ) : null}
 
-      {estado.tipo === 'pronto' ? <Conteudo jogo={estado.jogo} /> : null}
+      {estado.tipo === 'pronto' ? (
+        <Conteudo jogo={estado.jogo} avatar={estado.dono?.avatar ?? sessao.avatar} meu={!estado.dono} />
+      ) : null}
     </main>
   )
 }
 
-function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
+function Conteudo({ jogo, avatar, meu }: { jogo: DetalheDoJogo; avatar: Receita; meu: boolean }) {
+  const sessao = useSessao()
   const historico = jogo.details?.history ?? []
   // as cartas como elas eram NAQUELE dia. Sem isto, mudar o custo de uma
   // carta reescreveria todas as partidas já jogadas
   const retrato = jogo.details?.baralho?.cartas
+  const [conquistas, setConquistas] = useState<Conquista[]>([])
+  // a coleção só importa na partida que é SUA: é ela que diz se o envelope
+  // que a partida deu ainda está fechado — e aí o recibo não mostra as
+  // cartas, deixa abrir
+  const [colecao, setColecao] = useState<Collection | null>(null)
+
+  useEffect(() => {
+    void conquistasDaRun(jogo.id).then(setConquistas)
+    if (meu) setColecao(loadCollection())
+  }, [jogo.id, meu])
 
   return (
     <>
-      <div className={styles.resumo}>
-        <span className={`${styles.selo} ${styles[jogo.outcome]}`}>{ROTULO[jogo.outcome]}</span>
-        <span className={styles.resumoTexto}>
-          Semana {jogo.week_reached} · dia {jogo.day} · <Dinheiro valor={jogo.money} /> · {formatarData(jogo.ended_at)}
-          {jogo.details?.baralho ? ` · baralho v${jogo.details.baralho.versao}` : ''}
-        </span>
-      </div>
+      {/* o recibo da partida, inteiro, como saiu da mesa: o que ela deu de
+          envelope e de conquista inclusive */}
+      <Recibo
+        papel
+        avatar={avatar}
+        dados={{
+          outcome: jogo.outcome,
+          dias: historico.length || jogo.day,
+          cartasJogadas: historico.length ? historico.reduce((n, d) => n + d.cardsPlayed.length, 0) : null,
+          dinheiro: jogo.money,
+          estresse: historico.at(-1)?.stress ?? null,
+          estresseMaximo: jogo.details?.modo?.estresseMaximo,
+          data: jogo.ended_at,
+          envelopes: lerEnvelopesGanhos(jogo.details?.envelopes),
+          conquistas,
+        }}
+        colecao={colecao}
+        onMudarColecao={
+          meu
+            ? (c) => {
+                setColecao(c)
+                sincronizar(sessao.id, loadRun<GameState>(), c, () => {})
+              }
+            : undefined
+        }
+      />
+      <p className={styles.resumoTexto}>
+        Semana {jogo.week_reached} · dia {jogo.day}
+        {jogo.details?.baralho ? ` · baralho v${jogo.details.baralho.versao}` : ''}
+      </p>
 
       {/* as regras daquele dia, e não as de hoje: esta partida pagou este
           aluguel, e mudar o número agora não pode reescrever o que ela foi */}

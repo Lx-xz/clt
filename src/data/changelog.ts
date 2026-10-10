@@ -34,6 +34,27 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.20',
+    data: '2026-10-10',
+    titulo: 'Recibos',
+    itens: [
+      { tipo: 'novo', texto: 'Envelope melhor dá mais cartas: o comum dá 3, o incomum (o da primeira partida do dia) dá 5 e o raro (o da primeira vitória) dá 7. O selo de cada um tem a cor da raridade. Já existem o épico (10) e o lendário (15), esperando a missão que vai dá-los.' },
+      { tipo: 'novo', texto: 'O recibo de fim mostra os envelopes que a partida deu: fechado, é só tocar para abrir; aberto, com as cartas que vieram ao lado.' },
+      { tipo: 'novo', texto: 'O replay de uma partida começa pelo recibo inteiro dela, com os envelopes e as conquistas que ela deu.' },
+      { tipo: 'novo', texto: 'Todas as partidas viraram uma página de recibos, com filtro (vitórias, derrotas, pediu demissão) e ordem (mais recentes, mais dinheiro, mais dias). No perfil, a última partida aparece como recibo.' },
+      { tipo: 'novo', texto: 'Cinco eventos que mexem nos custos novos: Black Friday e Inflação (as cartas pagas em dinheiro ficam mais baratas ou mais caras), Chefe de Folga e Pressão por Resultado (o estresse que as cartas cobram cai ou sobe) e Dia de Entrega.' },
+      { tipo: 'novo', texto: 'O baralho tem busca, filtro por naipe e por raridade, e ordem por custo, nome, raridade ou naipe.' },
+      { tipo: 'melhor', texto: 'O envelope foi redesenhado: as dobras saem dos cantos e se encontram no centro, a aba termina exatamente ali, onde fica o selo, e os cantos de cima são retos.' },
+      { tipo: 'melhor', texto: 'As cartas que saem do envelope ficam maiores na fileira do lado, e se sobrepõem quando são muitas.' },
+      { tipo: 'melhor', texto: 'Quando um evento encarece ou barateia uma carta, o carimbo do custo ganha uma seta para cima ou para baixo, em vez do anel vermelho em volta do azul.' },
+      { tipo: 'melhor', texto: 'No recibo de fim, "Ver o que aconteceu" e "Voltar ao início" viraram ícones, e o "Nova run" ocupa o resto da linha.' },
+      { tipo: 'correcao', texto: 'Toda carta tem a mesma borda de 2px (a comum era mais fina), e a fresta de um pixel entre a borda e o selo do canto sumiu. O selo do tipo das cartas de evento ganhou a cor do evento.' },
+      { tipo: 'correcao', texto: 'No modo escuro, o fundo atrás do popup e da barra lateral clareava a tela em vez de escurecer.' },
+      { tipo: 'correcao', texto: 'Passar o mouse nos botões de um recibo acendia uma barra de rolagem durante a animação.' },
+      { tipo: 'correcao', texto: 'Apertar Esc para pular a abertura de um envelope fechava também o recibo atrás dela.' },
+    ],
+  },
+  {
     versao: '0.19',
     data: '2026-10-10',
     titulo: 'Envelopes de verdade',

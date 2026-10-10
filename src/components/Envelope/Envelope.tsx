@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarCheck, Mail, Trophy, X, type LucideIcon } from 'lucide-react'
+import { CalendarCheck, Crown, Mail, Sparkles, Trophy, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getCard } from '@/game/catalogo'
@@ -13,14 +13,61 @@ import Dialogo from '../Dialogo'
 import styles from './Envelope.module.sass'
 
 /**
- * Os três envelopes são o MESMO envelope em pé; o que os separa é o selo de
- * cera, como num escritório de verdade. Cor e ícone, e nada escrito: o
- * jogador aprende o selo do jeito que aprende a cor de um medidor.
+ * Os envelopes são o MESMO envelope em pé; o que os separa é o selo de cera,
+ * como num escritório de verdade. Cor e ícone, e nada escrito: o jogador
+ * aprende o selo do jeito que aprende a cor de um medidor. A cor é a da
+ * raridade que dá nome ao envelope (v0.20) — a mesma da borda da carta.
  */
 export const SELOS: Record<TipoEnvelope, { Icone: LucideIcon; classe: string }> = {
   comum: { Icone: Mail, classe: styles.seloComum },
   pardo: { Icone: CalendarCheck, classe: styles.seloPardo },
   confidencial: { Icone: Trophy, classe: styles.seloConfidencial },
+  epico: { Icone: Sparkles, classe: styles.seloEpico },
+  lendario: { Icone: Crown, classe: styles.seloLendario },
+}
+
+/**
+ * O envelope que uma partida deu, ABERTO, com as cartas que vieram ao lado
+ * — é a linha do recibo. Fechado (ainda na bandeja de quem o ganhou), ele
+ * aparece lacrado e sem as cartas: o recibo não estraga a surpresa.
+ */
+export function EnvelopeComCartas({ tipo, cartas, fechado = false, retrato, onAbrir }: {
+  tipo: TipoEnvelope
+  cartas: CardId[]
+  fechado?: boolean
+  /** As cartas como eram na run (o replay de uma partida antiga). */
+  retrato?: (id: CardId) => ReturnType<typeof getCard>
+  /** Fechado e de quem está vendo: o envelope vira o botão de abrir. */
+  onAbrir?: () => void
+}) {
+  const env = ENVELOPES[tipo]
+  const carta = retrato ?? getCard
+  return (
+    <div className={styles.ganho}>
+      <EnvelopeEmPe
+        tipo={tipo}
+        aberto={!fechado}
+        largura={52}
+        className={fechado ? undefined : styles.abertoParado}
+        rotulo={fechado && onAbrir ? `Abrir o ${env.nome.toLowerCase()}` : env.nome}
+        onClick={fechado ? onAbrir : undefined}
+      />
+      <div className={styles.ganhoInfo}>
+        <span className={styles.ganhoNome}>{env.nome}</span>
+        {fechado ? (
+          <p className={styles.ganhoDica}>{onAbrir ? 'Fechado. Toque nele para abrir.' : 'Ainda fechado.'}</p>
+        ) : cartas.length === 0 ? (
+          <p className={styles.ganhoDica}>Veio vazio: a coleção já estava completa.</p>
+        ) : (
+          <div className={styles.ganhoCartas}>
+            {cartas.map((id, i) => (
+              <Card key={i} card={carta(id)} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 /** O envelope desenhado, em pé. Só CSS: costas, bolso da frente com o V,
@@ -141,7 +188,8 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
   // trabalham em pixels fixos, e é isso que deixa a carta sair da boca do
   // envelope em qualquer tela
   useLayoutEffect(() => {
-    const medir = () => setEscala(Math.min(1, (window.innerHeight - 150) / 560, (window.innerWidth - 24) / 360))
+    // 190 de folga: o título, a fileira das que já saíram e a dica
+    const medir = () => setEscala(Math.min(1, (window.innerHeight - 190) / 560, (window.innerWidth - 24) / 360))
     medir()
     window.addEventListener('resize', medir)
     return () => window.removeEventListener('resize', medir)
@@ -200,6 +248,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
 
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') e.stopPropagation()
       if (e.key === 'Escape') {
         if (fase === 'resumo') onFechar()
         else setFase('resumo')
@@ -209,13 +258,20 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
         else avancar()
       }
     }
-    window.addEventListener('keydown', tecla)
-    return () => window.removeEventListener('keydown', tecla)
+    // na CAPTURA, e parando ali: a abertura nasce de dentro do recibo, e o
+    // Esc que pula a animação também fechava o recibo atrás dela
+    window.addEventListener('keydown', tecla, true)
+    return () => window.removeEventListener('keydown', tecla, true)
   })
 
   const carta = cartas[atual] ? getCard(cartas[atual]) : null
   const raridade = carta?.raridade ?? 'comum'
   const guardadas = cartas.slice(0, guardando ? atual + 1 : atual)
+  // a fileira cabe na tela: com muitas cartas, elas se sobrepõem (margem
+  // negativa) em vez de quebrar a linha e empurrar o palco
+  const larguraFileira = typeof window === 'undefined' ? 360 : Math.min(window.innerWidth - 32, 900)
+  const sobra =
+    guardadas.length > 1 ? Math.min(6, (larguraFileira - guardadas.length * 69) / (guardadas.length - 1)) : 6
 
   const dica =
     fase === 'esperando'
@@ -261,7 +317,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
               ) : null}
             </div>
           </div>
-          <div className={styles.fileira} aria-label="Cartas que já saíram">
+          <div className={styles.fileira} aria-label="Cartas que já saíram" style={{ '--sobra': `${sobra}px` } as React.CSSProperties}>
             {guardadas.map((id, i) => (
               <Card key={i} card={getCard(id)} className={styles.cartaPequena} />
             ))}

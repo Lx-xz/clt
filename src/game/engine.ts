@@ -1,4 +1,4 @@
-import { custoQueFalta, custosDe, pagarCustos } from './custos'
+import { custoQueFalta, custosEfetivos, pagarCustos } from './custos'
 import {
   diaDaSemana,
   ehSexta,
@@ -159,7 +159,7 @@ export function canPlay(state: GameState, instance: CardInstance) {
   // o custo é CUSTO, não efeito: sem saldo a carta não sai da mão. Um
   // efeito de −R$ deixaria jogar no vermelho e cobrar o despejo na sexta,
   // sem aviso nenhum na hora da jogada
-  if (custoQueFalta(state, custosDe(card))) return false
+  if (custoQueFalta(state, custosEfetivos(state, card))) return false
   return effectiveCost(state, card.id) <= state.energy
 }
 
@@ -318,6 +318,7 @@ function startDay(input: GameState): GameState {
   state.maoDoDia = state.modo.cartasNaMao
   state.blockedKinds = []
   state.costModifier = 0
+  state.modCustos = {}
   state.pendingEventChoice = false
   state.lastEventChoice = null
   state.playedToday = []
@@ -462,7 +463,7 @@ export function playCard(input: GameState, uid: string): GameState {
   state.energy -= effectiveCost(state, card.id)
   // pago antes dos efeitos: uma carta que ganha dinheiro não pode se pagar
   // com o que ela mesma vai render
-  pagarCustos(state, custosDe(card))
+  pagarCustos(state, custosEfetivos(state, card))
   state.hand = state.hand.filter((c) => c.uid !== uid)
   state.discard.push(instance)
 

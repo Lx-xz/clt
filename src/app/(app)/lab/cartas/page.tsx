@@ -11,6 +11,7 @@ import Segmentado from '@/components/Segmentado'
 import {
   BotaoExcluir,
   Origem,
+  estavel,
   PedirMotivo,
   estilosDaBancada as comuns,
 } from '../_catalogo/Bancada'
@@ -330,19 +331,6 @@ function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermi
       </button>
     </section>
   )
-}
-
-/** JSON com as chaves em ordem: o `jsonb` do banco reordena as chaves dos
- *  objetos, e comparar o texto cru acusaria diferença em toda carta. */
-function estavel(v: unknown): string {
-  if (Array.isArray(v)) return `[${v.map(estavel).join(',')}]`
-  if (v && typeof v === 'object') {
-    const pares = Object.entries(v as Record<string, unknown>)
-      .filter(([, x]) => x !== undefined)
-      .sort(([a], [b]) => a.localeCompare(b))
-    return `{${pares.map(([k, x]) => `${JSON.stringify(k)}:${estavel(x)}`).join(',')}}`
-  }
-  return JSON.stringify(v)
 }
 
 interface Pendencia {

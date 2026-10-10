@@ -1,6 +1,8 @@
 import { cartasDoJogo, cartasIniciais, getCard } from './catalogo'
 import { regras } from './regras'
-import type { ActionCard, BaralhoMontado, CardId, Collection, Raridade, TipoEnvelope } from './types'
+import type { ActionCard, BaralhoMontado, CardId, Collection, EnvelopeFechado, Raridade, TipoEnvelope } from './types'
+
+const TIPOS_DE_ENVELOPE: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico', 'lendario']
 
 /**
  * A coleção do jogador: as cópias que ele TEM e os baralhos montados com elas.
@@ -63,9 +65,19 @@ export function colecaoInicial(): Collection {
 /** Envelopes e missões chegaram depois das coleções: quem gravou antes não
  *  tem os campos, e a leitura os dá vazios — o mesmo padrão do resto. */
 function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes'> {
-  const envelopes = Array.isArray(bruta.envelopes)
-    ? (bruta.envelopes as unknown[]).filter((e): e is TipoEnvelope => e === 'comum' || e === 'pardo' || e === 'confidencial')
-    : []
+  // até a v0.19 a fila era só o tipo (`'pardo'`); desde a v0.20 é o envelope
+  // com as cartas já sorteadas. O antigo vira `{ tipo }`, e é sorteado na
+  // abertura, como era
+  const envelopes: EnvelopeFechado[] = []
+  for (const e of Array.isArray(bruta.envelopes) ? (bruta.envelopes as unknown[]) : []) {
+    const obj = (typeof e === 'string' ? { tipo: e } : e) as Record<string, unknown> | null
+    if (!obj || typeof obj !== 'object' || !TIPOS_DE_ENVELOPE.includes(obj.tipo as TipoEnvelope)) continue
+    envelopes.push({
+      tipo: obj.tipo as TipoEnvelope,
+      ...(typeof obj.id === 'string' ? { id: obj.id } : {}),
+      ...(Array.isArray(obj.cartas) ? { cartas: (obj.cartas as unknown[]).filter((c): c is string => typeof c === 'string') } : {}),
+    })
+  }
   const m = bruta.missoes as Record<string, unknown> | undefined
   const missoes =
     m && typeof m === 'object' && typeof m.dia === 'string' && Array.isArray(m.feitas)

@@ -124,3 +124,16 @@ export function BotaoExcluir({ onClick }: { onClick: () => void }) {
 }
 
 export { styles as estilosDaBancada }
+
+/** JSON com as chaves em ordem: o `jsonb` do banco reordena as chaves dos
+ *  objetos, e comparar o texto cru acusaria diferença em toda carta. */
+export function estavel(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(estavel).join(',')}]`
+  if (v && typeof v === 'object') {
+    const pares = Object.entries(v as Record<string, unknown>)
+      .filter(([, x]) => x !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+    return `{${pares.map(([k, x]) => `${JSON.stringify(k)}:${estavel(x)}`).join(',')}}`
+  }
+  return JSON.stringify(v)
+}

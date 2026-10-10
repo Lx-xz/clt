@@ -570,6 +570,7 @@ drop function if exists public.pedidos_de_amizade();
 drop function if exists public.conferir_conquistas(uuid);
 drop function if exists public.minhas_conquistas(uuid);
 drop function if exists public.conquistas_publicas(text);
+drop function if exists public.conquistas_da_run(bigint);
 
 -- O perfil nasce junto com a conta. Fazer isso por gatilho, e não pelo
 -- site, garante que nunca exista conta sem perfil — nem se o navegador
@@ -1000,7 +1001,10 @@ $$;
 
 grant execute on function public.ranking() to anon, authenticated;
 
--- as runs de UM jogador — não devolve nada de outro player_id
+-- as runs de UM jogador — não devolve nada de outro player_id. Desde a
+-- v0.20 a lista é de RECIBOS, e o recibo resumido mostra o estresse final,
+-- as cartas jogadas e os envelopes que a partida deu: os três saem do
+-- `details` aqui, para a lista não baixar o dia a dia de cada partida
 create or replace function public.meus_jogos(p_player_id uuid)
 returns table (
   id           bigint,
@@ -1008,13 +1012,17 @@ returns table (
   outcome      text,
   day          smallint,
   money        integer,
-  week_reached smallint
+  week_reached smallint,
+  cards_played smallint,
+  estresse     integer,
+  envelopes    jsonb
 )
 language sql
 security definer
 set search_path = public, pg_temp
 as $$
-  select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached
+  select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached, r.cards_played,
+         (r.details -> 'history' -> -1 ->> 'stress')::int, r.details -> 'envelopes'
   from public.runs r
   where r.player_id = p_player_id and r.visivel
   order by r.ended_at desc;
@@ -1073,14 +1081,18 @@ returns table (
   outcome      text,
   day          smallint,
   money        integer,
-  week_reached smallint
+  week_reached smallint,
+  cards_played smallint,
+  estresse     integer,
+  envelopes    jsonb
 )
 language sql
 security definer
 stable
 set search_path = public, pg_temp
 as $$
-  select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached
+  select r.id, r.ended_at, r.outcome, r.day, r.money, r.week_reached, r.cards_played,
+         (r.details -> 'history' -> -1 ->> 'stress')::int, r.details -> 'envelopes'
   from public.runs r
   join public.players p on p.id = r.player_id
   where p.nick = lower(trim(p_nick)) and r.visivel and r.outcome <> 'abandono'
@@ -2152,6 +2164,27 @@ as $$
 $$;
 
 grant execute on function public.conquistas_publicas(text) to anon, authenticated;
+
+-- as conquistas que UMA partida deu, para o recibo do replay. A ligação já
+-- existia (`conquistas_do_jogador.run_id`, a run que cumpriu a conquista);
+-- o que esta função acrescenta é ler por ela. Abre o mesmo que o replay
+-- público abre: run guardada, e a do abandono só não tem conquista nenhuma
+create function public.conquistas_da_run(p_run_id bigint)
+returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select c.id, c.nome, c.descricao, c.icone, j.ganha_em
+  from public.conquistas_do_jogador j
+  join public.conquistas c on c.id = j.conquista
+  join public.runs r on r.id = j.run_id
+  where j.run_id = p_run_id and r.visivel
+  order by c.ordem;
+$$;
+
+grant execute on function public.conquistas_da_run(bigint) to anon, authenticated;
 
 -- ------------------------------------------------------------------ admin
 -- Não existe tela para promover ninguém, e é de propósito: admin se dá aqui,

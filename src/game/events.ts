@@ -50,6 +50,34 @@ export const EVENTOS_BASE: EventCard[] = [
     text: 'Todas as cartas custam +1 energia hoje',
     efeitos: [{ acoes: [{ faz: 'custo', quanto: 1 }] }],
   },
+  // v0.20: eventos que mexem nos custos novos (dinheiro, estresse). O
+  // Ar-Condicionado mexia só na energia; com cartas que se pagam em outra
+  // coisa, o dia também pode mudar o preço delas
+  {
+    id: 'black-friday', name: 'Black Friday', tone: 'positivo',
+    text: 'Cartas que custam dinheiro custam R$ 20 a menos hoje',
+    efeitos: [{ acoes: [{ faz: 'custo', qual: 'dinheiro', quanto: -20 }] }],
+  },
+  {
+    id: 'inflacao', name: 'Inflação', tone: 'negativo',
+    text: 'Cartas que custam dinheiro custam R$ 15 a mais hoje',
+    efeitos: [{ acoes: [{ faz: 'custo', qual: 'dinheiro', quanto: 15 }] }],
+  },
+  {
+    id: 'chefe-de-folga', name: 'Chefe de Folga', tone: 'positivo',
+    text: 'Cartas que custam estresse custam 1 a menos hoje',
+    efeitos: [{ acoes: [{ faz: 'custo', qual: 'estresse', quanto: -1 }] }],
+  },
+  {
+    id: 'pressao-por-resultado', name: 'Pressão por Resultado', tone: 'negativo',
+    text: 'Cartas que custam estresse custam 1 a mais hoje',
+    efeitos: [{ acoes: [{ faz: 'custo', qual: 'estresse', quanto: 1 }] }],
+  },
+  {
+    id: 'dia-de-entrega', name: 'Dia de Entrega', tone: 'negativo',
+    text: 'Cartas que custam produtividade custam 1 a mais hoje, e a cota sobe 1',
+    efeitos: [{ acoes: [{ faz: 'custo', qual: 'produtividade', quanto: 1 }, { faz: 'cota', quanto: 1 }] }],
+  },
   {
     id: 'fofoca-de-corredor', name: 'Fofoca de Corredor', tone: 'negativo',
     text: 'Descarte 1 carta da sua mão ao acaso',
@@ -184,3 +212,13 @@ export const EVENTOS_BASE: EventCard[] = [
     ],
   },
 ]
+
+/** O porquê dos eventos que o código mudou ou criou, para o "Trazer do
+ *  código" do /lab/eventos — o mesmo papel de `MOTIVOS_DO_CODIGO` nas cartas. */
+export const MOTIVOS_DOS_EVENTOS: Record<string, string> = {
+  'black-friday': 'Com cartas pagas em dinheiro, o dia também pode baratear o preço delas.',
+  inflacao: 'O outro lado da Black Friday: o dia em que tudo que se paga em dinheiro encarece.',
+  'chefe-de-folga': 'Um alívio para as cartas pagas em estresse.',
+  'pressao-por-resultado': 'O dia em que as cartas pagas em estresse pesam mais.',
+  'dia-de-entrega': 'O primeiro evento que mexe no custo em produtividade.',
+}

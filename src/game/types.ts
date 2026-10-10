@@ -286,6 +286,10 @@ export interface GameState {
   maoDoDia: number
   blockedKinds: CardKind[]
   costModifier: number
+  /** O que os eventos de hoje somam aos custos ALÉM da energia (a energia é
+   *  o `costModifier`, que já existia). Opcional para o save de antes dele
+   *  continuar válido sem subir a chave; zera todo dia, em `startDay`. */
+  modCustos?: Partial<Record<RecursoDeCusto, number>>
   currentEvent: CardId | null
   /** O evento entra virado para baixo; só o clique do jogador aplica o efeito. */
   eventRevealed: boolean
@@ -302,6 +306,11 @@ export interface GameState {
    *  pessoa não escolheu. Opcional para o save de antes dela continuar
    *  válido sem subir a chave do localStorage. */
   recompensaEscolhida?: CardId | null
+  /** Os envelopes que a partida deu, já com as cartas dentro — gravados na
+   *  jogada que a encerra, antes de ela subir para `runs`, para o recibo e o
+   *  replay mostrarem. Opcional: campo obrigatório novo descartaria o save
+   *  de quem está no meio de uma run. */
+  envelopesGanhos?: EnvelopeGanho[]
   /** Um resumo por dia fechado, para reabrir a run jogada por jogada depois. */
   history: DayLog[]
   /** A narrativa da run, em ordem cronológica. Era `string[]` com teto de 40
@@ -361,7 +370,7 @@ export interface Collection {
   /** Envelopes ganhos e ainda fechados, na ordem em que chegaram. Moram na
    *  coleção porque são coisa que se TEM, e assim sobem com ela para o banco
    *  (`saves.collection`) sem coluna nova. Veja `src/game/missoes.ts`. */
-  envelopes: TipoEnvelope[]
+  envelopes: EnvelopeFechado[]
   /** As missões cumpridas no dia `dia` (data local, `AAAA-MM-DD`). Virou o
    *  dia, a lista volta a valer vazia — quem confere é `missoesDeHoje`. */
   missoes: { dia: string; feitas: string[] }
@@ -369,7 +378,31 @@ export interface Collection {
 
 /** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,
  *  e o que chega na mesa de alguém num escritório é envelope. */
-export type TipoEnvelope = 'comum' | 'pardo' | 'confidencial'
+export type TipoEnvelope = 'comum' | 'pardo' | 'confidencial' | 'epico' | 'lendario'
+
+/**
+ * Um envelope esperando na coleção. Desde a v0.20 o conteúdo é sorteado
+ * quando ele é GANHO (`cartas`), e não quando é aberto: é o que deixa o
+ * recibo e o replay da partida dizerem o que ela deu. Abrir continua sendo a
+ * hora de VER — as cópias só entram na coleção ali.
+ *
+ * `cartas` é opcional porque o envelope guardado antes disso era só o tipo,
+ * e é sorteado na abertura, como era. `id` liga o envelope à run que o deu.
+ */
+export interface EnvelopeFechado {
+  tipo: TipoEnvelope
+  id?: string
+  cartas?: CardId[]
+}
+
+/** O envelope que uma run deu, com o que veio dentro. */
+export interface EnvelopeGanho {
+  tipo: TipoEnvelope
+  id: string
+  cartas: CardId[]
+  /** A missão que o deu; sem ela, é o envelope de toda partida. */
+  missao?: string
+}
 
 export interface WeekConfig {
   week: number

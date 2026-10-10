@@ -41,6 +41,15 @@ export async function minhasConquistas(playerId: string): Promise<Conquista[] | 
   return (data as Conquista[]) ?? []
 }
 
+/** As que UMA partida deu, para o recibo do replay. Vazio quando o banco
+ *  ainda não tem a função: o recibo só deixa a linha de fora. */
+export async function conquistasDaRun(runId: number): Promise<Conquista[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('conquistas_da_run', { p_run_id: runId })
+  if (error) return []
+  return (data as Conquista[]) ?? []
+}
+
 /** Só as ganhas, de outra pessoa. */
 export async function conquistasPublicas(nick: string): Promise<Conquista[] | null> {
   if (!supabase) return null

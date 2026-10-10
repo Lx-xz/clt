@@ -1,5 +1,5 @@
 import type { Regras } from '@/game/regras'
-import type { CartaSnapshot, DayLog, LinhaDoLog } from '@/game/types'
+import type { CartaSnapshot, DayLog, EnvelopeGanho, LinhaDoLog } from '@/game/types'
 import { faltaFuncao } from './jogadores'
 import { supabase } from './supabase'
 
@@ -53,6 +53,12 @@ export interface LinhaMeuJogo {
   day: number
   money: number
   week_reached: number
+  /** Desde a v0.20, para o recibo resumido. Banco sem o `schema.sql` novo
+   *  não manda, e o recibo deixa a linha de fora. */
+  cards_played?: number | null
+  estresse?: number | null
+  /** Os envelopes que a partida deu (`details.envelopes`), crus. */
+  envelopes?: unknown
 }
 
 export async function buscarMeusJogos(playerId: string): Promise<LinhaMeuJogo[]> {
@@ -75,6 +81,8 @@ export interface DetalheDoJogo extends LinhaMeuJogo {
     /** As frases do histórico da mesa. Só existe nas runs gravadas a partir
      *  da v0.14; antes disso o replay mostra só as cartas. */
     log?: LinhaDoLog[]
+    /** Os envelopes que a partida deu, com as cartas. Desde a v0.20. */
+    envelopes?: EnvelopeGanho[]
   } | null
 }
 

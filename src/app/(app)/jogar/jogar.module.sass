@@ -204,11 +204,6 @@
   100%
     transform: rotate(0)
 
-// o avatar do fim da run, com a cara do desfecho
-.avatarFim
-  align-self: center
-  margin-bottom: 4px
-
 .girando
   animation: girar 1s linear infinite
 
@@ -467,7 +462,7 @@
   display: grid
   place-items: center
   padding: 20px
-  background: color-mix(in srgb, var(--tinta) 55%, transparent)
+  background: var(--cortina)
   animation: fundo-entra .18s ease
 
 .painel
@@ -616,19 +611,6 @@
   font-weight: 700
   text-align: center
 
-.missoesFim
-  display: flex
-  flex-direction: column
-  gap: 6px
-  padding-top: 10px
-  border-top: 2px dashed var(--linha)
-
-.missoesCumpridas
-  margin: 0
-  color: var(--produtividade)
-  font-size: 13px
-  text-align: center
-
 .opcao
   display: flex
   flex-direction: column
@@ -655,39 +637,22 @@
   flex-wrap: wrap
   gap: 8px
 
-// as conquistas que a partida destravou, como cupom carimbado no recibo
-.conquistasNovas
+// os botões do recibo de fim: o "Nova run" estica e os dois de apoio são só
+// o ícone (com o nome no `title` e no leitor de tela). Na nota estreita, os
+// três com texto quebravam em três linhas, com o principal sozinho e pequeno
+.acoesFim
   display: flex
-  flex-direction: column
-  gap: 6px
-  margin: 0
-  padding: 0
-  list-style: none
+  gap: 8px
 
-  li
-    display: flex
-    align-items: flex-start
-    gap: 8px
-    padding: 8px 10px
-    border: 2px dashed var(--destaque)
-    border-radius: 4px
-    color: var(--tinta-fraca)
-    font-size: 12px
-    animation: passo-entra .4s ease
+.novaRun
+  flex: 1
 
-  svg
-    flex: none
-    margin-top: 1px
-    color: var(--destaque)
+.acaoIcone
+  flex: none
+  padding-inline: 12px
 
   span
-    display: flex
-    flex-direction: column
-    gap: 1px
-
-  b
-    color: var(--tinta)
-    font-size: 13px
+    display: none
 
 // os motivos de o baralho não ir para a mesa
 .recusa

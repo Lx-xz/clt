@@ -26,6 +26,46 @@
   color: var(--tinta-fraca)
   font-size: 13px
 
+// buscar, filtrar e ordenar as três colunas. Os campos em 16px: abaixo
+// disso o iPhone dá zoom ao focar, e não desfaz
+.filtros
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 8px 14px
+  margin-bottom: 20px
+
+  label
+    display: flex
+    align-items: center
+    gap: 6px
+    color: var(--tinta-fraca)
+    font-size: 13px
+
+  select,
+  .busca
+    padding: 6px 8px
+    background: var(--papel-alto)
+    border: 1px solid var(--linha)
+    border-radius: var(--raio)
+    color: var(--tinta)
+    font: inherit
+    font-size: 16px
+
+.busca
+  flex: 1 1 180px
+  min-width: 0
+
+.limpar
+  padding: 0
+  background: none
+  border: none
+  color: var(--destaque)
+  font: inherit
+  font-size: 13px
+  font-weight: 700
+  cursor: pointer
+
 .section
   margin-bottom: 32px
 

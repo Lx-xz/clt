@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from 'react'
 import { custosDe } from '@/game/custos'
-import type { ActionCard, EventCard } from '@/game/types'
+import type { ActionCard, Custo, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from '../Card'
 import { TextoComIcones } from '../Dinheiro'
@@ -18,12 +18,14 @@ interface CardDetailProps {
   onPlay?: () => void
   /** Motivo de a carta não poder ser jogada, para o jogador não ficar no escuro. */
   blockedReason?: string
+  /** Os custos além da energia já ajustados pelos eventos do dia. */
+  custos?: Custo[]
   /** O que a página põe embaixo do texto — no baralho, as cópias e o
    *  histórico da carta. */
   children?: ReactNode
 }
 
-export default function CardDetail({ card, cost, onClose, onPlay, blockedReason, children }: CardDetailProps) {
+export default function CardDetail({ card, cost, custos, onClose, onPlay, blockedReason, children }: CardDetailProps) {
   const evento = 'tone' in card
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -45,7 +47,7 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason,
       onClick={onClose}
     >
       <div className={styles.painel} onClick={(e) => e.stopPropagation()}>
-        <Card card={card} cost={custo ?? undefined} className={styles.carta} />
+        <Card card={card} cost={custo ?? undefined} custos={custos} className={styles.carta} />
         <div className={styles.info}>
           <h2 className={styles.nome}>{card.name}</h2>
           <div className={styles.linha}>
@@ -61,7 +63,7 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason,
                     {custo !== card.cost ? ` (base ${card.cost})` : ''}
                   </span>
                 ) : null}
-                {custosDe(card).map((c) => {
+                {(custos ?? custosDe(card)).map((c) => {
                   const Icone = RESOURCE_ICONS[c.qual]
                   return (
                     <span key={c.qual} className={`${styles.chip} ${styles[`chip_${c.qual}`]}`}>
@@ -70,7 +72,7 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason,
                     </span>
                   )
                 })}
-                {!custo && custosDe(card).length === 0 ? <span className={styles.chip}>sem custo</span> : null}
+                {!custo && (custos ?? custosDe(card)).length === 0 ? <span className={styles.chip}>sem custo</span> : null}
                 <span className={styles.chip}>{nomeDaClasse(card.kind)}</span>
               </>
             )}

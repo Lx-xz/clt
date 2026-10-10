@@ -8,7 +8,7 @@ import AvatarHero from '@/components/AvatarHero'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
 import Conquistas from '@/components/Conquistas'
 import Dialogo from '@/components/Dialogo'
-import ListaDeJogos from '@/components/ListaDeJogos'
+import { ReciboResumido, dadosDaLinha } from '@/components/Recibo'
 import { useSessao } from '@/components/SessaoGuard'
 import {
   amizadeCom,
@@ -41,7 +41,7 @@ function Conteudo() {
   const [perfil, setPerfil] = useState<PerfilPublico | null | 'nao-achou'>(null)
   const [jogos, setJogos] = useState<JogoResumo[]>([])
   const [conquistas, setConquistas] = useState<Conquista[] | null>(null)
-  const [vendo, setVendo] = useState<'partidas' | 'conquistas' | null>(null)
+  const [vendo, setVendo] = useState<'conquistas' | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
   useEffect(() => {
@@ -99,12 +99,18 @@ function Conteudo() {
       <div className={styles.cabecaSecao}>
         <h2 className={styles.secao}>Última partida</h2>
         {jogos.length > 1 ? (
-          <button type="button" className={styles.verTodas} onClick={() => setVendo('partidas')}>
+          <Link className={styles.verTodas} href={`/meus-jogos?nick=${encodeURIComponent(perfil.nick)}`}>
             Ver todas ({jogos.length})
-          </button>
+          </Link>
         ) : null}
       </div>
-      <ListaDeJogos jogos={jogos.slice(0, 1)} vazio="Ainda não terminou nenhuma partida." />
+      {/* a última partida como recibo, como o início mostrava antes de
+          ficar limpo; a lista inteira é uma página, com filtro e ordem */}
+      {jogos[0] ? (
+        <ReciboResumido id={jogos[0].id} dados={dadosDaLinha(jogos[0])} className={styles.ultima} />
+      ) : (
+        <p className={styles.vazio}>Ainda não terminou nenhuma partida.</p>
+      )}
 
       {conquistas && conquistas.length > 0 ? (
         <>
@@ -118,11 +124,6 @@ function Conteudo() {
         </>
       ) : null}
 
-      {vendo === 'partidas' ? (
-        <Dialogo titulo={`Partidas de ${perfil.nick}`} largo onFechar={() => setVendo(null)}>
-          <ListaDeJogos jogos={jogos} vazio="Nenhuma partida." />
-        </Dialogo>
-      ) : null}
       {vendo === 'conquistas' && conquistas ? (
         <Dialogo titulo={`Conquistas de ${perfil.nick}`} largo onFechar={() => setVendo(null)}>
           <Conquistas lista={conquistas} />

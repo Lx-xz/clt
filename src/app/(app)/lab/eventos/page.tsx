@@ -4,6 +4,7 @@ import { ArrowLeft, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Card from '@/components/Card'
+import Check from '@/components/Check'
 import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
@@ -11,11 +12,12 @@ import {
   Origem,
   PedirMotivo,
   estilosDaBancada as comuns,
+  estavel,
 } from '../_catalogo/Bancada'
 import { EditorDeEfeitos, EditorDeEscolhas, EscapeJson } from '../_catalogo/EditorDeAcoes'
-import { excluirDoCatalogo, salvarEvento, semearCatalogo } from '@/data/cartas'
+import { eventoParaBanco, excluirDoCatalogo, salvarEvento, semearCatalogo } from '@/data/cartas'
 import { CARTAS_BASE } from '@/game/cards'
-import { EVENTOS_BASE } from '@/game/events'
+import { EVENTOS_BASE, MOTIVOS_DOS_EVENTOS } from '@/game/events'
 import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todosOsEventos } from '@/game/catalogo'
 import type { Efeito } from '@/game/acoes'
@@ -63,6 +65,74 @@ function resumoDaMudanca(antes: EventCard | undefined, depois: EventCard): strin
   if (JSON.stringify(antes.choices) !== JSON.stringify(depois.choices)) partes.push('Escolhas mudaram')
   if (antes.text !== depois.text) partes.push('Texto reescrito')
   return partes.join(' · ') || 'Salvo sem mudança de número'
+}
+
+/**
+ * O mesmo "trazer do código" das cartas, para os eventos: semear só escreve
+ * o que não existe, então evento novo ou mudado em `events.ts` nunca chega
+ * sozinho a um banco já semeado. Lista a diferença e leva o que estiver
+ * marcado, pelo mesmo `admin_salvar_evento` da edição, com histórico e
+ * motivo. Evento tirado do sorteio (`ativa = false`) fica de fora.
+ */
+function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; aoTerminar: (recado: string) => void }) {
+  const banco = new Map(eventos.map((e) => [e.id, e]))
+  const pendencias = EVENTOS_BASE.flatMap((e) => {
+    const antes = banco.get(e.id)
+    if (antes?.ativa === false) return []
+    if (antes && estavel(eventoParaBanco(antes)) === estavel(eventoParaBanco(e))) return []
+    return [{
+      evento: e,
+      oQue: antes ? 'Ajuste vindo do código' : 'Evento novo',
+      porque: MOTIVOS_DOS_EVENTOS[e.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Evento novo do baralho de referência do código.'),
+    }]
+  })
+  const [fora, setFora] = useState<string[]>([])
+  const [ocupado, setOcupado] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  if (pendencias.length === 0) return null
+
+  async function trazer() {
+    setOcupado(true)
+    setErro(null)
+    let feitos = 0
+    for (const p of pendencias) {
+      if (fora.includes(p.evento.id)) continue
+      const r = await salvarEvento(p.evento, p.oQue, p.porque)
+      if (!r.ok) {
+        setErro(`${p.evento.name}: ${r.erro ?? 'não deu para salvar.'}`)
+        break
+      }
+      feitos += 1
+    }
+    setOcupado(false)
+    if (feitos > 0) aoTerminar(`${feitos} ${feitos === 1 ? 'evento veio' : 'eventos vieram'} do código para o banco.`)
+  }
+
+  const marcados = pendencias.length - fora.length
+  return (
+    <section className={styles.trazer}>
+      <h2 className={styles.subtitulo}>O código tem eventos que o banco não tem ({pendencias.length})</h2>
+      <p className={styles.dicaSecao}>
+        Desmarque o que você editou aqui de propósito — trazer a versão do código desfaria a sua.
+      </p>
+      <ul className={styles.listaTrazer}>
+        {pendencias.map((p) => (
+          <li key={p.evento.id}>
+            <Check
+              marcado={!fora.includes(p.evento.id)}
+              onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.evento.id) : [...f, p.evento.id]))}
+            >
+              <b>{p.evento.name}</b> · {p.oQue}
+            </Check>
+          </li>
+        ))}
+      </ul>
+      {erro ? <p className={styles.erroTopo}>{erro}</p> : null}
+      <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={trazer} disabled={ocupado || marcados === 0}>
+        {ocupado ? 'Trazendo…' : `Trazer ${marcados} para o banco`}
+      </button>
+    </section>
+  )
 }
 
 export default function LabEventosPage() {
@@ -145,6 +215,16 @@ export default function LabEventosPage() {
       </p>
 
       <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
+
+      {doBanco ? (
+        <TrazerEventosDoCodigo
+          eventos={eventos}
+          aoTerminar={(r) => {
+            recarregar()
+            setRecado(r)
+          }}
+        />
+      ) : null}
 
       {recado ? <p className={styles.recado}>{recado}</p> : null}
       {erro && !pedindo ? <p className={styles.erroTopo}>{erro}</p> : null}

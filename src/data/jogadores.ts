@@ -30,6 +30,12 @@ export interface JogoResumo {
   day: number
   money: number
   week_reached: number
+  /** Desde a v0.20, para o recibo resumido. Banco sem o `schema.sql` novo
+   *  não manda, e o recibo deixa a linha de fora. */
+  cards_played?: number | null
+  estresse?: number | null
+  /** Os envelopes que a partida deu (`details.envelopes`), crus. */
+  envelopes?: unknown
 }
 
 export async function perfilPublico(nick: string): Promise<PerfilPublico | null> {

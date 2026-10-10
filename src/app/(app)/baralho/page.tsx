@@ -27,9 +27,46 @@ import {
 } from '@/game/colecao'
 import { regras } from '@/game/regras'
 import { loadCollection, loadRun, saveCollection } from '@/game/storage'
-import type { CardId, Collection, GameState } from '@/game/types'
+import type { ActionCard, CardId, CardKind, Collection, GameState, Raridade } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './baralho.module.sass'
+
+type Ordem = 'custo' | 'nome' | 'raridade' | 'naipe'
+
+interface Filtro {
+  busca: string
+  naipe: CardKind | 'livre' | 'todos'
+  raridade: Raridade | 'todas'
+  ordem: Ordem
+}
+
+const FILTRO_INICIAL: Filtro = { busca: '', naipe: 'todos', raridade: 'todas', ordem: 'custo' }
+const RARIDADES: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']
+
+/** Sem acento e em minúsculas: "reuniao" acha a Reunião. */
+function normal(t: string): string {
+  return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+/**
+ * Filtra e ordena uma coluna. Desempate sempre pelo nome, senão a ordem de
+ * duas cartas do mesmo custo mudaria a cada cópia movida.
+ */
+function arrumar(cartas: ActionCard[], f: Filtro): ActionCard[] {
+  const busca = normal(f.busca.trim())
+  const nome = (a: ActionCard, b: ActionCard) => a.name.localeCompare(b.name, 'pt-BR')
+  const por: Record<Ordem, (a: ActionCard, b: ActionCard) => number> = {
+    custo: (a, b) => a.cost - b.cost || nome(a, b),
+    nome,
+    raridade: (a, b) => RARIDADES.indexOf(b.raridade ?? 'comum') - RARIDADES.indexOf(a.raridade ?? 'comum') || nome(a, b),
+    naipe: (a, b) => (a.kind ?? 'zz').localeCompare(b.kind ?? 'zz') || nome(a, b),
+  }
+  return cartas
+    .filter((c) => !busca || normal(`${c.name} ${c.text}`).includes(busca))
+    .filter((c) => f.naipe === 'todos' || (f.naipe === 'livre' ? !c.kind : c.kind === f.naipe))
+    .filter((c) => f.raridade === 'todas' || (c.raridade ?? 'comum') === f.raridade)
+    .sort(por[f.ordem])
+}
 
 /**
  * A montagem do baralho, por CÓPIA.
@@ -50,6 +87,7 @@ export default function BaralhoPage() {
   const [aberta, setAberta] = useState<CardId | null>(null)
   const [sobre, setSobre] = useState<'dentro' | 'fora' | null>(null)
   const [renomeando, setRenomeando] = useState<string | null>(null)
+  const [filtro, setFiltro] = useState<Filtro>(FILTRO_INICIAL)
   const dentroRef = useRef<HTMLElement>(null)
   const foraRef = useRef<HTMLElement>(null)
   const sessao = useSessao()
@@ -87,9 +125,17 @@ export default function BaralhoPage() {
   const r = regras()
   const conta = contarBaralho(baralho)
   const problemas = problemasDoBaralho(baralho, r)
-  const dentro = Object.keys(baralho.cartas)
-  const fora = Object.keys(colecao.tenho).filter((id) => foraDoBaralho(colecao, baralho, id) > 0)
-  const bloqueadas = cartasBloqueadas(colecao)
+  // o filtro e a ordem valem para as três colunas: a pergunta "que social
+  // eu tenho?" é a mesma no baralho, fora dele e no que falta
+  const dentro = arrumar(Object.keys(baralho.cartas).map(getCard), filtro).map((c) => c.id)
+  const fora = arrumar(
+    Object.keys(colecao.tenho)
+      .filter((id) => foraDoBaralho(colecao, baralho, id) > 0)
+      .map(getCard),
+    filtro,
+  ).map((c) => c.id)
+  const bloqueadas = arrumar(cartasBloqueadas(colecao), filtro)
+  const filtrando = filtro.busca.trim() !== '' || filtro.naipe !== 'todos' || filtro.raridade !== 'todas'
 
   function mover(id: CardId, delta: number) {
     if (!colecao) return
@@ -190,6 +236,57 @@ export default function BaralhoPage() {
         </div>
       ) : null}
 
+      <div className={styles.filtros} role="search">
+        <input
+          className={styles.busca}
+          type="search"
+          placeholder="Buscar carta"
+          aria-label="Buscar carta pelo nome ou pelo texto"
+          value={filtro.busca}
+          onChange={(e) => setFiltro({ ...filtro, busca: e.target.value })}
+        />
+        <label>
+          <span>Naipe</span>
+          <select value={filtro.naipe} onChange={(e) => setFiltro({ ...filtro, naipe: e.target.value as Filtro['naipe'] })}>
+            <option value="todos">Todos</option>
+            {NAIPES.map((n) => (
+              <option key={n} value={n}>
+                {n[0].toUpperCase() + n.slice(1)}
+              </option>
+            ))}
+            <option value="livre">Sem naipe</option>
+          </select>
+        </label>
+        <label>
+          <span>Raridade</span>
+          <select
+            value={filtro.raridade}
+            onChange={(e) => setFiltro({ ...filtro, raridade: e.target.value as Filtro['raridade'] })}
+          >
+            <option value="todas">Todas</option>
+            {RARIDADES.map((r) => (
+              <option key={r} value={r}>
+                {NOMES_DE_RARIDADE[r]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Ordem</span>
+          <select value={filtro.ordem} onChange={(e) => setFiltro({ ...filtro, ordem: e.target.value as Ordem })}>
+            <option value="custo">Custo</option>
+            <option value="nome">Nome</option>
+            <option value="raridade">Raridade</option>
+            <option value="naipe">Naipe</option>
+          </select>
+        </label>
+        {filtrando ? (
+          <button type="button" className={styles.limpar} onClick={() => setFiltro({ ...FILTRO_INICIAL, ordem: filtro.ordem })}>
+            Limpar
+          </button>
+        ) : null}
+      </div>
+
       <div className={styles.colunas}>
         <section
           ref={dentroRef}
@@ -201,7 +298,9 @@ export default function BaralhoPage() {
             <span className={styles.count}>{conta.total}</span>
           </div>
           {dentro.length === 0 ? (
-            <p className={styles.empty}>Nenhuma carta no baralho. Arraste da coluna ao lado.</p>
+            <p className={styles.empty}>
+              {filtrando ? 'Nenhuma carta do baralho com esse filtro.' : 'Nenhuma carta no baralho. Arraste da coluna ao lado.'}
+            </p>
           ) : (
             <div className={styles.grid}>
               {dentro.map((id) => (
@@ -229,7 +328,7 @@ export default function BaralhoPage() {
             <span className={styles.count}>{fora.reduce((t, id) => t + foraDoBaralho(colecao, baralho, id), 0)}</span>
           </div>
           {fora.length === 0 ? (
-            <p className={styles.empty}>Tudo que você tem está no baralho.</p>
+            <p className={styles.empty}>{filtrando ? 'Nada fora do baralho com esse filtro.' : 'Tudo que você tem está no baralho.'}</p>
           ) : (
             <div className={styles.grid}>
               {fora.map((id) => (
@@ -254,7 +353,9 @@ export default function BaralhoPage() {
           <span className={styles.count}>{bloqueadas.length}</span>
         </div>
         {bloqueadas.length === 0 ? (
-          <p className={styles.empty}>Você já tem pelo menos uma cópia de cada carta.</p>
+          <p className={styles.empty}>
+            {filtrando ? 'Nenhuma bloqueada com esse filtro.' : 'Você já tem pelo menos uma cópia de cada carta.'}
+          </p>
         ) : (
           <div className={styles.grid}>
             {bloqueadas.map((c) => (

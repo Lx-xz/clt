@@ -3,9 +3,10 @@
 import { Coffee, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
 import { custosDe, textoDoCusto } from '@/game/custos'
-import type { ActionCard, EventCard } from '@/game/types'
+import type { ActionCard, Custo, EventCard } from '@/game/types'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import styles from './Card.module.sass'
 
 /** Distância em px que separa um clique de um arraste. */
@@ -18,6 +19,9 @@ export interface CardProps {
   card: ActionCard | EventCard
   /** Custo já ajustado por eventos; cai no custo base quando ausente. */
   cost?: number
+  /** Os outros custos já ajustados pelos eventos do dia (`custosEfetivos`);
+   *  caem nos da carta quando ausentes. */
+  custos?: Custo[]
   /** Quantas cópias, para a página do baralho. */
   copies?: number
   faceDown?: boolean
@@ -48,6 +52,7 @@ const ICONES_VERSO = [Coffee, Hammer, Droplet, Droplet, Coffee, Hammer, Hammer, 
 export default function Card({
   card,
   cost,
+  custos,
   copies,
   faceDown,
   locked,
@@ -73,8 +78,10 @@ export default function Card({
   const evento = isEvent(card)
   const Icon = evento ? TONE_ICONS[card.tone] : iconeDaClasse(card.kind)
   const custo = evento ? null : (cost ?? card.cost)
-  const custoAlto = !evento && custo !== null && custo > card.cost
-  const extras = evento ? [] : custosDe(card)
+  const base = evento ? [] : custosDe(card)
+  const extras = evento ? [] : (custos ?? base)
+  /** Quanto o evento do dia mexeu num custo: a seta diz para que lado. */
+  const desvio = (qual: string, quanto: number) => quanto - (base.find((b) => b.qual === qual)?.quanto ?? quanto)
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
 
   /** Informa só o deslocamento do ponteiro; o CSS compõe o resto. */
@@ -229,9 +236,10 @@ export default function Card({
             // estresse é o foguinho; "2" azul sozinho não dizia de quê
             <span className={styles.custos}>
               {custo > 0 ? (
-                <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>
+                <span className={styles.custo}>
                   <RESOURCE_ICONS.energia size={10} aria-hidden />
                   {custo}
+                  <Seta desvio={evento ? 0 : custo - card.cost} />
                 </span>
               ) : null}
               {extras.map((c) => {
@@ -240,6 +248,7 @@ export default function Card({
                   <span key={c.qual} className={`${styles.custo} ${styles[`custo_${c.qual}`]}`}>
                     <Icone size={10} aria-hidden />
                     {c.quanto}
+                    <Seta desvio={desvio(c.qual, c.quanto)} />
                   </span>
                 )
               })}
@@ -270,5 +279,19 @@ export default function Card({
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * O custo que um evento do dia mexeu ganha uma seta: para cima mais caro,
+ * para baixo mais barato. Era um anel vermelho em volta do carimbo azul, e
+ * com o estresse virando custo o vermelho passou a dizer outra coisa.
+ */
+function Seta({ desvio }: { desvio: number }) {
+  if (desvio === 0) return null
+  return desvio > 0 ? (
+    <ArrowUp size={10} strokeWidth={3} aria-label="mais caro hoje" className={styles.seta} />
+  ) : (
+    <ArrowDown size={10} strokeWidth={3} aria-label="mais barato hoje" className={styles.seta} />
   )
 }

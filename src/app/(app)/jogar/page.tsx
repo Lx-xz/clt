@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, CloudOff, DoorOpen, Loader, Medal, ScrollText } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, CloudOff, DoorOpen, House, Loader, ScrollText } from 'lucide-react'
 import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import Card from '@/components/Card'
 import ComoJogar from '@/components/ComoJogar'
@@ -44,23 +44,16 @@ import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
 import { problemasDoBaralho } from '@/game/baralho'
-import Missoes from '@/components/Missoes'
+import Recibo, { FIM, type Desfecho } from '@/components/Recibo'
 import { NOMES_DE_RARIDADE, baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
-import { custoQueFalta, custosDe, textoDoCusto } from '@/game/custos'
-import { MISSOES, cumprirMissoes } from '@/game/missoes'
+import { custoQueFalta, custosEfetivos, textoDoCusto } from '@/game/custos'
+import { cumprirMissoes } from '@/game/missoes'
 import { regras } from '@/game/regras'
 import { clearRun, loadCollection, saveCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
 import type { CardInstance, Collection, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
-
-const FIM: Record<Exclude<GameState['outcome'], 'jogando'>, { title: string; text: string }> = {
-  vitoria: { title: 'Mês fechado', text: 'Quatro semanas, ainda empregado e com as contas pagas.' },
-  burnout: { title: 'Burnout', text: 'O estresse chegou a 10. O corpo cobrou antes do banco.' },
-  demissao: { title: 'Demissão', text: 'Três advertências. O RH marcou uma conversa rápida.' },
-  despejo: { title: 'Despejo', text: 'As contas de sexta não fecharam.' },
-}
 
 const CLASSES: Record<string, string> = {
   tarefa: 'produtividade',
@@ -92,8 +85,6 @@ export default function JogarPage() {
   const [fimFechado, setFimFechado] = useState(false)
   /** A coleção, para o recibo mostrar as missões e os envelopes por abrir. */
   const [colecao, setColecao] = useState<Collection | null>(null)
-  /** As missões que a partida que acabou de terminar cumpriu. */
-  const [cumpridasAgora, setCumpridasAgora] = useState<string[]>([])
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -137,10 +128,12 @@ export default function JogarPage() {
     // envelope entra na coleção ANTES do sincronizar logo abaixo, para subir
     // junto. A carta do recibo (v0.15) saiu: carta vem de envelope agora
     if (acabouAgora) {
-      const r = cumprirMissoes(loadCollection(), { venceu: next.outcome === 'vitoria' })
+      const r = cumprirMissoes(loadCollection(), { venceu: next.outcome === 'vitoria' }, { runId: next.runId })
       saveCollection(r.colecao)
       setColecao(r.colecao)
-      setCumpridasAgora(r.cumpridas.map((m) => m.id))
+      // os envelopes entram na RUN também, antes de ela subir para `runs`:
+      // é o que deixa o replay mostrar o que a partida deu
+      next.envelopesGanhos = r.ganhos
     }
     setState(next)
     sincronizar(sessao.id, next, loadCollection(), setStatus)
@@ -185,7 +178,6 @@ export default function JogarPage() {
     setAberta(null)
     setFimFechado(false)
     setConquistasNovas([])
-    setCumpridasAgora([])
     const ativo = baralhoAtivo(loadCollection())
     const problemas = problemasDoBaralho(ativo, regras())
     if (problemas.length > 0) {
@@ -523,6 +515,7 @@ export default function JogarPage() {
                       key={instancia.uid}
                       card={carta}
                       cost={effectiveCost(state, carta.id)}
+                      custos={custosEfetivos(state, carta)}
                       rotation={(i - meio) * 5}
                       lift={Math.abs(i - meio) * 7}
                       style={{ '--i': i } as React.CSSProperties}
@@ -536,6 +529,7 @@ export default function JogarPage() {
                     key={instancia.uid}
                     card={carta}
                     cost={effectiveCost(state, carta.id)}
+                      custos={custosEfetivos(state, carta)}
                     rotation={(i - meio) * 5}
                     lift={Math.abs(i - meio) * 7}
                     style={{ '--i': i } as React.CSSProperties}
@@ -559,6 +553,7 @@ export default function JogarPage() {
         <CardDetail
           card={getCard(aberta.cardId)}
           cost={effectiveCost(state, aberta.cardId)}
+          custos={custosEfetivos(state, getCard(aberta.cardId))}
           onClose={() => setAberta(null)}
           onPlay={canPlay(state, aberta) ? () => jogar(aberta.uid) : undefined}
           blockedReason={canPlay(state, aberta) ? undefined : motivoBloqueio(state, aberta)}
@@ -636,27 +631,24 @@ export default function JogarPage() {
         aberto={acabou && !fimFechado}
         onFechar={() => setFimFechado(true)}
       >
-        <Avatar
+        <Recibo
+          dados={{
+            outcome: state.outcome as Desfecho,
+            dias: state.history.length,
+            cartasJogadas: state.cardsPlayed,
+            dinheiro: state.money,
+            estresse: state.stress,
+            estresseMaximo: state.modo.estresseMaximo,
+            envelopes: state.envelopesGanhos,
+            conquistas: conquistasNovas,
+          }}
           avatar={sessao.avatar}
-          tamanho={88}
-          className={styles.avatarFim}
-          humor={state.outcome === 'vitoria' ? 'vitoria' : humorDoEstresse(state.stress, state.modo.estresseMaximo)}
+          colecao={colecao}
+          onMudarColecao={(c) => {
+            setColecao(c)
+            sincronizar(sessao.id, state, c, setStatus)
+          }}
         />
-        <p className={styles.painelTexto}>{fim?.text}</p>
-        <ol className={styles.passos}>
-          <li className={styles.passo}>
-            <span className={styles.passoRot}>Dias trabalhados</span>
-            <span className={styles.passoVal}>{state.history.length}</span>
-          </li>
-          <li className={styles.passo}>
-            <span className={styles.passoRot}>Cartas jogadas</span>
-            <span className={styles.passoVal}>{state.cardsPlayed}</span>
-          </li>
-          <li className={`${styles.passo} ${styles.total}`}>
-            <span className={styles.passoRot}>Pontuação final</span>
-            <Dinheiro className={styles.passoVal} valor={state.money} />
-          </li>
-        </ol>
         {/* só aparece para a run que acabou antes das missões, com a
             escolha de carta ainda pendente no save */}
         <Recompensa
@@ -666,39 +658,6 @@ export default function JogarPage() {
             update(escolherRecompensa(state, id))
           }}
         />
-        {acabou && colecao ? (
-          <div className={styles.missoesFim}>
-            <p className={styles.recompensaTitulo}>Envelopes</p>
-            {cumpridasAgora.length > 0 ? (
-              <p className={styles.missoesCumpridas}>
-                Missão cumprida:{' '}
-                {cumpridasAgora.map((id) => MISSOES.find((m) => m.id === id)?.nome).join(' e ')}
-              </p>
-            ) : null}
-            <Missoes
-              compacto
-              colecao={colecao}
-              cumpridasAgora={cumpridasAgora}
-              onMudar={(c) => {
-                setColecao(c)
-                sincronizar(sessao.id, state, c, setStatus)
-              }}
-            />
-          </div>
-        ) : null}
-        {conquistasNovas.length > 0 ? (
-          <ul className={styles.conquistasNovas}>
-            {conquistasNovas.map((c) => (
-              <li key={c.id}>
-                <Medal size={16} aria-hidden />
-                <span>
-                  <b>Conquista: {c.nome}</b>
-                  {c.descricao}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
         {registroFalhou ? (
           <div className={styles.painelAviso}>
             <p>
@@ -708,19 +667,35 @@ export default function JogarPage() {
             <p className={styles.painelMotivo}>{registroFalhou}</p>
           </div>
         ) : null}
-        <div className={styles.acoes}>
+        {/* no celular os dois de apoio viram só o ícone, e o "Nova run"
+            ocupa o que sobra: era uma linha de três botões quebrando em
+            duas, com o principal sozinho e pequeno */}
+        <div className={styles.acoesFim}>
           <button
             type="button"
-            className={`${buttons.button} ${buttons.primary}`}
+            className={`${buttons.button} ${buttons.primary} ${styles.novaRun}`}
             onClick={() => recomecar()}
           >
             Nova run
           </button>
-          <button type="button" className={buttons.button} onClick={() => setHistorico(true)}>
-            Ver o que aconteceu
+          <button
+            type="button"
+            className={`${buttons.button} ${styles.acaoIcone}`}
+            onClick={() => setHistorico(true)}
+            aria-label="Ver o que aconteceu"
+            title="Ver o que aconteceu"
+          >
+            <ScrollText size={18} aria-hidden />
+            <span>Ver o que aconteceu</span>
           </button>
-          <Link className={buttons.button} href="/">
-            Voltar ao início
+          <Link
+            className={`${buttons.button} ${styles.acaoIcone}`}
+            href="/"
+            aria-label="Voltar ao início"
+            title="Voltar ao início"
+          >
+            <House size={18} aria-hidden />
+            <span>Voltar ao início</span>
           </Link>
         </div>
       </Dialogo>
@@ -820,7 +795,7 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   if (carta.restricao?.exige) {
     return `Esta carta pede: ${textoDaCondicao(carta.restricao.exige)}.`
   }
-  const falta = custoQueFalta(state, custosDe(carta))
+  const falta = custoQueFalta(state, custosEfetivos(state, carta))
   if (falta) {
     // "R$ N" aqui é a notação de dinheiro: quem a desenha como ícone é o
     // CardDetail (`TextoComIcones`)

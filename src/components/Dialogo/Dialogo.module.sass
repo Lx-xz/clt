@@ -9,7 +9,7 @@
   // tela. Com `auto` aqui, a nota entrando de baixo (um transform de 70vh)
   // abria uma barra de rolagem durante a animação
   overflow: hidden
-  background: color-mix(in srgb, var(--tinta) 55%, transparent)
+  background: var(--cortina)
   animation: cortina-entra .16s ease
 
 // o popup da mesa: a cortina começa depois da barra lateral recolhida, e
@@ -162,6 +162,11 @@
   gap: 12px
   min-height: 0
   overflow-y: auto
+  // folga de 3px em volta, devolvida pela margem: o botão do site anda 1–2px
+  // para baixo e para a direita no hover, e sem folga esse deslocamento
+  // passava da caixa e acendia uma barra de rolagem só durante a animação
+  margin: -3px
+  padding: 3px
   color: var(--tinta)
   font-size: 14px
 

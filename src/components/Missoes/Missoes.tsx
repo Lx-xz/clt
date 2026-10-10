@@ -7,7 +7,7 @@ import type { CardId, Collection, TipoEnvelope } from '@/game/types'
 import AberturaDeEnvelope, { ChancesDoEnvelope, EnvelopeEmPe } from '../Envelope'
 import styles from './Missoes.module.sass'
 
-const ORDEM_DA_BANDEJA: TipoEnvelope[] = ['confidencial', 'pardo', 'comum']
+const ORDEM_DA_BANDEJA: TipoEnvelope[] = ['lendario', 'epico', 'confidencial', 'pardo', 'comum']
 
 /**
  * As missões do dia e os envelopes por abrir. Mora no início (onde se chega)
@@ -34,7 +34,7 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
   const feitas = feitasHoje(colecao)
 
   function abrir(tipo: TipoEnvelope) {
-    const r = abrirEnvelope(colecao, colecao.envelopes.indexOf(tipo))
+    const r = abrirEnvelope(colecao, colecao.envelopes.findIndex((e) => e.tipo === tipo))
     if (!r) return
     // a coleção muda ANTES da animação: pular ou fechar no meio não pode
     // perder a carta
@@ -44,7 +44,7 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
 
   const naBandeja = ORDEM_DA_BANDEJA.map((tipo) => ({
     tipo,
-    quantos: colecao.envelopes.filter((e) => e === tipo).length,
+    quantos: colecao.envelopes.filter((e) => e.tipo === tipo).length,
   })).filter((g) => g.quantos > 0)
 
   return (

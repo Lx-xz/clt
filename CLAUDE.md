@@ -43,16 +43,17 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
 | `/ranking` | Placar público, no jeito do Duolingo: medalha nas três primeiras, avatar redondo, nick e V/D à direita. A linha inteira leva ao perfil; não há mais "abrir para ver mais" |
-| `/perfil` | O seu: avatar, rank, a ÚLTIMA partida e as conquistas em selos (cada um com "ver todas" num popup) e amigos. Nome, e-mail, pontos e Sair NÃO moram aqui: moram em Configurações |
+| `/perfil` | O seu: avatar, rank, a ÚLTIMA partida (recibo resumido; "ver todas" leva a `/meus-jogos`), as conquistas em selos ("ver todas" num popup) e amigos. Nome, e-mail, pontos e Sair NÃO moram aqui: moram em Configurações |
 | `/perfil/editar` | O editor do avatar |
 | `/jogador?nick=` | O perfil de outra pessoa: avatar, placar, o botão de amizade, conquistas e partidas (que abrem o replay). **Sem nome, e-mail ou pontos** |
+| `/meus-jogos` · `?nick=` | Todas as partidas, como recibos resumidos, com filtro por desfecho e ordem. Sem `nick` é a sua (a única que mostra as de "pediu demissão") |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
 | `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
-desbloqueáveis, em três raridades) e **21 cartas de evento**, das quais 4 são ambíguas e pedem uma
+desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
 escolha. Esses números são o baralho de REFERÊNCIA (`cards.ts`/`events.ts`);
 o que está no ar é o que estiver na tabela `cartas` — veja abaixo.
 
@@ -330,9 +331,14 @@ quando as 13 desbloqueáveis acabavam. Hoje (`src/game/colecao.ts`):
   nova?), e a tradução na leitura não teria como saber. A raridade pinta só
   a BORDA da carta e o SELO do tipo (`.comRaridade`, tokens
   `--raridade-*` em `_tokens.sass`, com tons próprios e não os dos
-  medidores); comum não tem cor. A borda é UMA só, de 2px: a versão com 1px
-  de borda mais um anel de `outline` deixava uma fresta entre o anel e o
-  selo do canto. A caixa do texto da carta não tem borda (fazia borda
+  medidores); comum não tem cor. **A borda é uma camada POR CIMA da face**
+  (`.face::after`, cor em `--cor-borda`), de 2px em TODA carta, e não a
+  `border` dela: com a borda de verdade, o selo e o custo ficavam dentro,
+  recortados pela curva de dentro do canto, e sobrava uma fresta de papel
+  de 1px entre a curva e o quadrado colorido. Por cima, a borda cobre a
+  emenda; o selo e o custo vão até a beirada, por baixo dela, e a face tem
+  `padding: 2px` no lugar da borda. O evento usa a mesma camada, na cor do
+  tom, e pinta o selo do tipo também. A caixa do texto da carta não tem borda (fazia borda
   dupla com a da carta). Lendárias hoje: Automatizar e Pedir Aumento;
   épicas: Café com o Chefe, Investimento, Grito no Travesseiro, Virar a
   Noite e Plantão.
@@ -380,20 +386,38 @@ envelope vem de MISSÃO DIÁRIA** (`src/game/missoes.ts`). A do recibo amarrava
 a coleção ao número de partidas — largar cedo e recomeçar colecionava mais
 rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
 
-- **Três envelopes (v0.19), todos na tabela `ENVELOPES`:** o `comum` vem de
-  TODA partida terminada (1 a 3 cartas, quase sempre comuns, nunca
-  lendária); o `pardo` ("Envelope do dia") é da missão "Bater o ponto"; o
-  `confidencial` é da missão "Fechar o mês" (vencer). Cada um diz quantas
-  cartas e a CHANCE de cada raridade, por carta. As cartas são sorteadas
-  uma a uma e podem vir repetidas; raridade esgotada cai para a de baixo
-  e, só sem nenhuma, para a de cima (`abrirEnvelope`). Os ids ficaram os
+- **Cinco envelopes, todos na tabela `ENVELOPES`, e envelope melhor dá
+  MAIS cartas (v0.20):** o `comum` (3, quase sempre comuns, nunca
+  lendária) vem de TODA partida terminada; o `pardo` ("Envelope incomum",
+  5) é da missão "Bater o ponto"; o `confidencial` ("Envelope raro", 7) é
+  da missão "Fechar o mês" (vencer); `epico` (10) e `lendario` (15) já
+  existem e esperam a missão que os dê. Cada um diz quantas cartas e a
+  CHANCE de cada raridade, por carta. As cartas são sorteadas uma a uma e
+  podem vir repetidas; raridade esgotada cai para a de baixo e, só sem
+  nenhuma, para a de cima. Os ids `pardo`/`confidencial` ficaram os
   antigos porque moram na coleção de quem já os ganhou.
+- **O conteúdo é sorteado ao GANHAR, não ao abrir (v0.20).**
+  `cumprirMissoes` sorteia as cartas e as guarda DENTRO do envelope
+  fechado (`EnvelopeFechado.cartas`), contra a coleção mais o que já está
+  nos outros envelopes fechados (senão dois prometeriam a mesma épica de
+  uma cópia só); as cópias só entram na coleção em `abrirEnvelope`. É o
+  que deixa o recibo e o replay dizerem o que a partida deu: a mesa grava
+  `GameState.envelopesGanhos` (opcional, sem subir a chave do save) na
+  jogada que encerra a run, ANTES do `registrarRunAgora`, e ele sobe em
+  `runs.details.envelopes`. A fila antiga, só de tipos, é lida como
+  `{ tipo }` e sorteada na abertura, como era. O `id` (`<runId>:<n>`) liga
+  o envelope do recibo ao da coleção: fechado na coleção de quem vê, o
+  recibo o mostra lacrado e deixa abrir; aberto, com as cartas ao lado.
 - `MISSOES` é uma tabela (como `CABELOS_FORMA`). Missão nova é uma linha; o
   que ela pode perguntar é o que `FimDeRun` traz, não o `GameState` inteiro.
 - **Envelope, e não baú** (pedido do autor: baú não combina). É o MESMO
   envelope em pé (`EnvelopeEmPe`, só CSS), e o que os distingue é o SELO de
-  cera: cinza (comum), vermelho (do dia), dourado com troféu
-  (confidencial), tokens `--selo-*`. Clicar no envelope de uma missão abre
+  cera, na cor da raridade que dá nome ao envelope (o comum é cinza,
+  `--selo-comum`). **A geometria é uma só:** as quatro dobras vão dos
+  cantos ao CENTRO, a aba é a dobra de cima (ponta no centro, no fundo do
+  V do bolso) e o selo fica nesse ponto; os cantos de cima são retos,
+  porque ali a aba continua o papel. A primeira versão tinha o X das
+  dobras, o V e a ponta da aba em três alturas diferentes. Clicar no envelope de uma missão abre
   as chances (`ChancesDoEnvelope`); clicar num da bandeja "Para abrir" o
   ABRE.
 - **A abertura é tela cheia, sem popup em volta** (`AberturaDeEnvelope`):
@@ -452,8 +476,13 @@ o `EditorDeCustos`.
 - Um carimbo por custo, com o ÍCONE e a cor do medidor do recurso (energia
   é o raio, estresse o foguinho, dinheiro a cédula). Zero não é cobrança: a
   carta sem custo nenhum não mostra carimbo nenhum (`.custos:empty`), e a
-  que só cobra outra coisa não mostra o "0" de energia. Energia encarecida
-  por evento continua azul, com um anel vermelho — vermelho é do estresse.
+  que só cobra outra coisa não mostra o "0" de energia. Custo mudado por
+  evento ganha uma SETA (↑ mais caro, ↓ mais barato) dentro do carimbo,
+  que continua na cor do recurso; o anel vermelho em volta do azul foi
+  recusado pelo autor. Quem calcula é `custosEfetivos(state, carta)`: a
+  ação `custo` ganhou `qual` (sem ele, ou `energia`, é o `costModifier` de
+  sempre; os outros somam em `GameState.modCustos`, que zera no
+  `startDay`), e a mesa passa o resultado ao `Card` pela prop `custos`.
 - **Tradução na LEITURA, nas três portas:** `custosDaLinha` (banco: coluna
   `custos` se tiver algo, senão `custo_dinheiro`), `custosDe` (retrato de
   run antiga, que guarda `custoDinheiro`) e `lerCustos` (soma repetidos,
@@ -663,11 +692,26 @@ opções. O que ele escolheu, e que deve ser preservado:
   pareciam desalinhados entre si. Os tamanhos de lista subiram: barra lateral
   30, relatos 32, amigos 44, ranking 52 (44 no celular, e redondo). Não volte
   para menos que isso numa lista em que os rostos ficam lado a lado.
-- **O perfil é resumo; a lista inteira é popup.** Rank, a última partida e
-  os selos das conquistas (`<Conquistas selos />`), cada um com "ver todas"
-  abrindo um `Dialogo` — o mesmo em `/perfil` e `/jogador`. Os dados da
-  conta (nome, e-mail, tipo, pontos, admin) foram para as Configurações: o
-  perfil é a página que os OUTROS veem.
+- **O perfil é resumo.** Rank, a última partida e os selos das conquistas
+  (`<Conquistas selos />`) — o mesmo em `/perfil` e `/jogador`. As
+  conquistas inteiras abrem num `Dialogo`; as partidas inteiras são uma
+  PÁGINA (`/meus-jogos`), porque é lista para percorrer, filtrar e
+  ordenar, e popup é para olhar e fechar. Os dados da conta (nome, e-mail,
+  tipo, pontos, admin) foram para as Configurações: o perfil é a página que
+  os OUTROS veem.
+- **Uma partida acaba num RECIBO, e é o mesmo em todo lugar**
+  (`src/components/Recibo`): na mesa (dentro da nota do `Dialogo`), no
+  replay (`papel`, que desenha a nota em volta) e, resumido
+  (`ReciboResumido`), no perfil e em `/meus-jogos`. Eram três telas
+  contando o fim da mesma partida de três jeitos, e o replay nem contava o
+  que ela deu. Campo que a partida antiga não tem (estresse final,
+  envelopes) some do recibo em vez de virar uma linha mentindo zero. Os
+  botões do recibo da mesa: "Nova run" estica, e "ver o que aconteceu" e
+  "voltar ao início" são só o ícone — na nota estreita, os três com texto
+  quebravam em três linhas.
+- **A cortina atrás de popup e da gaveta é `--cortina`**, um preto
+  translúcido nos dois temas. Era `color-mix` com a `--tinta`, e no escuro
+  a tinta é CLARA: o fundo virava um véu branco.
 - **O avatar da mesa é um crachá no canto do tapete** (`.cracha`), 56 px no
   celular e 72 no desktop, abaixo das cartas jogadas no `z-index`. Morava no
   header com 24 px e no celular não dava para ver a cara mudar. A `key` pelo
@@ -1010,6 +1054,12 @@ a janela inteira passar de 390px no celular, e o `100%` não adiantava nada. O
 conserto é `min-width: 0` no painel — aí quem transborda é o conteúdo, e é ele
 que ganha um `overflow-x: auto` próprio (a tabela das semanas, a fileira de
 classes). Vale para qualquer caixa que seja item de um flex.
+
+**Tecla em `window` atravessa popup aninhado.** O `Dialogo` e a abertura
+do envelope ouvem `keydown` em `window`, e a abertura nasce de dentro do
+recibo: o Esc que pulava a animação fechava o recibo atrás dela. A abertura
+ouve na CAPTURA (`addEventListener(..., true)`) e para a propagação ali.
+Qualquer sobreposição nova que nasça de dentro de outra precisa do mesmo.
 
 **Popup dentro da nota fiscal precisa de portal.** `mask` (a serrilha) e
 `filter` (o drop-shadow da moldura) também viram bloco contentor de
@@ -1562,6 +1612,11 @@ e a um bot diferente — não compare os dois.
   baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
   isso não acontece, editar carta é impossível (o botão fica desligado) e o
   jogo funciona normalmente — é o estado intencional, não um bug.
+- **Rodar o `schema.sql` da v0.20** (`conquistas_da_run`, e as listas de
+  partidas devolvendo estresse, cartas jogadas e envelopes). Sem ele o
+  recibo resumido só deixa essas linhas de fora, e o replay, as
+  conquistas. E os cinco eventos de custo da v0.20 chegam ao jogo pela
+  caixa "Trazer do código" do `/lab/eventos`, como as cartas.
 - **Rodar o `schema.sql` da v0.17** (coluna `cartas.custos`). Sem ele o
   custo em R$ segue funcionando pelo `custo_dinheiro`, mas custo de estresse
   ou produtividade salvo no `/lab` não é gravado.

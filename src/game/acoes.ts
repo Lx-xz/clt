@@ -48,7 +48,10 @@ export type Acao =
   | { faz: 'escolherDescarte'; quantas: number; porque?: string; entao?: Acao[] }
   | { faz: 'ganharCarta'; carta: CardId; onde: 'mao' | 'descarte' }
   /** Muda o custo de todas as cartas até o fim do dia. */
-  | { faz: 'custo'; quanto: number }
+  /** Muda o custo de TODAS as cartas hoje. Sem `qual`, é a energia (o
+   *  Ar-Condicionado Quebrado); com `qual`, um dos custos da lista — é o que
+   *  deixa a Black Friday baratear as cartas pagas em dinheiro. */
+  | { faz: 'custo'; quanto: number; qual?: 'energia' | 'dinheiro' | 'estresse' | 'produtividade' }
   | { faz: 'bloquearClasse'; classe: CardKind }
   /** Duas informais viram uma de verdade — a conta é do motor. */
   | { faz: 'advertencia'; quanto: number; informal?: boolean }
@@ -294,7 +297,8 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
       break
     }
     case 'custo':
-      state.costModifier += acao.quanto
+      if (!acao.qual || acao.qual === 'energia') state.costModifier += acao.quanto
+      else state.modCustos = { ...state.modCustos, [acao.qual]: (state.modCustos?.[acao.qual] ?? 0) + acao.quanto }
       break
     case 'bloquearClasse':
       if (!state.blockedKinds.includes(acao.classe)) state.blockedKinds.push(acao.classe)

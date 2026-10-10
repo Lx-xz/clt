@@ -1,0 +1,213 @@
+// o recibo de uma partida. Dentro do popup da mesa ele herda o papel do
+// `Dialogo` (estilo nota); fora dele (`papel`), desenha a própria nota, com a
+// mesma serrilha. A sombra mora na moldura porque a máscara da serrilha
+// cortaria a `box-shadow` do próprio papel
+.recibo
+  display: flex
+  flex-direction: column
+  gap: 12px
+  min-width: 0
+  color: var(--tinta)
+  font-size: 14px
+
+.moldura
+  width: min(100%, 460px)
+  margin: 0 auto
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .22))
+
+.nota
+  --dente: 7px
+  padding: 26px 22px 28px
+  background: var(--papel-nota)
+  font-family: var(--mono)
+  mask: radial-gradient(circle at 50% 0, transparent calc(var(--dente) * .55), #000 calc(var(--dente) * .55 + .5px)) top / calc(var(--dente) * 2) 51% repeat-x, radial-gradient(circle at 50% 100%, transparent calc(var(--dente) * .55), #000 calc(var(--dente) * .55 + .5px)) bottom / calc(var(--dente) * 2) 51% repeat-x
+
+.titulo
+  margin: 0
+  padding-bottom: 10px
+  border-bottom: 2px dashed var(--linha)
+  font-family: var(--mono)
+  font-size: 17px
+  letter-spacing: .08em
+  text-transform: uppercase
+
+.avatar
+  align-self: center
+  margin-bottom: 4px
+
+.texto
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+
+.passos
+  display: flex
+  flex-direction: column
+  gap: 2px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.passo
+  display: flex
+  align-items: baseline
+  justify-content: space-between
+  gap: 16px
+  padding: 9px 2px
+  border-bottom: 1px dotted var(--linha)
+
+.rot
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.val
+  flex: none
+  font-family: var(--mono)
+  font-size: 17px
+  font-weight: 600
+  font-variant-numeric: tabular-nums
+
+// a última linha: o total, com a linha dupla de recibo em cima
+.total
+  border-top: 3px double var(--tinta-fraca)
+  border-bottom: none
+
+  .rot
+    color: var(--tinta)
+    font-weight: 700
+    text-transform: uppercase
+
+.secao
+  display: flex
+  flex-direction: column
+  gap: 10px
+  padding-top: 10px
+  border-top: 2px dashed var(--linha)
+
+.secaoTitulo
+  margin: 0
+  color: var(--tinta)
+  font-size: 13px
+  font-weight: 700
+  text-align: center
+
+.missoes
+  margin: 0
+  color: var(--produtividade)
+  font-size: 13px
+  text-align: center
+
+// as conquistas que a partida destravou, como cupom carimbado no recibo
+.conquistas
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 0
+  padding: 0
+  list-style: none
+
+  li
+    display: flex
+    align-items: flex-start
+    gap: 8px
+    padding: 8px 10px
+    border: 2px dashed var(--destaque)
+    border-radius: 4px
+    color: var(--tinta-fraca)
+    font-size: 12px
+
+  svg
+    flex: none
+    margin-top: 1px
+    color: var(--destaque)
+
+  span
+    display: flex
+    flex-direction: column
+    gap: 1px
+
+  b
+    color: var(--tinta)
+    font-size: 13px
+
+// ------------------------------------------------------------- resumido
+// um bilhete: a mesma nota, pequena, que leva ao replay
+.resumidoMoldura
+  min-width: 0
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .14))
+  transition: transform .15s ease
+
+  &:hover
+    transform: translateY(-2px)
+
+.resumido
+  --dente: 6px
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding: 18px 16px 20px
+  background: var(--papel-nota)
+  color: var(--tinta)
+  font-family: var(--mono)
+  font-size: 13px
+  text-decoration: none
+  mask: radial-gradient(circle at 50% 0, transparent calc(var(--dente) * .55), #000 calc(var(--dente) * .55 + .5px)) top / calc(var(--dente) * 2) 51% repeat-x, radial-gradient(circle at 50% 100%, transparent calc(var(--dente) * .55), #000 calc(var(--dente) * .55 + .5px)) bottom / calc(var(--dente) * 2) 51% repeat-x
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.selo
+  align-self: flex-start
+  padding: 3px 10px
+  border-radius: 999px
+  font-size: 11px
+  font-weight: 700
+  letter-spacing: .06em
+  text-transform: uppercase
+
+.vitoria
+  background: color-mix(in srgb, var(--produtividade) 22%, transparent)
+  color: var(--produtividade)
+
+.burnout
+  background: color-mix(in srgb, var(--estresse) 20%, transparent)
+  color: var(--estresse)
+
+.demissao
+  background: color-mix(in srgb, var(--destaque) 22%, transparent)
+  color: var(--destaque)
+
+.despejo,
+.abandono
+  background: var(--papel-baixo)
+  color: var(--tinta-fraca)
+
+.resumidoData
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.resumidoLinha
+  display: flex
+  flex-wrap: wrap
+  gap: 4px 12px
+  padding-bottom: 6px
+  border-bottom: 1px dotted var(--linha)
+
+.resumidoEnvelopes
+  display: flex
+  align-items: center
+  gap: 6px
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+  > span:last-child
+    margin-left: 2px
+
+.resumidoTotal
+  display: flex
+  justify-content: space-between
+  padding-top: 6px
+  border-top: 3px double var(--tinta-fraca)
+  font-weight: 700
+  text-transform: uppercase

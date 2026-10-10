@@ -1,9 +1,18 @@
 // ======================================================== o envelope em pé
 // Só CSS. A ordem das camadas é o que faz ele ler como envelope: as costas
-// (o "dentro", mais escuro), o bolso da frente com o V, a aba de cima e o
-// selo de cera na ponta da aba. `isolation` prende os z-index dele aqui
-// dentro — menos no palco da abertura, onde a carta precisa passar ENTRE as
-// costas e o bolso (veja `.envelopeNoPalco`).
+// (o "dentro", mais escuro), o bolso da frente, a aba de cima e o selo de
+// cera na ponta da aba. `isolation` prende os z-index dele aqui dentro —
+// menos no palco da abertura, onde a carta precisa passar ENTRE as costas e
+// o bolso (veja `.envelopeNoPalco`).
+//
+// A geometria é UMA só, e tudo sai dela: as quatro dobras vão dos cantos ao
+// CENTRO do envelope (50% 50%). A aba é a dobra de cima, então a ponta dela
+// cai exatamente no fundo do V do bolso, e o selo fica nesse ponto. A versão
+// anterior tinha o X das dobras no centro, o V do bolso em 36% e a ponta da
+// aba em 40% — três desenhos que não se encontravam.
+//
+// Os cantos de cima são retos: ali a aba continua o papel, e um canto
+// arredondado no bolso lia como um envelope recortado
 .envelope
   position: relative
   display: inline-block
@@ -13,7 +22,7 @@
   padding: 0
   background: none
   border: none
-  border-radius: 4px
+  border-radius: 0 0 3px 3px
   box-shadow: var(--sombra)
   isolation: isolate
   vertical-align: middle
@@ -34,60 +43,86 @@ button.envelope
   inset: 0
   z-index: 1
   background: var(--envelope-sombra)
-  border-radius: 4px
+  border-radius: inherit
 
-// o bolso da frente: o retângulo inteiro menos o V de cima, com as dobras
-// das laterais em sombra — é a dobra que diz "envelope"
+// o bolso da frente: o retângulo inteiro menos o V de cima. Ele é a dobra
+// de BAIXO, e as das laterais vão por cima dele (`::before` e `::after`), um
+// tom mais escuras — é a diferença de tom entre as dobras que diz "envelope"
 .bolso
   position: absolute
   inset: 0
   z-index: 3
-  border-radius: 4px
-  background: linear-gradient(to bottom right, transparent 49.4%, rgba(0, 0, 0, .07) 50%), linear-gradient(to bottom left, transparent 49.4%, rgba(0, 0, 0, .05) 50%), var(--envelope)
-  clip-path: polygon(0 0, 50% 36%, 100% 0, 100% 100%, 0 100%)
+  border-radius: inherit
+  background: var(--envelope)
+  clip-path: polygon(0 0, 50% 50%, 100% 0, 100% 100%, 0 100%)
 
-// a aba: um triângulo preso pela borda de cima. A perspectiva mora NO
-// transform dela, e não no pai — perspectiva no pai criaria um contexto de
-// empilhamento, e a carta não conseguiria passar por dentro do envelope
+  &::before,
+  &::after
+    content: ""
+    position: absolute
+    inset: 0
+    background: color-mix(in srgb, var(--envelope) 88%, #000)
+
+  &::before
+    clip-path: polygon(0 0, 50% 50%, 0 100%)
+
+  &::after
+    clip-path: polygon(100% 0, 50% 50%, 100% 100%)
+    background: color-mix(in srgb, var(--envelope) 92%, #000)
+
+// a aba: a dobra de cima, presa pela borda de cima, com a ponta no centro.
+// A perspectiva mora NO transform dela, e não no pai — perspectiva no pai
+// criaria um contexto de empilhamento, e a carta não conseguiria passar por
+// dentro do envelope
 .aba
   position: absolute
   inset: 0 0 auto
   z-index: 4
-  height: 40%
-  background: color-mix(in srgb, var(--envelope) 92%, #fff)
+  height: 50%
+  background: color-mix(in srgb, var(--envelope) 94%, #fff)
   clip-path: polygon(0 0, 100% 0, 50% 100%)
   transform-origin: top
   transform: perspective(500px) rotateX(0)
   transition: transform .5s cubic-bezier(.3, .7, .3, 1) .18s, filter .5s ease .18s
 
-// o selo de cera, na ponta da aba
+// o selo de cera, na ponta da aba — que é o centro do envelope
 .selo
   position: absolute
   z-index: 5
-  top: 30%
-  left: 37%
+  top: 50%
+  left: 50%
   display: grid
   place-items: center
-  width: 26%
+  width: 28%
   aspect-ratio: 1
   border-radius: 50%
   background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--cor-selo) 70%, #fff) 0 18%, var(--cor-selo) 55%, color-mix(in srgb, var(--cor-selo) 70%, #000) 100%)
   box-shadow: 0 1px 2px rgba(0, 0, 0, .35), inset 0 0 0 2px color-mix(in srgb, var(--cor-selo) 80%, #000)
-  color: rgba(255, 255, 255, .85)
+  color: rgba(255, 255, 255, .88)
+  // `translate` em separado do `transform`: o estalo da cera mexe no
+  // transform, e a centralização não pode ir junto
+  translate: -50% -58%
   transition: transform .25s ease, opacity .25s ease
 
   svg
     width: 52%
     height: 52%
 
+// o selo tem a cor da raridade que dá nome ao envelope; o comum, cinza
 .seloComum
   --cor-selo: var(--selo-comum)
 
 .seloPardo
-  --cor-selo: var(--selo-pardo)
+  --cor-selo: var(--raridade-incomum)
 
 .seloConfidencial
-  --cor-selo: var(--selo-confidencial)
+  --cor-selo: var(--raridade-rara)
+
+.seloEpico
+  --cor-selo: var(--raridade-epica)
+
+.seloLendario
+  --cor-selo: var(--raridade-lendaria)
 
 // aberto: a cera estala e some, e a aba gira para trás, por trás da carta
 .aberto
@@ -99,6 +134,47 @@ button.envelope
     z-index: 0
     transform: perspective(500px) rotateX(180deg)
     filter: brightness(.82)
+
+// o envelope aberto que fica no recibo: a aba aberta precisa de lugar em
+// cima, senão ela sai da caixa e morde a linha de cima
+.abertoParado
+  margin-top: calc(var(--env-w, 64px) * .66)
+
+// ===================================== o envelope do recibo, com o que deu
+.ganho
+  display: flex
+  align-items: flex-end
+  gap: 12px
+  min-width: 0
+
+.ganhoCartas
+  display: flex
+  flex-wrap: wrap
+  gap: 6px
+  min-width: 0
+
+  // a carta do recibo: pequena, mas do tamanho de ler o nome
+  --carta-h: 96px
+  --carta-w: 63px
+  --carta-arte: 36px
+
+.ganhoInfo
+  display: flex
+  flex-direction: column
+  gap: 6px
+  min-width: 0
+
+.ganhoNome
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 700
+  letter-spacing: .06em
+  text-transform: uppercase
+
+.ganhoDica
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 12px
 
 // ================================================== o popup das chances
 .chancesTopo
@@ -357,22 +433,28 @@ button.envelope
   letter-spacing: .06em
   text-transform: uppercase
 
-// as que já saíram ficam de lado, pequenas, numa fileira
+// as que já saíram ficam de lado, numa fileira do tamanho de ler o nome.
+// Com muitas (o envelope lendário dá 15), elas se sobrepõem em vez de
+// quebrar a linha: `--sobra` é medido no JS e é negativo quando não cabe
 .fileira
   color: var(--tinta)
   text-align: left
   display: flex
   justify-content: center
-  gap: 6px
-  min-height: 70px
+  max-width: 100%
+  min-height: 108px
 
   > *
     animation: entra-fileira .35s cubic-bezier(.2, 1.3, .4, 1) both
 
+  > * + *
+    margin-left: var(--sobra, 6px)
+
 .cartaPequena
-  --carta-h: 68px
-  --carta-w: 45px
-  --carta-arte: 26px
+  --carta-h: 104px
+  --carta-w: 69px
+  --carta-arte: 40px
+  flex: none
 
 .dica
   min-height: 1.4em

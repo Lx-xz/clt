@@ -1,6 +1,6 @@
 import { cartasDoJogo } from './catalogo'
 import { copiasMaximas, ganharCopia } from './colecao'
-import type { CardId, Collection, Raridade, TipoEnvelope } from './types'
+import type { CardId, Collection, EnvelopeGanho, Raridade, TipoEnvelope } from './types'
 
 /**
  * Missões diárias e envelopes: o jeito de ganhar carta desde a v0.16.
@@ -61,33 +61,49 @@ export interface Envelope {
 }
 
 /**
- * Os três envelopes. São o mesmo envelope em pé; o que os distingue na tela
- * é o SELO (`SELOS` em `Envelope.tsx`), e nas regras é só esta tabela.
+ * Os envelopes. São o mesmo envelope em pé; o que os distingue na tela é o
+ * SELO (`SELOS` em `Envelope.tsx`), na cor da raridade que dá nome a ele, e
+ * nas regras é só esta tabela. Envelope melhor dá MAIS cartas, e não só
+ * cartas melhores (v0.20): 3, 5, 7, 10 e 15.
  *
- * Os ids são os de quando eles nasceram (`pardo`, `confidencial`), e não o
- * nome da tela: envelope guardado na coleção de alguém carrega o id, e
- * renomear o id o faria sumir.
+ * Os ids são os de quando eles nasceram (`pardo` é o incomum, `confidencial`
+ * o raro), e não o nome da tela: envelope guardado na coleção de alguém
+ * carrega o id, e renomear o id o faria sumir.
  */
 export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
-  // o de toda partida: pouco, e quase sempre comum — é o que mantém a
-  // coleção andando sem fazer de cada derrota um prêmio
+  // o de toda partida: quase sempre comum, e nunca lendária — é o que mantém
+  // a coleção andando sem fazer de cada derrota um prêmio
   comum: {
     nome: 'Envelope comum',
     origem: 'Vem ao fim de toda partida, ganhando ou perdendo.',
-    cartas: [1, 3],
+    cartas: [3, 3],
     chances: { comum: 0.8, incomum: 0.15, rara: 0.04, epica: 0.01, lendaria: 0 },
   },
   pardo: {
-    nome: 'Envelope do dia',
+    nome: 'Envelope incomum',
     origem: 'A missão "Bater o ponto": a primeira partida terminada do dia.',
-    cartas: [3, 3],
-    chances: { comum: 0.55, incomum: 0.27, rara: 0.12, epica: 0.05, lendaria: 0.01 },
+    cartas: [5, 5],
+    chances: { comum: 0.55, incomum: 0.3, rara: 0.1, epica: 0.04, lendaria: 0.01 },
   },
   confidencial: {
-    nome: 'Envelope confidencial',
+    nome: 'Envelope raro',
     origem: 'A missão "Fechar o mês": a primeira vitória do dia.',
-    cartas: [3, 3],
-    chances: { comum: 0.3, incomum: 0.33, rara: 0.22, epica: 0.11, lendaria: 0.04 },
+    cartas: [7, 7],
+    chances: { comum: 0.35, incomum: 0.33, rara: 0.2, epica: 0.09, lendaria: 0.03 },
+  },
+  // os dois de cima ainda não saem de missão nenhuma: a tabela já os tem
+  // para a missão que vier não precisar mexer em envelope
+  epico: {
+    nome: 'Envelope épico',
+    origem: 'Ainda não sai de missão nenhuma.',
+    cartas: [10, 10],
+    chances: { comum: 0.2, incomum: 0.3, rara: 0.28, epica: 0.16, lendaria: 0.06 },
+  },
+  lendario: {
+    nome: 'Envelope lendário',
+    origem: 'Ainda não sai de missão nenhuma.',
+    cartas: [15, 15],
+    chances: { comum: 0.1, incomum: 0.25, rara: 0.3, epica: 0.23, lendaria: 0.12 },
   },
 }
 
@@ -107,24 +123,49 @@ export function feitasHoje(c: Collection, dia: string = hoje()): string[] {
  * A partida acabou: um envelope comum, sempre, e um por missão cumprida pela
  * primeira vez no dia. A mesa chama isto UMA vez por partida (na jogada que
  * a encerra); as missões não se repetem no dia porque ficam em `feitas`.
+ *
+ * As cartas de cada envelope são sorteadas AQUI, e não ao abrir: é o que
+ * deixa o recibo e o replay contarem o que a partida deu. Elas ficam dentro
+ * do envelope fechado, e só entram na coleção quando ele é aberto.
  */
 export function cumprirMissoes(
   c: Collection,
   fim: FimDeRun,
-  dia: string = hoje(),
-): { colecao: Collection; cumpridas: Missao[] } {
+  { dia = hoje(), sorte = Math.random, runId = String(Date.now()) }: { dia?: string; sorte?: () => number; runId?: string } = {},
+): { colecao: Collection; cumpridas: Missao[]; ganhos: EnvelopeGanho[] } {
   const feitas = feitasHoje(c, dia)
   const cumpridas = MISSOES.filter((m) => !feitas.includes(m.id) && m.cumpre(fim))
   // o envelope comum vem de TODA partida, e por isso não é missão: missão é
   // o que vale uma vez por dia
+  const tipos: { tipo: TipoEnvelope; missao?: string }[] = [
+    { tipo: 'comum' },
+    ...cumpridas.map((m) => ({ tipo: m.premio, missao: m.id })),
+  ]
+  // sorteia contra a coleção MAIS o que já está dentro dos envelopes
+  // fechados: senão dois envelopes podiam prometer a mesma épica que só
+  // cabe uma vez
+  let virtual = comPendentes(c)
+  const ganhos: EnvelopeGanho[] = tipos.map(({ tipo, missao }, i) => {
+    const r = sortearCartas(virtual, tipo, sorte)
+    virtual = r.colecao
+    return { tipo, id: `${runId}:${i}`, cartas: r.cartas, ...(missao ? { missao } : {}) }
+  })
   return {
     colecao: {
       ...c,
-      envelopes: [...c.envelopes, 'comum', ...cumpridas.map((m) => m.premio)],
+      envelopes: [...c.envelopes, ...ganhos.map(({ tipo, id, cartas }) => ({ tipo, id, cartas }))],
       missoes: { dia, feitas: [...feitas, ...cumpridas.map((m) => m.id)] },
     },
     cumpridas,
+    ganhos,
   }
+}
+
+/** A coleção como se todo envelope fechado já tivesse sido aberto. */
+function comPendentes(c: Collection): Collection {
+  let v = c
+  for (const e of c.envelopes) for (const id of e.cartas ?? []) v = ganharCopia(v, id)
+  return v
 }
 
 const ORDEM: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']
@@ -155,11 +196,32 @@ function cartaDe(c: Collection, alvo: Raridade, sorte: () => number): CardId | n
   return null
 }
 
+/** Sorteia as cartas de um envelope UMA A UMA, pondo cada uma na coleção
+ *  dada: a segunda cópia da mesma carta conta para o teto da terceira. */
+function sortearCartas(c: Collection, tipo: TipoEnvelope, sorte: () => number): { colecao: Collection; cartas: CardId[] } {
+  const envelope = ENVELOPES[tipo]
+  const [min, max] = envelope.cartas
+  const quantas = min + Math.floor(sorte() * (max - min + 1))
+  let colecao = c
+  const cartas: CardId[] = []
+  for (let n = 0; n < quantas; n++) {
+    const id = cartaDe(colecao, sortearRaridade(envelope.chances, sorte), sorte)
+    if (!id) break
+    cartas.push(id)
+    colecao = ganharCopia(colecao, id)
+  }
+  return { colecao, cartas }
+}
+
 /**
- * Abre um envelope da fila (o mais antigo, se não disser qual): sorteia as
- * cartas UMA A UMA e já as põe na coleção, fora dos baralhos — quem decide
- * onde elas entram é a pessoa, no /baralho. Uma a uma porque a segunda
- * cópia da mesma carta conta para o teto da terceira.
+ * Abre um envelope da fila (o mais antigo, se não disser qual) e põe as
+ * cartas na coleção, fora dos baralhos — quem decide onde elas entram é a
+ * pessoa, no /baralho.
+ *
+ * O envelope ganho desde a v0.20 já traz as cartas; o de antes é sorteado
+ * agora, como era. Carta que deixou de caber entre o sorteio e a abertura
+ * (o teto da raridade mudou no /lab) não entra, e não aparece: a abertura
+ * não mostra o que não deu.
  *
  * O envelope sai da fila mesmo com a coleção cheia e zero cartas: guardar um
  * envelope que nunca vai ter o que dar só acumularia um aviso eterno.
@@ -169,18 +231,17 @@ export function abrirEnvelope(
   indice = 0,
   sorte: () => number = Math.random,
 ): { colecao: Collection; tipo: TipoEnvelope; cartas: CardId[] } | null {
-  const tipo = c.envelopes[indice]
-  if (!tipo) return null
-  const envelope = ENVELOPES[tipo]
-  const [min, max] = envelope.cartas
-  const quantas = min + Math.floor(sorte() * (max - min + 1))
-  let colecao: Collection = { ...c, envelopes: c.envelopes.filter((_, i) => i !== indice) }
+  const envelope = c.envelopes[indice]
+  if (!envelope) return null
+  const semEle: Collection = { ...c, envelopes: c.envelopes.filter((_, i) => i !== indice) }
+  if (!envelope.cartas) return { ...sortearCartas(semEle, envelope.tipo, sorte), tipo: envelope.tipo }
+  let colecao = semEle
   const cartas: CardId[] = []
-  for (let n = 0; n < quantas; n++) {
-    const id = cartaDe(colecao, sortearRaridade(envelope.chances, sorte), sorte)
-    if (!id) break
+  for (const id of envelope.cartas) {
+    const depois = ganharCopia(colecao, id)
+    if (depois === colecao) continue
+    colecao = depois
     cartas.push(id)
-    colecao = ganharCopia(colecao, id)
   }
-  return { colecao, tipo, cartas }
+  return { colecao, tipo: envelope.tipo, cartas }
 }

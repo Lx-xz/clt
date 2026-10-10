@@ -138,7 +138,21 @@ export const DESCRITORES = {
   },
   custo: {
     rotulo: 'Mudar o custo do dia', grupo: 'dia', Icone: Zap,
-    campos: [{ chave: 'quanto', rotulo: 'Quanto', padrao: 1, campo: { tipo: 'numero', min: -5, max: 5 } }],
+    campos: [
+      {
+        chave: 'qual', rotulo: 'Qual custo', padrao: 'energia',
+        campo: {
+          tipo: 'escolha',
+          opcoes: [
+            { valor: 'energia', rotulo: 'Energia' },
+            { valor: 'dinheiro', rotulo: 'Dinheiro' },
+            { valor: 'estresse', rotulo: 'Estresse' },
+            { valor: 'produtividade', rotulo: 'Produtividade' },
+          ],
+        },
+      },
+      { chave: 'quanto', rotulo: 'Quanto', padrao: 1, campo: { tipo: 'numero', min: -100, max: 100 } },
+    ],
   },
   bloquearClasse: {
     rotulo: 'Bloquear uma classe', grupo: 'dia', Icone: Ban,

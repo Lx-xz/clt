@@ -12,7 +12,7 @@ import Dialogo from '@/components/Dialogo'
 // module ... in the React Client Manifest"). Apareceu quando o início deixou
 // de mostrar os amigos; veja a armadilha no CLAUDE.md
 import ListaDeAmigos from '@/components/ListaDeAmigos/ListaDeAmigos'
-import ListaDeJogos from '@/components/ListaDeJogos'
+import { ReciboResumido, dadosDaLinha } from '@/components/Recibo'
 import { useSessao } from '@/components/SessaoGuard'
 import { buscarMeusJogos, buscarRanking } from '@/data/analytics'
 import { meusAmigos, pedidosDeAmizade, type Amigo, type Pedido } from '@/data/amizades'
@@ -35,7 +35,7 @@ export default function PerfilPage() {
   const [amigos, setAmigos] = useState<Amigo[] | null>(null)
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [conquistas, setConquistas] = useState<Conquista[] | null>(null)
-  const [vendo, setVendo] = useState<'partidas' | 'conquistas' | null>(null)
+  const [vendo, setVendo] = useState<'conquistas' | null>(null)
 
   function carregarAmigos() {
     if (sessao.convidado) return
@@ -111,18 +111,20 @@ export default function PerfilPage() {
       <div className={styles.cabecaSecao}>
         <h2 className={styles.secao}>Última partida</h2>
         {jogos && jogos.length > 1 ? (
-          <button type="button" className={styles.verTodas} onClick={() => setVendo('partidas')}>
+          <Link className={styles.verTodas} href="/meus-jogos">
             Ver todas ({jogos.length})
-          </button>
+          </Link>
         ) : null}
       </div>
+      {/* a última partida como recibo resumido — o "bilhete" que o início
+          mostrava antes de ficar limpo. A lista inteira é uma página, com
+          filtro e ordem: é para percorrer, e popup é para olhar e fechar */}
       {jogos === null ? (
         <p className={styles.nota}>Carregando…</p>
+      ) : jogos[0] ? (
+        <ReciboResumido id={jogos[0].id} dados={dadosDaLinha(jogos[0])} className={styles.ultima} />
       ) : (
-        <ListaDeJogos
-          jogos={jogos.slice(0, 1)}
-          vazio="Nenhuma run terminada ainda — jogue até o fim para aparecer aqui."
-        />
+        <p className={styles.nota}>Nenhuma run terminada ainda — jogue até o fim para aparecer aqui.</p>
       )}
 
       {conquistas ? (
@@ -155,11 +157,6 @@ export default function PerfilPage() {
         </>
       ) : null}
 
-      {vendo === 'partidas' && jogos ? (
-        <Dialogo titulo="Minhas partidas" largo onFechar={() => setVendo(null)}>
-          <ListaDeJogos jogos={jogos} vazio="Nenhuma partida." />
-        </Dialogo>
-      ) : null}
       {vendo === 'conquistas' && conquistas ? (
         <Dialogo titulo="Conquistas" largo onFechar={() => setVendo(null)}>
           <Conquistas lista={conquistas} />

@@ -44,6 +44,21 @@ export function lerCustos(bruto: unknown): Custo[] {
   return RECURSOS_DE_CUSTO.filter((r) => soma.has(r)).map((qual) => ({ qual, quanto: soma.get(qual)! }))
 }
 
+/**
+ * Os custos de hoje: os da carta mais o que os eventos somaram
+ * (`modCustos`). Um custo que cai a zero some — a Black Friday pode deixar
+ * uma carta de graça —, e nenhum evento cria custo onde a carta não tinha:
+ * "+15 em todo custo de dinheiro" encarece o que já cobrava dinheiro.
+ */
+export function custosEfetivos(
+  state: Pick<GameState, 'modCustos'>,
+  card: { custos?: Custo[]; custoDinheiro?: number },
+): Custo[] {
+  return custosDe(card)
+    .map((c) => ({ qual: c.qual, quanto: Math.max(0, c.quanto + (state.modCustos?.[c.qual] ?? 0)) }))
+    .filter((c) => c.quanto > 0)
+}
+
 /** O que falta para pagar, ou `null` se dá. Estresse nunca falta. */
 export function custoQueFalta(state: GameState, custos: Custo[]): Custo | null {
   for (const c of custos) {
