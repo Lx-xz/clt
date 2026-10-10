@@ -1,168 +1,550 @@
-// O envelope é CSS puro: um retângulo kraft, a aba de cima (um triângulo que
-// gira para trás ao abrir) e a "frente" em V, que é o que faz o retângulo ler
-// como envelope e não como caixa.
+// ======================================================== o envelope em pé
+// Só CSS. A ordem das camadas é o que faz ele ler como envelope: as costas
+// (o "dentro", mais escuro), o bolso da frente com o V, a aba de cima e o
+// selo de cera na ponta da aba. `isolation` prende os z-index dele aqui
+// dentro — menos no palco da abertura, onde a carta precisa passar ENTRE as
+// costas e o bolso (veja `.envelopeNoPalco`).
 .envelope
   position: relative
-  display: block
-  width: min(100%, 260px)
-  aspect-ratio: 26 / 17
-  // o espaço de cima é para a aba: aberta, ela gira para FORA do envelope, e
-  // o corpo do popup (que rola) a cortaria
-  margin: 64px auto 6px
+  display: inline-block
+  flex: none
+  width: var(--env-w, 64px)
+  aspect-ratio: 3 / 4
   padding: 0
-  background: var(--envelope-sombra)
+  background: none
   border: none
-  border-radius: 6px
+  border-radius: 4px
   box-shadow: var(--sombra)
+  isolation: isolate
+  vertical-align: middle
+
+button.envelope
   cursor: pointer
-  perspective: 600px
-  animation: espera 2.4s ease-in-out infinite
+  transition: transform .2s ease
+
+  &:hover
+    transform: translateY(-3px) rotate(-2deg)
 
   &:focus-visible
     outline: 2px solid var(--destaque)
-    outline-offset: 4px
+    outline-offset: 3px
 
-  &:disabled
-    cursor: default
-
-// a aba: presa pela borda de cima, gira para trás ao abrir
-.aba
-  position: absolute
-  inset: 0 0 auto
-  z-index: 2
-  height: 58%
-  background: var(--envelope)
-  clip-path: polygon(0 0, 100% 0, 50% 100%)
-  transform-origin: top
-  transition: transform .45s cubic-bezier(.3, .7, .3, 1)
-  filter: brightness(.96)
-
-// a frente: o bolso em V, por cima de tudo o que está dentro
-.frente
+.costas
   position: absolute
   inset: 0
   z-index: 1
-  background: var(--envelope)
-  border-radius: 6px
-  clip-path: polygon(0 0, 50% 52%, 100% 0, 100% 100%, 0 100%)
+  background: var(--envelope-sombra)
+  border-radius: 4px
 
-.etiqueta,
-.carimbo
+// o bolso da frente: o retângulo inteiro menos o V de cima, com as dobras
+// das laterais em sombra — é a dobra que diz "envelope"
+.bolso
   position: absolute
+  inset: 0
   z-index: 3
-  left: 50%
-  bottom: 16%
-  font-family: var(--mono)
-  text-transform: uppercase
-  pointer-events: none
+  border-radius: 4px
+  background: linear-gradient(to bottom right, transparent 49.4%, rgba(0, 0, 0, .07) 50%), linear-gradient(to bottom left, transparent 49.4%, rgba(0, 0, 0, .05) 50%), var(--envelope)
+  clip-path: polygon(0 0, 50% 36%, 100% 0, 100% 100%, 0 100%)
 
-.etiqueta
-  padding: 3px 8px
-  transform: translateX(-50%)
-  background: var(--papel-nota)
-  border: 1px solid var(--envelope-sombra)
-  color: var(--tinta-fraca)
-  font-size: 11px
-  letter-spacing: .08em
+// a aba: um triângulo preso pela borda de cima. A perspectiva mora NO
+// transform dela, e não no pai — perspectiva no pai criaria um contexto de
+// empilhamento, e a carta não conseguiria passar por dentro do envelope
+.aba
+  position: absolute
+  inset: 0 0 auto
+  z-index: 4
+  height: 40%
+  background: color-mix(in srgb, var(--envelope) 92%, #fff)
+  clip-path: polygon(0 0, 100% 0, 50% 100%)
+  transform-origin: top
+  transform: perspective(500px) rotateX(0)
+  transition: transform .5s cubic-bezier(.3, .7, .3, 1) .18s, filter .5s ease .18s
 
-// o confidencial é o mesmo envelope com o carimbo vermelho torto: é o
-// carimbo, e não outra cor de papel, que diz "este é o raro"
-.carimbo
-  padding: 2px 10px
-  transform: translateX(-50%) rotate(-8deg)
-  border: 2px solid var(--estresse)
-  border-radius: 3px
-  color: var(--estresse)
-  font-size: 15px
-  font-weight: 700
-  letter-spacing: .12em
-  opacity: .9
+// o selo de cera, na ponta da aba
+.selo
+  position: absolute
+  z-index: 5
+  top: 30%
+  left: 37%
+  display: grid
+  place-items: center
+  width: 26%
+  aspect-ratio: 1
+  border-radius: 50%
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--cor-selo) 70%, #fff) 0 18%, var(--cor-selo) 55%, color-mix(in srgb, var(--cor-selo) 70%, #000) 100%)
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .35), inset 0 0 0 2px color-mix(in srgb, var(--cor-selo) 80%, #000)
+  color: rgba(255, 255, 255, .85)
+  transition: transform .25s ease, opacity .25s ease
 
-.abrindo
-  animation: none
+  svg
+    width: 52%
+    height: 52%
+
+.seloComum
+  --cor-selo: var(--selo-comum)
+
+.seloPardo
+  --cor-selo: var(--selo-pardo)
+
+.seloConfidencial
+  --cor-selo: var(--selo-confidencial)
+
+// aberto: a cera estala e some, e a aba gira para trás, por trás da carta
+.aberto
+  .selo
+    transform: scale(1.35) rotate(-14deg)
+    opacity: 0
 
   .aba
-    transform: rotateX(180deg)
     z-index: 0
+    transform: perspective(500px) rotateX(180deg)
+    filter: brightness(.82)
 
-  .frente,
-  .etiqueta,
-  .carimbo
-    animation: afunda .3s ease .22s forwards
-
-.cartas
+// ================================================== o popup das chances
+.chancesTopo
   display: flex
-  flex-wrap: wrap
-  justify-content: center
-  gap: 12px
-  padding-top: 8px
+  align-items: center
+  gap: 14px
 
-.saida
+  p
+    margin: 0
+
+.chancesDica
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.chances
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.chance
+  display: grid
+  grid-template-columns: 74px 1fr 64px
+  align-items: center
+  gap: 8px
+  --cor-chance: var(--tinta-fraca)
+
+.chance_incomum
+  --cor-chance: var(--raridade-incomum)
+
+.chance_rara
+  --cor-chance: var(--raridade-rara)
+
+.chance_epica
+  --cor-chance: var(--raridade-epica)
+
+.chance_lendaria
+  --cor-chance: var(--raridade-lendaria)
+
+.chanceNome
+  color: var(--cor-chance)
+  font-weight: 650
+  text-transform: capitalize
+
+.chanceBarra
+  height: 10px
+  overflow: hidden
+  background: var(--papel)
+  border-radius: 999px
+
+  span
+    display: block
+    height: 100%
+    background: var(--cor-chance)
+    border-radius: 999px
+
+.chanceValor
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px
+  text-align: right
+
+// ============================================= a abertura, em tela cheia
+.cortina
+  position: fixed
+  inset: 0
+  z-index: 300
   display: flex
   flex-direction: column
   align-items: center
+  justify-content: center
   gap: 6px
-  // a coluna tem a largura da carta: o rótulo não empurra a vizinha
-  width: min-content
-  // saem de dentro do envelope: de baixo, pequenas, uma depois da outra
-  animation: sai-do-envelope .42s cubic-bezier(.2, .9, .3, 1.1) backwards
-  animation-delay: calc(var(--i, 0) * 90ms)
+  padding: 16px
+  overflow: hidden
+  background: radial-gradient(circle at 50% 40%, rgba(30, 28, 24, .9), rgba(10, 9, 8, .98))
+  backdrop-filter: blur(4px)
+  color: #f4efe3
+  animation: cortina-entra .3s ease
 
-.carta
-  --carta-h: 170px
+.titulo
+  font-family: var(--mono)
+  font-size: 13px
+  letter-spacing: .14em
+  text-transform: uppercase
+  opacity: .75
+
+.pular
+  position: absolute
+  top: 14px
+  right: 14px
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  padding: 6px 10px
+  background: rgba(255, 255, 255, .08)
+  border: 1px solid rgba(255, 255, 255, .18)
+  border-radius: 999px
+  color: inherit
+  font: inherit
+  font-size: 13px
+  cursor: pointer
+
+  &:hover
+    background: rgba(255, 255, 255, .16)
+
+// o palco é desenhado em 360×560 e escalado (`--escala`, medido no JS) para
+// caber em qualquer tela: as animações abaixo são em pixels fixos, e é isso
+// que faz a carta sair da BOCA do envelope sempre
+.areaToque
+  width: calc(360px * var(--escala, 1))
+  height: calc(560px * var(--escala, 1))
+  cursor: pointer
+  -webkit-tap-highlight-color: transparent
+
+.palco
+  position: relative
+  width: 360px
+  height: 560px
+  transform: scale(var(--escala, 1))
+  transform-origin: top left
+
+// o envelope fica embaixo do palco; a carta sobe até o alto. Posicionado com
+// margem, e não com transform: transform aqui criaria um contexto de
+// empilhamento, e a carta não passaria por DENTRO dele
+.envelopeNoPalco
+  position: absolute
+  left: 50%
+  bottom: 20px
+  margin-left: -95px
+
+  .envelope
+    isolation: auto
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .5)
+
+.fase_chegando
+  animation: chega .65s cubic-bezier(.2, .9, .25, 1.15) both
+
+.fase_esperando
+  animation: espera 1.6s ease-in-out infinite
+
+.fase_abrindo
+  animation: sacode .45s ease
+
+// a carta: nasce DENTRO do envelope (z 2, entre as costas e o bolso), sobe,
+// e no meio do caminho passa para a frente de tudo
+.cartaSaindo
+  position: absolute
+  top: 6px
+  left: 50%
+  z-index: 6
+  margin-left: -76px
+  // a carta mora num fundo escuro: sem isto ela herdaria a cor clara da
+  // cortina, e o nome sumia no papel
+  color: var(--tinta)
+  text-align: left
+  animation: sobe .9s cubic-bezier(.25, .8, .3, 1) both
+
+.cartaGrande
+  --carta-h: 230px
+  --carta-w: 152px
+  --carta-arte: 90px
+
+// desvirou: um pulo e o brilho da raridade atrás
+.revelada .cartaGrande
+  animation: pulo .45s cubic-bezier(.2, 1.4, .4, 1)
+
+.guardando
+  animation: guarda .42s cubic-bezier(.5, 0, .75, .4) forwards
+
+.brilho
+  position: absolute
+  inset: -70px
+  z-index: -1
+  border-radius: 50%
+  background: radial-gradient(circle, var(--cor-brilho) 0%, transparent 62%)
+  opacity: 0
+  pointer-events: none
+
+.revelada .brilho
+  animation: acende .7s ease forwards, pulsa 2.2s ease-in-out .7s infinite
+
+// épica e lendária ganham raios girando — a raridade se vê antes de se ler
+.raios
+  position: absolute
+  inset: -110px
+  z-index: -2
+  border-radius: 50%
+  background: repeating-conic-gradient(from 0deg, var(--cor-brilho) 0 6deg, transparent 6deg 22deg)
+  mask: radial-gradient(circle, #000 25%, transparent 68%)
+  opacity: 0
+  pointer-events: none
+
+.revelada .raios
+  animation: acende .7s ease forwards, gira 9s linear infinite
+
+.brilho_comum
+  --cor-brilho: rgba(244, 239, 227, .28)
+
+.brilho_incomum
+  --cor-brilho: var(--raridade-incomum)
+
+.brilho_rara
+  --cor-brilho: var(--raridade-rara)
+
+.brilho_epica
+  --cor-brilho: var(--raridade-epica)
+
+.brilho_lendaria
+  --cor-brilho: var(--raridade-lendaria)
+
+.rotuloRaridade
+  // um selo escuro mordendo a borda de baixo da carta: solto embaixo dela,
+  // o nome dourado se perdia em cima da aba do envelope
+  position: absolute
+  left: 50%
+  bottom: -14px
+  z-index: 2
+  display: flex
+  gap: 6px
+  align-items: center
+  min-height: 26px
+  padding: 2px 12px
+  background: rgba(16, 15, 12, .92)
+  border: 1px solid var(--cor-brilho)
+  border-radius: 999px
+  transform: translateX(-50%)
+  color: var(--cor-brilho)
+  font-family: var(--mono)
+  font-size: 15px
+  font-weight: 700
+  letter-spacing: .1em
+  text-transform: uppercase
+  white-space: nowrap
+
+.brilho_comum .rotuloRaridade
+  color: #f4efe3
+  border-color: rgba(244, 239, 227, .35)
+
+.rotuloRaridade:empty
+  display: none
+
+.revelada .rotuloRaridade
+  animation: surge .35s ease .1s both
+
+.nova
+  padding: 1px 6px
+  background: var(--destaque)
+  border-radius: 3px
+  color: var(--papel-alto)
+  font-family: var(--mono)
+  font-size: 11px
+  font-weight: 700
+  letter-spacing: .06em
+  text-transform: uppercase
+
+// as que já saíram ficam de lado, pequenas, numa fileira
+.fileira
+  color: var(--tinta)
+  text-align: left
+  display: flex
+  justify-content: center
+  gap: 6px
+  min-height: 70px
+
+  > *
+    animation: entra-fileira .35s cubic-bezier(.2, 1.3, .4, 1) both
+
+.cartaPequena
+  --carta-h: 68px
+  --carta-w: 45px
+  --carta-arte: 26px
+
+.dica
+  min-height: 1.4em
+  margin: 0
+  font-size: 14px
+  opacity: .85
+  animation: piscar 1.8s ease-in-out infinite
+
+// ============================================================ o resumo
+.cortinaResumo
+  overflow-y: auto
+
+.resumo
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 18px
+  max-width: 900px
+  margin: auto
+  text-align: center
+
+.resumoTitulo
+  margin: 0
+  font-size: clamp(20px, 4vw, 28px)
+
+.resumoCartas
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 16px
+
+.resumoItem
+  color: var(--tinta)
+  text-align: left
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 8px
+  width: min-content
+  animation: sai-do-envelope .45s cubic-bezier(.2, 1.2, .4, 1) both
+  animation-delay: calc(var(--i, 0) * 110ms)
+
+.cartaResumo
+  --carta-h: 210px
   --carta-w: calc(var(--carta-h) * .66)
   --carta-arte: calc(var(--carta-h) * .39)
 
   @media (max-width: 760px)
-    --carta-h: 132px
+    --carta-h: 150px
 
-.rotulo
+.rotuloResumo
   display: flex
   gap: 6px
   align-items: center
-  color: var(--tinta-fraca)
   font-family: var(--mono)
-  font-size: 11px
-  opacity: 0
-  transition: opacity .2s ease
-
-.visivel
-  opacity: 1
-
-.nova
-  padding: 0 5px
-  background: var(--destaque)
-  border-radius: 3px
-  color: var(--papel-alto)
+  font-size: 12px
   font-weight: 700
+  letter-spacing: .08em
   text-transform: uppercase
 
-.legenda
-  min-height: 1.4em
+.texto_comum
+  color: #d9d3c4
+
+.texto_incomum
+  color: var(--raridade-incomum)
+
+.texto_rara
+  color: var(--raridade-rara)
+
+.texto_epica
+  color: var(--raridade-epica)
+
+.texto_lendaria
+  color: var(--raridade-lendaria)
+
+.dicaResumo
   margin: 0
-  color: var(--tinta-fraca)
-  text-align: center
+  font-size: 14px
+  opacity: .8
 
 .vazio
   margin: 0
-  text-align: center
 
-.acoes
-  display: flex
-  justify-content: center
+// ========================================================= as animações
+@keyframes cortina-entra
+  from
+    opacity: 0
+
+@keyframes chega
+  from
+    opacity: 0
+    transform: translateY(70vh) scale(.35) rotate(-12deg)
+  60%
+    opacity: 1
 
 @keyframes espera
   0%, 100%
     transform: none
   50%
-    transform: translateY(-4px) rotate(-1deg)
+    transform: translateY(-8px) rotate(-1.5deg)
 
-// `translate`, e não `transform`: o carimbo e a etiqueta já usam o transform
-// para centrar e entortar, e a animação o apagaria no meio do caminho
-@keyframes afunda
+@keyframes sacode
+  0%, 100%
+    transform: none
+  20%
+    transform: rotate(-4deg) scale(1.03)
+  45%
+    transform: rotate(3deg) scale(1.05)
+  70%
+    transform: rotate(-2deg) scale(1.02)
+
+// a carta parte de dentro do envelope (embaixo, pequena, ATRÁS do bolso) e
+// passa para a frente quando já saiu da boca
+@keyframes sobe
+  0%
+    z-index: 2
+    transform: translateY(230px) scale(.58)
+  48%
+    z-index: 2
+    transform: translateY(70px) scale(.62)
+  52%
+    z-index: 6
+  100%
+    z-index: 6
+    transform: none
+
+@keyframes pulo
+  0%
+    transform: scale(.94)
+  60%
+    transform: scale(1.06)
+  100%
+    transform: none
+
+@keyframes guarda
   to
     opacity: 0
-    translate: 0 24px
+    transform: translate(-60px, 360px) scale(.27) rotate(-10deg)
+
+@keyframes acende
+  from
+    opacity: 0
+    transform: scale(.4)
+  to
+    opacity: .9
+    transform: none
+
+@keyframes pulsa
+  0%, 100%
+    opacity: .9
+  50%
+    opacity: .55
+
+@keyframes gira
+  to
+    rotate: 360deg
+
+@keyframes surge
+  from
+    opacity: 0
+    transform: translate(-50%, 8px)
+
+@keyframes entra-fileira
+  from
+    opacity: 0
+    transform: translateY(-40px) scale(1.6)
+
+@keyframes piscar
+  0%, 100%
+    opacity: .85
+  50%
+    opacity: .45
 
 @keyframes sai-do-envelope
   from
@@ -170,9 +552,17 @@
     transform: translateY(60px) scale(.6)
 
 @media (prefers-reduced-motion: reduce)
-  .envelope,
-  .saida
+  .cortina,
+  .fase_chegando,
+  .fase_esperando,
+  .fase_abrindo,
+  .cartaSaindo,
+  .revelada .cartaGrande,
+  .guardando,
+  .dica,
+  .resumoItem,
+  .fileira > *
     animation: none
 
-  .aba
-    transition: none
+  .raios
+    display: none

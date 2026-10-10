@@ -155,7 +155,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'automatizar', raridade: 'rara', name: 'Automatizar', cost: 5, kind: 'tarefa',
+    id: 'automatizar', raridade: 'lendaria', name: 'Automatizar', cost: 5, kind: 'tarefa',
     text: '+2 produtividade agora e +1 produtividade em todos os dias seguintes',
     especial: true, starter: false,
     efeitos: [{ acoes: [
@@ -180,7 +180,7 @@ export const CARTAS_BASE: ActionCard[] = [
     }] }],
   },
   {
-    id: 'pedir-aumento', raridade: 'rara', name: 'Pedir Aumento', cost: 3, kind: 'social',
+    id: 'pedir-aumento', raridade: 'lendaria', name: 'Pedir Aumento', cost: 3, kind: 'social',
     text: '50%: salário +R$ 100 pelo resto da run. 50%: +3 estresse.',
     especial: true, starter: false,
     efeitos: [{ acoes: [{
@@ -238,7 +238,7 @@ export const CARTAS_BASE: ActionCard[] = [
     }] }],
   },
   {
-    id: 'cafe-com-o-chefe', raridade: 'rara', name: 'Café com o Chefe', cost: 1, kind: 'social',
+    id: 'cafe-com-o-chefe', raridade: 'epica', name: 'Café com o Chefe', cost: 1, kind: 'social',
     text: 'Com advertência: tira 1, +2 estresse. Sem: +1 produtividade',
     especial: true, starter: false,
     efeitos: [{ acoes: [{
@@ -272,7 +272,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'investimento', raridade: 'rara', name: 'Investimento', cost: 0, custos: [{ qual: 'dinheiro', quanto: 100 }], kind: 'grana',
+    id: 'investimento', raridade: 'epica', name: 'Investimento', cost: 0, custos: [{ qual: 'dinheiro', quanto: 100 }], kind: 'grana',
     text: '+R$ 40 toda sexta, pelo resto da run', especial: true, starter: false,
     efeitos: [{ acoes: [{ faz: 'recorrente', qual: 'dinheiro', quanto: 40, cada: 'semana' }] }],
   },
@@ -316,7 +316,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'grito-no-travesseiro', raridade: 'rara', name: 'Grito no Travesseiro', cost: 0, kind: 'descanso',
+    id: 'grito-no-travesseiro', raridade: 'epica', name: 'Grito no Travesseiro', cost: 0, kind: 'descanso',
     text: 'Só com 8+ de estresse, uma vez por run. −5 estresse, +2 energia', especial: true, starter: false,
     restricao: { umaVezPorRun: true, exige: { se: 'recurso', qual: 'estresse', aoMenos: 8 } },
     efeitos: [{ acoes: [
@@ -335,7 +335,7 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 4 }] }],
   },
   {
-    id: 'virar-a-noite', raridade: 'rara', name: 'Virar a Noite', cost: 0, custos: [{ qual: 'estresse', quanto: 4 }], kind: 'tarefa',
+    id: 'virar-a-noite', raridade: 'epica', name: 'Virar a Noite', cost: 0, custos: [{ qual: 'estresse', quanto: 4 }], kind: 'tarefa',
     text: '+6 produtividade. Amanhã: −2 energia', especial: true, starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'produtividade', quanto: 6 },
@@ -406,7 +406,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ],
   },
   {
-    id: 'plantao', raridade: 'rara', name: 'Plantão', cost: 0, custos: [{ qual: 'estresse', quanto: 3 }], kind: 'grana',
+    id: 'plantao', raridade: 'epica', name: 'Plantão', cost: 0, custos: [{ qual: 'estresse', quanto: 3 }], kind: 'grana',
     text: '+R$ 50 toda sexta, por 2 semanas', especial: true, starter: false,
     efeitos: [{ acoes: [{ faz: 'recorrente', qual: 'dinheiro', quanto: 50, cada: 'semana', duracao: 2 }] }],
   },
@@ -429,7 +429,7 @@ export const CARTAS_BASE: ActionCard[] = [
  * tocam em carta nenhuma mantêm o mesmo número aqui, e é isso que o deixa
  * comparável entre runs.
  */
-export const VERSAO_BARALHO_BASE = 4
+export const VERSAO_BARALHO_BASE = 5
 
 /**
  * O PORQUÊ de cada carta que o código mudou e o banco talvez ainda não tenha.
@@ -441,8 +441,14 @@ export const VERSAO_BARALHO_BASE = 4
  * número) a bancada escreve sozinha; o porquê é o que um diff não sabe.
  */
 export const MOTIVOS_DO_CODIGO: Record<string, string> = {
+  // v0.19: as primeiras épicas e lendárias. Lendária é a carta que muda o
+  // resto da run; épica, a que decide um dia inteiro
+  automatizar: 'Virou lendária: é a carta que muda o resto da run, e agora vem uma cópia só.',
+  'pedir-aumento': 'Virou lendária: um salário maior pelo resto da run é a maior virada do jogo.',
+  'cafe-com-o-chefe': 'Virou épica: uma das cartas que decidem uma semana.',
+  investimento: 'Virou épica: a renda de toda sexta é um prêmio de envelope bom.',
   raiva: 'Primeira carta que se paga em estresse: troca saúde por meta, para quem tem energia de sobra e cota faltando.',
-  'virar-a-noite': 'O tudo ou nada: muita produtividade hoje, paga em estresse agora e em energia amanhã.',
+  'virar-a-noite': 'O tudo ou nada: muita produtividade hoje, paga em estresse agora e em energia amanhã. Épica: decide um dia inteiro.',
   'respirar-fundo': 'Primeira carta que se paga em produtividade: parar de trabalhar para respirar.',
   'pedir-desculpas': 'Uma saída para a demissão que se paga em dinheiro, e não em puxar o saco.',
   'cafe-expresso': 'O café que custa dinheiro em vez de estresse: o de sempre cansa, este pesa no bolso.',
@@ -451,11 +457,11 @@ export const MOTIVOS_DO_CODIGO: Record<string, string> = {
   'reuniao-que-podia-ser-email': 'Recompensa quem monta o naipe social.',
   'faxina-na-caixa-de-entrada': 'Trocar carta da mão por mais cartas, que quase não existia no jogo.',
   'meditacao-no-banheiro': 'Mais forte na hora do aperto, que é quando o estresse mata.',
-  plantao: 'Uma renda que entra semana a semana, paga em estresse.',
+  plantao: 'Uma renda que entra semana a semana, paga em estresse. Épica: é prêmio de envelope bom.',
   'deixar-pra-amanha': 'Empurrar o problema para amanhã, que é o assunto do jogo.',
   'canalizar-a-raiva': 'O estresse como combustível: a carta fica mais forte justamente quando a espiral do estresse aperta.',
   'desabafo-no-cafe': 'Uma saída para o dia ruim que não custa energia: só sai quando o estresse já está alto.',
-  'grito-no-travesseiro': 'O último recurso perto do burnout, uma vez por run.',
+  'grito-no-travesseiro': 'O último recurso perto do burnout, uma vez por run. Épica: tira a run do buraco.',
   'atalho-no-sistema': 'Era a Tarefa melhor em tudo: mais produtividade pelo mesmo custo e sem preço nenhum.',
   'home-office': 'Rendia 1 de produtividade por energia e ainda tirava estresse; a régua (Tarefa Simples) é 0,67.',
   'planilha-infinita': 'A 0,5 de produtividade por energia só servia de enchimento.',

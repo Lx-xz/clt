@@ -38,7 +38,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | Rota | O que é |
 |---|---|
 | `/auth` | A porta: entrar, criar conta (e-mail/senha ou Google), ou jogar como convidado. Fora de `(app)`; quem já tem sessão é mandado para `/` |
-| `/` | O início, dentro de `(app)`: avatar, "Continuar — semana 2, quarta" (ou "Começar o mês"), as missões do dia (e o envelope por abrir), a última partida, amigos, conquistas recentes e atalhos |
+| `/` | O início, dentro de `(app)`, LIMPO de propósito (v0.19): avatar, "Continuar — semana 2, quarta" (ou "Começar o mês") e as missões do dia com os envelopes por abrir. Última partida, amigos e conquistas moram no perfil |
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
@@ -330,9 +330,12 @@ quando as 13 desbloqueáveis acabavam. Hoje (`src/game/colecao.ts`):
   nova?), e a tradução na leitura não teria como saber. A raridade pinta só
   a BORDA da carta e o SELO do tipo (`.comRaridade`, tokens
   `--raridade-*` em `_tokens.sass`, com tons próprios e não os dos
-  medidores); comum não tem cor. O anel de dentro da borda é `outline`, não
-  box-shadow inset — o hover troca a box-shadow inteira. Nenhum envelope
-  sorteia épica ou lendária ainda.
+  medidores); comum não tem cor. A borda é UMA só, de 2px: a versão com 1px
+  de borda mais um anel de `outline` deixava uma fresta entre o anel e o
+  selo do canto. A caixa do texto da carta não tem borda (fazia borda
+  dupla com a da carta). Lendárias hoje: Automatizar e Pedir Aumento;
+  épicas: Café com o Chefe, Investimento, Grito no Travesseiro, Virar a
+  Noite e Plantão.
 - **`lerColecao()` traduz o formato antigo na LEITURA**, como `lerAvatar` e
   `migrarAcoes`: inicial equipada vira as suas cópias, desbloqueável vira 1.
   Ela roda no localStorage (`clt:collection:v2`, lendo a `v1` se a v2 não
@@ -377,15 +380,33 @@ envelope vem de MISSÃO DIÁRIA** (`src/game/missoes.ts`). A do recibo amarrava
 a coleção ao número de partidas — largar cedo e recomeçar colecionava mais
 rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
 
-- `MISSOES` é uma tabela (como `CABELOS_FORMA`): "Bater o ponto" (terminar
-  uma partida → envelope pardo) e "Fechar o mês" (vencer → envelope
-  confidencial, o "raro"). Missão nova é uma linha; o que ela pode perguntar
-  é o que `FimDeRun` traz, não o `GameState` inteiro.
-- **Envelope, e não baú** (pedido do autor: baú não combina). É papelada:
-  o pardo diz "RH · interno", o confidencial leva o carimbo vermelho.
-  `ENVELOPES` diz as raridades das vagas; o sorteio é `sortearCartas()` em
-  `colecao.ts` (a mesma lógica de "só o que cabe, raridade esgotada cai para
-  a de baixo" da recompensa antiga).
+- **Três envelopes (v0.19), todos na tabela `ENVELOPES`:** o `comum` vem de
+  TODA partida terminada (1 a 3 cartas, quase sempre comuns, nunca
+  lendária); o `pardo` ("Envelope do dia") é da missão "Bater o ponto"; o
+  `confidencial` é da missão "Fechar o mês" (vencer). Cada um diz quantas
+  cartas e a CHANCE de cada raridade, por carta. As cartas são sorteadas
+  uma a uma e podem vir repetidas; raridade esgotada cai para a de baixo
+  e, só sem nenhuma, para a de cima (`abrirEnvelope`). Os ids ficaram os
+  antigos porque moram na coleção de quem já os ganhou.
+- `MISSOES` é uma tabela (como `CABELOS_FORMA`). Missão nova é uma linha; o
+  que ela pode perguntar é o que `FimDeRun` traz, não o `GameState` inteiro.
+- **Envelope, e não baú** (pedido do autor: baú não combina). É o MESMO
+  envelope em pé (`EnvelopeEmPe`, só CSS), e o que os distingue é o SELO de
+  cera: cinza (comum), vermelho (do dia), dourado com troféu
+  (confidencial), tokens `--selo-*`. Clicar no envelope de uma missão abre
+  as chances (`ChancesDoEnvelope`); clicar num da bandeja "Para abrir" o
+  ABRE.
+- **A abertura é tela cheia, sem popup em volta** (`AberturaDeEnvelope`):
+  o envelope chega, espera o toque, a cera estala, a aba gira, e cada carta
+  sobe de DENTRO dele, virada, e desvira com o brilho da raridade (raios
+  em épica e lendária); o próximo toque a manda para a fileira do lado e
+  tira a seguinte; no fim, o resumo com todas. Duas regras seguram a
+  ilusão de a carta sair de dentro: o palco é desenhado em 360×560 e
+  ESCALADO (`--escala`, medido no JS), porque a animação é em pixels; e
+  nada entre a carta e o envelope pode criar contexto de empilhamento
+  (nem `transform` no invólucro durante a revelação, nem `perspective` no
+  envelope — a aba leva o `perspective()` no próprio transform), senão a
+  carta não consegue passar entre as costas e o bolso.
 - **Envelopes e missões moram na COLEÇÃO** (`Collection.envelopes`,
   `Collection.missoes`): são coisa que se tem, e assim sobem em
   `saves.collection` sem coluna nova. `lerColecao` os dá vazios a quem
@@ -394,8 +415,8 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   21h em Brasília. Quem confere é a mesa, na jogada que encerra a run, ANTES
   do `sincronizar` — o envelope sobe junto. `cumprirMissoes` é idempotente
   pelo `feitas`. Abandono não passa por ali e não conta.
-- Abrir o envelope muda a coleção ANTES da animação (`Envelope.tsx`): fechar
-  no meio não perde carta. Ele abre no início e no recibo de fim.
+- Abrir o envelope muda a coleção ANTES da animação (`Envelope.tsx`): pular
+  ou fechar no meio não perde carta. Ele abre no início e no recibo de fim.
 - `recompensaEscolhida`/`rewardOptions` e `escolherRecompensa` ficaram só
   para o save que terminou na v0.15 com a escolha pendente.
 
@@ -996,6 +1017,16 @@ classes). Vale para qualquer caixa que seja item de um flex.
 de dentro do recibo de fim, ficava preso no tamanho do recibo. `Missoes`
 monta o `Envelope` com `createPortal(…, document.body)`. Qualquer popup que
 nasça de dentro de outro precisa do mesmo.
+
+**Página que é a ÚNICA a importar um componente pelo `index.ts` pode sumir
+do build.** Com o início deixando de mostrar os amigos, o `/perfil` virou o
+único a importar `@/components/ListaDeAmigos`, e o Next 15.5 passou a falhar
+no pré-render com "Could not find the module …/perfil/page.tsx#default in
+the React Client Manifest" (a 15.5.27 também). Não é o `export *` nem o
+`'use client'` do índice — foi testado. Importar direto do arquivo
+(`@/components/ListaDeAmigos/ListaDeAmigos`) resolve, e é o que o perfil faz,
+com o comentário. Se o erro aparecer em outra página depois de um
+componente perder um importador, é isto.
 
 **`position: fixed` dentro de elemento com `perspective`.** Um elemento com
 `perspective` vira bloco contentor de descendentes fixos — `left/top` passam a

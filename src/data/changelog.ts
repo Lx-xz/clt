@@ -34,6 +34,18 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.19',
+    data: '2026-10-10',
+    titulo: 'Envelopes de verdade',
+    itens: [
+      { tipo: 'novo', texto: 'Toda partida terminada dá um envelope comum, com 1 a 3 cartas. A primeira partida do dia dá o envelope do dia, e a primeira vitória, o confidencial — cada um com mais chance de carta rara. As cartas podem vir repetidas.' },
+      { tipo: 'novo', texto: 'Abrir envelope virou um momento: ele vem para a frente da tela, a cera estala, e cada carta sobe de dentro, virada, e desvira com o brilho da raridade. No fim, todas as que vieram.' },
+      { tipo: 'novo', texto: 'As primeiras cartas lendárias (Automatizar e Pedir Aumento) e épicas (Café com o Chefe, Investimento, Grito no Travesseiro, Virar a Noite e Plantão).' },
+      { tipo: 'melhor', texto: 'O início ficou limpo: o seu avatar, o botão de jogar e as missões do dia, cada uma com a barra de progresso e o envelope que ela dá. Toque no envelope para ver as chances.' },
+      { tipo: 'correcao', texto: 'A borda colorida da carta não encontrava o selo do canto, e a caixa do texto fazia uma borda dupla.' },
+    ],
+  },
+  {
     versao: '0.18',
     data: '2026-10-10',
     titulo: 'O estresse como combustível',

@@ -47,7 +47,7 @@ import { problemasDoBaralho } from '@/game/baralho'
 import Missoes from '@/components/Missoes'
 import { NOMES_DE_RARIDADE, baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
 import { custoQueFalta, custosDe, textoDoCusto } from '@/game/custos'
-import { cumprirMissoes } from '@/game/missoes'
+import { MISSOES, cumprirMissoes } from '@/game/missoes'
 import { regras } from '@/game/regras'
 import { clearRun, loadCollection, saveCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
@@ -668,8 +668,15 @@ export default function JogarPage() {
         />
         {acabou && colecao ? (
           <div className={styles.missoesFim}>
-            <p className={styles.recompensaTitulo}>Missões do dia</p>
+            <p className={styles.recompensaTitulo}>Envelopes</p>
+            {cumpridasAgora.length > 0 ? (
+              <p className={styles.missoesCumpridas}>
+                Missão cumprida:{' '}
+                {cumpridasAgora.map((id) => MISSOES.find((m) => m.id === id)?.nome).join(' e ')}
+              </p>
+            ) : null}
             <Missoes
+              compacto
               colecao={colecao}
               cumpridasAgora={cumpridasAgora}
               onMudar={(c) => {

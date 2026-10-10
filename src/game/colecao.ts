@@ -64,7 +64,7 @@ export function colecaoInicial(): Collection {
  *  tem os campos, e a leitura os dá vazios — o mesmo padrão do resto. */
 function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes'> {
   const envelopes = Array.isArray(bruta.envelopes)
-    ? (bruta.envelopes as unknown[]).filter((e): e is TipoEnvelope => e === 'pardo' || e === 'confidencial')
+    ? (bruta.envelopes as unknown[]).filter((e): e is TipoEnvelope => e === 'comum' || e === 'pardo' || e === 'confidencial')
     : []
   const m = bruta.missoes as Record<string, unknown> | undefined
   const missoes =
@@ -246,37 +246,4 @@ export function apagarBaralho(c: Collection, id: string): Collection {
 
 export function ativarBaralho(c: Collection, id: string): Collection {
   return c.baralhos.some((b) => b.id === id) ? { ...c, ativo: id } : c
-}
-
-// ---------------------------------------------------------------- sorteio
-
-const ORDEM_RARIDADE: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']
-
-/**
- * Sorteia uma carta por vaga, na raridade pedida. Só entra carta que ainda
- * CABE (cópias abaixo do teto) — dar a quinta Tarefa Simples seria dar nada.
- * Quando uma raridade esgota, a vaga cai para a de baixo; com a coleção
- * cheia, a lista sai vazia e quem chama diz "coleção completa". Nunca a mesma
- * carta duas vezes no mesmo sorteio.
- *
- * Era a recompensa de fim de run (v0.15); desde as missões diárias é o
- * miolo do envelope (`ENVELOPES` em `missoes.ts`). O sorteio vem de fora
- * (`sorte`) pelo mesmo motivo do motor: o simulador precisa repetir a partida.
- */
-export function sortearCartas(
-  colecao: Collection,
-  raridades: Raridade[],
-  sorte: () => number = Math.random,
-): CardId[] {
-  const cabem = cartasDoJogo().filter((c) => (colecao.tenho[c.id] ?? 0) < copiasMaximas(c))
-  const escolhidas: CardId[] = []
-  for (const alvo of raridades) {
-    for (let i = ORDEM_RARIDADE.indexOf(alvo); i >= 0; i--) {
-      const pool = cabem.filter((c) => (c.raridade ?? 'comum') === ORDEM_RARIDADE[i] && !escolhidas.includes(c.id))
-      if (pool.length === 0) continue
-      escolhidas.push(pool[Math.floor(sorte() * pool.length)].id)
-      break
-    }
-  }
-  return escolhidas
 }

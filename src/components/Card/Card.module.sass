@@ -169,10 +169,7 @@ $levantada: 18px
 
 // ---------------------------------------------------------------- raridade
 // Por enquanto a raridade só pinta duas coisas: a BORDA da carta e o fundo do
-// selo do tipo. Comum não tem classe nenhuma — fica como sempre foi. A borda
-// ganha um segundo pixel por dentro com `outline`, e não com box-shadow
-// inset: o hover troca a box-shadow inteira pela sombra alta, e o anel sumia
-// justo quando a carta é levantada
+// selo do tipo. Comum não tem classe nenhuma — fica como sempre foi
 .raridade_incomum
   --cor-raridade: var(--raridade-incomum)
 
@@ -186,9 +183,10 @@ $levantada: 18px
   --cor-raridade: var(--raridade-lendaria)
 
 .comRaridade
-  border-color: var(--cor-raridade)
-  outline: 1px solid var(--cor-raridade)
-  outline-offset: -2px
+  // uma borda só, de 2px — e não 1px de borda mais um anel de `outline`
+  // por dentro: os dois não se encontravam, e sobrava uma fresta entre o
+  // anel e o selo do canto
+  border: 2px solid var(--cor-raridade)
 
   .selo
     background: var(--cor-raridade)
@@ -245,8 +243,9 @@ $levantada: 18px
   flex-direction: column
   margin: 0 6px 6px
   padding: 7px
+  // sem borda: com a borda da carta (e a da raridade) logo ao lado, a caixa
+  // do texto fazia uma borda dupla
   background: var(--papel)
-  border: 1px solid color-mix(in srgb, var(--linha) 70%, transparent)
   border-radius: 3px
 
 .texto

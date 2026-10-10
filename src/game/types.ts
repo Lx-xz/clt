@@ -369,7 +369,7 @@ export interface Collection {
 
 /** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,
  *  e o que chega na mesa de alguém num escritório é envelope. */
-export type TipoEnvelope = 'pardo' | 'confidencial'
+export type TipoEnvelope = 'comum' | 'pardo' | 'confidencial'
 
 export interface WeekConfig {
   week: number

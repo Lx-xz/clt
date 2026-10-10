@@ -1,32 +1,38 @@
 .missoes
   display: flex
   flex-direction: column
-  gap: 10px
+  gap: 14px
 
 .lista
   display: flex
   flex-direction: column
-  gap: 6px
+  gap: 8px
   margin: 0
   padding: 0
   list-style: none
 
+// uma missão: o que fazer e a barra à esquerda, o envelope em pé à direita
 .missao
   display: grid
-  grid-template-columns: auto 1fr auto
+  grid-template-columns: 1fr auto
   align-items: center
-  gap: 10px
-  padding: 8px 10px
-  border: 1px dashed var(--linha)
-  border-radius: var(--raio)
-  color: var(--tinta-fraca)
+  gap: 14px
+  padding: 12px 14px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  box-shadow: var(--sombra)
 
 .feita
-  border-style: solid
-  color: var(--tinta)
+  border-color: color-mix(in srgb, var(--produtividade) 50%, var(--linha))
 
-  > svg
-    color: var(--produtividade)
+// a linha informativa (envelope de toda partida) é mais baixa e sem sombra:
+// não é tarefa, é regra
+.sempre
+  padding: 8px 14px
+  background: transparent
+  border-style: dashed
+  box-shadow: none
 
 // a missão que a partida de agora cumpriu: um carimbo de "feito" que bate
 .agora
@@ -35,42 +41,96 @@
 .texto
   display: flex
   flex-direction: column
+  gap: 2px
   min-width: 0
+  color: var(--tinta-fraca)
   font-size: 13px
 
   b
     color: var(--tinta)
-    font-size: 14px
+    font-size: 15px
 
-.premio
-  display: inline-flex
-  align-items: center
-  gap: 4px
-  padding: 2px 7px
-  background: var(--envelope)
-  border-radius: 3px
-  color: var(--tinta)
-  font-family: var(--mono)
-  font-size: 11px
-  text-transform: uppercase
-  white-space: nowrap
-
-.confidencial
-  outline: 1.5px solid var(--estresse)
-  outline-offset: -1.5px
-
-.abrir
-  align-self: flex-start
-  display: inline-flex
+.progresso
+  display: flex
   align-items: center
   gap: 8px
+  margin-top: 6px
 
-.mais
-  padding: 0 6px
-  background: color-mix(in srgb, var(--papel-alto) 30%, transparent)
+.barra
+  flex: 1
+  height: 8px
+  overflow: hidden
+  background: var(--papel)
+  border: 1px solid var(--linha)
   border-radius: 999px
-  font-size: 12px
 
+  span
+    display: block
+    height: 100%
+    background: var(--produtividade)
+    border-radius: 999px
+    transition: width .6s cubic-bezier(.2, .8, .25, 1)
+
+.conta
+  display: inline-flex
+  align-items: center
+  gap: 3px
+  color: var(--tinta)
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 600
+
+  svg
+    color: var(--produtividade)
+
+// o envelope da missão já ganha: continua ali (dá para ver as chances), mas
+// apagado — o prêmio dele foi para a bandeja
+.envelopeGanho
+  opacity: .45
+
+.bandeja
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 8px
+  padding: 14px
+  background: color-mix(in srgb, var(--destaque) 10%, var(--papel-alto))
+  border: 1px solid color-mix(in srgb, var(--destaque) 45%, var(--linha))
+  border-radius: 8px
+
+.bandejaTitulo
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 700
+  letter-spacing: .12em
+  text-transform: uppercase
+
+.bandejaEnvelopes
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  gap: 18px
+
+.pilha
+  position: relative
+
+// envelope esperando para ser aberto: balança de leve, chamando o dedo
+.paraAbrir
+  animation: chama 2.4s ease-in-out infinite
+
+.quantos
+  position: absolute
+  right: -10px
+  bottom: -6px
+  padding: 1px 6px
+  background: var(--tinta)
+  border-radius: 999px
+  color: var(--papel-alto)
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 700
+
+.bandejaDica,
 .nota
   margin: 0
   color: var(--tinta-fraca)
@@ -78,9 +138,16 @@
 
 @keyframes carimba
   from
-    transform: scale(1.12)
+    transform: scale(1.08)
     opacity: 0
 
+@keyframes chama
+  0%, 100%
+    transform: none
+  50%
+    transform: translateY(-4px) rotate(-3deg)
+
 @media (prefers-reduced-motion: reduce)
-  .agora
+  .agora,
+  .paraAbrir
     animation: none

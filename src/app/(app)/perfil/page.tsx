@@ -6,7 +6,12 @@ import { useEffect, useState } from 'react'
 import AvatarHero from '@/components/AvatarHero'
 import Conquistas from '@/components/Conquistas'
 import Dialogo from '@/components/Dialogo'
-import ListaDeAmigos from '@/components/ListaDeAmigos'
+// direto do arquivo, e não do `index.ts` da pasta: com o perfil sendo a ÚNICA
+// página que importa o componente pelo índice, o Next 15.5 perde a página do
+// manifesto de cliente e o build falha em "/perfil" ("Could not find the
+// module ... in the React Client Manifest"). Apareceu quando o início deixou
+// de mostrar os amigos; veja a armadilha no CLAUDE.md
+import ListaDeAmigos from '@/components/ListaDeAmigos/ListaDeAmigos'
 import ListaDeJogos from '@/components/ListaDeJogos'
 import { useSessao } from '@/components/SessaoGuard'
 import { buscarMeusJogos, buscarRanking } from '@/data/analytics'
