@@ -85,43 +85,69 @@ button.maleta
   border-bottom: 0
   border-radius: calc(var(--mal-w) * .07) calc(var(--mal-w) * .07) 0 0
 
-// os fechos, no alto da frente, e de metal
-.fecho
+// o fecho em duas peças, as duas de metal. O ENCAIXE é pequeno e mora na
+// frente; a PRESILHA é maior, sai de cima da maleta (do topo das costas) e
+// desce por cima da frente até travar no encaixe
+.encaixe
   position: absolute
-  top: calc(var(--mal-w) * .07)
-  width: 12%
-  height: calc(var(--mal-w) * .085)
+  top: calc(var(--mal-w) * .1)
+  width: 10%
+  height: calc(var(--mal-w) * .045)
   background: var(--metal)
-  border-bottom: calc(var(--mal-w) * .022) solid var(--metal-sombra)
-  border-radius: calc(var(--mal-w) * .018)
-  transform-origin: bottom
-  transition: transform .25s cubic-bezier(.2, 1.6, .4, 1)
+  border-bottom: calc(var(--mal-w) * .016) solid var(--metal-sombra)
+  border-radius: calc(var(--mal-w) * .012)
 
-.fechoE
-  left: 18%
+  &.esq
+    left: 19%
 
-.fechoD
-  right: 18%
+  &.dir
+    right: 19%
 
-// aberta: os fechos saltam, e as metades se afastam pouco — a frente vem
-// para a frente, a de trás vai para trás, e entre elas aparece o forro
+.presilha
+  position: absolute
+  top: calc(var(--mal-w) * #{$y0 - .02})
+  z-index: 4
+  width: 12%
+  height: calc(var(--mal-w) * .125)
+  background: var(--metal)
+  border-bottom: calc(var(--mal-w) * .02) solid var(--metal-sombra)
+  border-radius: calc(var(--mal-w) * .02) calc(var(--mal-w) * .02) calc(var(--mal-w) * .012) calc(var(--mal-w) * .012)
+  transform-origin: top
+
+  &.esq
+    left: 18%
+
+  &.dir
+    right: 18%
+
+// aberta: as presilhas soltam do encaixe, sobem e passam para TRÁS das
+// costas (o z-index troca no meio do caminho), e só então as metades se
+// afastam — a frente alarga e baixa, as costas estreitam e sobem, e entre
+// elas fica a faixa do forro. Escala e não giro 3D: de frente, com o ponto
+// de fuga na borda de baixo, a metade que vem para perto cresce e tapa a de
+// trás, e a abertura nunca aparecia (testado)
 .aberta
-  .fechoE
-    transform: rotate(-24deg) translateY(-15%)
+  .presilha
+    animation: solta .5s cubic-bezier(.4, 0, .3, 1) forwards
 
-  .fechoD
-    transform: rotate(24deg) translateY(-15%)
-
-  // A abertura é ESCALA, e não giro 3D: de frente, com o ponto de fuga na
-  // borda de baixo, a metade que vem para perto cresce e tapa a de trás, e a
-  // abertura nunca aparecia (testado). Chapado como o resto do jogo: a frente
-  // alarga e baixa (veio para perto, inclinada), as costas estreitam e sobem
-  // (foram para longe), e entre as duas fica a faixa do forro
   .frente
     transform: scale(1.03, .86)
 
   .costas
     transform: scale(.95, 1.04)
+
+@keyframes solta
+  0%
+    z-index: 4
+    transform: none
+  45%
+    z-index: 4
+    transform: translateY(-55%) scaleY(.8)
+  55%
+    z-index: 0
+  100%
+    z-index: 0
+    transform: translateY(-62%) scaleY(.55)
 
 // ============================================= a abertura, em tela cheia
 .cortina
@@ -202,26 +228,20 @@ button.maleta
 .fase_abrindo
   animation: sacode .4s ease
 
-// o prêmio: o avatar vestindo a peça, num cartão. Nasce DENTRO da maleta
-// (z 2, entre as costas e a frente) e passa para a frente quando já saiu
+// o prêmio: uma carta de duas faces, como a do envelope. Sobe de DENTRO
+// da maleta (z 2, entre as costas e a frente), virada, passa para a frente
+// quando já saiu, e desvira lá em cima
 .premio
   position: absolute
-  top: 30px
+  top: 40px
   left: 50%
   z-index: 6
-  display: flex
-  flex-direction: column
-  align-items: center
-  gap: 6px
-  width: 200px
-  margin-left: -100px
-  padding: 10px 10px 12px
-  background: var(--papel-alto)
-  border: 3px solid var(--cor-premio, var(--linha))
-  border-radius: 12px
-  box-shadow: 0 0 40px var(--cor-premio, rgba(255, 255, 255, .3))
-  color: var(--tinta)
+  width: 176px
+  margin-left: -88px
   animation: sobe .9s cubic-bezier(.25, .8, .3, 1) both
+
+.premio_comum
+  --cor-premio: rgba(244, 239, 227, .3)
 
 .premio_incomum
   --cor-premio: var(--raridade-incomum)
@@ -235,28 +255,118 @@ button.maleta
 .premio_lendaria
   --cor-premio: var(--raridade-lendaria)
 
-// o rosto de perto: é onde óculos e chapéu estão
-.premioRosto
-  display: block
+.giro
+  position: relative
   width: 176px
-  height: 150px
+  height: 176px
+  transform-style: preserve-3d
+  transform: perspective(900px) rotateY(180deg)
+  transition: transform .45s cubic-bezier(.2, .8, .25, 1)
+
+.revelado .giro
+  transform: perspective(900px) rotateY(0)
+  animation: pulo .45s cubic-bezier(.2, 1.4, .4, 1) .3s
+
+.face
+  position: absolute
+  inset: 0
   overflow: hidden
-  border-radius: 8px
+  border-radius: 12px
+  backface-visibility: hidden
+  -webkit-backface-visibility: hidden
+
+// a frente: o avatar inteiro, e a moldura é a cor da raridade
+.faceFrente
   line-height: 0
+  box-shadow: inset 0 0 0 3px var(--cor-premio, var(--linha))
+  // virada, a frente some de vez, pelo mesmo motivo da carta: o navegador
+  // pintava pedaços dela por cima do verso
+  visibility: hidden
+  transition: visibility 0s linear .1s
 
   > *
     border: 0
     border-radius: 0
-    transform: translate(-22px, -6px)
+
+.revelado .faceFrente
+  visibility: visible
+
+// o verso: o mesmo da carta, os três ícones da logo em grade
+.faceVerso
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  grid-template-rows: repeat(3, 1fr)
+  place-items: center
+  padding: 10%
+  box-sizing: border-box
+  background: var(--papel-baixo)
+  border: 2px solid var(--linha)
+  color: color-mix(in srgb, var(--tinta) 30%, transparent)
+  transform: rotateY(180deg)
+
+  svg
+    width: 44%
+    height: 44%
+
+// a luz vem DEPOIS de virar, como na carta: o brilho para todas, e os
+// raios só para épica e lendária
+.brilho
+  position: absolute
+  inset: -60px
+  z-index: -1
+  border-radius: 50%
+  background: radial-gradient(circle, var(--cor-premio) 0%, transparent 62%)
+  opacity: 0
+  pointer-events: none
+
+.revelado .brilho
+  animation: acende .6s ease .2s forwards
+
+.raios
+  position: absolute
+  top: 88px
+  left: 50%
+  z-index: -2
+  width: 520px
+  height: 520px
+  margin: -260px 0 0 -260px
+  border-radius: 50%
+  // 24° divide 360: a volta fecha sem dois feixes colados
+  background: repeating-conic-gradient(from 0deg, var(--cor-premio) 0 7deg, transparent 7deg 24deg)
+  mask: radial-gradient(circle, #000 18%, transparent 66%)
+  opacity: 0
+  pointer-events: none
+
+.revelado .raios
+  animation: acende .8s ease .3s forwards, gira 12s linear infinite
+
+// o nome e a raridade FORA da caixa, embaixo, sem fundo e sem borda — como
+// no resumo das cartas do envelope
+.legenda
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 4px
+  min-height: 46px
+  margin-top: 12px
+  text-align: center
+
+  > *
+    animation: surge .35s ease .25s both
 
 .premioNome
-  font-size: 17px
+  display: inline-flex
+  align-items: center
+  gap: 7px
+  color: #f4efe3
+  font-size: 18px
+  white-space: nowrap
 
 .premioRaridade
   display: flex
   align-items: center
   gap: 6px
-  color: var(--cor-premio, var(--tinta-fraca))
+  color: var(--cor-premio, #f4efe3)
   font-family: var(--mono)
   font-size: 12px
   font-weight: 700
@@ -272,44 +382,16 @@ button.maleta
     font-style: normal
     font-size: 10.5px
 
+.premio_comum .premioRaridade
+  color: #d9d3c4
+
 .nova
   background: var(--destaque)
   color: var(--papel-alto)
 
 .repetida
-  background: var(--papel-baixo)
-  color: var(--tinta-fraca)
-
-// os raios atrás de tudo, na cor da raridade, girando
-.raios
-  position: absolute
-  top: 120px
-  left: 50%
-  z-index: 0
-  width: 520px
-  height: 520px
-  margin: -260px 0 0 -260px
-  border-radius: 50%
-  background: repeating-conic-gradient(from 0deg, var(--cor-raio) 0 7deg, transparent 7deg 24deg)
-  mask: radial-gradient(circle, #000 18%, transparent 66%)
-  opacity: 0
-  pointer-events: none
-  animation: acende .8s ease .35s forwards, gira 12s linear infinite
-
-.raio_comum
-  --cor-raio: rgba(244, 239, 227, .35)
-
-.raio_incomum
-  --cor-raio: var(--raridade-incomum)
-
-.raio_rara
-  --cor-raio: var(--raridade-rara)
-
-.raio_epica
-  --cor-raio: var(--raridade-epica)
-
-.raio_lendaria
-  --cor-raio: var(--raridade-lendaria)
+  background: rgba(255, 255, 255, .14)
+  color: #d9d3c4
 
 .dica
   min-height: 1.4em
@@ -371,6 +453,14 @@ button.maleta
   to
     opacity: .85
 
+@keyframes pulo
+  0%
+    scale: .94
+  60%
+    scale: 1.06
+  100%
+    scale: 1
+
 @keyframes gira
   to
     rotate: 360deg
@@ -387,8 +477,16 @@ button.maleta
   .fase_abrindo,
   .premio,
   .raios,
-  .acoes
+  .acoes,
+  .presilha,
+  .revelado .giro
     animation: none
+
+  .giro
+    transition: none
+
+  .aberta .presilha
+    opacity: 0
 
   .raios
     opacity: .6

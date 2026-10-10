@@ -1,4 +1,4 @@
-import { PenteIcon } from '@/components/icons'
+import { PenteIcon } from './icons'
 import type { ReactNode } from 'react'
 
 /**

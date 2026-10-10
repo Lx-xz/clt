@@ -1,6 +1,6 @@
 'use client'
 
-import { Sparkles, X } from 'lucide-react'
+import { Coffee, Droplet, Hammer, Sparkles, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Avatar as Receita } from '@/data/avatar'
@@ -8,6 +8,7 @@ import { NOMES_DE_RARIDADE } from '@/game/colecao'
 import { MALETAS, type Cosmetico, type TipoMaleta } from '@/game/cosmeticos'
 import buttons from '@/styles/buttons.module.sass'
 import Avatar from '../Avatar'
+import { BarbaIcon, CabeloIcon, ExpressaoIcon, ExtrasIcon, FundoIcon, RostoIcon, RoupaIcon } from '../icons'
 import styles from './Maleta.module.sass'
 
 const METAIS: Record<TipoMaleta, string> = {
@@ -19,7 +20,8 @@ const METAIS: Record<TipoMaleta, string> = {
 /**
  * A maleta desenhada, de frente. Só CSS e chapada, como o envelope: couro
  * de cor lisa, a alça e os dois fechos — e os FECHOS são a única parte de
- * metal. É o metal deles que diz bronze, prata ou ouro; o resto é a mesma
+ * metal. Cada fecho tem duas peças: a PRESILHA, grande, que sai do topo e
+ * desce pela frente, e o ENCAIXE, pequeno, preso na frente, onde ela trava. É o metal deles que diz bronze, prata ou ouro; o resto é a mesma
  * maleta. (A primeira versão era toda de metal, com degradê, plaqueta e
  * tampa, e destoava do resto do jogo, que é papel e cor lisa.)
  *
@@ -44,9 +46,15 @@ export function MaletaDesenhada({ tipo, aberta = false, largura = 96, className,
         <span className={styles.alca} />
       </span>
       <span className={styles.frente} aria-hidden>
-        <span className={`${styles.fecho} ${styles.fechoE}`} />
-        <span className={`${styles.fecho} ${styles.fechoD}`} />
+        <span className={`${styles.encaixe} ${styles.esq}`} />
+        <span className={`${styles.encaixe} ${styles.dir}`} />
       </span>
+      {/* as presilhas: a parte grande do fecho, presa no TOPO, que desce
+          por cima da frente até o encaixe. Ficam fora das duas metades
+          porque passam por cima da frente fechada e, abertas, vão para
+          trás das costas */}
+      <span className={`${styles.presilha} ${styles.esq}`} aria-hidden />
+      <span className={`${styles.presilha} ${styles.dir}`} aria-hidden />
     </>
   )
   const props = {
@@ -64,20 +72,40 @@ export function MaletaDesenhada({ tipo, aberta = false, largura = 96, className,
   )
 }
 
-type Fase = 'chegando' | 'esperando' | 'abrindo' | 'revelado'
+type Fase = 'chegando' | 'esperando' | 'abrindo' | 'revelando'
 
 /** Os tempos da abertura; cada um bate com uma animação do sass. */
-const T = { chegada: 600, abrir: 1100 }
+const T = { chegada: 600, abrir: 1000, subir: 900 }
+
+/** O ícone da aba do editor onde a peça mora: é ele que diz o TIPO do
+ *  cosmético — o mesmo desenho que a pessoa vai procurar no editor. */
+const ICONE_DA_ABA: Record<Cosmetico['aba'], (p: { size?: number; className?: string }) => React.ReactNode> = {
+  rosto: RostoIcon,
+  olhos: ExpressaoIcon,
+  cabelo: CabeloIcon,
+  barba: BarbaIcon,
+  roupa: RoupaIcon,
+  extras: ExtrasIcon,
+  fundo: FundoIcon,
+}
+
+const ICONES_VERSO = [Coffee, Hammer, Droplet, Droplet, Coffee, Hammer, Hammer, Droplet, Coffee]
 
 function semMovimento(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 }
 
 /**
- * A abertura de uma maleta, em tela cheia, no mesmo ritmo do envelope: ela
- * chega, espera o toque, os fechos saltam, a tampa abre e a peça sobe de
- * dentro, já VESTIDA no avatar — um cosmético se entende vendo no rosto, e
- * não lendo o nome. `onEquipar` põe o botão de vestir agora.
+ * A abertura de uma maleta, em tela cheia, no ritmo do envelope: ela chega,
+ * espera o toque, os fechos soltam e ela abre pelo meio, e o prêmio sobe
+ * de dentro VIRADO, como a carta do envelope — e só desvira lá em cima. A
+ * luz vem depois de virar, com a mesma regra das cartas: épica e lendária
+ * ganham os raios, as outras só o brilho.
+ *
+ * Dentro da caixa vai o avatar INTEIRO vestindo a peça (um cosmético se
+ * entende vendo no corpo, e o recorte do rosto cortava metade dele); o
+ * nome, o ícone do tipo e a raridade ficam FORA, embaixo. `onEquipar` põe o
+ * botão de vestir agora.
  *
  * O cosmético já está na coleção quando isto aparece (quem chama grava
  * antes): fechar no meio não perde nada. Vai por portal, como o envelope, e
@@ -93,6 +121,7 @@ export default function AberturaDeMaleta({ tipo, cosmetico, nova, avatar, onEqui
   onFechar: () => void
 }) {
   const [fase, setFase] = useState<Fase>(semMovimento() ? 'esperando' : 'chegando')
+  const [virado, setVirado] = useState(false)
   const [escala, setEscala] = useState(1)
   const ocupado = useRef(false)
 
@@ -118,18 +147,26 @@ export default function AberturaDeMaleta({ tipo, cosmetico, nova, avatar, onEqui
     return () => clearTimeout(t)
   }, [fase])
 
+  // o prêmio sobe virado e só desvira quando chega — o "o que será?" da
+  // carta do envelope, igual
+  useEffect(() => {
+    if (fase !== 'revelando') return
+    const t = setTimeout(() => setVirado(true), semMovimento() ? 0 : T.subir)
+    return () => clearTimeout(t)
+  }, [fase])
+
   function abrir() {
     if (fase !== 'esperando' || ocupado.current) return
     ocupado.current = true
     setFase('abrindo')
-    setTimeout(() => setFase('revelado'), semMovimento() ? 0 : T.abrir)
+    setTimeout(() => setFase('revelando'), semMovimento() ? 0 : T.abrir)
   }
 
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' && e.key !== 'Enter' && e.key !== ' ') return
       // revelada, Enter e espaço são dos botões (Equipar, Continuar)
-      if (fase === 'revelado' && e.key !== 'Escape') return
+      if (virado && e.key !== 'Escape') return
       e.stopPropagation()
       e.preventDefault()
       if (e.key === 'Escape') onFechar()
@@ -139,7 +176,9 @@ export default function AberturaDeMaleta({ tipo, cosmetico, nova, avatar, onEqui
     return () => window.removeEventListener('keydown', tecla, true)
   })
 
-  const aberta = fase === 'abrindo' || fase === 'revelado'
+  const aberta = fase === 'abrindo' || fase === 'revelando'
+  const raios = cosmetico.raridade === 'epica' || cosmetico.raridade === 'lendaria'
+  const IconeDoTipo = ICONE_DA_ABA[cosmetico.aba]
   const tela = (
     <div className={styles.cortina} role="dialog" aria-modal="true" aria-label={MALETAS[tipo].nome}>
       <button type="button" className={styles.pular} onClick={onFechar}>
@@ -148,34 +187,49 @@ export default function AberturaDeMaleta({ tipo, cosmetico, nova, avatar, onEqui
       <div className={styles.titulo}>{MALETAS[tipo].nome}</div>
       <div className={styles.areaToque} onClick={abrir} style={{ '--escala': escala } as React.CSSProperties}>
         <div className={styles.palco}>
-          {aberta ? <span className={`${styles.raios} ${styles[`raio_${cosmetico.raridade}`]}`} aria-hidden /> : null}
           <div className={`${styles.maletaNoPalco} ${styles[`fase_${fase}`]}`}>
             <MaletaDesenhada tipo={tipo} aberta={aberta} largura={250} />
           </div>
-          {fase === 'revelado' ? (
-            <div className={`${styles.premio} ${styles[`premio_${cosmetico.raridade}`]}`}>
-              <span className={styles.premioRosto}>
-                <Avatar avatar={avatar} tamanho={220} />
-              </span>
-              <b className={styles.premioNome}>{cosmetico.nome}</b>
-              <span className={styles.premioRaridade}>
-                {nova ? (
-                  <i className={styles.nova}>
-                    <Sparkles size={11} aria-hidden /> nova
-                  </i>
-                ) : (
-                  <i className={styles.repetida}>repetida</i>
-                )}
-                {NOMES_DE_RARIDADE[cosmetico.raridade]}
-              </span>
+          {fase === 'revelando' ? (
+            <div className={`${styles.premio} ${virado ? styles.revelado : ''} ${styles[`premio_${cosmetico.raridade}`]}`}>
+              <span className={styles.brilho} aria-hidden />
+              {raios ? <span className={styles.raios} aria-hidden /> : null}
+              <div className={styles.giro}>
+                <div className={`${styles.face} ${styles.faceFrente}`}>
+                  <Avatar avatar={avatar} tamanho={176} />
+                </div>
+                <div className={`${styles.face} ${styles.faceVerso}`} aria-hidden>
+                  {ICONES_VERSO.map((Icone, i) => (
+                    <Icone key={i} strokeWidth={1.5} />
+                  ))}
+                </div>
+              </div>
+              <div className={styles.legenda} aria-live="polite">
+                {virado ? (
+                  <>
+                    <b className={styles.premioNome}>
+                      <IconeDoTipo size={20} />
+                      {cosmetico.nome}
+                    </b>
+                    <span className={styles.premioRaridade}>
+                      {nova ? (
+                        <i className={styles.nova}>
+                          <Sparkles size={11} aria-hidden /> nova
+                        </i>
+                      ) : (
+                        <i className={styles.repetida}>repetida</i>
+                      )}
+                      {NOMES_DE_RARIDADE[cosmetico.raridade]}
+                    </span>
+                  </>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>
       </div>
-      <p className={styles.dica}>
-        {fase === 'esperando' ? 'Toque na maleta para abrir' : fase === 'revelado' ? '' : ' '}
-      </p>
-      {fase === 'revelado' ? (
+      <p className={styles.dica}>{fase === 'esperando' ? 'Toque na maleta para abrir' : ' '}</p>
+      {virado ? (
         <div className={styles.acoes}>
           {onEquipar ? (
             <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={onEquipar} autoFocus>

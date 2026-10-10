@@ -421,6 +421,9 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   dobras, o V e a ponta da aba em três alturas diferentes. Clicar no envelope de uma missão abre
   as chances (`ChancesDoEnvelope`); clicar num da bandeja "Para abrir" o
   ABRE.
+- **A raridade da carta que sai do envelope fica EMBAIXO dela, solta**,
+  sem fundo nem borda (com sombra no texto, para ler em cima da aba), como
+  no resumo do fim. Era um selo escuro mordendo o pé da carta.
 - **A abertura é tela cheia, sem popup em volta** (`AberturaDeEnvelope`):
   o envelope chega, espera o toque, a cera estala, a aba gira, e cada carta
   sobe de DENTRO dele, virada, e desvira com o brilho da raridade (raios
@@ -751,7 +754,16 @@ opções. O que ele escolheu, e que deve ser preservado:
   elas aparece a faixa do forro. **Não é giro 3D de propósito:** de frente,
   com o ponto de fuga na borda de baixo, a metade que vem para perto cresce
   e tapa a outra, e a abertura não aparece (testado). A alça é da metade de
-  TRÁS — na da frente ela afundava no vão. O prêmio sobe ENTRE as metades,
+  TRÁS — na da frente ela afundava no vão. Cada fecho tem duas peças: a
+  PRESILHA grande, que sai do topo e desce pela frente (fora das metades,
+  porque fechada passa por cima da frente e, aberta, sobe e troca o
+  `z-index` para ir para trás das costas), e o ENCAIXE pequeno, preso na
+  frente. O prêmio é uma carta de duas faces, como a do envelope: sobe
+  VIRADO e desvira lá em cima, e a luz vem depois (o brilho para todas, os
+  raios só para épica e lendária, a mesma regra das cartas). Dentro da
+  caixa vai o avatar inteiro; o nome, o ÍCONE da aba do editor onde a peça
+  mora (`Cosmetico.aba`; os ícones das abas moram em `components/icons`) e
+  a raridade ficam fora, embaixo. O prêmio sobe ENTRE as metades,
   então nada no palco pode criar contexto de empilhamento: nem `filter` na
   maleta (a sombra é `box-shadow` da frente).
 - **Carta que não dá para jogar fica ESCURA, não transparente**

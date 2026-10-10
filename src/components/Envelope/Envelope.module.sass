@@ -390,33 +390,30 @@ button.envelope
 .brilho_lendaria
   --cor-brilho: var(--raridade-lendaria)
 
+// a raridade EMBAIXO da carta, solta, sem fundo nem borda — como no resumo
+// do fim. Era um selo escuro mordendo a borda da carta, e cobria o pé dela.
+// A sombra no texto é o que o deixa ler em cima da aba aberta do envelope
 .rotuloRaridade
-  // um selo escuro mordendo a borda de baixo da carta: solto embaixo dela,
-  // o nome dourado se perdia em cima da aba do envelope
   position: absolute
+  top: 100%
   left: 50%
-  bottom: -14px
   z-index: 2
   display: flex
   gap: 6px
   align-items: center
-  min-height: 26px
-  padding: 2px 12px
-  background: rgba(16, 15, 12, .92)
-  border: 1px solid var(--cor-brilho)
-  border-radius: 999px
+  margin-top: 10px
   transform: translateX(-50%)
   color: var(--cor-brilho)
   font-family: var(--mono)
   font-size: 15px
   font-weight: 700
   letter-spacing: .1em
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .85), 0 0 10px rgba(0, 0, 0, .6)
   text-transform: uppercase
   white-space: nowrap
 
 .brilho_comum .rotuloRaridade
   color: #f4efe3
-  border-color: rgba(244, 239, 227, .35)
 
 .rotuloRaridade:empty
   display: none
@@ -434,6 +431,7 @@ button.envelope
   font-weight: 700
   letter-spacing: .06em
   text-transform: uppercase
+  text-shadow: none
 
 // as que já saíram ficam de lado, numa fileira do tamanho de ler o nome.
 // Com muitas (o envelope lendário dá 15), elas se sobrepõem em vez de

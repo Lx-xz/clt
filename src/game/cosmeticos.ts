@@ -24,10 +24,13 @@ export interface Cosmetico {
   valor: string
   nome: string
   raridade: Raridade
+  /** A aba do editor onde a peça mora: é o ÍCONE dela que diz o tipo do
+   *  cosmético na abertura da maleta (óculos é da aba de acessórios). */
+  aba: 'rosto' | 'olhos' | 'cabelo' | 'barba' | 'roupa' | 'extras' | 'fundo'
 }
 
 export const COSMETICOS: Cosmetico[] = [
-  { id: 'oculos:sol', campo: 'oculos', valor: 'sol', nome: 'Óculos de sol', raridade: 'rara' },
+  { id: 'oculos:sol', campo: 'oculos', valor: 'sol', nome: 'Óculos de sol', raridade: 'rara', aba: 'extras' },
 ]
 
 export type TipoMaleta = 'bronze' | 'prata' | 'ouro'

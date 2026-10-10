@@ -24,7 +24,7 @@ import {
   FundoIcon,
   RostoIcon,
   RoupaIcon,
-} from './IconesDasAbas'
+} from '@/components/icons'
 import {
   ACESSORIOS,
   BARBAS,
