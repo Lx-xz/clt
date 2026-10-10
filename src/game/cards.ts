@@ -289,6 +289,41 @@ export const CARTAS_BASE: ActionCard[] = [
       { faz: 'comprar', quantas: 3 },
     ] }],
   },
+
+  // --- v0.18: o estresse como combustível ---
+  // Só saem com o estresse ALTO, e jogar gasta esse estresse. É a primeira
+  // saída da espiral que mata a run na semana 1: quanto pior o dia, mais
+  // forte a mão. Não é um tipo de custo novo de propósito — "custo" que
+  // baixa o estresse seria um custo que todo mundo quer pagar, e o foguinho
+  // vermelho leria ao contrário. É a RESTRIÇÃO (precisa de N) mais o efeito
+  // (−N), o mesmo par do Puxar o Saco.
+  {
+    id: 'canalizar-a-raiva', raridade: 'incomum', name: 'Canalizar a Raiva', cost: 1, kind: 'tarefa',
+    text: 'Só com 4+ de estresse. −3 estresse, +4 produtividade', especial: true, starter: false,
+    restricao: { exige: { se: 'recurso', qual: 'estresse', aoMenos: 4 } },
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'estresse', quanto: -3 },
+      { faz: 'recurso', qual: 'produtividade', quanto: 4 },
+    ] }],
+  },
+  {
+    id: 'desabafo-no-cafe', name: 'Desabafo no Café', cost: 0, kind: 'social',
+    text: 'Só com 6+ de estresse. −4 estresse, compre 1', especial: true, starter: false,
+    restricao: { exige: { se: 'recurso', qual: 'estresse', aoMenos: 6 } },
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'estresse', quanto: -4 },
+      { faz: 'comprar', quantas: 1 },
+    ] }],
+  },
+  {
+    id: 'grito-no-travesseiro', raridade: 'rara', name: 'Grito no Travesseiro', cost: 0, kind: 'descanso',
+    text: 'Só com 8+ de estresse, uma vez por run. −5 estresse, +2 energia', especial: true, starter: false,
+    restricao: { umaVezPorRun: true, exige: { se: 'recurso', qual: 'estresse', aoMenos: 8 } },
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'estresse', quanto: -5 },
+      { faz: 'recurso', qual: 'energia', quanto: 2 },
+    ] }],
+  },
 ]
 
 /**
@@ -300,7 +335,7 @@ export const CARTAS_BASE: ActionCard[] = [
  * tocam em carta nenhuma mantêm o mesmo número aqui, e é isso que o deixa
  * comparável entre runs.
  */
-export const VERSAO_BARALHO_BASE = 3
+export const VERSAO_BARALHO_BASE = 4
 
 /**
  * O PORQUÊ de cada carta que o código mudou e o banco talvez ainda não tenha.
@@ -312,6 +347,9 @@ export const VERSAO_BARALHO_BASE = 3
  * número) a bancada escreve sozinha; o porquê é o que um diff não sabe.
  */
 export const MOTIVOS_DO_CODIGO: Record<string, string> = {
+  'canalizar-a-raiva': 'O estresse como combustível: a carta fica mais forte justamente quando a espiral do estresse aperta.',
+  'desabafo-no-cafe': 'Uma saída para o dia ruim que não custa energia: só sai quando o estresse já está alto.',
+  'grito-no-travesseiro': 'O último recurso perto do burnout, uma vez por run.',
   'atalho-no-sistema': 'Era a Tarefa melhor em tudo: mais produtividade pelo mesmo custo e sem preço nenhum.',
   'home-office': 'Rendia 1 de produtividade por energia e ainda tirava estresse; a régua (Tarefa Simples) é 0,67.',
   'planilha-infinita': 'A 0,5 de produtividade por energia só servia de enchimento.',

@@ -34,6 +34,14 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.18',
+    data: '2026-10-10',
+    titulo: 'O estresse como combustível',
+    itens: [
+      { tipo: 'novo', texto: 'Três cartas que só saem com o estresse alto e o gastam ao jogar: Canalizar a Raiva (4+ de estresse: −3 estresse, +4 produtividade), Desabafo no Café (6+: −4 estresse, compre 1) e Grito no Travesseiro (8+, uma vez por run: −5 estresse, +2 energia). Quanto pior o dia, mais forte a mão.' },
+    ],
+  },
+  {
     versao: '0.17',
     data: '2026-10-10',
     titulo: 'Custos de qualquer recurso',
