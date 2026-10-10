@@ -1,0 +1,432 @@
+// ========================================================= a maleta de frente
+// Só CSS, e tudo medido em frações de `--mal-w`: a mesma maleta serve de
+// botão de 96px no lab e de palco de 250px na abertura. As camadas, de trás
+// para a frente: o forro (que só aparece com a tampa aberta), a base, a
+// tampa, os fechos. `isolation` prende os z-index aqui — menos no palco,
+// onde o prêmio precisa subir ENTRE o forro e a base
+$y0: .11 // onde o corpo começa, abaixo da alça
+$corpo: .71 // a altura do corpo
+$costura: .4 // a fração do corpo que é tampa
+
+.maleta
+  position: relative
+  display: inline-block
+  flex: none
+  width: var(--mal-w, 96px)
+  height: calc(var(--mal-w, 96px) * .82)
+  padding: 0
+  background: none
+  border: none
+  isolation: isolate
+  vertical-align: middle
+
+button.maleta
+  cursor: pointer
+  transition: transform .2s ease
+
+  &:hover
+    transform: translateY(-3px) rotate(-2deg)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 4px
+
+// o metal: três tons de cada, e o gradiente vertical é o que faz a chapa
+// ler como metal e não como papelão pintado
+.bronze
+  --m-claro: #e3a874
+  --m: #b8763f
+  --m-escuro: #7e4b22
+
+.prata
+  --m-claro: #f3f5f8
+  --m: #b9c0c9
+  --m-escuro: #7d8794
+
+.ouro
+  --m-claro: #fbe9a0
+  --m: #d7aa2c
+  --m-escuro: #9b7412
+
+.alca
+  position: absolute
+  top: 0
+  left: 34%
+  z-index: 2
+  box-sizing: border-box
+  width: 32%
+  height: calc(var(--mal-w) * .15)
+  border: calc(var(--mal-w) * .035) solid var(--m-escuro)
+  border-bottom: 0
+  border-radius: calc(var(--mal-w) * .06) calc(var(--mal-w) * .06) 0 0
+
+// o forro de dentro: veludo escuro, com a luz vindo do fundo
+.dentro
+  position: absolute
+  top: calc(var(--mal-w) * #{$y0})
+  left: 3%
+  right: 3%
+  z-index: 1
+  height: calc(var(--mal-w) * #{$corpo * $costura + .04})
+  background: radial-gradient(ellipse at 50% 90%, #6a3b2a, #2a1813 70%)
+  border-radius: calc(var(--mal-w) * .05) calc(var(--mal-w) * .05) 0 0
+  box-shadow: inset 0 6px 14px rgba(0, 0, 0, .6)
+
+.base,
+.tampa
+  position: absolute
+  left: 0
+  right: 0
+  box-sizing: border-box
+  background: linear-gradient(180deg, var(--m-claro), var(--m) 45%, var(--m-escuro))
+  border: calc(var(--mal-w) * .012) solid var(--m-escuro)
+
+.base
+  top: calc(var(--mal-w) * #{$y0 + $corpo * $costura})
+  z-index: 3
+  height: calc(var(--mal-w) * #{$corpo * (1 - $costura)})
+  border-radius: 0 0 calc(var(--mal-w) * .06) calc(var(--mal-w) * .06)
+  box-shadow: 0 calc(var(--mal-w) * .04) calc(var(--mal-w) * .08) rgba(0, 0, 0, .35)
+
+// a tampa gira em volta da borda de CIMA e vem para a frente. A perspectiva
+// mora no transform dela, e não no pai: perspectiva no pai criaria um
+// contexto de empilhamento, e o prêmio não passaria por dentro da maleta
+.tampa
+  top: calc(var(--mal-w) * #{$y0})
+  z-index: 4
+  display: grid
+  place-items: center
+  height: calc(var(--mal-w) * #{$corpo * $costura})
+  border-radius: calc(var(--mal-w) * .06) calc(var(--mal-w) * .06) 0 0
+  transform-origin: top
+  transform: perspective(600px) rotateX(0)
+
+// a plaqueta no meio da tampa, onde iria o nome da firma
+.plaqueta
+  width: 26%
+  height: 34%
+  margin-top: 4%
+  border: calc(var(--mal-w) * .01) solid var(--m-escuro)
+  border-radius: calc(var(--mal-w) * .015)
+  background: linear-gradient(180deg, var(--m-escuro), var(--m))
+  opacity: .7
+
+// os fechos, mordendo a costura
+.fecho
+  position: absolute
+  top: calc(var(--mal-w) * #{$y0 + $corpo * $costura - .045})
+  z-index: 5
+  width: 11%
+  height: calc(var(--mal-w) * .09)
+  background: linear-gradient(180deg, var(--m-claro), var(--m-escuro))
+  border: calc(var(--mal-w) * .01) solid var(--m-escuro)
+  border-radius: calc(var(--mal-w) * .015)
+  transform-origin: bottom
+  transition: transform .25s cubic-bezier(.2, 1.6, .4, 1)
+
+.fechoE
+  left: 17%
+
+.fechoD
+  right: 17%
+
+// aberta: os fechos saltam e a tampa abre, trocando a chapa pelo forro no
+// meio do giro — é a face de dentro dela que aparece depois de passar de 90°
+.aberta
+  .fecho
+    transform: rotate(-28deg) translateY(-20%)
+
+  .fechoD
+    transform: rotate(28deg) translateY(-20%)
+
+  .tampa
+    animation: abre-tampa .7s cubic-bezier(.3, .7, .3, 1) .25s forwards
+
+    .plaqueta
+      animation: some .01s linear .55s forwards
+
+@keyframes abre-tampa
+  0%
+    transform: perspective(600px) rotateX(0)
+  49%
+    background: linear-gradient(180deg, var(--m-claro), var(--m) 45%, var(--m-escuro))
+  51%
+    background: linear-gradient(0deg, #5a3324, #2a1813)
+  100%
+    transform: perspective(600px) rotateX(125deg)
+    background: linear-gradient(0deg, #5a3324, #2a1813)
+
+@keyframes some
+  to
+    opacity: 0
+
+// ============================================= a abertura, em tela cheia
+.cortina
+  position: fixed
+  inset: 0
+  z-index: 300
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  gap: 8px
+  padding: 16px
+  overflow: hidden
+  background: radial-gradient(circle at 50% 40%, rgba(30, 28, 24, .9), rgba(10, 9, 8, .98))
+  backdrop-filter: blur(4px)
+  color: #f4efe3
+  animation: cortina-entra .3s ease
+
+.titulo
+  font-family: var(--mono)
+  font-size: 13px
+  letter-spacing: .14em
+  text-transform: uppercase
+  opacity: .75
+
+.pular
+  position: absolute
+  top: 14px
+  right: 14px
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  padding: 6px 10px
+  background: rgba(255, 255, 255, .08)
+  border: 1px solid rgba(255, 255, 255, .18)
+  border-radius: 999px
+  color: inherit
+  font: inherit
+  font-size: 13px
+  cursor: pointer
+
+// o palco é desenhado em 360×560 e escalado, como o do envelope
+.areaToque
+  width: calc(360px * var(--escala, 1))
+  height: calc(560px * var(--escala, 1))
+  cursor: pointer
+  -webkit-tap-highlight-color: transparent
+
+.palco
+  position: relative
+  width: 360px
+  height: 560px
+  transform: scale(var(--escala, 1))
+  transform-origin: top left
+
+// posicionada com margem, e não com transform: transform aqui criaria um
+// contexto de empilhamento, e o prêmio não passaria por dentro dela
+.maletaNoPalco
+  position: absolute
+  left: 50%
+  bottom: 30px
+  margin-left: -125px
+
+  .maleta
+    isolation: auto
+    filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .55))
+
+.fase_chegando
+  animation: chega .6s cubic-bezier(.2, .9, .25, 1.15) both
+
+.fase_esperando
+  animation: espera 1.6s ease-in-out infinite
+
+.fase_abrindo
+  animation: sacode .4s ease
+
+// o prêmio: o avatar vestindo a peça, num cartão. Nasce DENTRO da maleta
+// (z 2, entre o forro e a base) e passa para a frente quando já saiu
+.premio
+  position: absolute
+  top: 30px
+  left: 50%
+  z-index: 6
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 6px
+  width: 200px
+  margin-left: -100px
+  padding: 10px 10px 12px
+  background: var(--papel-alto)
+  border: 3px solid var(--cor-premio, var(--linha))
+  border-radius: 12px
+  box-shadow: 0 0 40px var(--cor-premio, rgba(255, 255, 255, .3))
+  color: var(--tinta)
+  animation: sobe .9s cubic-bezier(.25, .8, .3, 1) both
+
+.premio_incomum
+  --cor-premio: var(--raridade-incomum)
+
+.premio_rara
+  --cor-premio: var(--raridade-rara)
+
+.premio_epica
+  --cor-premio: var(--raridade-epica)
+
+.premio_lendaria
+  --cor-premio: var(--raridade-lendaria)
+
+// o rosto de perto: é onde óculos e chapéu estão
+.premioRosto
+  display: block
+  width: 176px
+  height: 150px
+  overflow: hidden
+  border-radius: 8px
+  line-height: 0
+
+  > *
+    border: 0
+    border-radius: 0
+    transform: translate(-22px, -6px)
+
+.premioNome
+  font-size: 17px
+
+.premioRaridade
+  display: flex
+  align-items: center
+  gap: 6px
+  color: var(--cor-premio, var(--tinta-fraca))
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 700
+  letter-spacing: .08em
+  text-transform: uppercase
+
+  i
+    display: inline-flex
+    align-items: center
+    gap: 3px
+    padding: 1px 6px
+    border-radius: 3px
+    font-style: normal
+    font-size: 10.5px
+
+.nova
+  background: var(--destaque)
+  color: var(--papel-alto)
+
+.repetida
+  background: var(--papel-baixo)
+  color: var(--tinta-fraca)
+
+// os raios atrás de tudo, na cor da raridade, girando
+.raios
+  position: absolute
+  top: 120px
+  left: 50%
+  z-index: 0
+  width: 520px
+  height: 520px
+  margin: -260px 0 0 -260px
+  border-radius: 50%
+  background: repeating-conic-gradient(from 0deg, var(--cor-raio) 0 7deg, transparent 7deg 24deg)
+  mask: radial-gradient(circle, #000 18%, transparent 66%)
+  opacity: 0
+  pointer-events: none
+  animation: acende .8s ease .35s forwards, gira 12s linear infinite
+
+.raio_comum
+  --cor-raio: rgba(244, 239, 227, .35)
+
+.raio_incomum
+  --cor-raio: var(--raridade-incomum)
+
+.raio_rara
+  --cor-raio: var(--raridade-rara)
+
+.raio_epica
+  --cor-raio: var(--raridade-epica)
+
+.raio_lendaria
+  --cor-raio: var(--raridade-lendaria)
+
+.dica
+  min-height: 1.4em
+  margin: 0
+  font-size: 14px
+  opacity: .85
+
+.acoes
+  display: flex
+  gap: 10px
+  animation: surge .35s ease .5s both
+
+@keyframes cortina-entra
+  from
+    opacity: 0
+
+@keyframes chega
+  from
+    opacity: 0
+    transform: translateY(70vh) scale(.4) rotate(8deg)
+  60%
+    opacity: 1
+
+@keyframes espera
+  0%, 100%
+    transform: none
+  50%
+    transform: translateY(-8px)
+
+@keyframes sacode
+  0%, 100%
+    transform: none
+  25%
+    transform: rotate(-3deg)
+  50%
+    transform: rotate(3deg)
+  75%
+    transform: rotate(-1.5deg)
+
+// o prêmio parte de dentro (embaixo, pequeno, atrás da base) e passa para a
+// frente quando já saiu da boca da maleta
+@keyframes sobe
+  0%
+    z-index: 2
+    opacity: 0
+    transform: translateY(330px) scale(.35)
+  15%
+    opacity: 1
+  45%
+    z-index: 2
+    transform: translateY(170px) scale(.45)
+  50%
+    z-index: 6
+  100%
+    z-index: 6
+    transform: none
+
+@keyframes acende
+  to
+    opacity: .85
+
+@keyframes gira
+  to
+    rotate: 360deg
+
+@keyframes surge
+  from
+    opacity: 0
+    transform: translateY(8px)
+
+@media (prefers-reduced-motion: reduce)
+  .cortina,
+  .fase_chegando,
+  .fase_esperando,
+  .fase_abrindo,
+  .premio,
+  .raios,
+  .acoes
+    animation: none
+
+  .raios
+    opacity: .6
+
+  .aberta .tampa
+    animation: none
+    transform: perspective(600px) rotateX(125deg)
+    background: #2a1813

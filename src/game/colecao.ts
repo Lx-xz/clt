@@ -59,12 +59,13 @@ export function colecaoInicial(): Collection {
     ativo: id,
     envelopes: [],
     missoes: { dia: '', feitas: [] },
+    cosmeticos: [],
   }
 }
 
 /** Envelopes e missões chegaram depois das coleções: quem gravou antes não
  *  tem os campos, e a leitura os dá vazios — o mesmo padrão do resto. */
-function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes'> {
+function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes' | 'cosmeticos'> {
   // até a v0.19 a fila era só o tipo (`'pardo'`); desde a v0.20 é o envelope
   // com as cartas já sorteadas. O antigo vira `{ tipo }`, e é sorteado na
   // abertura, como era
@@ -83,7 +84,11 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
     m && typeof m === 'object' && typeof m.dia === 'string' && Array.isArray(m.feitas)
       ? { dia: m.dia, feitas: (m.feitas as unknown[]).filter((f): f is string => typeof f === 'string') }
       : { dia: '', feitas: [] }
-  return { envelopes, missoes }
+  // quem gravou antes das maletas não tem a lista: nasce vazia
+  const cosmeticos = Array.isArray(bruta.cosmeticos)
+    ? (bruta.cosmeticos as unknown[]).filter((c): c is string => typeof c === 'string')
+    : []
+  return { envelopes, missoes, cosmeticos }
 }
 
 function numero(x: unknown): number {

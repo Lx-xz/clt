@@ -1858,6 +1858,30 @@ export const OCULOS: Record<Oculos, {
         6.2 * d.t,
       ),
   },
+  // o primeiro cosmético de maleta. Lente ESCURA e cheia, no formato
+  // clássico (topo reto, fundo arredondado): o que diz "óculos de sol" em
+  // 24px é a mancha escura cobrindo o olho, não o desenho da armação — e
+  // opaca: com transparência a íris aparecia por trás e lia como olho. Sem
+  // reflexo, pelo mesmo motivo que a íris não tem brilho: num desenho
+  // chapado, o único ponto de luz vira o assunto
+  sol: {
+    rotulo: 'Óculos de sol',
+    desenhar: (d) => {
+      const w = 7.2 * d.t
+      const a = 4.4 * d.t
+      const b = 5.2 * d.t
+      return lentes(
+        d,
+        (x) => (
+          <path
+            d={`M${x - w} ${d.olhoY - a} H${x + w} C${x + w} ${d.olhoY + b * 0.4} ${x + w * 0.7} ${d.olhoY + b} ${x} ${d.olhoY + b} C${x - w * 0.7} ${d.olhoY + b} ${x - w} ${d.olhoY + b * 0.4} ${x - w} ${d.olhoY - a} Z`}
+            fill="#1d1b20"
+          />
+        ),
+        w,
+      )
+    },
+  },
 }
 
 // ------------------------------------------------------------------- humor

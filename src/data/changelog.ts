@@ -34,6 +34,16 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.22',
+    data: '2026-10-10',
+    titulo: 'Maletas e cosméticos (em teste)',
+    itens: [
+      { tipo: 'novo', texto: 'Maletas de bronze, prata e ouro: a recompensa que dá peça para o avatar em vez de carta. Por enquanto só no lab, para testar a ideia.' },
+      { tipo: 'novo', texto: 'O primeiro cosmético: óculos de sol.' },
+      { tipo: 'melhor', texto: 'No editor do avatar, peça que você ainda não desbloqueou fica escondida. No fim de cada categoria que tem alguma, "ver não desbloqueados" mostra quais são.' },
+    ],
+  },
+  {
     versao: '0.21',
     data: '2026-10-10',
     titulo: 'Compartilhar o recibo',

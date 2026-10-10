@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Dices } from 'lucide-react'
+import { ArrowLeft, Dices, EyeOff, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -51,6 +51,9 @@ import {
   type Opcao,
 } from '@/data/avatar'
 import { trocarAvatar } from '@/data/conta'
+import { carregarDoBanco } from '@/data/sync'
+import { trancado } from '@/game/cosmeticos'
+import { loadCollection } from '@/game/storage'
 import { marcarPendencia } from '@/data/pendencias'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './editar.module.sass'
@@ -108,6 +111,22 @@ export default function EditarAvatarPage() {
   const [aba, setAba] = useState<Aba>('rosto')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  // os cosméticos que a pessoa tem: o resto das peças trancadas fica
+  // escondido. O espelho local abre a página e o banco confirma depois
+  const [tenho, setTenho] = useState<string[]>([])
+
+  useEffect(() => {
+    setTenho(loadCollection().cosmeticos)
+    let vivo = true
+    void carregarDoBanco(sessao.id)
+      .then(({ collection }) => {
+        if (vivo) setTenho(collection.cosmeticos)
+      })
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [sessao.id])
 
   const mudou = JSON.stringify(receita) !== JSON.stringify(sessao.avatar)
   const manequim = receita.rosto === 'manequim'
@@ -147,7 +166,7 @@ export default function EditarAvatarPage() {
       })
   }
 
-  const props = { receita, aoMudar: mudar }
+  const props = { receita, aoMudar: mudar, tenho }
 
   return (
     <main className={`page ${styles.pagina}`}>
@@ -178,7 +197,7 @@ export default function EditarAvatarPage() {
         <button
           type="button"
           className={`${buttons.button} ${styles.sortear}`}
-          onClick={() => setReceita(avatarAleatorio())}
+          onClick={() => setReceita(avatarAleatorio(tenho))}
           aria-label="Sortear"
           title="Sortear"
         >
@@ -342,19 +361,34 @@ export default function EditarAvatarPage() {
  * componente NOVO a cada render, e o React desmontava e remontava todas as
  * miniaturas a cada clique.
  */
-function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMudar, enquadrar = 'cabeca' }: {
+function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMudar, tenho, enquadrar = 'cabeca' }: {
   titulo: string
   campo: C
   opcoes: Opcao<Receita[C]>[]
   receita: Receita
   aoMudar: (campo: C, valor: Receita[C]) => void
+  tenho: string[]
   enquadrar?: Enquadramento
 }) {
+  const [verTrancadas, setVerTrancadas] = useState(false)
+  // a peça trancada fica ESCONDIDA, e não apagada no meio das outras: a
+  // grade de quem não tem nada continua sendo só do que dá para usar. A que
+  // já está vestida aparece sempre, senão a escolha atual sumiria da tela
+  const eTrancada = (o: Opcao<Receita[C]>) => trancado(String(campo), String(o.valor), tenho) && receita[campo] !== o.valor
+  const livres = opcoes.filter((o) => !eTrancada(o))
+  const trancadas = opcoes.filter(eTrancada)
+
+  const miniatura = (o: Opcao<Receita[C]>) => (
+    <span className={`${styles.recorte} ${styles[enquadrar]}`}>
+      <Avatar avatar={{ ...receita, [campo]: o.valor }} tamanho={TAMANHO_NA_MINIATURA[enquadrar]} />
+    </span>
+  )
+
   return (
     <div className={styles.grupo}>
       <h2 className={styles.grupoTitulo}>{titulo}</h2>
       <div className={styles.opcoes}>
-        {opcoes.map((o) => {
+        {livres.map((o) => {
           const ativo = receita[campo] === o.valor
           return (
             <button
@@ -366,12 +400,40 @@ function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMud
               title={o.rotulo}
               onClick={() => aoMudar(campo, o.valor)}
             >
-              <span className={`${styles.recorte} ${styles[enquadrar]}`}>
-                <Avatar avatar={{ ...receita, [campo]: o.valor }} tamanho={TAMANHO_NA_MINIATURA[enquadrar]} />
-              </span>
+              {miniatura(o)}
             </button>
           )
         })}
+        {/* as trancadas, só desta categoria, e só quando pedidas — e a
+            entrada para elas é a ÚLTIMA peça da grade, e não um botão em
+            cima: é mais uma coisa da categoria, não uma ação da página */}
+        {verTrancadas
+          ? trancadas.map((o) => (
+              <span
+                key={String(o.valor)}
+                className={`${styles.opcao} ${styles.opcaoTrancada}`}
+                role="img"
+                aria-label={`${o.rotulo}: ainda não desbloqueado`}
+                title={`${o.rotulo} · sai de maleta`}
+              >
+                {miniatura(o)}
+                <Lock size={16} className={styles.cadeado} aria-hidden />
+              </span>
+            ))
+          : null}
+        {trancadas.length > 0 ? (
+          <button
+            type="button"
+            className={`${styles.opcao} ${styles.verTrancadas}`}
+            aria-expanded={verTrancadas}
+            onClick={() => setVerTrancadas((v) => !v)}
+          >
+            <span className={styles.recorte}>
+              {verTrancadas ? <EyeOff size={22} aria-hidden /> : <Lock size={22} aria-hidden />}
+              <span>{verTrancadas ? 'Esconder' : `Ver não desbloqueados (${trancadas.length})`}</span>
+            </span>
+          </button>
+        ) : null}
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
+import { Briefcase, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -42,6 +42,12 @@ const BANCADAS = [
     titulo: 'Envelopes',
     texto: 'Abrir envelope de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
     Icon: Mail,
+  },
+  {
+    href: '/lab/maletas',
+    titulo: 'Maletas',
+    texto: 'A recompensa de cosmético, de bronze, prata e ouro. Esta MEXE na sua conta: o que sair fica desbloqueado e dá para vestir.',
+    Icon: Briefcase,
   },
 ]
 

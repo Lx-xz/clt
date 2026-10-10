@@ -374,6 +374,10 @@ export interface Collection {
   /** As missões cumpridas no dia `dia` (data local, `AAAA-MM-DD`). Virou o
    *  dia, a lista volta a valer vazia — quem confere é `missoesDeHoje`. */
   missoes: { dia: string; feitas: string[] }
+  /** Os cosméticos desbloqueados (`campo:valor`, veja `src/game/cosmeticos.ts`).
+   *  Na coleção pelo mesmo motivo dos envelopes: é coisa que se tem, e sobe
+   *  em `saves.collection` sem coluna nova. */
+  cosmeticos: string[]
 }
 
 /** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,

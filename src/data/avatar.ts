@@ -1,5 +1,6 @@
 'use client'
 
+import { COSMETICOS, trancado } from '@/game/cosmeticos'
 import { supabase } from './supabase'
 
 /**
@@ -103,7 +104,7 @@ export type Tronco =
   | 'jaleco'
 /** Óculos e chapéu são campos SEPARADOS: um é do rosto e o outro da cabeça, e
  *  quem quer os dois não deveria ter que escolher. */
-export type Oculos = 'nenhum' | 'redondo' | 'quadrado'
+export type Oculos = 'nenhum' | 'redondo' | 'quadrado' | 'sol'
 export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'headset'
 /** A cor da barba: a do cabelo (o padrão), ou outra — barba grisalha com o
  *  cabelo ainda escuro é a combinação mais comum que a receita não deixava. */
@@ -294,6 +295,8 @@ export const OCULOS: Opcao<Oculos>[] = [
   { valor: 'nenhum', rotulo: 'Sem óculos' },
   { valor: 'redondo', rotulo: 'Redondo' },
   { valor: 'quadrado', rotulo: 'Quadrado' },
+  // trancado: sai de maleta (`src/game/cosmeticos.ts`)
+  { valor: 'sol', rotulo: 'Óculos de sol' },
 ]
 
 export const ACESSORIOS: Opcao<Acessorio>[] = [
@@ -443,8 +446,8 @@ function talvez<T>(lista: Opcao<T>[], nada: T, chance: number): T {
  * peso igual para "nenhum" e para cada peça, dois terços dos sorteios sairiam
  * de chapéu, e o sorteio pareceria uma fantasia em vez de uma pessoa.
  */
-export function avatarAleatorio(): Avatar {
-  return {
+export function avatarAleatorio(tenho: readonly string[] = []): Avatar {
+  const sorteado: Avatar = {
     rosto: sorteio(ROSTOS.filter((r) => r.valor !== 'manequim')).valor,
     pele: sorteio(PELES).valor,
     cabelo: sorteio(CORTES).valor,
@@ -468,6 +471,15 @@ export function avatarAleatorio(): Avatar {
     cracha: Math.random() < 0.3,
     fundo: sorteio(FUNDOS).valor,
   }
+  // peça trancada que a pessoa não tem não sai no sorteio: seria mostrar no
+  // editor um cosmético que ela não consegue salvar de novo depois de trocar
+  for (const c of COSMETICOS) {
+    const campo = c.campo as keyof Avatar
+    if (sorteado[campo] === c.valor && trancado(c.campo, c.valor, tenho)) {
+      ;(sorteado as unknown as Record<string, unknown>)[campo] = AVATAR_PADRAO[campo]
+    }
+  }
+  return sorteado
 }
 
 /** Grava no banco. O convidado não tem conta, então não chega aqui. */

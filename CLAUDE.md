@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -725,6 +725,27 @@ opções. O que ele escolheu, e que deve ser preservado:
   `saveCollection` ou `sincronizar`. Embaixo, mil aberturas de cada tipo
   com o que saiu DE FATO contra a tabela de chances — a queda para a
   raridade de baixo só aparece ali.
+- **Cosméticos saem de MALETA (v0.22, por enquanto só no `/lab/maletas`).**
+  Envelope dá carta, maleta (bronze, prata, ouro) dá peça de avatar: são
+  duas vontades diferentes, e no mesmo pacote o óculos competiria com a
+  lendária pela mesma sorte. `src/game/cosmeticos.ts` é a tabela: um
+  cosmético é um VALOR de um campo da receita (`oculos: 'sol'`), o desenho
+  continua no `Avatar.tsx`, e peça fora da tabela é de todo mundo, como
+  sempre. O que a pessoa tem mora em `Collection.cosmeticos` (sobe em
+  `saves.collection`, lido vazio por quem gravou antes). Sem peça nova no
+  jogo inteiro, a maleta dá uma REPETIDA em vez de nada. **A bancada das
+  maletas mexe na conta do admin** (é o pedido: abrir e vestir na hora), e
+  tem o "Trancar de novo" para testar outra vez.
+  **No editor, peça trancada fica ESCONDIDA** (`Formas`): a entrada para
+  vê-las é a ÚLTIMA peça da grade da categoria ("ver não desbloqueados"),
+  não um botão em cima, e só existe na categoria que tem alguma. A peça já
+  vestida aparece sempre. O Sortear não dá peça trancada
+  (`avatarAleatorio(tenho)`). `salvar_avatar()` continua sem validar nada:
+  quem forçar um cosmético pelo console só enfeita o próprio avatar.
+  A maleta é CSS como o envelope, medida em frações de `--mal-w`; a tampa
+  gira pela borda de cima (perspectiva no transform dela, não no pai) e
+  troca a chapa pelo forro no meio do giro, e o prêmio sobe ENTRE o forro
+  e a base — mesmas regras de empilhamento da abertura do envelope.
 - **Carta que não dá para jogar fica ESCURA, não transparente**
   (`.indisponivel`, `filter: brightness`): com opacidade, as cartas de trás
   do leque apareciam através dela.
