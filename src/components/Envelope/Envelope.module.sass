@@ -365,7 +365,9 @@ button.envelope
   inset: -110px
   z-index: -2
   border-radius: 50%
-  background: repeating-conic-gradient(from 0deg, var(--cor-brilho) 0 6deg, transparent 6deg 22deg)
+  // o período divide 360 (16 raios de 22,5°): com 22°, a volta não fechava
+  // e o último raio colava no primeiro, dois feixes juntos em cima
+  background: repeating-conic-gradient(from 0deg, var(--cor-brilho) 0 6deg, transparent 6deg 22.5deg)
   mask: radial-gradient(circle, #000 25%, transparent 68%)
   opacity: 0
   pointer-events: none

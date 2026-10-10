@@ -40,6 +40,8 @@ export const VERSOES: Versao[] = [
     itens: [
       { tipo: 'novo', texto: 'Maletas de bronze, prata e ouro: a recompensa que dá peça para o avatar em vez de carta. Por enquanto só no lab, para testar a ideia.' },
       { tipo: 'novo', texto: 'O primeiro cosmético: óculos de sol.' },
+      { tipo: 'correcao', texto: 'A carta que sobe do envelope ainda virada mostrava o custo e o tipo nas costas, espelhados.' },
+      { tipo: 'correcao', texto: 'Os raios das cartas épicas e lendárias tinham dois feixes colados em cima; agora são todos igualmente espaçados.' },
       { tipo: 'melhor', texto: 'No editor do avatar, peça que você ainda não desbloqueou fica escondida. No fim de cada categoria que tem alguma, "ver não desbloqueados" mostra quais são.' },
     ],
   },

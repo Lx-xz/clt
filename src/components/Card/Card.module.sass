@@ -96,6 +96,18 @@ $levantada: 18px
     border-radius: inherit
     pointer-events: none
 
+// virada para baixo, a frente SOME de vez, e não só pelo
+// `backface-visibility`: o custo e o selo (posicionados, com `overflow` e
+// raio próprios) ganham camada de composição e o navegador os pintava por
+// cima do verso, espelhados — a carta saía do envelope entregando o tipo e
+// o custo. A troca acontece no meio do giro (o atraso), quando a carta está
+// de lado e nenhuma das faces aparece
+.frente
+  transition: visibility 0s linear .08s
+
+.virada .frente
+  visibility: hidden
+
 .tras
   transform: rotateY(180deg)
   align-items: center

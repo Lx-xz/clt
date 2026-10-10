@@ -181,6 +181,7 @@ export default function Card({
   if (interativa) classes.push(styles.interativa)
   if (disabled) classes.push(styles.indisponivel)
   if (locked) classes.push(styles.bloqueada)
+  if (faceDown) classes.push(styles.virada)
 
   const rotulo = evento
     ? faceDown
