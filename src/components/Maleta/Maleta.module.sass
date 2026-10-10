@@ -1,19 +1,18 @@
 // ========================================================= a maleta de frente
-// Só CSS, e tudo medido em frações de `--mal-w`: a mesma maleta serve de
-// botão de 96px no lab e de palco de 250px na abertura. As camadas, de trás
-// para a frente: o forro (que só aparece com a tampa aberta), a base, a
-// tampa, os fechos. `isolation` prende os z-index aqui — menos no palco,
-// onde o prêmio precisa subir ENTRE o forro e a base
-$y0: .11 // onde o corpo começa, abaixo da alça
-$corpo: .71 // a altura do corpo
-$costura: .4 // a fração do corpo que é tampa
+// Só CSS, chapada, e medida em frações de `--mal-w`: a mesma maleta é botão
+// de 110px no lab e palco de 250px na abertura. Duas metades do mesmo
+// tamanho, uma atrás da outra — as COSTAS (de que só se vê o forro, quando
+// abre) e a FRENTE, com a alça e os fechos. `isolation` prende os z-index
+// aqui; no palco ela sai, para o prêmio subir ENTRE as duas metades
+$y0: .13 // onde o corpo começa, abaixo da alça
+$corpo: .69
 
 .maleta
   position: relative
   display: inline-block
   flex: none
   width: var(--mal-w, 96px)
-  height: calc(var(--mal-w, 96px) * .82)
+  height: calc(var(--mal-w, 96px) * #{$y0 + $corpo})
   padding: 0
   background: none
   border: none
@@ -31,134 +30,98 @@ button.maleta
     outline: 2px solid var(--destaque)
     outline-offset: 4px
 
-// o metal: três tons de cada, e o gradiente vertical é o que faz a chapa
-// ler como metal e não como papelão pintado
+// o metal só dos fechos: um tom e a sombra embaixo, lisos como o resto
 .bronze
-  --m-claro: #e3a874
-  --m: #b8763f
-  --m-escuro: #7e4b22
+  --metal: #c07f45
+  --metal-sombra: #8a5528
 
 .prata
-  --m-claro: #f3f5f8
-  --m: #b9c0c9
-  --m-escuro: #7d8794
+  --metal: #c3c9d1
+  --metal-sombra: #8a939f
 
 .ouro
-  --m-claro: #fbe9a0
-  --m: #d7aa2c
-  --m-escuro: #9b7412
+  --metal: #ddb23a
+  --metal-sombra: #a8811a
 
-.alca
-  position: absolute
-  top: 0
-  left: 34%
-  z-index: 2
-  box-sizing: border-box
-  width: 32%
-  height: calc(var(--mal-w) * .15)
-  border: calc(var(--mal-w) * .035) solid var(--m-escuro)
-  border-bottom: 0
-  border-radius: calc(var(--mal-w) * .06) calc(var(--mal-w) * .06) 0 0
-
-// o forro de dentro: veludo escuro, com a luz vindo do fundo
-.dentro
-  position: absolute
-  top: calc(var(--mal-w) * #{$y0})
-  left: 3%
-  right: 3%
-  z-index: 1
-  height: calc(var(--mal-w) * #{$corpo * $costura + .04})
-  background: radial-gradient(ellipse at 50% 90%, #6a3b2a, #2a1813 70%)
-  border-radius: calc(var(--mal-w) * .05) calc(var(--mal-w) * .05) 0 0
-  box-shadow: inset 0 6px 14px rgba(0, 0, 0, .6)
-
-.base,
-.tampa
+// as duas metades se mexem a partir da borda de BAIXO, que é a dobradiça
+.costas,
+.frente
   position: absolute
   left: 0
   right: 0
+  bottom: 0
   box-sizing: border-box
-  background: linear-gradient(180deg, var(--m-claro), var(--m) 45%, var(--m-escuro))
-  border: calc(var(--mal-w) * .012) solid var(--m-escuro)
+  height: calc(var(--mal-w) * #{$corpo})
+  border-radius: calc(var(--mal-w) * .07)
+  transform-origin: bottom
+  transition: transform .55s cubic-bezier(.3, 1.4, .5, 1) .2s
 
-.base
-  top: calc(var(--mal-w) * #{$y0 + $corpo * $costura})
+// a de trás: o que dá para ver dela é o lado de DENTRO, o forro escuro com
+// a borda de couro em volta
+.costas
+  z-index: 1
+  background: var(--forro)
+  border: calc(var(--mal-w) * .045) solid var(--couro-escuro)
+  transform: none
+
+// a de frente: o couro liso, com a faixa mais escura embaixo (a sombra da
+// dobra, como as dobras do envelope) — sem degradê e sem costura desenhada
+.frente
   z-index: 3
-  height: calc(var(--mal-w) * #{$corpo * (1 - $costura)})
-  border-radius: 0 0 calc(var(--mal-w) * .06) calc(var(--mal-w) * .06)
-  box-shadow: 0 calc(var(--mal-w) * .04) calc(var(--mal-w) * .08) rgba(0, 0, 0, .35)
+  background: linear-gradient(to top, var(--couro-escuro) 0 14%, var(--couro) 14%)
+  transform: none
 
-// a tampa gira em volta da borda de CIMA e vem para a frente. A perspectiva
-// mora no transform dela, e não no pai: perspectiva no pai criaria um
-// contexto de empilhamento, e o prêmio não passaria por dentro da maleta
-.tampa
-  top: calc(var(--mal-w) * #{$y0})
-  z-index: 4
-  display: grid
-  place-items: center
-  height: calc(var(--mal-w) * #{$corpo * $costura})
-  border-radius: calc(var(--mal-w) * .06) calc(var(--mal-w) * .06) 0 0
-  transform-origin: top
-  transform: perspective(600px) rotateX(0)
+// presa nas costas, que têm borda: as medidas são em `--mal-w`, e não em
+// porcentagem, porque a caixa de referência é a de DENTRO da borda
+.alca
+  position: absolute
+  bottom: 100%
+  left: calc(var(--mal-w) * (.33 - .045))
+  box-sizing: border-box
+  width: calc(var(--mal-w) * .34)
+  height: calc(var(--mal-w) * #{$y0 + .02})
+  margin-bottom: calc(var(--mal-w) * (.045 - .02))
+  border: calc(var(--mal-w) * .04) solid var(--couro-escuro)
+  border-bottom: 0
+  border-radius: calc(var(--mal-w) * .07) calc(var(--mal-w) * .07) 0 0
 
-// a plaqueta no meio da tampa, onde iria o nome da firma
-.plaqueta
-  width: 26%
-  height: 34%
-  margin-top: 4%
-  border: calc(var(--mal-w) * .01) solid var(--m-escuro)
-  border-radius: calc(var(--mal-w) * .015)
-  background: linear-gradient(180deg, var(--m-escuro), var(--m))
-  opacity: .7
-
-// os fechos, mordendo a costura
+// os fechos, no alto da frente, e de metal
 .fecho
   position: absolute
-  top: calc(var(--mal-w) * #{$y0 + $corpo * $costura - .045})
-  z-index: 5
-  width: 11%
-  height: calc(var(--mal-w) * .09)
-  background: linear-gradient(180deg, var(--m-claro), var(--m-escuro))
-  border: calc(var(--mal-w) * .01) solid var(--m-escuro)
-  border-radius: calc(var(--mal-w) * .015)
+  top: calc(var(--mal-w) * .07)
+  width: 12%
+  height: calc(var(--mal-w) * .085)
+  background: var(--metal)
+  border-bottom: calc(var(--mal-w) * .022) solid var(--metal-sombra)
+  border-radius: calc(var(--mal-w) * .018)
   transform-origin: bottom
   transition: transform .25s cubic-bezier(.2, 1.6, .4, 1)
 
 .fechoE
-  left: 17%
+  left: 18%
 
 .fechoD
-  right: 17%
+  right: 18%
 
-// aberta: os fechos saltam e a tampa abre, trocando a chapa pelo forro no
-// meio do giro — é a face de dentro dela que aparece depois de passar de 90°
+// aberta: os fechos saltam, e as metades se afastam pouco — a frente vem
+// para a frente, a de trás vai para trás, e entre elas aparece o forro
 .aberta
-  .fecho
-    transform: rotate(-28deg) translateY(-20%)
+  .fechoE
+    transform: rotate(-24deg) translateY(-15%)
 
   .fechoD
-    transform: rotate(28deg) translateY(-20%)
+    transform: rotate(24deg) translateY(-15%)
 
-  .tampa
-    animation: abre-tampa .7s cubic-bezier(.3, .7, .3, 1) .25s forwards
+  // A abertura é ESCALA, e não giro 3D: de frente, com o ponto de fuga na
+  // borda de baixo, a metade que vem para perto cresce e tapa a de trás, e a
+  // abertura nunca aparecia (testado). Chapado como o resto do jogo: a frente
+  // alarga e baixa (veio para perto, inclinada), as costas estreitam e sobem
+  // (foram para longe), e entre as duas fica a faixa do forro
+  .frente
+    transform: scale(1.03, .86)
 
-    .plaqueta
-      animation: some .01s linear .55s forwards
-
-@keyframes abre-tampa
-  0%
-    transform: perspective(600px) rotateX(0)
-  49%
-    background: linear-gradient(180deg, var(--m-claro), var(--m) 45%, var(--m-escuro))
-  51%
-    background: linear-gradient(0deg, #5a3324, #2a1813)
-  100%
-    transform: perspective(600px) rotateX(125deg)
-    background: linear-gradient(0deg, #5a3324, #2a1813)
-
-@keyframes some
-  to
-    opacity: 0
+  .costas
+    transform: scale(.95, 1.04)
 
 // ============================================= a abertura, em tela cheia
 .cortina
@@ -222,9 +185,13 @@ button.maleta
   bottom: 30px
   margin-left: -125px
 
+  // sem `filter` para a sombra: filtro também cria contexto de
+  // empilhamento. A sombra é da metade da frente
   .maleta
     isolation: auto
-    filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .55))
+
+  .frente
+    box-shadow: 0 18px 30px rgba(0, 0, 0, .5)
 
 .fase_chegando
   animation: chega .6s cubic-bezier(.2, .9, .25, 1.15) both
@@ -236,7 +203,7 @@ button.maleta
   animation: sacode .4s ease
 
 // o prêmio: o avatar vestindo a peça, num cartão. Nasce DENTRO da maleta
-// (z 2, entre o forro e a base) e passa para a frente quando já saiu
+// (z 2, entre as costas e a frente) e passa para a frente quando já saiu
 .premio
   position: absolute
   top: 30px
@@ -382,7 +349,7 @@ button.maleta
   75%
     transform: rotate(-1.5deg)
 
-// o prêmio parte de dentro (embaixo, pequeno, atrás da base) e passa para a
+// o prêmio parte de dentro (embaixo, pequeno, atrás da frente) e passa para a
 // frente quando já saiu da boca da maleta
 @keyframes sobe
   0%
@@ -426,7 +393,6 @@ button.maleta
   .raios
     opacity: .6
 
-  .aberta .tampa
-    animation: none
-    transform: perspective(600px) rotateX(125deg)
-    background: #2a1813
+  .costas,
+  .frente
+    transition: none

@@ -742,10 +742,18 @@ opções. O que ele escolheu, e que deve ser preservado:
   vestida aparece sempre. O Sortear não dá peça trancada
   (`avatarAleatorio(tenho)`). `salvar_avatar()` continua sem validar nada:
   quem forçar um cosmético pelo console só enfeita o próprio avatar.
-  A maleta é CSS como o envelope, medida em frações de `--mal-w`; a tampa
-  gira pela borda de cima (perspectiva no transform dela, não no pai) e
-  troca a chapa pelo forro no meio do giro, e o prêmio sobe ENTRE o forro
-  e a base — mesmas regras de empilhamento da abertura do envelope.
+  **A maleta é chapada, de couro liso, e só os FECHOS são de metal**
+  (tokens `--couro`, `--couro-escuro`, `--forro`). A primeira versão era
+  toda de metal, com degradê, plaqueta e tampa, e o autor a achou detalhada
+  e desconexa do resto, que é papel e cor lisa. Ela abre PELO MEIO, como
+  maleta em pé: duas metades iguais, e ao abrir a da frente alarga e baixa
+  e a de trás estreita e sobe (`scale` a partir da borda de baixo), e entre
+  elas aparece a faixa do forro. **Não é giro 3D de propósito:** de frente,
+  com o ponto de fuga na borda de baixo, a metade que vem para perto cresce
+  e tapa a outra, e a abertura não aparece (testado). A alça é da metade de
+  TRÁS — na da frente ela afundava no vão. O prêmio sobe ENTRE as metades,
+  então nada no palco pode criar contexto de empilhamento: nem `filter` na
+  maleta (a sombra é `box-shadow` da frente).
 - **Carta que não dá para jogar fica ESCURA, não transparente**
   (`.indisponivel`, `filter: brightness`): com opacidade, as cartas de trás
   do leque apareciam através dela.

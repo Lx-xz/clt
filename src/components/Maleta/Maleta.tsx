@@ -17,13 +17,16 @@ const METAIS: Record<TipoMaleta, string> = {
 }
 
 /**
- * A maleta desenhada, de frente. Só CSS, como o envelope: a alça, a tampa
- * (a parte de cima, até a costura), a base, os dois fechos na costura e a
- * plaqueta no meio da tampa. O metal é a única diferença entre as três —
- * bronze, prata e ouro dizem a ordem sem nada escrito.
+ * A maleta desenhada, de frente. Só CSS e chapada, como o envelope: couro
+ * de cor lisa, a alça e os dois fechos — e os FECHOS são a única parte de
+ * metal. É o metal deles que diz bronze, prata ou ouro; o resto é a mesma
+ * maleta. (A primeira versão era toda de metal, com degradê, plaqueta e
+ * tampa, e destoava do resto do jogo, que é papel e cor lisa.)
  *
- * Aberta, os fechos saltam e a tampa gira em volta da borda de CIMA,
- * vindo para a frente e mostrando o forro; o que estava dentro sobe dali.
+ * Ela abre PELO MEIO, como uma maleta de verdade em pé: a metade da frente
+ * inclina um pouco para a frente e a de trás um pouco para trás. Como a
+ * vemos de frente, a abertura é pequena — aparece uma faixa do forro em
+ * cima, e é dela que o prêmio sobe.
  */
 export function MaletaDesenhada({ tipo, aberta = false, largura = 96, className, rotulo, onClick }: {
   tipo: TipoMaleta
@@ -35,14 +38,15 @@ export function MaletaDesenhada({ tipo, aberta = false, largura = 96, className,
 }) {
   const corpo = (
     <>
-      <span className={styles.alca} aria-hidden />
-      <span className={styles.dentro} aria-hidden />
-      <span className={styles.base} aria-hidden />
-      <span className={styles.tampa} aria-hidden>
-        <span className={styles.plaqueta} />
+      {/* a alça é da metade de TRÁS: na da frente ela afundava no vão ao
+          abrir; atrás, ela sobe junto e fica por cima da abertura */}
+      <span className={styles.costas} aria-hidden>
+        <span className={styles.alca} />
       </span>
-      <span className={`${styles.fecho} ${styles.fechoE}`} aria-hidden />
-      <span className={`${styles.fecho} ${styles.fechoD}`} aria-hidden />
+      <span className={styles.frente} aria-hidden>
+        <span className={`${styles.fecho} ${styles.fechoE}`} />
+        <span className={`${styles.fecho} ${styles.fechoD}`} />
+      </span>
     </>
   )
   const props = {
