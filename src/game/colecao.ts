@@ -21,7 +21,15 @@ export const MAXIMO_DE_BARALHOS = 3
 
 /** Quantas cópias da carta cabem na coleção. Raridade é escassez, e o teto
  *  é o que faz a recompensa ter o que dar por muito tempo. */
-export const COPIAS_POR_RARIDADE: Record<Raridade, number> = { comum: 4, incomum: 3, rara: 2 }
+export const COPIAS_POR_RARIDADE: Record<Raridade, number> = { comum: 4, incomum: 3, rara: 2, epica: 1, lendaria: 1 }
+
+export const NOMES_DE_RARIDADE: Record<Raridade, string> = {
+  comum: 'comum',
+  incomum: 'incomum',
+  rara: 'rara',
+  epica: 'épica',
+  lendaria: 'lendária',
+}
 
 export function copiasMaximas(carta: ActionCard): number {
   // a carta inicial nunca pode ter um teto abaixo do que o baralho inicial
@@ -242,7 +250,7 @@ export function ativarBaralho(c: Collection, id: string): Collection {
 
 // ---------------------------------------------------------------- sorteio
 
-const ORDEM_RARIDADE: Raridade[] = ['comum', 'incomum', 'rara']
+const ORDEM_RARIDADE: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']
 
 /**
  * Sorteia uma carta por vaga, na raridade pedida. Só entra carta que ainda

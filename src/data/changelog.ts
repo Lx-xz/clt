@@ -38,6 +38,8 @@ export const VERSOES: Versao[] = [
     data: '2026-10-10',
     titulo: 'O estresse como combustível',
     itens: [
+      { tipo: 'novo', texto: 'A raridade tem cor: a borda da carta e o quadrado do tipo ficam azuis na incomum, verdes na rara, roxos na épica e dourados na lendária. A comum continua sem cor.' },
+      { tipo: 'novo', texto: 'Duas raridades novas, épica e lendária, com uma cópia só de cada carta na coleção.' },
       { tipo: 'novo', texto: 'Doze cartas novas, várias pagas em estresse ou em produtividade: Raiva, Virar a Noite, Respirar Fundo, Pedir Desculpas, Café Expresso, Terceirizar, Engolir Sapo, Reunião que Podia Ser E-mail, Faxina na Caixa de Entrada, Meditação no Banheiro, Plantão e Deixar pra Amanhã.' },
       { tipo: 'novo', texto: 'Três cartas que só saem com o estresse alto e o gastam ao jogar: Canalizar a Raiva (4+ de estresse: −3 estresse, +4 produtividade), Desabafo no Café (6+: −4 estresse, compre 1) e Grito no Travesseiro (8+, uma vez por run: −5 estresse, +2 energia). Quanto pior o dia, mais forte a mão.' },
     ],

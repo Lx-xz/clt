@@ -26,7 +26,7 @@ import { EVENTOS_BASE } from '@/game/events'
 import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
 import type { Acao, Efeito, Recurso } from '@/game/acoes'
-import { COPIAS_POR_RARIDADE } from '@/game/colecao'
+import { COPIAS_POR_RARIDADE, NOMES_DE_RARIDADE } from '@/game/colecao'
 import { RECURSOS_DE_CUSTO, lerCustos } from '@/game/custos'
 import type { ActionCard, ClasseDaCarta, Custo, Raridade, RecursoDeCusto } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
@@ -66,6 +66,8 @@ const RARIDADES: { valor: Raridade; rotulo: string }[] = [
   { valor: 'comum', rotulo: 'Comum' },
   { valor: 'incomum', rotulo: 'Incomum' },
   { valor: 'rara', rotulo: 'Rara' },
+  { valor: 'epica', rotulo: 'Épica' },
+  { valor: 'lendaria', rotulo: 'Lendária' },
 ]
 
 const RECURSOS: Recurso[] = ['produtividade', 'energia', 'estresse', 'dinheiro']
@@ -639,9 +641,10 @@ export default function LabCartasPage() {
               />
             </div>
             <span className={comuns.dica}>
-              Quantas cópias cabem na coleção (comum {COPIAS_POR_RARIDADE.comum}, incomum{' '}
-              {COPIAS_POR_RARIDADE.incomum}, rara {COPIAS_POR_RARIDADE.rara}) e quão longe a run
-              precisa ir para a carta aparecer na recompensa: rara só da semana 4 em diante.
+              A cor da borda, quantas cópias cabem na coleção (
+              {RARIDADES.map((r) => `${r.rotulo.toLowerCase()} ${COPIAS_POR_RARIDADE[r.valor]}`).join(', ')}) e
+              em que envelope ela pode vir: o pardo vai até incomum, o confidencial até rara.
+              Épica e lendária ainda não saem de envelope nenhum.
             </span>
           </label>
 
@@ -794,7 +797,7 @@ function Grade({ cartas, aoAbrir, esmaecida }: {
         <button key={c.id} type="button" className={styles.celula} onClick={() => aoAbrir(c)}>
           <Card card={c} />
           <span className={styles.rotulo}>
-            {c.starter ? `inicial ×${c.copies ?? 1}` : (c.raridade ?? 'comum')}
+            {c.starter ? `inicial ×${c.copies ?? 1}` : NOMES_DE_RARIDADE[c.raridade ?? 'comum']}
             {c.kind === null ? ' · sem tipo' : ''}
           </span>
         </button>

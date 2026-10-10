@@ -23,6 +23,7 @@ import {
   moverCopias,
   novoBaralho,
   renomearBaralho,
+  NOMES_DE_RARIDADE,
 } from '@/game/colecao'
 import { regras } from '@/game/regras'
 import { loadCollection, loadRun, saveCollection } from '@/game/storage'
@@ -291,7 +292,7 @@ export default function BaralhoPage() {
               </div>
               <span className={styles.copiasDica}>
                 Você tem {colecao.tenho[cartaAberta.id]} de {copiasMaximas(cartaAberta)} possíveis
-                {cartaAberta.raridade && cartaAberta.raridade !== 'comum' ? ` · ${cartaAberta.raridade}` : ''}.
+                {cartaAberta.raridade && cartaAberta.raridade !== 'comum' ? ` · ${NOMES_DE_RARIDADE[cartaAberta.raridade]}` : ''}.
               </span>
             </div>
           ) : (

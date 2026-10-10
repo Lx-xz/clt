@@ -54,7 +54,9 @@ export interface ActionCard {
   custos?: Custo[]
 }
 
-export type Raridade = 'comum' | 'incomum' | 'rara'
+/** Da mais fácil à mais difícil de ganhar. Os ids não têm acento porque
+ *  moram numa coluna do banco; o nome com acento é `NOMES_DE_RARIDADE`. */
+export type Raridade = 'comum' | 'incomum' | 'rara' | 'epica' | 'lendaria'
 
 /** Os recursos que podem ser custo além da energia, que é o `cost`. */
 export type RecursoDeCusto = Exclude<Recurso, 'energia'>

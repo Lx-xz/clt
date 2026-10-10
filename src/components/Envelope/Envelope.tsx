@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getCard } from '@/game/catalogo'
+import { NOMES_DE_RARIDADE } from '@/game/colecao'
 import { ENVELOPES } from '@/game/missoes'
 import type { CardId, TipoEnvelope } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
@@ -79,7 +80,7 @@ export default function Envelope({ tipo, cartas, novas, onFechar }: {
                 <Card card={carta} faceDown={!virada} className={styles.carta} />
                 <span className={`${styles.rotulo} ${virada ? styles.visivel : ''}`}>
                   {novas.includes(id) ? <b className={styles.nova}>nova</b> : null}
-                  {carta.raridade ?? 'comum'}
+                  {NOMES_DE_RARIDADE[carta.raridade ?? 'comum']}
                 </span>
               </div>
             )

@@ -45,7 +45,7 @@ import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
 import { problemasDoBaralho } from '@/game/baralho'
 import Missoes from '@/components/Missoes'
-import { baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
+import { NOMES_DE_RARIDADE, baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
 import { custoQueFalta, custosDe, textoDoCusto } from '@/game/custos'
 import { cumprirMissoes } from '@/game/missoes'
 import { regras } from '@/game/regras'
@@ -771,7 +771,7 @@ function Recompensa({ state, onEscolher }: { state: GameState; onEscolher: (id: 
                 onOpen={escolhida ? undefined : () => onEscolher(id)}
               />
               <span className={styles.opcaoRotulo}>
-                {carta.raridade ?? 'comum'} · tem {colecao.tenho[id] ?? 0}/{copiasMaximas(carta)}
+                {NOMES_DE_RARIDADE[carta.raridade ?? 'comum']} · tem {colecao.tenho[id] ?? 0}/{copiasMaximas(carta)}
               </span>
             </div>
           )

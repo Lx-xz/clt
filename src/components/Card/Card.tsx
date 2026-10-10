@@ -217,6 +217,9 @@ export default function Card({
             styles.face,
             styles.frente,
             evento ? styles[`ev${card.tone[0].toUpperCase()}${card.tone.slice(1)}`] : '',
+            !evento && card.raridade && card.raridade !== 'comum'
+              ? `${styles.comRaridade} ${styles[`raridade_${card.raridade}`]}`
+              : '',
           ].join(' ')}
         >
           {custo !== null ? (

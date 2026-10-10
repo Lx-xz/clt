@@ -167,6 +167,33 @@ $levantada: 18px
 .custo_produtividade
   background: var(--produtividade)
 
+// ---------------------------------------------------------------- raridade
+// Por enquanto a raridade só pinta duas coisas: a BORDA da carta e o fundo do
+// selo do tipo. Comum não tem classe nenhuma — fica como sempre foi. A borda
+// ganha um segundo pixel por dentro com `outline`, e não com box-shadow
+// inset: o hover troca a box-shadow inteira pela sombra alta, e o anel sumia
+// justo quando a carta é levantada
+.raridade_incomum
+  --cor-raridade: var(--raridade-incomum)
+
+.raridade_rara
+  --cor-raridade: var(--raridade-rara)
+
+.raridade_epica
+  --cor-raridade: var(--raridade-epica)
+
+.raridade_lendaria
+  --cor-raridade: var(--raridade-lendaria)
+
+.comRaridade
+  border-color: var(--cor-raridade)
+  outline: 1px solid var(--cor-raridade)
+  outline-offset: -2px
+
+  .selo
+    background: var(--cor-raridade)
+    color: #fff
+
 .selo
   position: absolute
   top: 0

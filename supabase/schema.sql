@@ -296,7 +296,7 @@ $$;
 alter table public.cartas add column if not exists custo_dinheiro smallint not null default 0;
 alter table public.cartas drop constraint if exists cartas_raridade_ok;
 alter table public.cartas add constraint cartas_raridade_ok
-  check (raridade in ('comum', 'incomum', 'rara'));
+  check (raridade in ('comum', 'incomum', 'rara', 'epica', 'lendaria'));
 alter table public.cartas drop constraint if exists cartas_custo_dinheiro_ok;
 alter table public.cartas add constraint cartas_custo_dinheiro_ok
   check (custo_dinheiro between 0 and 1000);

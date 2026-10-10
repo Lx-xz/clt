@@ -322,7 +322,17 @@ quando as 13 desbloqueáveis acabavam. Hoje (`src/game/colecao.ts`):
 - `Collection = { tenho, baralhos, ativo }`: cópias possuídas por carta, até
   `MAXIMO_DE_BARALHOS` (3) baralhos com nome, e qual está equipado.
 - **O teto de cópias é da raridade** (`COPIAS_POR_RARIDADE`: comum 4, incomum
-  3, rara 2), nunca abaixo das cópias iniciais da carta.
+  3, rara 2, épica 1, lendária 1), nunca abaixo das cópias iniciais da carta.
+- **Cinco raridades desde a v0.18**: comum, incomum, rara, `epica`, `lendaria`
+  (os ids sem acento moram na coluna; o nome é `NOMES_DE_RARIDADE`). Elas
+  foram ACRESCENTADAS em cima, e não renomeadas: trocar "incomum → rara, rara
+  → épica" deixaria o valor `rara` ambíguo no banco (é a rara antiga ou a
+  nova?), e a tradução na leitura não teria como saber. A raridade pinta só
+  a BORDA da carta e o SELO do tipo (`.comRaridade`, tokens
+  `--raridade-*` em `_tokens.sass`, com tons próprios e não os dos
+  medidores); comum não tem cor. O anel de dentro da borda é `outline`, não
+  box-shadow inset — o hover troca a box-shadow inteira. Nenhum envelope
+  sorteia épica ou lendária ainda.
 - **`lerColecao()` traduz o formato antigo na LEITURA**, como `lerAvatar` e
   `migrarAcoes`: inicial equipada vira as suas cópias, desbloqueável vira 1.
   Ela roda no localStorage (`clt:collection:v2`, lendo a `v1` se a v2 não

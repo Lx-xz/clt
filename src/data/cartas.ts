@@ -73,8 +73,11 @@ function paraClasse(bruta: string | null): ClasseDaCarta {
   return CLASSES_VALIDAS.includes(bruta as CardKind) ? (bruta as CardKind) : null
 }
 
+const RARIDADES_VALIDAS: Raridade[] = ['incomum', 'rara', 'epica', 'lendaria']
+
+/** Raridade desconhecida vira comum, como a classe desconhecida vira neutra. */
 function paraRaridade(bruta: string | null | undefined): Raridade | undefined {
-  return bruta === 'incomum' || bruta === 'rara' ? bruta : undefined
+  return RARIDADES_VALIDAS.includes(bruta as Raridade) ? (bruta as Raridade) : undefined
 }
 
 /**
