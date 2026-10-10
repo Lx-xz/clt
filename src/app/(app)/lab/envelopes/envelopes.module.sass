@@ -1,0 +1,117 @@
+.voltar
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  margin-bottom: 8px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-decoration: none
+
+  &:hover
+    color: var(--tinta)
+
+.titulo
+  margin: 0
+  font-size: clamp(24px, 5vw, 32px)
+
+.intro,
+.dica
+  max-width: 62ch
+  margin: 6px 0 20px
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.6
+
+.dica
+  font-size: 13px
+
+.barra
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 10px 16px
+  margin-bottom: 24px
+
+.estado
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px
+
+.envelopes
+  display: flex
+  flex-wrap: wrap
+  gap: 22px
+
+// a aba aberta precisa de lugar quando o envelope balança no hover
+.envelope
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 4px
+  width: 110px
+  padding-top: 8px
+  text-align: center
+
+  b
+    margin-top: 6px
+    font-size: 13px
+
+  span
+    color: var(--tinta-fraca)
+    font-size: 12px
+
+.secao
+  margin: 36px 0 4px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  letter-spacing: .1em
+  text-transform: uppercase
+
+// cinco raridades e a coluna do envelope não cabem em 390px: quem rola é a
+// tabela, e não a página
+.tabelaRolavel
+  max-width: 100%
+  overflow-x: auto
+
+.tabela
+  border-collapse: collapse
+  font-size: 13px
+
+  th,
+  td
+    padding: 7px 10px
+    border-bottom: 1px solid var(--linha)
+    text-align: right
+    white-space: nowrap
+
+  th:first-child
+    text-align: left
+
+  thead th
+    color: var(--tinta-fraca)
+    font-size: 12px
+    font-weight: 650
+
+.real
+  display: block
+  font-family: var(--mono)
+  font-weight: 650
+
+// o número da tabela de chances, pequeno embaixo do que saiu de fato
+.tabelada
+  display: block
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 11px
+
+.r_incomum
+  color: var(--raridade-incomum) !important
+
+.r_rara
+  color: var(--raridade-rara) !important
+
+.r_epica
+  color: var(--raridade-epica) !important
+
+.r_lendaria
+  color: var(--raridade-lendaria) !important

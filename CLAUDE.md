@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -413,7 +413,8 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
 - **Envelope, e não baú** (pedido do autor: baú não combina). É o MESMO
   envelope em pé (`EnvelopeEmPe`, só CSS), e o que os distingue é o SELO de
   cera, na cor da raridade que dá nome ao envelope (o comum é cinza,
-  `--selo-comum`). **A geometria é uma só:** as quatro dobras vão dos
+  `--selo-comum`), e o ícone é um só para todos (a carta de baralho, v0.21):
+  cinco ícones eram cinco coisas para decorar, e a cor já dizia tudo. **A geometria é uma só:** as quatro dobras vão dos
   cantos ao CENTRO, a aba é a dobra de cima (ponta no centro, no fundo do
   V do bolso) e o selo fica nesse ponto; os cantos de cima são retos,
   porque ali a aba continua o papel. A primeira versão tinha o X das
@@ -709,6 +710,24 @@ opções. O que ele escolheu, e que deve ser preservado:
   botões do recibo da mesa: "Nova run" estica, e "ver o que aconteceu" e
   "voltar ao início" são só o ícone — na nota estreita, os três com texto
   quebravam em três linhas.
+- **Compartilhar o recibo é uma imagem desenhada no CANVAS**
+  (`Recibo/compartilhar.ts`, carregado só no clique), e não um print do
+  DOM: uma biblioteca de captura pesaria mais que o jogo, e o recibo é
+  texto em linhas. As cores são fixas (a do tema claro), porque quem
+  recebe não está no tema de ninguém; o avatar é o SVG do próprio recibo
+  (`[data-recibo-avatar]`), serializado, com o fundo lido do estilo
+  calculado — o fundo é CSS. A nota é desenhada duas vezes: a primeira só
+  mede a altura. No celular vai pelo `navigator.share` com arquivo; onde
+  ele não aceita arquivo, baixa o PNG e copia a frase. O link é sempre o
+  do jogo no ar (`ENDERECO_DO_JOGO`), mesmo compartilhando do localhost.
+- **`/lab/envelopes` abre envelope de mentira.** A coleção da página é
+  uma CÓPIA em memória (a inicial, ou a sua de agora), e nada ali chama
+  `saveCollection` ou `sincronizar`. Embaixo, mil aberturas de cada tipo
+  com o que saiu DE FATO contra a tabela de chances — a queda para a
+  raridade de baixo só aparece ali.
+- **Carta que não dá para jogar fica ESCURA, não transparente**
+  (`.indisponivel`, `filter: brightness`): com opacidade, as cartas de trás
+  do leque apareciam através dela.
 - **A cortina atrás de popup e da gaveta é `--cortina`**, um preto
   translúcido nos dois temas. Era `color-mix` com a `--tinta`, e no escuro
   a tinta é CLARA: o fundo virava um véu branco.

@@ -50,9 +50,10 @@ $levantada: 18px
 .indisponivel
   cursor: not-allowed
 
+  // ESCURECIDA, e não transparente: com opacidade, as cartas do leque de
+  // trás apareciam através dela e a mão virava uma sobreposição embaralhada
   .frente
-    opacity: .45
-    filter: grayscale(.6)
+    filter: brightness(.58) saturate(.55)
 
 // cresce ao passar o mouse — só quando dá para jogar e não está sendo arrastada
 @media (hover: hover)

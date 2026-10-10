@@ -34,6 +34,16 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.21',
+    data: '2026-10-10',
+    titulo: 'Compartilhar o recibo',
+    itens: [
+      { tipo: 'novo', texto: 'O recibo de fim e o replay têm um botão de compartilhar: ele monta uma imagem do recibo e, no celular, abre a janela de compartilhar do aparelho (WhatsApp e companhia) com uma frase e o link do jogo. No computador, baixa a imagem e copia a frase.' },
+      { tipo: 'melhor', texto: 'Os selos dos envelopes têm um ícone só, a carta de baralho; o que diferencia um do outro é a cor da raridade.' },
+      { tipo: 'melhor', texto: 'A carta que não dá para jogar fica mais escura, em vez de transparente — as cartas de trás do leque não aparecem mais através dela.' },
+    ],
+  },
+  {
     versao: '0.20',
     data: '2026-10-10',
     titulo: 'Recibos',

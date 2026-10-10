@@ -44,7 +44,7 @@ import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
 import { problemasDoBaralho } from '@/game/baralho'
-import Recibo, { FIM, type Desfecho } from '@/components/Recibo'
+import Recibo, { BotaoCompartilhar, FIM, type DadosDoRecibo, type Desfecho } from '@/components/Recibo'
 import { NOMES_DE_RARIDADE, baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
 import { custoQueFalta, custosEfetivos, textoDoCusto } from '@/game/custos'
 import { cumprirMissoes } from '@/game/missoes'
@@ -250,6 +250,16 @@ export default function JogarPage() {
   const evento = state.currentEvent ? getEvent(state.currentEvent) : null
   const acabou = state.outcome !== 'jogando'
   const fim = acabou ? FIM[state.outcome as keyof typeof FIM] : null
+  const dadosDoFim: DadosDoRecibo = {
+    outcome: state.outcome as Desfecho,
+    dias: state.history.length,
+    cartasJogadas: state.cardsPlayed,
+    dinheiro: state.money,
+    estresse: state.stress,
+    estresseMaximo: state.modo.estresseMaximo,
+    envelopes: state.envelopesGanhos,
+    conquistas: conquistasNovas,
+  }
   const esperandoEvento = state.phase === 'evento' && !state.eventRevealed
   const meio = (state.hand.length - 1) / 2
   const escolhendo = state.escolhaDeDescarte
@@ -632,16 +642,7 @@ export default function JogarPage() {
         onFechar={() => setFimFechado(true)}
       >
         <Recibo
-          dados={{
-            outcome: state.outcome as Desfecho,
-            dias: state.history.length,
-            cartasJogadas: state.cardsPlayed,
-            dinheiro: state.money,
-            estresse: state.stress,
-            estresseMaximo: state.modo.estresseMaximo,
-            envelopes: state.envelopesGanhos,
-            conquistas: conquistasNovas,
-          }}
+          dados={dadosDoFim}
           avatar={sessao.avatar}
           colecao={colecao}
           onMudarColecao={(c) => {
@@ -688,6 +689,11 @@ export default function JogarPage() {
             <ScrollText size={18} aria-hidden />
             <span>Ver o que aconteceu</span>
           </button>
+          <BotaoCompartilhar
+            soIcone
+            className={`${buttons.button} ${styles.acaoIcone}`}
+            dados={dadosDoFim}
+          />
           <Link
             className={`${buttons.button} ${styles.acaoIcone}`}
             href="/"

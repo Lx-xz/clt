@@ -1,6 +1,6 @@
 'use client'
 
-import { Layers, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
+import { Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -36,6 +36,12 @@ const BANCADAS = [
     titulo: 'Cartas de evento',
     texto: 'O mesmo para os eventos do dia, escolhas dos ambíguos inclusas.',
     Icon: Shuffle,
+  },
+  {
+    href: '/lab/envelopes',
+    titulo: 'Envelopes',
+    texto: 'Abrir envelope de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
+    Icon: Mail,
   },
 ]
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Medal } from 'lucide-react'
+import { Check, Medal, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import type { Avatar as Receita } from '@/data/avatar'
@@ -165,7 +165,12 @@ export default function Recibo({
   const miolo = (
     <>
       {papel ? <h2 className={styles.titulo}>{fim.title}</h2> : null}
-      {avatar ? <Avatar avatar={avatar} tamanho={88} className={styles.avatar} humor={humor} /> : null}
+      {avatar ? (
+        // a marca é por onde o compartilhar acha o desenho para pôr na imagem
+        <div className={styles.avatar} data-recibo-avatar>
+          <Avatar avatar={avatar} tamanho={88} humor={humor} />
+        </div>
+      ) : null}
       <p className={styles.texto}>{fim.text}</p>
       <ol className={styles.passos}>
         {dados.data ? (
@@ -279,5 +284,56 @@ export function ReciboResumido({ id, dados, className }: { id: number; dados: Da
         </span>
       </Link>
     </div>
+  )
+}
+
+/**
+ * O botão de compartilhar o recibo: gera a imagem e abre a janela de
+ * compartilhar do aparelho (no computador, baixa a imagem e copia a frase).
+ * `className` e `soIcone` são para caber na fila de botões da mesa.
+ */
+export function BotaoCompartilhar({ dados, className, soIcone = false }: {
+  dados: DadosDoRecibo
+  className?: string
+  soIcone?: boolean
+}) {
+  const [estado, setEstado] = useState<'parado' | 'gerando' | 'baixado' | 'erro'>('parado')
+
+  async function compartilhar() {
+    setEstado('gerando')
+    try {
+      // só aqui, no clique: o desenho em canvas não precisa ir no pacote de
+      // quem nunca compartilha
+      const { compartilharRecibo } = await import('./compartilhar')
+      const r = await compartilharRecibo(dados, document.querySelector<SVGSVGElement>('[data-recibo-avatar] svg'))
+      setEstado(r === 'baixado' ? 'baixado' : 'parado')
+    } catch {
+      setEstado('erro')
+    }
+  }
+
+  const rotulo =
+    estado === 'gerando'
+      ? 'Gerando a imagem…'
+      : estado === 'baixado'
+        ? 'Imagem baixada, texto copiado'
+        : estado === 'erro'
+          ? 'Não deu para gerar a imagem'
+          : 'Compartilhar'
+  return (
+    <button
+      type="button"
+      className={className}
+      onClick={compartilhar}
+      disabled={estado === 'gerando'}
+      aria-label={rotulo}
+      title={rotulo}
+    >
+      {estado === 'baixado' ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
+      {soIcone ? null : <span>{rotulo}</span>}
+      <span className={styles.vivo} aria-live="polite">
+        {estado === 'baixado' || estado === 'erro' ? rotulo : ''}
+      </span>
+    </button>
   )
 }

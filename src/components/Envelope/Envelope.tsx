@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarCheck, Crown, Mail, Sparkles, Trophy, X, type LucideIcon } from 'lucide-react'
+import { PlayingCard, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getCard } from '@/game/catalogo'
@@ -14,16 +14,17 @@ import styles from './Envelope.module.sass'
 
 /**
  * Os envelopes são o MESMO envelope em pé; o que os separa é o selo de cera,
- * como num escritório de verdade. Cor e ícone, e nada escrito: o jogador
- * aprende o selo do jeito que aprende a cor de um medidor. A cor é a da
- * raridade que dá nome ao envelope (v0.20) — a mesma da borda da carta.
+ * como num escritório de verdade, e no selo o que muda é só a COR — a da
+ * raridade que dá nome ao envelope, a mesma da borda da carta. O ícone é um
+ * só, a carta de baralho (é o que vem dentro): cinco ícones diferentes eram
+ * cinco coisas para decorar, e a cor já dizia tudo.
  */
 export const SELOS: Record<TipoEnvelope, { Icone: LucideIcon; classe: string }> = {
-  comum: { Icone: Mail, classe: styles.seloComum },
-  pardo: { Icone: CalendarCheck, classe: styles.seloPardo },
-  confidencial: { Icone: Trophy, classe: styles.seloConfidencial },
-  epico: { Icone: Sparkles, classe: styles.seloEpico },
-  lendario: { Icone: Crown, classe: styles.seloLendario },
+  comum: { Icone: PlayingCard, classe: styles.seloComum },
+  pardo: { Icone: PlayingCard, classe: styles.seloPardo },
+  confidencial: { Icone: PlayingCard, classe: styles.seloConfidencial },
+  epico: { Icone: PlayingCard, classe: styles.seloEpico },
+  lendario: { Icone: PlayingCard, classe: styles.seloLendario },
 }
 
 /**

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 import Avatar from '@/components/Avatar'
-import Recibo, { lerEnvelopesGanhos } from '@/components/Recibo'
+import Recibo, { BotaoCompartilhar, lerEnvelopesGanhos, type DadosDoRecibo } from '@/components/Recibo'
 import { conquistasDaRun, type Conquista } from '@/data/conquistas'
 import { sincronizar } from '@/data/sync'
 import { loadCollection, loadRun } from '@/game/storage'
@@ -83,8 +83,7 @@ function Detalhe() {
       <h1 className={styles.title}>
         {estado.tipo === 'pronto' && estado.dono ? (
           <span className={styles.dono}>
-            <Avatar avatar={estado.dono.avatar} tamanho={40} />
-            A partida de {estado.dono.nick}
+            <Avatar avatar={estado.dono.avatar} tamanho={40} />A partida de {estado.dono.nick}
           </span>
         ) : (
           'Replay da partida'
@@ -130,6 +129,18 @@ function Conteudo({ jogo, avatar, meu }: { jogo: DetalheDoJogo; avatar: Receita;
     if (meu) setColecao(loadCollection())
   }, [jogo.id, meu])
 
+  const dados: DadosDoRecibo = {
+    outcome: jogo.outcome,
+    dias: historico.length || jogo.day,
+    cartasJogadas: historico.length ? historico.reduce((n, d) => n + d.cardsPlayed.length, 0) : null,
+    dinheiro: jogo.money,
+    estresse: historico.at(-1)?.stress ?? null,
+    estresseMaximo: jogo.details?.modo?.estresseMaximo,
+    data: jogo.ended_at,
+    envelopes: lerEnvelopesGanhos(jogo.details?.envelopes),
+    conquistas,
+  }
+
   return (
     <>
       {/* o recibo da partida, inteiro, como saiu da mesa: o que ela deu de
@@ -137,17 +148,7 @@ function Conteudo({ jogo, avatar, meu }: { jogo: DetalheDoJogo; avatar: Receita;
       <Recibo
         papel
         avatar={avatar}
-        dados={{
-          outcome: jogo.outcome,
-          dias: historico.length || jogo.day,
-          cartasJogadas: historico.length ? historico.reduce((n, d) => n + d.cardsPlayed.length, 0) : null,
-          dinheiro: jogo.money,
-          estresse: historico.at(-1)?.stress ?? null,
-          estresseMaximo: jogo.details?.modo?.estresseMaximo,
-          data: jogo.ended_at,
-          envelopes: lerEnvelopesGanhos(jogo.details?.envelopes),
-          conquistas,
-        }}
+        dados={dados}
         colecao={colecao}
         onMudarColecao={
           meu
@@ -158,6 +159,9 @@ function Conteudo({ jogo, avatar, meu }: { jogo: DetalheDoJogo; avatar: Receita;
             : undefined
         }
       />
+      <div className={styles.compartilhar}>
+        <BotaoCompartilhar dados={dados} className={buttons.button} />
+      </div>
       <p className={styles.resumoTexto}>
         Semana {jogo.week_reached} · dia {jogo.day}
         {jogo.details?.baralho ? ` · baralho v${jogo.details.baralho.versao}` : ''}
@@ -168,22 +172,15 @@ function Conteudo({ jogo, avatar, meu }: { jogo: DetalheDoJogo; avatar: Receita;
       {jogo.details?.modo ? (
         <p className={styles.regrasDaRun}>
           Jogada no modo <b>{jogo.details.modo.nome}</b>: contas de{' '}
-          <Dinheiro valor={jogo.details.modo.contasSemanais} /> por sexta, energia base{' '}
-          {jogo.details.modo.energiaBase}, burnout em {jogo.details.modo.estresseMaximo}.
+          <Dinheiro valor={jogo.details.modo.contasSemanais} /> por sexta, energia base {jogo.details.modo.energiaBase},
+          burnout em {jogo.details.modo.estresseMaximo}.
         </p>
       ) : null}
 
       {historico.length === 0 ? (
-        <p className={styles.empty}>
-          Essa run é de antes de o replay existir — só o resumo acima foi guardado.
-        </p>
+        <p className={styles.empty}>Essa run é de antes de o replay existir — só o resumo acima foi guardado.</p>
       ) : (
-        <LinhaDoTempo
-          dias={historico}
-          retrato={retrato}
-          modo={jogo.details?.modo}
-          log={jogo.details?.log}
-        />
+        <LinhaDoTempo dias={historico} retrato={retrato} modo={jogo.details?.modo} log={jogo.details?.log} />
       )}
     </>
   )
