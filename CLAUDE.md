@@ -51,7 +51,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
 | `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` | A oficina. **Só admin**, pelo layout de `/lab` |
 
-**36 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 28
+**48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **21 cartas de evento**, das quais 4 são ambíguas e pedem uma
 escolha. Esses números são o baralho de REFERÊNCIA (`cards.ts`/`events.ts`);
 o que está no ar é o que estiver na tabela `cartas` — veja abaixo.
@@ -1476,6 +1476,16 @@ baralho inicial não muda — elas vêm de envelope. Se a medição com o baralh
 de verdade dos jogadores passar da meta de 10–20%, a primeira a ajustar é a
 Canalizar a Raiva (1 de energia por −3 estresse e +4 produtividade é a
 carta mais eficiente do jogo).
+
+**As doze da v0.18** (Raiva, Virar a Noite, Respirar Fundo, Pedir Desculpas,
+Café Expresso, Terceirizar, Engolir Sapo, Reunião que Podia Ser E-mail,
+Faxina na Caixa de Entrada, Meditação no Banheiro, Plantão, Deixar pra
+Amanhã) são as primeiras pagas em estresse e em produtividade. Com elas o
+`--tudo` (agora 1 de cada uma de 40 desbloqueáveis) caiu de 19,4% para
+**7,8%** de vitória, burnout 92%: o baralho de "uma de cada" ficou diluído,
+e várias das novas sobem o estresse para render. Não é leitura de
+dificuldade do jogo, é de quão misturado esse baralho de teste ficou —
+medir com um baralho montado (25 cartas escolhidas) é o próximo passo.
 
 **Leitura:** as cartas mexem na margem, e não no problema. Com o baralho
 inicial a run continua morrendo na primeira semana — quem decide isso são as

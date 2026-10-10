@@ -324,6 +324,100 @@ export const CARTAS_BASE: ActionCard[] = [
       { faz: 'recurso', qual: 'energia', quanto: 2 },
     ] }],
   },
+
+  // --- v0.18: as que cobram outra coisa além de energia, e as que faltavam ---
+  // A lista de custos (v0.17) abriu espaço para carta que se paga em estresse
+  // ou em produtividade: trocar saúde por meta, ou parar de trabalhar para
+  // respirar. Nenhuma pediu ação nova no motor.
+  {
+    id: 'raiva', raridade: 'incomum', name: 'Raiva', cost: 0, custos: [{ qual: 'estresse', quanto: 2 }], kind: 'tarefa',
+    text: '+4 produtividade', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 4 }] }],
+  },
+  {
+    id: 'virar-a-noite', raridade: 'rara', name: 'Virar a Noite', cost: 0, custos: [{ qual: 'estresse', quanto: 4 }], kind: 'tarefa',
+    text: '+6 produtividade. Amanhã: −2 energia', especial: true, starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'produtividade', quanto: 6 },
+      { faz: 'amanha', acoes: [{ faz: 'recurso', qual: 'energia', quanto: -2 }] },
+    ] }],
+  },
+  {
+    id: 'respirar-fundo', name: 'Respirar Fundo', cost: 0, custos: [{ qual: 'produtividade', quanto: 2 }], kind: 'social',
+    text: '−3 estresse', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -3 }] }],
+  },
+  {
+    id: 'pedir-desculpas', raridade: 'incomum', name: 'Pedir Desculpas', cost: 1, custos: [{ qual: 'dinheiro', quanto: 30 }], kind: 'social',
+    text: 'Cancela 1 advertência (uma vez por run)', especial: true, starter: false,
+    // o mesmo par de restrições do Puxar o Saco: sem advertência, não há do
+    // que se desculpar
+    restricao: { umaVezPorRun: true, exige: { se: 'advertencias', aoMenos: 1 } },
+    efeitos: [{ acoes: [{ faz: 'advertencia', quanto: -1 }] }],
+  },
+  {
+    id: 'cafe-expresso', name: 'Café Expresso', cost: 0, custos: [{ qual: 'dinheiro', quanto: 8 }], kind: 'descanso',
+    text: '+2 energia', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }],
+  },
+  {
+    id: 'terceirizar', raridade: 'incomum', name: 'Terceirizar', cost: 0, custos: [{ qual: 'dinheiro', quanto: 60 }], kind: 'grana',
+    text: '+3 produtividade', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 3 }] }],
+  },
+  {
+    id: 'engolir-sapo', name: 'Engolir Sapo', cost: 0, custos: [{ qual: 'estresse', quanto: 1 }], kind: 'social',
+    text: '+R$ 40', starter: false,
+    efeitos: [{ acoes: [{ faz: 'recurso', qual: 'dinheiro', quanto: 40 }] }],
+  },
+  {
+    id: 'reuniao-que-podia-ser-email', name: 'Reunião que Podia Ser E-mail', cost: 2, kind: 'social',
+    text: '+1 produtividade. Se já jogou outra social hoje: −2 estresse', especial: true, starter: false,
+    // os efeitos rodam ANTES de a carta entrar em `playedToday`, então
+    // "aoMenos: 1" conta só as sociais anteriores — ela mesma não se conta
+    efeitos: [
+      { acoes: [{ faz: 'recurso', qual: 'produtividade', quanto: 1 }] },
+      {
+        se: { se: 'classeJogadaHoje', classe: 'social', aoMenos: 1 },
+        acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -2 }],
+      },
+    ],
+  },
+  {
+    id: 'faxina-na-caixa-de-entrada', name: 'Faxina na Caixa de Entrada', cost: 1, kind: 'tarefa',
+    text: 'Descarte 1 carta à sua escolha e compre 2', especial: true, starter: false,
+    efeitos: [{ acoes: [{
+      faz: 'escolherDescarte', quantas: 1, porque: 'Faxina na Caixa de Entrada',
+      entao: [{ faz: 'comprar', quantas: 2 }],
+    }] }],
+  },
+  {
+    id: 'meditacao-no-banheiro', raridade: 'incomum', name: 'Meditação no Banheiro', cost: 0,
+    custos: [{ qual: 'produtividade', quanto: 1 }], kind: 'descanso',
+    text: '−2 estresse. Com 6+ de estresse: −2 a mais', especial: true, starter: false,
+    // o bloco condicional vem PRIMEIRO: ele pergunta o estresse de antes da
+    // carta, e não o que sobrou depois do −2 de baixo
+    efeitos: [
+      {
+        se: { se: 'recurso', qual: 'estresse', aoMenos: 6 },
+        acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -2 }],
+      },
+      { acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -2 }] },
+    ],
+  },
+  {
+    id: 'plantao', raridade: 'rara', name: 'Plantão', cost: 0, custos: [{ qual: 'estresse', quanto: 3 }], kind: 'grana',
+    text: '+R$ 50 toda sexta, por 2 semanas', especial: true, starter: false,
+    efeitos: [{ acoes: [{ faz: 'recorrente', qual: 'dinheiro', quanto: 50, cada: 'semana', duracao: 2 }] }],
+  },
+  {
+    id: 'deixar-pra-amanha', name: 'Deixar pra Amanhã', cost: 0, kind: null,
+    text: '−1 estresse. Amanhã: cota +2', especial: true, starter: false,
+    efeitos: [{ acoes: [
+      { faz: 'recurso', qual: 'estresse', quanto: -1 },
+      { faz: 'amanha', acoes: [{ faz: 'cota', quanto: 2 }] },
+    ] }],
+  },
 ]
 
 /**
@@ -347,6 +441,18 @@ export const VERSAO_BARALHO_BASE = 4
  * número) a bancada escreve sozinha; o porquê é o que um diff não sabe.
  */
 export const MOTIVOS_DO_CODIGO: Record<string, string> = {
+  raiva: 'Primeira carta que se paga em estresse: troca saúde por meta, para quem tem energia de sobra e cota faltando.',
+  'virar-a-noite': 'O tudo ou nada: muita produtividade hoje, paga em estresse agora e em energia amanhã.',
+  'respirar-fundo': 'Primeira carta que se paga em produtividade: parar de trabalhar para respirar.',
+  'pedir-desculpas': 'Uma saída para a demissão que se paga em dinheiro, e não em puxar o saco.',
+  'cafe-expresso': 'O café que custa dinheiro em vez de estresse: o de sempre cansa, este pesa no bolso.',
+  'terceirizar': 'Comprar produtividade: para quem tem dinheiro e não tem energia.',
+  'engolir-sapo': 'Dinheiro pago em estresse, sem gastar energia nenhuma.',
+  'reuniao-que-podia-ser-email': 'Recompensa quem monta o naipe social.',
+  'faxina-na-caixa-de-entrada': 'Trocar carta da mão por mais cartas, que quase não existia no jogo.',
+  'meditacao-no-banheiro': 'Mais forte na hora do aperto, que é quando o estresse mata.',
+  plantao: 'Uma renda que entra semana a semana, paga em estresse.',
+  'deixar-pra-amanha': 'Empurrar o problema para amanhã, que é o assunto do jogo.',
   'canalizar-a-raiva': 'O estresse como combustível: a carta fica mais forte justamente quando a espiral do estresse aperta.',
   'desabafo-no-cafe': 'Uma saída para o dia ruim que não custa energia: só sai quando o estresse já está alto.',
   'grito-no-travesseiro': 'O último recurso perto do burnout, uma vez por run.',
