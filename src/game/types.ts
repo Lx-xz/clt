@@ -279,8 +279,9 @@ export interface GameState {
    *  para o resumo do dia entrar em `history` com a escolha certa. */
   lastEventChoice: 0 | 1 | null
 
-  /** As cartas que o recibo de fim oferece para a coleção. Vazia durante a
-   *  run: desde a v0.15 a recompensa é do FIM, não da semana. */
+  /** As cartas que o recibo de fim oferecia para a coleção (v0.15). Desde
+   *  as missões diárias (v0.16) carta vem de envelope e isto fica vazio; o
+   *  campo continua para o save que terminou com a escolha pendente. */
   rewardOptions: CardId[]
   /** `undefined`: o fim ainda não ofereceu nada. `null`: ofereceu e a
    *  pessoa não escolheu. Opcional para o save de antes dela continuar
@@ -342,7 +343,18 @@ export interface Collection {
   baralhos: BaralhoMontado[]
   /** O id do baralho equipado, que é o que a próxima run usa. */
   ativo: string
+  /** Envelopes ganhos e ainda fechados, na ordem em que chegaram. Moram na
+   *  coleção porque são coisa que se TEM, e assim sobem com ela para o banco
+   *  (`saves.collection`) sem coluna nova. Veja `src/game/missoes.ts`. */
+  envelopes: TipoEnvelope[]
+  /** As missões cumpridas no dia `dia` (data local, `AAAA-MM-DD`). Virou o
+   *  dia, a lista volta a valer vazia — quem confere é `missoesDeHoje`. */
+  missoes: { dia: string; feitas: string[] }
 }
+
+/** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,
+ *  e o que chega na mesa de alguém num escritório é envelope. */
+export type TipoEnvelope = 'pardo' | 'confidencial'
 
 export interface WeekConfig {
   week: number

@@ -290,3 +290,28 @@
 .rolaLado
   flex: none
   overflow-x: auto
+
+// a caixa do "trazer do código": só aparece quando há diferença, e chama a
+// atenção com a borda do destaque porque é a resposta a "as cartas não mudaram"
+.trazer
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  gap: 10px
+  margin: 12px 0
+  padding: 14px 16px
+  background: var(--papel-alto)
+  border: 1px solid var(--destaque)
+  border-radius: 8px
+
+  .subtitulo
+    margin: 0
+
+.listaTrazer
+  display: flex
+  flex-direction: column
+  gap: 4px
+  margin: 0
+  padding: 0
+  list-style: none
+  font-size: 13px

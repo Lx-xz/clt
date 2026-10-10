@@ -791,18 +791,10 @@ export function pularRecompensaSemanal(input: GameState): GameState {
   return startDay(state)
 }
 
-/** O recibo de fim oferece as cartas (sorteadas por `opcoesDeRecompensa`,
- *  que conhece a coleção — o motor não). Uma vez só por run. */
-export function oferecerRecompensa(input: GameState, opcoes: CardId[]): GameState {
-  if (input.phase !== 'fim' || input.recompensaEscolhida !== undefined) return input
-  const state = clone(input)
-  state.rewardOptions = opcoes
-  state.recompensaEscolhida = null
-  return state
-}
-
-/** A escolha vai para a COLEÇÃO, não para a run, que já acabou: quem guarda
- *  a cópia é quem chama (`ganharCopia`). Aqui só se marca que foi escolhida. */
+/** A escolha de carta do recibo (v0.15). Desde as missões diárias nenhuma
+ *  run nova oferece carta — isto fica para o save que terminou antes delas
+ *  com a escolha ainda pendente. A escolha vai para a COLEÇÃO: quem guarda a
+ *  cópia é quem chama (`ganharCopia`). Aqui só se marca que foi escolhida. */
 export function escolherRecompensa(input: GameState, cardId: CardId): GameState {
   if (input.phase !== 'fim' || input.recompensaEscolhida !== null || !input.rewardOptions.includes(cardId)) return input
   const state = clone(input)

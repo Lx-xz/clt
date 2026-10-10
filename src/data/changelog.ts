@@ -34,6 +34,17 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.16',
+    data: '2026-10-10',
+    titulo: 'Missões diárias e envelopes',
+    itens: [
+      { tipo: 'novo', texto: 'Missões diárias: terminar uma partida dá um envelope pardo, e vencer uma dá um envelope confidencial. Elas renovam à meia-noite e aparecem no início e no recibo de fim de run.' },
+      { tipo: 'novo', texto: 'Carta agora vem de envelope: três cartas por envelope, uma incomum no pardo e uma rara no confidencial — direto para a coleção. A escolha de carta no fim da run saiu.' },
+      { tipo: 'melhor', texto: 'As notas fiscais (a sexta-feira e o fim de run) sobem de baixo da tela, como papel saindo da maquininha, e saem por cima. Os outros popups somem devagar em vez de piscar.' },
+      { tipo: 'correcao', texto: 'A conquista Colecionador não contava as cartas da coleção nova, com cópias.' },
+    ],
+  },
+  {
     versao: '0.15',
     data: '2026-10-09',
     titulo: 'A coleção ganhou cópias',

@@ -1,6 +1,6 @@
 import { cartasDoJogo, cartasIniciais, getCard } from './catalogo'
 import { regras } from './regras'
-import type { ActionCard, BaralhoMontado, CardId, Collection, Raridade } from './types'
+import type { ActionCard, BaralhoMontado, CardId, Collection, Raridade, TipoEnvelope } from './types'
 
 /**
  * A coleção do jogador: as cópias que ele TEM e os baralhos montados com elas.
@@ -43,7 +43,27 @@ function copiasIniciais(): Record<CardId, number> {
 
 export function colecaoInicial(): Collection {
   const id = 'b1'
-  return { tenho: copiasIniciais(), baralhos: [{ id, nome: 'Baralho 1', cartas: copiasIniciais() }], ativo: id }
+  return {
+    tenho: copiasIniciais(),
+    baralhos: [{ id, nome: 'Baralho 1', cartas: copiasIniciais() }],
+    ativo: id,
+    envelopes: [],
+    missoes: { dia: '', feitas: [] },
+  }
+}
+
+/** Envelopes e missões chegaram depois das coleções: quem gravou antes não
+ *  tem os campos, e a leitura os dá vazios — o mesmo padrão do resto. */
+function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes'> {
+  const envelopes = Array.isArray(bruta.envelopes)
+    ? (bruta.envelopes as unknown[]).filter((e): e is TipoEnvelope => e === 'pardo' || e === 'confidencial')
+    : []
+  const m = bruta.missoes as Record<string, unknown> | undefined
+  const missoes =
+    m && typeof m === 'object' && typeof m.dia === 'string' && Array.isArray(m.feitas)
+      ? { dia: m.dia, feitas: (m.feitas as unknown[]).filter((f): f is string => typeof f === 'string') }
+      : { dia: '', feitas: [] }
+  return { envelopes, missoes }
 }
 
 function numero(x: unknown): number {
@@ -80,7 +100,7 @@ export function lerColecao(bruta: unknown): Collection {
       cartas[id] = copiasDe(id)
     }
     for (const id of fora) if (!tenho[id]) tenho[id] = copiasDe(id)
-    return garantirNaipes({ tenho, baralhos: [{ id: 'b1', nome: 'Baralho 1', cartas }], ativo: 'b1' })
+    return garantirNaipes({ tenho, baralhos: [{ id: 'b1', nome: 'Baralho 1', cartas }], ativo: 'b1', ...lerEnvelopes(b) })
   }
 
   const tenho: Record<CardId, number> = {}
@@ -111,10 +131,10 @@ export function lerColecao(bruta: unknown): Collection {
       })
     }
   }
-  if (Object.keys(tenho).length === 0) return colecaoInicial()
+  if (Object.keys(tenho).length === 0) return { ...colecaoInicial(), ...lerEnvelopes(b) }
   if (baralhos.length === 0) baralhos.push({ id: 'b1', nome: 'Baralho 1', cartas: { ...tenho } })
   const ativo = typeof b.ativo === 'string' && baralhos.some((x) => x.id === b.ativo) ? b.ativo : baralhos[0].id
-  return garantirNaipes({ tenho, baralhos, ativo })
+  return garantirNaipes({ tenho, baralhos, ativo, ...lerEnvelopes(b) })
 }
 
 /**
@@ -220,43 +240,29 @@ export function ativarBaralho(c: Collection, id: string): Collection {
   return c.baralhos.some((b) => b.id === id) ? { ...c, ativo: id } : c
 }
 
-// ---------------------------------------------------------------- recompensa
+// ---------------------------------------------------------------- sorteio
 
 const ORDEM_RARIDADE: Raridade[] = ['comum', 'incomum', 'rara']
 
 /**
- * O que a run oferece no fim, pela DISTÂNCIA que ela foi. Era uma recompensa
- * por semana, e ela mexia no baralho no meio da partida — "como estou indo"
- * misturado com "o que eu tenho". Agora é uma só, no recibo, e vai para a
- * coleção: quem morreu na terça ganha uma comum, quem venceu escolhe entre
- * quatro, com uma rara no meio.
- */
-export function raridadesDaRecompensa(semana: number, venceu: boolean): Raridade[] {
-  if (venceu) return ['incomum', 'incomum', 'rara', 'comum']
-  if (semana >= 4) return ['comum', 'incomum', 'rara']
-  if (semana >= 2) return ['comum', 'comum', 'incomum']
-  return ['comum', 'comum', 'comum']
-}
-
-/**
- * Sorteia as opções. Só entra carta que ainda CABE (cópias abaixo do teto) —
- * oferecer a quinta Tarefa Simples seria uma escolha falsa. Quando uma
- * raridade esgota, a vaga cai para a de baixo; com a coleção cheia, a lista
- * sai vazia e o recibo diz "coleção completa".
+ * Sorteia uma carta por vaga, na raridade pedida. Só entra carta que ainda
+ * CABE (cópias abaixo do teto) — dar a quinta Tarefa Simples seria dar nada.
+ * Quando uma raridade esgota, a vaga cai para a de baixo; com a coleção
+ * cheia, a lista sai vazia e quem chama diz "coleção completa". Nunca a mesma
+ * carta duas vezes no mesmo sorteio.
  *
- * Carta inicial entra também: mais uma Reunião é uma escolha de verdade.
- * O sorteio vem de fora (`sorte`) pelo mesmo motivo do motor: o simulador
- * precisa repetir a partida.
+ * Era a recompensa de fim de run (v0.15); desde as missões diárias é o
+ * miolo do envelope (`ENVELOPES` em `missoes.ts`). O sorteio vem de fora
+ * (`sorte`) pelo mesmo motivo do motor: o simulador precisa repetir a partida.
  */
-export function opcoesDeRecompensa(
+export function sortearCartas(
   colecao: Collection,
-  semana: number,
-  venceu: boolean,
+  raridades: Raridade[],
   sorte: () => number = Math.random,
 ): CardId[] {
   const cabem = cartasDoJogo().filter((c) => (colecao.tenho[c.id] ?? 0) < copiasMaximas(c))
   const escolhidas: CardId[] = []
-  for (const alvo of raridadesDaRecompensa(semana, venceu)) {
+  for (const alvo of raridades) {
     for (let i = ORDEM_RARIDADE.indexOf(alvo); i >= 0; i--) {
       const pool = cabem.filter((c) => (c.raridade ?? 'comum') === ORDEM_RARIDADE[i] && !escolhidas.includes(c.id))
       if (pool.length === 0) continue

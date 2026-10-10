@@ -1,11 +1,19 @@
 'use client'
 
 import { X } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './Dialogo.module.sass'
 
 /** Quantos popups estão abertos agora — é o que trava a página atrás. */
 let abertos = 0
+
+/** Quanto dura a saída, nos dois papéis. Tem que bater com `.saindo` no
+ *  `Dialogo.module.sass`: é este número que diz quando desmontar. */
+const SAIDA_MS = 280
+
+function semMovimento(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
 
 /**
  * O popup do site inteiro: configurações, como jogar, confirmação de
@@ -33,6 +41,20 @@ let abertos = 0
  *
  * Sem `onFechar`, o popup não fecha — nem no X, nem fora, nem no Esc: é a
  * sexta e a recompensa, que pedem uma decisão.
+ *
+ * **A saída também é animada**, e por isso o popup precisa de um instante
+ * entre "fechar" e sumir. São dois caminhos:
+ *
+ *  - fechar por DENTRO (X, fora, Esc): o diálogo anima e só então chama
+ *    `onFechar` — quem o renderiza continua com o `{x ? <Dialogo/> : null}`
+ *    de sempre;
+ *  - fechar por FORA (a sexta acabou, a run recomeçou): o pai passa
+ *    `aberto={false}` em vez de desmontar. O diálogo **congela o conteúdo**
+ *    do último render aberto enquanto sai — senão a nota da sexta sairia
+ *    mostrando a segunda-feira, e o recibo de fim, a run nova.
+ *
+ * A nota fiscal sobe de baixo da tela, como papel saindo da maquininha, e
+ * sai por cima, como quem arranca o recibo; a prancheta só aparece e some.
  */
 export default function Dialogo({
   titulo,
@@ -40,10 +62,12 @@ export default function Dialogo({
   largo = false,
   estilo = 'prancheta',
   semTravarNav = false,
+  aberto = true,
   children,
   acoes,
 }: {
   titulo: string
+  aberto?: boolean
   onFechar?: () => void
   largo?: boolean
   estilo?: 'prancheta' | 'nota'
@@ -53,8 +77,45 @@ export default function Dialogo({
 }) {
   const fundo = useRef<HTMLDivElement>(null)
   const comecouNoFundo = useRef(false)
+  const [presente, setPresente] = useState(aberto)
+  const [saindo, setSaindo] = useState(false)
+  /** Já saiu pelo X: se o pai responder com `aberto={false}` em vez de
+   *  desmontar, não há segunda saída para animar. */
+  const jaSaiu = useRef(false)
+  const congelado = useRef({ titulo, children, acoes })
+  if (aberto && !saindo) congelado.current = { titulo, children, acoes }
 
   useEffect(() => {
+    if (aberto) {
+      jaSaiu.current = false
+      setPresente(true)
+      setSaindo(false)
+      return
+    }
+    if (jaSaiu.current || semMovimento()) {
+      setPresente(false)
+      return
+    }
+    setSaindo(true)
+    const t = setTimeout(() => {
+      setPresente(false)
+      setSaindo(false)
+    }, SAIDA_MS)
+    return () => clearTimeout(t)
+  }, [aberto])
+
+  const fechar = useCallback(() => {
+    if (!onFechar || jaSaiu.current) return
+    jaSaiu.current = true
+    if (semMovimento()) return onFechar()
+    setSaindo(true)
+    setTimeout(onFechar, SAIDA_MS)
+  }, [onFechar])
+
+  // a trava vale enquanto o popup estiver na tela, saída incluída
+  const visivel = presente || aberto
+  useEffect(() => {
+    if (!visivel) return
     // contagem, e não um booleano: um popup aberto por cima de outro não pode
     // destravar a página ao fechar só o de cima
     if (!semTravarNav) {
@@ -63,7 +124,7 @@ export default function Dialogo({
     }
 
     const aoTeclar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onFechar?.()
+      if (e.key === 'Escape') fechar()
     }
     window.addEventListener('keydown', aoTeclar)
 
@@ -76,38 +137,41 @@ export default function Dialogo({
         delete document.documentElement.dataset.popup
       }
     }
-  }, [onFechar, semTravarNav])
+  }, [fechar, semTravarNav, visivel])
+
+  if (!visivel) return null
+  const { titulo: tituloVisto, children: corpo, acoes: rodape } = congelado.current
 
   return (
     <div
       ref={fundo}
-      className={`${styles.fundo} ${semTravarNav ? styles.daMesa : ''}`}
+      className={`${styles.fundo} ${semTravarNav ? styles.daMesa : ''} ${saindo ? styles.saindo : ''}`}
       // o clique de fora só conta quando começou E terminou no fundo: sem
       // isso, selecionar texto de dentro e soltar o dedo fora fechava tudo
       onMouseDown={(e) => {
         comecouNoFundo.current = e.target === fundo.current
       }}
       onClick={(e) => {
-        if (comecouNoFundo.current && e.target === fundo.current) onFechar?.()
+        if (comecouNoFundo.current && e.target === fundo.current) fechar()
       }}
       role="dialog"
       aria-modal="true"
-      aria-label={titulo}
+      aria-label={tituloVisto}
     >
       {/* a sombra mora num invólucro: a serrilha da nota é uma máscara, e
           máscara corta a box-shadow do próprio elemento junto */}
       <div className={`${styles.moldura} ${largo ? styles.largo : ''} ${estilo === 'nota' ? styles.molduraNota : ''}`}>
         <div className={`${styles.dialogo} ${styles[estilo]}`}>
           <div className={styles.cabecalho}>
-            <h2 className={styles.titulo}>{titulo}</h2>
+            <h2 className={styles.titulo}>{tituloVisto}</h2>
             {onFechar ? (
-              <button type="button" className={styles.fechar} onClick={onFechar} aria-label="Fechar">
+              <button type="button" className={styles.fechar} onClick={fechar} aria-label="Fechar">
                 <X size={18} aria-hidden />
               </button>
             ) : null}
           </div>
-          <div className={styles.corpo}>{children}</div>
-          {acoes ? <div className={styles.acoes}>{acoes}</div> : null}
+          <div className={styles.corpo}>{corpo}</div>
+          {rodape ? <div className={styles.acoes}>{rodape}</div> : null}
         </div>
       </div>
     </div>
