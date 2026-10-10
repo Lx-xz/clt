@@ -10,6 +10,7 @@ import LinhaDoTempo from '@/components/LinhaDoTempo'
 import { useSessao } from '@/components/SessaoGuard'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './detalhe.module.sass'
+import Dinheiro from '@/components/Dinheiro'
 
 /**
  * Rota estática (sem [id] dinâmico): o site é export estático, e um segmento
@@ -128,7 +129,7 @@ function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
       <div className={styles.resumo}>
         <span className={`${styles.selo} ${styles[jogo.outcome]}`}>{ROTULO[jogo.outcome]}</span>
         <span className={styles.resumoTexto}>
-          Semana {jogo.week_reached} · dia {jogo.day} · R$ {jogo.money} · {formatarData(jogo.ended_at)}
+          Semana {jogo.week_reached} · dia {jogo.day} · <Dinheiro valor={jogo.money} /> · {formatarData(jogo.ended_at)}
           {jogo.details?.baralho ? ` · baralho v${jogo.details.baralho.versao}` : ''}
         </span>
       </div>
@@ -137,8 +138,8 @@ function Conteudo({ jogo }: { jogo: DetalheDoJogo }) {
           aluguel, e mudar o número agora não pode reescrever o que ela foi */}
       {jogo.details?.modo ? (
         <p className={styles.regrasDaRun}>
-          Jogada no modo <b>{jogo.details.modo.nome}</b>: contas de R${' '}
-          {jogo.details.modo.contasSemanais} por sexta, energia base{' '}
+          Jogada no modo <b>{jogo.details.modo.nome}</b>: contas de{' '}
+          <Dinheiro valor={jogo.details.modo.contasSemanais} /> por sexta, energia base{' '}
           {jogo.details.modo.energiaBase}, burnout em {jogo.details.modo.estresseMaximo}.
         </p>
       ) : null}

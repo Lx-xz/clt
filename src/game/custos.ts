@@ -11,7 +11,7 @@ import type { Custo, GameState, RecursoDeCusto } from './types'
  *
  * Custo é diferente de efeito, e é isso que justifica a lista existir à parte:
  *  - **dinheiro** e **produtividade**: sem saldo, a carta não sai da mão. Um
- *    efeito de −R$ deixaria jogar no vermelho e só cobraria na sexta.
+ *    efeito de dinheiro negativo deixaria jogar no vermelho e só cobraria na sexta.
  *  - **estresse**: não há "saldo" de estresse; pagar é subir. A carta sai
  *    mesmo que isso leve ao burnout — é escolha de quem joga, e o carimbo
  *    avisou. O que muda em relação a um efeito é a ORDEM: é pago antes.
@@ -31,7 +31,7 @@ export function custosDe(c: { custos?: Custo[]; custoDinheiro?: number }): Custo
 
 /** Lista que veio de fora (banco, JSON colado) vira lista válida: recurso
  *  desconhecido e quantia não positiva caem fora, e o mesmo recurso repetido
- *  é somado — duas linhas de "R$" seriam um carimbo mentindo. */
+ *  é somado — dois carimbos de dinheiro seriam um carimbo mentindo. */
 export function lerCustos(bruto: unknown): Custo[] {
   if (!Array.isArray(bruto)) return []
   const soma = new Map<RecursoDeCusto, number>()
@@ -61,14 +61,9 @@ export function pagarCustos(state: GameState, custos: Custo[]) {
   }
 }
 
-/** O carimbo: curto, porque mora num canto da carta. */
-export function carimboDoCusto(c: Custo): string {
-  if (c.qual === 'dinheiro') return `R$${c.quanto}`
-  return String(c.quanto)
-}
-
-/** Por extenso, para o detalhe, o leitor de tela e o motivo de bloqueio. */
+/** Por extenso, para onde só cabe texto: o leitor de tela e o motivo de
+ *  bloqueio. Na tela, o custo é ícone e número — e o dinheiro do jogo não é
+ *  real, então nada de "R$". */
 export function textoDoCusto(c: Custo): string {
-  if (c.qual === 'dinheiro') return `R$ ${c.quanto}`
   return `${c.quanto} de ${c.qual}`
 }

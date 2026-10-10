@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import styles from './ListaDeJogos.module.sass'
 import type { JogoResumo } from '@/data/jogadores'
+import Dinheiro from '../Dinheiro'
 
 /**
  * O histórico de partidas de alguém. Ele saiu do menu e virou parte do
@@ -51,7 +52,7 @@ export default function ListaDeJogos({
               <span className={styles.data}>{formatarData(jogo.ended_at)}</span>
             </span>
             <span className={styles.espaco} />
-            <span className={styles.dinheiro}>R$ {jogo.money}</span>
+            <Dinheiro className={styles.dinheiro} valor={jogo.money} />
           </>
         )
         return (

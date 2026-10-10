@@ -418,8 +418,11 @@ o `EditorDeCustos`.
   vermelho e só cobra na sexta. O `/lab/cartas` acha essas cartas no
   catálogo vivo ("Cartas que cobram dinheiro pelo efeito") e as converte,
   tirando o "−R$" do texto.
-- Um carimbo por custo, na cor do medidor do recurso; a carta que não custa
-  energia não mostra o "0".
+- Um carimbo por custo, com o ÍCONE e a cor do medidor do recurso (energia
+  é o raio, estresse o foguinho, dinheiro a cédula). Zero não é cobrança: a
+  carta sem custo nenhum não mostra carimbo nenhum (`.custos:empty`), e a
+  que só cobra outra coisa não mostra o "0" de energia. Energia encarecida
+  por evento continua azul, com um anel vermelho — vermelho é do estresse.
 - **Tradução na LEITURA, nas três portas:** `custosDaLinha` (banco: coluna
   `custos` se tiver algo, senão `custo_dinheiro`), `custosDe` (retrato de
   run antiga, que guarda `custoDinheiro`) e `lerCustos` (soma repetidos,
@@ -646,6 +649,14 @@ opções. O que ele escolheu, e que deve ser preservado:
   `jogar.module.sass`, hoje `clamp(148px, 40vw, 192px)`) maior que o padrão da
   mesa — é a carta que o jogador mais precisa ler no celular, e não deve
   encolher só porque o resto da mesa encolheu.
+- **O dinheiro do jogo não é real: nada de "R$" na tela** (v0.17). É o
+  ícone da cédula e o número (`Dinheiro`, `src/components/Dinheiro`), o
+  mesmo ícone do medidor. O texto que vem de DADO — carta, evento, log,
+  changelog, histórico da carta — continua escrito "R$ N", que aqui é a
+  NOTAÇÃO, e `TextoComIcones` o desenha como ícone. Trocar no banco
+  obrigaria a reescrever toda carta e todo log de run antiga. Texto novo na
+  tela: `<Dinheiro valor={n} />`, nunca "R$". Onde só cabe string (aria,
+  title), `textoSemReais`.
 - **Paleta "papelada de escritório"** em `src/styles/_tokens.sass`: papel manila,
   tinta de caneta, custo como carimbo.
 - **Tema com três estados**, em Configurações: claro, escuro e sistema.

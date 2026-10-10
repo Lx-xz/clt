@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
-import { custosDe, textoDoCusto } from '@/game/custos'
+import { custosDe } from '@/game/custos'
 import type { ActionCard, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from '../Card'
+import { TextoComIcones } from '../Dinheiro'
 import { RESOURCE_ICONS, nomeDaClasse } from '../icons'
 import styles from './CardDetail.module.sass'
 
@@ -52,29 +53,43 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason,
               <span className={styles.chip}>evento {card.tone}</span>
             ) : (
               <>
-                <span className={`${styles.chip} ${styles.chipEnergia}`}>
-                  <Energia size={13} aria-hidden />
-                  {custo} de energia
-                  {custo !== card.cost ? ` (base ${card.cost})` : ''}
-                </span>
-                {custosDe(card).map((c) => (
-                  <span key={c.qual} className={`${styles.chip} ${styles[`chip_${c.qual}`]}`}>
-                    {textoDoCusto(c)}
+                {/* o mesmo que o carimbo: sem custo, nenhum chip de custo */}
+                {custo ? (
+                  <span className={`${styles.chip} ${styles.chipEnergia}`}>
+                    <Energia size={13} aria-hidden />
+                    {custo} de energia
+                    {custo !== card.cost ? ` (base ${card.cost})` : ''}
                   </span>
-                ))}
+                ) : null}
+                {custosDe(card).map((c) => {
+                  const Icone = RESOURCE_ICONS[c.qual]
+                  return (
+                    <span key={c.qual} className={`${styles.chip} ${styles[`chip_${c.qual}`]}`}>
+                      <Icone size={13} aria-hidden />
+                      {c.quanto} de {c.qual}
+                    </span>
+                  )
+                })}
+                {!custo && custosDe(card).length === 0 ? <span className={styles.chip}>sem custo</span> : null}
                 <span className={styles.chip}>{nomeDaClasse(card.kind)}</span>
               </>
             )}
           </div>
-          <p className={styles.texto}>{card.text}</p>
+          <p className={styles.texto}>
+            <TextoComIcones texto={card.text} />
+          </p>
           {evento && card.choices
             ? card.choices.map((c) => (
                 <p key={c.label} className={styles.nota}>
-                  <strong>{c.label}:</strong> {c.text}
+                  <strong>{c.label}:</strong> <TextoComIcones texto={c.text} />
                 </p>
               ))
             : null}
-          {blockedReason ? <p className={styles.nota}>{blockedReason}</p> : null}
+          {blockedReason ? (
+            <p className={styles.nota}>
+              <TextoComIcones texto={blockedReason} />
+            </p>
+          ) : null}
           {children}
           <div className={styles.acoes}>
             {onPlay ? (

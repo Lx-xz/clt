@@ -7,6 +7,7 @@ import { responderAmizade } from '@/data/amizades'
 import buttons from '@/styles/buttons.module.sass'
 import Avatar from '../Avatar'
 import styles from './ListaDeAmigos.module.sass'
+import Dinheiro from '../Dinheiro'
 
 const ROTULO: Record<string, string> = {
   vitoria: 'venceu',
@@ -81,7 +82,7 @@ export default function ListaDeAmigos({
             <Link href={`/jogador?nick=${encodeURIComponent(a.nick)}`}>{a.nick}</Link>
             {a.ultima_id ? (
               <Link className={styles.ultima} href={`/meus-jogos/detalhe?id=${a.ultima_id}`}>
-                última: {ROTULO[a.ultima_outcome ?? ''] ?? a.ultima_outcome} · R$ {a.ultima_money}
+                última: {ROTULO[a.ultima_outcome ?? ''] ?? a.ultima_outcome} · <Dinheiro valor={a.ultima_money ?? 0} />
               </Link>
             ) : (
               <span>ainda não terminou um mês</span>

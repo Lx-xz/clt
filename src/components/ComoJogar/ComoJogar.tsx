@@ -11,6 +11,7 @@ import {
 import { regras, totalDeDias, type Regras } from '@/game/regras'
 import { getCard } from '@/game/catalogo'
 import styles from './ComoJogar.module.sass'
+import Dinheiro from '../Dinheiro'
 
 /**
  * As regras, no popup. Os números e as cartas saem de `cards.ts` em vez de
@@ -54,7 +55,7 @@ function recursos(jogo: Regras) {
     chave: 'dinheiro',
     nome: 'Dinheiro',
     tom: styles.dinheiro,
-    texto: <>Começa em R$ {jogo.dinheiroInicial}. Sai nas contas de sexta.</>,
+    texto: <>Começa em <Dinheiro valor={jogo.dinheiroInicial} />. Sai nas contas de sexta.</>,
   },
   ] as const
 }
@@ -62,7 +63,7 @@ function recursos(jogo: Regras) {
 const CLASSES = [
   { kind: 'tarefa', nome: 'Tarefa', bonus: '+ produtividade', tom: styles.produtividade },
   { kind: 'descanso', nome: 'Descanso', bonus: '+ energia', tom: styles.energia },
-  { kind: 'grana', nome: 'Grana', bonus: '+ R$ 10', tom: styles.dinheiro },
+  { kind: 'grana', nome: 'Grana', bonus: <>+<Dinheiro valor={10} /></>, tom: styles.dinheiro },
   { kind: 'social', nome: 'Social', bonus: '− estresse', tom: styles.destaque },
 ] as const
 
@@ -199,7 +200,7 @@ export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
         </li>
         <li>
           <span className={styles.numero}>2</span>
-          <b>Contas</b> — saem R$ {jogo.contasSemanais}. Não ter o dinheiro é despejo.
+          <b>Contas</b> — saem <Dinheiro valor={jogo.contasSemanais} />. Não ter o dinheiro é despejo.
         </li>
         <li>
           <span className={styles.numero}>3</span>

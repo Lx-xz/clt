@@ -2,6 +2,7 @@
 
 import { EM_ANDAMENTO, ROTULO_TIPO, VERSOES } from '@/data/changelog'
 import styles from './changelog.module.sass'
+import { TextoComIcones } from '@/components/Dinheiro'
 
 function dataCurta(iso: string): string {
   const [ano, mes, dia] = iso.split('-')
@@ -41,7 +42,9 @@ export default function Novidades() {
                 <span className={`${styles.marca} ${styles[item.tipo]}`}>
                   {ROTULO_TIPO[item.tipo]}
                 </span>
-                <span>{item.texto}</span>
+                <span>
+                  <TextoComIcones texto={item.texto} />
+                </span>
               </li>
             ))}
           </ul>

@@ -124,8 +124,8 @@ $levantada: 18px
 
 // custo preso ao canto superior esquerdo da carta; tipo, ao canto direito —
 // nenhum dos dois flutua sobre a arte, e o texto ganha o espaço que sobra
-// energia e R$ lado a lado, na mesma aba: a carta que cobra os dois mostra
-// os dois carimbos colados
+// um carimbo por custo, lado a lado na mesma aba: ícone e número, na cor do
+// medidor do recurso. Sem custo, a aba nem aparece (`:empty`)
 .custos
   position: absolute
   top: 0
@@ -135,9 +135,14 @@ $levantada: 18px
   overflow: hidden
   border-bottom-right-radius: 7px
 
+  &:empty
+    display: none
+
 .custo
-  display: grid
-  place-items: center
+  display: flex
+  align-items: center
+  justify-content: center
+  gap: 2px
   min-width: 22px
   height: 21px
   padding: 0 5px
@@ -149,17 +154,12 @@ $levantada: 18px
   font-variant-numeric: tabular-nums
 
 .custoAlto
-  background: var(--estresse)
+  // o evento encareceu a energia: continua azul (é energia, e o vermelho é
+  // do estresse), com um anel vermelho dizendo "mais caro que o normal"
+  box-shadow: inset 0 0 0 2px var(--estresse)
 
-// um carimbo por custo extra, na cor do medidor do recurso
 .custo_dinheiro
   background: var(--dinheiro)
-  font-size: 11px
-
-.custo_estresse,
-.custo_produtividade
-  display: flex
-  gap: 2px
 
 .custo_estresse
   background: var(--estresse)

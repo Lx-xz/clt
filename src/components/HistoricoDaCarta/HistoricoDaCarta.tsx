@@ -2,6 +2,7 @@
 
 import Card from '@/components/Card'
 import Dialogo from '@/components/Dialogo'
+import { TextoComIcones } from '@/components/Dinheiro'
 import { mudancasDaCarta, versaoDoBaralho } from '@/data/balanceamento'
 import { mudancasDoCatalogo } from '@/game/catalogo'
 import { getCard } from '@/game/catalogo'
@@ -59,12 +60,16 @@ export function MudancasDaCarta({ id }: { id: CardId }) {
           {mudancas.map((m) => (
             <li key={`${m.versao}-${m.data}`} className={styles.item}>
               <div className={styles.cabeca}>
-                <b className={styles.oque}>{m.oQue || 'Ajuste de balanceamento'}</b>
+                <b className={styles.oque}>
+                  <TextoComIcones texto={m.oQue || 'Ajuste de balanceamento'} />
+                </b>
                 <span className={styles.selo}>
                   v{m.versao} · {ROTULO[m.tipo]}
                 </span>
               </div>
-              <p className={styles.porque}>{m.porque}</p>
+              <p className={styles.porque}>
+                <TextoComIcones texto={m.porque} />
+              </p>
               <span className={styles.data}>{m.data}</span>
             </li>
           ))}

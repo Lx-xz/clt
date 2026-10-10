@@ -2,8 +2,9 @@
 
 import { Coffee, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
-import { carimboDoCusto, custosDe, textoDoCusto } from '@/game/custos'
+import { custosDe, textoDoCusto } from '@/game/custos'
 import type { ActionCard, EventCard } from '@/game/types'
+import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import styles from './Card.module.sass'
 
@@ -177,8 +178,12 @@ export default function Card({
   const rotulo = evento
     ? faceDown
       ? 'Carta de evento virada para baixo. Clique para revelar.'
-      : `${card.name}. ${card.text}`
-    : `${card.name}, custa ${[`${custo} de energia`, ...extras.map(textoDoCusto)].join(' e ')}. Clique para ver o detalhe, clique duplo para jogar.`
+      : `${card.name}. ${textoSemReais(card.text)}`
+    : `${card.name}, ${
+        custo || extras.length
+          ? `custa ${[...(custo ? [`${custo} de energia`] : []), ...extras.map(textoDoCusto)].join(' e ')}`
+          : 'não custa nada'
+      }. Clique para ver o detalhe, clique duplo para jogar.`
 
   return (
     <div className={`${styles.palco} ${className ?? ''}`} style={style}>
@@ -215,21 +220,23 @@ export default function Card({
           ].join(' ')}
         >
           {custo !== null ? (
-            // a carta que só se paga em outra coisa não mostra o "0" de
-            // energia: o carimbo diz o que ela COBRA, e zero não é cobrança.
-            // Cada custo extra é um carimbo na cor do medidor dele — o mesmo
-            // código de cor do HUD, e o ícone porque "2" vermelho sozinho
-            // não diz se é estresse
+            // o carimbo diz o que a carta COBRA, e zero não é cobrança: sem
+            // custo nenhum, o canto fica vazio. Cada custo é um carimbo com o
+            // ícone e a cor do medidor dele no HUD — energia é o raio, como
+            // estresse é o foguinho; "2" azul sozinho não dizia de quê
             <span className={styles.custos}>
-              {custo > 0 || extras.length === 0 ? (
-                <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>{custo}</span>
+              {custo > 0 ? (
+                <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>
+                  <RESOURCE_ICONS.energia size={10} aria-hidden />
+                  {custo}
+                </span>
               ) : null}
               {extras.map((c) => {
                 const Icone = RESOURCE_ICONS[c.qual]
                 return (
                   <span key={c.qual} className={`${styles.custo} ${styles[`custo_${c.qual}`]}`}>
-                    {c.qual === 'dinheiro' ? null : <Icone size={10} aria-hidden />}
-                    {carimboDoCusto(c)}
+                    <Icone size={10} aria-hidden />
+                    {c.quanto}
                   </span>
                 )
               })}
@@ -246,7 +253,9 @@ export default function Card({
             <span className={styles.nome}>{card.name}</span>
           </div>
           <div className={styles.corpo}>
-            <p className={styles.texto}>{card.text}</p>
+            <p className={styles.texto}>
+              <TextoComIcones texto={card.text} />
+            </p>
           </div>
         </div>
         <div className={`${styles.face} ${styles.tras}`}>

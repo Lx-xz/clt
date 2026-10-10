@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import Card from '@/components/Card'
 import Check from '@/components/Check'
+import Dinheiro, { TextoComIcones } from '@/components/Dinheiro'
 import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
@@ -145,7 +146,7 @@ type RecursoDaLinha = 'energia' | RecursoDeCusto
 
 const NOMES_DE_CUSTO: Record<RecursoDaLinha, string> = {
   energia: 'Energia',
-  dinheiro: 'Dinheiro (R$)',
+  dinheiro: 'Dinheiro',
   estresse: 'Estresse',
   produtividade: 'Produtividade',
 }
@@ -282,8 +283,8 @@ function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermi
       const preco = depois.custos?.find((c) => c.qual === 'dinheiro')?.quanto ?? 0
       const r = await salvarCarta(
         depois,
-        `O −R$ ${preco} saiu do efeito e virou custo`,
-        'Como efeito, o −R$ deixava jogar sem saldo e só cobrava na sexta. Como custo, sem dinheiro a carta não sai da mão, e o preço aparece no carimbo.',
+        `Os ${preco} de dinheiro saíram do efeito e viraram custo`,
+        'Como efeito, o dinheiro negativo deixava jogar sem saldo e só cobrava na sexta. Como custo, sem dinheiro a carta não sai da mão, e o preço aparece no carimbo.',
       )
       if (!r.ok) {
         setErro(`${antes.name}: ${r.erro ?? 'não deu para salvar.'}`)
@@ -300,8 +301,8 @@ function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermi
     <section className={styles.trazer}>
       <h2 className={styles.subtitulo}>Cartas que cobram dinheiro pelo efeito ({achadas.length})</h2>
       <p className={styles.dicaSecao}>
-        Um −R$ no efeito deixa jogar sem saldo. Convertidas, elas cobram o R$ como custo (o
-        carimbo verde), e o −R$ sai do texto.
+        Dinheiro negativo no efeito deixa jogar sem saldo. Convertidas, elas cobram o dinheiro
+        como custo (o carimbo verde), e o “−R$ N” sai do texto.
       </p>
       <ul className={styles.listaTrazer}>
         {achadas.map(({ antes, depois }) => (
@@ -310,7 +311,8 @@ function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermi
               marcado={!fora.includes(antes.id)}
               onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== antes.id) : [...f, antes.id]))}
             >
-              <b>{antes.name}</b> · R$ {depois.custos?.find((c) => c.qual === 'dinheiro')?.quanto} · “{antes.text}” → “{depois.text}”
+              <b>{antes.name}</b> · custo <Dinheiro valor={depois.custos?.find((c) => c.qual === 'dinheiro')?.quanto ?? 0} /> · “
+              <TextoComIcones texto={antes.text} />” → “<TextoComIcones texto={depois.text} />”
             </Check>
           </li>
         ))}
@@ -677,11 +679,11 @@ export default function LabCartasPage() {
 
           {/* o efeito que tira dinheiro deixa jogar sem saldo, e a conta só
               chega na sexta, como despejo. Quase sempre o que se quer é o
-              custo em R$, que trava a carta na mão */}
+              custo em dinheiro, que trava a carta na mão */}
           {Number(somaDe(cartaParaGravar() ?? emEdicao, 'dinheiro')) < 0 ? (
             <p className={comuns.aviso}>
               Efeito que tira dinheiro não é custo: a carta sai mesmo sem saldo, e a conta só
-              aparece na sexta. Para cobrar, use o campo Custo em R$.
+              aparece na sexta. Para cobrar, acrescente um custo de dinheiro (“+ Custo”, acima).
             </p>
           ) : null}
 

@@ -10,6 +10,7 @@ import { lerAvatar } from '@/data/avatar'
 import { useSessao } from '@/components/SessaoGuard'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './ranking.module.sass'
+import Dinheiro from '@/components/Dinheiro'
 
 type Estado = { tipo: 'carregando' } | { tipo: 'erro'; mensagem: string } | { tipo: 'pronto'; linhas: LinhaRanking[] }
 
@@ -108,7 +109,11 @@ export default function RankingPage() {
                     <span className={styles.nick}>{linha.nick}</span>
                     <span className={styles.sub}>
                       {linha.total_runs} {linha.total_runs === 1 ? 'partida' : 'partidas'}
-                      {linha.melhor_dinheiro !== null ? ` · melhor R$ ${linha.melhor_dinheiro}` : ''}
+                      {linha.melhor_dinheiro !== null ? (
+                        <>
+                          {' '}· melhor <Dinheiro valor={linha.melhor_dinheiro} />
+                        </>
+                      ) : null}
                     </span>
                   </span>
                   {/* no lugar do XP: vitórias e derrotas, que é o que o

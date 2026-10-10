@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { GameState } from '@/game/types'
 import styles from './MensagemNaMesa.module.sass'
+import { TextoComIcones } from '../Dinheiro'
 
 /**
  * A mensagem de uma carta ou evento, aparecendo na mesa.
@@ -33,7 +34,7 @@ export default function MensagemNaMesa({ mensagem }: { mensagem: GameState['ulti
 
   return (
     <p className={styles.caixa} role="status" aria-live="polite">
-      {mensagem.texto}
+      <TextoComIcones texto={mensagem.texto} />
     </p>
   )
 }

@@ -19,6 +19,7 @@ import {
 import { getCard, getEvent } from '@/game/catalogo'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './analise.module.sass'
+import Dinheiro from '@/components/Dinheiro'
 
 /**
  * Página de análise: contagens agregadas de todo mundo, para acompanhar
@@ -281,7 +282,7 @@ function Nerds({
         <Ladrilho rotulo="Dias vividos" valor={nerds.total_dias_vividos} />
         <Ladrilho rotulo="Maior embalo" valor={nerds.maior_embalo ?? '—'} sub="cartas seguidas" />
         <Ladrilho rotulo="Advertências" valor={nerds.total_advertencias} />
-        <Ladrilho rotulo="Dinheiro somado" valor={`R$ ${nerds.dinheiro_total}`} />
+        <Ladrilho rotulo="Dinheiro somado" valor={<Dinheiro valor={nerds.dinheiro_total} />} />
         <Ladrilho
           rotulo="Energia desperdiçada"
           valor={nerds.energia_desperdicada}
@@ -407,7 +408,7 @@ function Destaque({ rotulo, valor }: { rotulo: string; valor: number | string })
   )
 }
 
-function Ladrilho({ rotulo, valor, sub }: { rotulo: string; valor: number | string; sub?: string }) {
+function Ladrilho({ rotulo, valor, sub }: { rotulo: string; valor: React.ReactNode; sub?: string }) {
   return (
     <div className={styles.ladrilho}>
       <span className={styles.rotulo}>{rotulo}</span>

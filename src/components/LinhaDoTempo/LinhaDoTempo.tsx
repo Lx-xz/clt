@@ -8,6 +8,8 @@ import type { ActionCard, CardId, CartaSnapshot, DayLog, EventCard, LinhaDoLog }
 import Card from '../Card'
 import CardDetail from '../CardDetail'
 import styles from './LinhaDoTempo.module.sass'
+import Dinheiro, { TextoComIcones } from '../Dinheiro'
+import { RESOURCE_ICONS } from '../icons'
 
 /** O dia que ainda não fechou: não tem `DayLog`, então vem montado da mesa. */
 export interface DiaAberto {
@@ -114,9 +116,17 @@ export default function LinhaDoTempo({ dias, retrato, modo, log, hoje }: {
                   <span className={fechado.metQuota ? styles.ok : styles.falhou}>
                     {fechado.metQuota ? '✓' : '✗'} cota {fechado.productivity}/{fechado.quota}
                   </span>
-                  <span>estresse {fechado.stress}</span>
-                  <span>R$ {fechado.money}</span>
-                  {fechado.energyLeft > 0 ? <span>sobrou ⚡{fechado.energyLeft}</span> : null}
+                  {/* ícones de verdade, os mesmos do HUD — era um ⚡ de emoji,
+                      que cada sistema desenha de um jeito */}
+                  <span className={styles.comIcone}>
+                    <RESOURCE_ICONS.estresse size={12} aria-hidden /> estresse {fechado.stress}
+                  </span>
+                  <Dinheiro valor={fechado.money} />
+                  {fechado.energyLeft > 0 ? (
+                    <span className={styles.comIcone}>
+                      sobrou <RESOURCE_ICONS.energia size={12} aria-label="energia" /> {fechado.energyLeft}
+                    </span>
+                  ) : null}
                 </p>
               ) : null}
 
@@ -125,7 +135,9 @@ export default function LinhaDoTempo({ dias, retrato, modo, log, hoje }: {
                   <summary>detalhes</summary>
                   <ul>
                     {linhas.map((texto, i) => (
-                      <li key={i}>{texto}</li>
+                      <li key={i}>
+                        <TextoComIcones texto={texto} />
+                      </li>
                     ))}
                   </ul>
                 </details>

@@ -8,6 +8,7 @@ import Card from '@/components/Card'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import Dialogo from '@/components/Dialogo'
+import Dinheiro, { TextoComIcones } from '@/components/Dinheiro'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
 import HistoricoDaRun from '@/components/HistoricoDaRun'
 import MensagemNaMesa from '@/components/MensagemNaMesa'
@@ -295,7 +296,6 @@ export default function JogarPage() {
             nome="Dinheiro"
             descricao="Entra pelo salário, hora extra e freela. Sai nas contas de sexta. É a pontuação final."
             valor={state.money}
-            prefixo="R$ "
             tom={styles.dinheiro}
           />
           <Medidor
@@ -404,7 +404,9 @@ export default function JogarPage() {
                 onClick={() => update(chooseEventOption(state, i as 0 | 1))}
               >
                 {escolha.label}
-                <span className={styles.notaEscolha}>{escolha.text}</span>
+                <span className={styles.notaEscolha}>
+                  <TextoComIcones texto={escolha.text} />
+                </span>
               </button>
             ))}
           </div>
@@ -583,26 +585,28 @@ export default function JogarPage() {
               <span className={styles.passoRot}>
                 {state.fridayResult.metGoal ? 'Meta batida · salário cheio' : 'Meta falhou · salário reduzido e +1 advertência'}
               </span>
-              <span className={`${styles.passoVal} ${styles.entrada}`}>+R$ {state.fridayResult.salary}</span>
+              <Dinheiro className={`${styles.passoVal} ${styles.entrada}`} sinal="+" valor={state.fridayResult.salary} />
             </li>
           ) : null}
 
           {state.fridayStep === 'descanso' ? (
             <li className={`${styles.passo} ${styles.passoNovo}`}>
               <span className={styles.passoRot}>Aluguel e mercado</span>
-              <span className={`${styles.passoVal} ${styles.saida}`}>−R$ {state.modo.contasSemanais}</span>
+              <Dinheiro className={`${styles.passoVal} ${styles.saida}`} sinal="−" valor={state.modo.contasSemanais} />
             </li>
           ) : null}
 
           {state.fridayStep === 'descanso' ? (
             <li className={`${styles.passo} ${styles.total} ${styles.passoNovo}`}>
               <span className={styles.passoRot}>Saldo</span>
-              <span className={styles.passoVal}>R$ {state.money}</span>
+              <Dinheiro className={styles.passoVal} valor={state.money} />
             </li>
           ) : null}
         </ol>
 
-        <p className={styles.painelTexto}>{textoDaSexta(state)}</p>
+        <p className={styles.painelTexto}>
+          <TextoComIcones texto={textoDaSexta(state)} />
+        </p>
 
         <div className={styles.acoes}>
           {state.fridayStep === 'salario' ? (
@@ -650,7 +654,7 @@ export default function JogarPage() {
           </li>
           <li className={`${styles.passo} ${styles.total}`}>
             <span className={styles.passoRot}>Pontuação final</span>
-            <span className={styles.passoVal}>R$ {state.money}</span>
+            <Dinheiro className={styles.passoVal} valor={state.money} />
           </li>
         </ol>
         {/* só aparece para a run que acabou antes das missões, com a
@@ -718,7 +722,7 @@ export default function JogarPage() {
           caminho de volta, sem precisar adivinhar onde começa outra run */}
       {acabou && fimFechado ? (
         <div className={styles.faixaFim} role="status">
-          <span>Run encerrada · R$ {state.money}</span>
+          <span>Run encerrada · <Dinheiro valor={state.money} /></span>
           <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => recomecar()}>
             Nova run
           </button>
@@ -811,8 +815,13 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   }
   const falta = custoQueFalta(state, custosDe(carta))
   if (falta) {
-    const tem = falta.qual === 'dinheiro' ? `R$ ${state.money}` : `${state.productivity} de ${falta.qual}`
-    return `Não dá para pagar: custa ${textoDoCusto(falta)} e você tem ${tem}.`
+    // "R$ N" aqui é a notação de dinheiro: quem a desenha como ícone é o
+    // CardDetail (`TextoComIcones`)
+    const [custa, tem] =
+      falta.qual === 'dinheiro'
+        ? [`R$ ${falta.quanto}`, `R$ ${state.money}`]
+        : [textoDoCusto(falta), `${state.productivity} de ${falta.qual}`]
+    return `Não dá para pagar: custa ${custa} e você tem ${tem}.`
   }
   return `Energia insuficiente: custa ${effectiveCost(state, carta.id)} e você tem ${state.energy}.`
 }

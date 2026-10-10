@@ -21,6 +21,7 @@ import { conquistasPublicas, type Conquista } from '@/data/conquistas'
 import { jogosDoJogador, perfilPublico, type JogoResumo, type PerfilPublico } from '@/data/jogadores'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogador.module.sass'
+import Dinheiro from '@/components/Dinheiro'
 
 /**
  * O perfil de outra pessoa, aberto ao clicar num nick no ranking.
@@ -88,7 +89,7 @@ function Conteudo() {
           <span>derrotas</span>
         </div>
         <div>
-          <b>{perfil.melhor_dinheiro === null ? '—' : `R$ ${perfil.melhor_dinheiro}`}</b>
+          <b>{perfil.melhor_dinheiro === null ? '—' : <Dinheiro valor={perfil.melhor_dinheiro} />}</b>
           <span>melhor saldo</span>
         </div>
       </div>

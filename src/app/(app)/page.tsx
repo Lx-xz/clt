@@ -20,6 +20,7 @@ import { carregarDoBanco, sincronizar } from '@/data/sync'
 import type { Collection, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './inicio.module.sass'
+import Dinheiro from '@/components/Dinheiro'
 
 const ROTULO: Record<string, string> = {
   vitoria: 'Vitória',
@@ -196,7 +197,7 @@ export default function InicioPage() {
               </span>
               <span className={styles.bilheteLinha}>
                 <span>Semana {ultimo.week_reached} · dia {ultimo.day}</span>
-                <b>R$ {ultimo.money}</b>
+                <b><Dinheiro valor={ultimo.money} /></b>
               </span>
               <span className={styles.verReplay}>
                 Ver o replay <ChevronRight size={14} aria-hidden />

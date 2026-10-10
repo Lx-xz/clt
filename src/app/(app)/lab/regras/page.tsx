@@ -17,6 +17,7 @@ import { MODO_NORMAL, modosDisponiveis, regras, totalDeDias, type Regras } from 
 import type { WeekConfig } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from '../cartas/cartas.module.sass'
+import Dinheiro from '@/components/Dinheiro'
 
 /**
  * As regras do jogo — os números que não pertencem a carta nenhuma.
@@ -38,11 +39,11 @@ import styles from '../cartas/cartas.module.sass'
 /** Os números que dão para mexer sem inventar regra nova. A ordem é a de quem
  *  balanceia: primeiro o que mata, depois o que paga. */
 const NUMEROS: { campo: keyof Regras; rotulo: string; dica: string; min: number; max: number }[] = [
-  { campo: 'contasSemanais', rotulo: 'Contas de sexta (R$)', dica: 'O aluguel e o mercado. Não ter isso na sexta é despejo.', min: 0, max: 2000 },
+  { campo: 'contasSemanais', rotulo: 'Contas de sexta (dinheiro)', dica: 'O aluguel e o mercado. Não ter isso na sexta é despejo.', min: 0, max: 2000 },
   { campo: 'energiaBase', rotulo: 'Energia base', dica: 'A energia do dia é este número MENOS o estresse. É a engrenagem central do jogo.', min: 1, max: 30 },
   { campo: 'estresseMaximo', rotulo: 'Estresse que dá burnout', dica: 'Mexer aqui mexe também no teto de energia, porque os dois se encontram.', min: 2, max: 30 },
   { campo: 'advertenciasMaximas', rotulo: 'Advertências até a demissão', dica: 'Uma por semana com a meta falhada.', min: 1, max: 10 },
-  { campo: 'dinheiroInicial', rotulo: 'Dinheiro inicial (R$)', dica: 'Quanto sobra da última quinzena.', min: 0, max: 5000 },
+  { campo: 'dinheiroInicial', rotulo: 'Dinheiro inicial', dica: 'Quanto sobra da última quinzena.', min: 0, max: 5000 },
   { campo: 'descansoDoFimDeSemana', rotulo: 'Estresse que o fim de semana tira', dica: 'O único alívio garantido da semana.', min: 0, max: 10 },
   { campo: 'cartasNaMao', rotulo: 'Cartas na mão por dia', dica: 'O Dia Tranquilo continua dando duas a mais que isto, seja qual for o número.', min: 1, max: 12 },
   { campo: 'baralhoMinimo', rotulo: 'Baralho: mínimo de cartas', dica: 'Abaixo disto a mesa não começa a run. O baralho inicial tem 15.', min: 1, max: 60 },
@@ -158,7 +159,7 @@ export default function LabRegrasPage() {
             <b>{m.nome}</b>
             <span>{m.descricao}</span>
             <span className={styles.modoNumeros}>
-              R$ {m.contasSemanais} de contas · energia {m.energiaBase} · {m.semanas.length} semanas ·{' '}
+              <Dinheiro valor={m.contasSemanais} /> de contas · energia {m.energiaBase} · {m.semanas.length} semanas ·{' '}
               {totalDeDias(m)} dias{m.id === regras().id ? ' · em uso' : ''}
             </span>
           </button>
@@ -228,8 +229,8 @@ export default function LabRegrasPage() {
 
           <p className={styles.conta}>
             Dá <b>{totalDeDias(emEdicao)} dias úteis</b>. Entra{' '}
-            <b>R$ {emEdicao.semanas.reduce((s, w) => s + w.fullSalary, 0)}</b> de salário cheio no
-            mês inteiro contra <b>R$ {emEdicao.contasSemanais * emEdicao.semanas.length}</b> de
+            <b><Dinheiro valor={emEdicao.semanas.reduce((s, w) => s + w.fullSalary, 0)} /></b> de salário cheio no
+            mês inteiro contra <b><Dinheiro valor={emEdicao.contasSemanais * emEdicao.semanas.length} /></b> de
             contas — {' '}
             {emEdicao.semanas.reduce((s, w) => s + w.fullSalary, 0) + emEdicao.dinheiroInicial >
             emEdicao.contasSemanais * emEdicao.semanas.length
@@ -256,7 +257,7 @@ export default function LabRegrasPage() {
         <PedirMotivo
           titulo={`Salvar ${emEdicao.nome}`}
           oQueSugerido={resumoDaMudanca(original, emEdicao)}
-          exemplo="O despejo não acontecia em 1500 runs: o salário sobrava R$ 400 por mês contra uma conta parada em 300."
+          exemplo="O despejo não acontecia em 1500 runs: o salário sobrava 400 por mês contra uma conta parada em 300."
           aoConfirmar={gravar}
           aoFechar={() => setPedindo(false)}
           erro={erro}
