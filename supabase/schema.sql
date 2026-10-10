@@ -2072,10 +2072,16 @@ begin
     union all
     select 'segunda-feira', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'burnout' and r.day = 1 order by r.ended_at limit 1)
     union all
-    -- da coleção, não de uma run: o run_id fica nulo
+    -- da coleção, não de uma run: o run_id fica nulo. Lê os dois formatos:
+    -- o antigo (`equipped`/`unequipped`) e o de cópias da v0.15 (`tenho`),
+    -- que esta conta não via — e por isso ninguém ganhava a conquista
     select 'colecionador', case when (
-      select count(distinct x) from public.saves s,
-        jsonb_array_elements_text(coalesce(s.collection -> 'equipped', '[]') || coalesce(s.collection -> 'unequipped', '[]')) x
+      select count(distinct t.x) from public.saves s,
+        lateral (
+          select jsonb_array_elements_text(coalesce(s.collection -> 'equipped', '[]') || coalesce(s.collection -> 'unequipped', '[]'))
+          union all
+          select jsonb_object_keys(case when jsonb_typeof(s.collection -> 'tenho') = 'object' then s.collection -> 'tenho' else '{}'::jsonb end)
+        ) as t(x)
       where s.player_id = p_player_id
     ) >= 12 then 0::bigint end
   )

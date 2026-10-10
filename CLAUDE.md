@@ -38,7 +38,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | Rota | O que é |
 |---|---|
 | `/auth` | A porta: entrar, criar conta (e-mail/senha ou Google), ou jogar como convidado. Fora de `(app)`; quem já tem sessão é mandado para `/` |
-| `/` | O início, dentro de `(app)`: avatar, "Continuar — semana 2, quarta" (ou "Começar o mês"), a última partida, amigos, conquistas recentes e atalhos |
+| `/` | O início, dentro de `(app)`: avatar, "Continuar — semana 2, quarta" (ou "Começar o mês"), as missões do dia (e o envelope por abrir), a última partida, amigos, conquistas recentes e atalhos |
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
@@ -84,6 +84,8 @@ src/game/     regras puras — nenhum import de React
   catalogo.ts   quais cartas e eventos existem agora — a porta única de getCard
   cards.ts      o baralho de referência (semente e rede)
   regras.ts     os modos de jogo: aluguel, cota, salário, energia base
+  colecao.ts    cópias, baralhos montados e o sorteio de cartas
+  missoes.ts    missões diárias e envelopes: de onde vem carta nova
   events.ts     os eventos de referência, pelo mesmo motivo
   engine.ts     o motor: funções puras GameState -> GameState
   storage.ts    localStorage (espelho), validação de formato do save
@@ -360,6 +362,33 @@ eu tenho" — e morria quando as desbloqueáveis acabavam. Hoje:
   UMA vez, no bloco `do $$` que cria a coluna — rodar o `schema.sql` de novo
   não desfaz o que o admin escolheu depois no `/lab`.
 
+**Desde a v0.16 a carta do recibo também saiu: carta vem de ENVELOPE, e
+envelope vem de MISSÃO DIÁRIA** (`src/game/missoes.ts`). A do recibo amarrava
+a coleção ao número de partidas — largar cedo e recomeçar colecionava mais
+rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
+
+- `MISSOES` é uma tabela (como `CABELOS_FORMA`): "Bater o ponto" (terminar
+  uma partida → envelope pardo) e "Fechar o mês" (vencer → envelope
+  confidencial, o "raro"). Missão nova é uma linha; o que ela pode perguntar
+  é o que `FimDeRun` traz, não o `GameState` inteiro.
+- **Envelope, e não baú** (pedido do autor: baú não combina). É papelada:
+  o pardo diz "RH · interno", o confidencial leva o carimbo vermelho.
+  `ENVELOPES` diz as raridades das vagas; o sorteio é `sortearCartas()` em
+  `colecao.ts` (a mesma lógica de "só o que cabe, raridade esgotada cai para
+  a de baixo" da recompensa antiga).
+- **Envelopes e missões moram na COLEÇÃO** (`Collection.envelopes`,
+  `Collection.missoes`): são coisa que se tem, e assim sobem em
+  `saves.collection` sem coluna nova. `lerColecao` os dá vazios a quem
+  gravou antes — sem migração.
+- A missão vira à meia-noite LOCAL (`hoje()`), não UTC: senão renovaria às
+  21h em Brasília. Quem confere é a mesa, na jogada que encerra a run, ANTES
+  do `sincronizar` — o envelope sobe junto. `cumprirMissoes` é idempotente
+  pelo `feitas`. Abandono não passa por ali e não conta.
+- Abrir o envelope muda a coleção ANTES da animação (`Envelope.tsx`): fechar
+  no meio não perde carta. Ele abre no início e no recibo de fim.
+- `recompensaEscolhida`/`rewardOptions` e `escolherRecompensa` ficaram só
+  para o save que terminou na v0.15 com a escolha pendente.
+
 **O preço disso, medido:** sem a recompensa semanal o bot mediano não tem mais
 como melhorar o baralho no meio do mês, e a vitória dele foi de 0,4% para 0%
 (burnout 100%, dia mediano 5). O jogo já estava duro demais; isto deixa a
@@ -565,6 +594,14 @@ opções. O que ele escolheu, e que deve ser preservado:
     painel cobria a barra e só "Nova run" tirava dali.
   - **Sem `onFechar` não fecha** (nem X, nem fora, nem Esc): é a sexta e a
     recompensa, que pedem decisão.
+  - **Entra e sai animado (v0.16).** A nota sobe de baixo da tela (papel
+    saindo da maquininha) e sai por cima (o recibo arrancado); a prancheta
+    só aparece e some. Fechar pelo X/fora/Esc anima e SÓ ENTÃO chama
+    `onFechar`. Fechar por fora (a sexta acabou, a run recomeçou) é
+    `aberto={false}` em vez de desmontar: o diálogo **congela o conteúdo**
+    do último render aberto enquanto sai, senão a nota sairia mostrando a
+    segunda-feira. `SAIDA_MS` no componente tem que bater com `.saindo` no
+    sass.
 - **Ação destrutiva confirma com o segundo clique** (`BotaoConfirmar.tsx`),
   não com popup: o primeiro clique arma (texto troca, fica vermelho, treme),
   o segundo executa, e ele desarma sozinho em 3 s ou quando perde o foco. O
@@ -914,6 +951,13 @@ a janela inteira passar de 390px no celular, e o `100%` não adiantava nada. O
 conserto é `min-width: 0` no painel — aí quem transborda é o conteúdo, e é ele
 que ganha um `overflow-x: auto` próprio (a tabela das semanas, a fileira de
 classes). Vale para qualquer caixa que seja item de um flex.
+
+**Popup dentro da nota fiscal precisa de portal.** `mask` (a serrilha) e
+`filter` (o drop-shadow da moldura) também viram bloco contentor de
+`position: fixed`, como o `perspective` abaixo: o popup do envelope, aberto
+de dentro do recibo de fim, ficava preso no tamanho do recibo. `Missoes`
+monta o `Envelope` com `createPortal(…, document.body)`. Qualquer popup que
+nasça de dentro de outro precisa do mesmo.
 
 **`position: fixed` dentro de elemento com `perspective`.** Um elemento com
 `perspective` vira bloco contentor de descendentes fixos — `left/top` passam a
@@ -1428,6 +1472,14 @@ e a um bot diferente — não compare os dois.
   baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
   isso não acontece, editar carta é impossível (o botão fica desligado) e o
   jogo funciona normalmente — é o estado intencional, não um bug.
+- **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
+  que não existe, e rodar o `schema.sql` não toca em carta. Com o banco já
+  semeado, quem leva o código para lá é a caixa "O código tem cartas que o
+  banco não tem" do `/lab/cartas` (v0.16): lista as novas e as diferentes,
+  deixa desmarcar o que o admin editou de propósito, e salva pelo mesmo
+  `admin_salvar_carta`, com o motivo de `MOTIVOS_DO_CODIGO` (`cards.ts`).
+  A comparação ordena as chaves: o `jsonb` reordena, e o texto cru acusaria
+  diferença em toda carta. Ao ajustar carta no código, escreva o porquê lá.
 - **Rodar o `schema.sql` da v0.14 em produção** e acrescentar `/auth/` nas
   Redirect URLs do Supabase (veja a armadilha do Google). Até lá o site
   funciona: amigos, conquistas e o replay alheio somem em silêncio

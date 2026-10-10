@@ -5,7 +5,10 @@
   display: grid
   place-items: center
   padding: 16px
-  overflow-y: auto
+  // não rola: quem rola é o `.corpo`, e a moldura já é presa à altura da
+  // tela. Com `auto` aqui, a nota entrando de baixo (um transform de 70vh)
+  // abria uma barra de rolagem durante a animação
+  overflow: hidden
   background: color-mix(in srgb, var(--tinta) 55%, transparent)
   animation: cortina-entra .16s ease
 
@@ -99,6 +102,10 @@
   &.largo
     width: min(100%, 460px)
 
+  // a nota sobe de baixo da tela, como papel saindo da maquininha: rápida no
+  // começo e assentando no fim, com um quase nada de passar do ponto
+  animation: nota-entra .46s cubic-bezier(.18, .9, .3, 1.06)
+
 .nota
   --dente: 7px
   padding: 26px 22px 28px
@@ -163,6 +170,48 @@
   flex-wrap: wrap
   gap: 8px
 
+// ------------------------------------------------------------------- saída
+// `forwards` é o que segura o popup invisível entre o fim da animação e a
+// desmontagem; sem ele, ele piscaria de volta no último quadro. A duração tem
+// que bater com `SAIDA_MS` no componente
+.saindo
+  pointer-events: none
+  animation: cortina-sai .28s ease forwards
+
+  .moldura
+    animation: dialogo-sai .2s ease forwards
+
+  // e a nota sai por cima, como quem arranca o recibo
+  .molduraNota
+    animation: nota-sai .28s cubic-bezier(.5, 0, .75, .3) forwards
+
+@keyframes nota-entra
+  from
+    opacity: 0
+    transform: translateY(70vh) rotate(-1.5deg)
+  45%
+    opacity: 1
+  to
+    transform: none
+
+@keyframes nota-sai
+  from
+    transform: none
+  to
+    opacity: 0
+    transform: translateY(-70vh) rotate(1.5deg)
+
+@keyframes dialogo-sai
+  to
+    opacity: 0
+    transform: translateY(8px) scale(.97)
+
+@keyframes cortina-sai
+  from
+    opacity: 1
+  to
+    opacity: 0
+
 @keyframes cortina-entra
   from
     opacity: 0
@@ -179,5 +228,7 @@
 
 @media (prefers-reduced-motion: reduce)
   .fundo,
-  .moldura
+  .moldura,
+  .saindo .moldura,
+  .saindo .molduraNota
     animation: none

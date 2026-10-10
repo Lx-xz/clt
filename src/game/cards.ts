@@ -303,6 +303,27 @@ export const CARTAS_BASE: ActionCard[] = [
 export const VERSAO_BARALHO_BASE = 3
 
 /**
+ * O PORQUÊ de cada carta que o código mudou e o banco talvez ainda não tenha.
+ *
+ * O banco semeado não é sobrescrito pelo código (é a regra que protege o que
+ * o admin editou no /lab), e por isso o baralho v3 escrito aqui não chegou
+ * sozinho a produção. Quem leva é o "Trazer do código" do /lab/cartas, e
+ * como todo salvamento de carta ele exige um motivo: é este. O que mudou (o
+ * número) a bancada escreve sozinha; o porquê é o que um diff não sabe.
+ */
+export const MOTIVOS_DO_CODIGO: Record<string, string> = {
+  'atalho-no-sistema': 'Era a Tarefa melhor em tudo: mais produtividade pelo mesmo custo e sem preço nenhum.',
+  'home-office': 'Rendia 1 de produtividade por energia e ainda tirava estresse; a régua (Tarefa Simples) é 0,67.',
+  'planilha-infinita': 'A 0,5 de produtividade por energia só servia de enchimento.',
+  terapia: 'Ideia do autor: tira estresse de verdade, mas com custo de verdade, em dinheiro.',
+  'vale-refeicao': 'Era dinheiro de graça; agora também compra uma carta.',
+  'hora-extra': 'Era a pior troca do jogo: energia demais por pouco dinheiro.',
+  'cafe-duplo': 'Armadilha consciente: energia agora, estresse depois. Rara para não aparecer toda hora.',
+  reuniao: 'O baralho inicial passou a ter pelo menos 3 cartas de cada naipe.',
+  'tarefa-simples': 'Uma Tarefa Simples cedeu lugar à terceira Reunião (3 por naipe no inicial).',
+}
+
+/**
  * Os números do jogo (aluguel, cota, salário, energia base) NÃO moram mais
  * aqui: viraram modo de jogo, em `regras.ts`, e vêm do banco como as cartas.
  * Mexer no aluguel deixou de ser mexer no código.

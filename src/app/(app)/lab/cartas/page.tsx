@@ -4,6 +4,7 @@ import { ArrowLeft, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Card from '@/components/Card'
+import Check from '@/components/Check'
 import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
@@ -14,11 +15,12 @@ import {
 } from '../_catalogo/Bancada'
 import { EditorDeEfeitos, EscapeJson } from '../_catalogo/EditorDeAcoes'
 import {
+  cartaParaBanco,
   excluirDoCatalogo,
   salvarCarta,
   semearCatalogo,
 } from '@/data/cartas'
-import { CARTAS_BASE } from '@/game/cards'
+import { CARTAS_BASE, MOTIVOS_DO_CODIGO } from '@/game/cards'
 import { EVENTOS_BASE } from '@/game/events'
 import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
@@ -136,6 +138,116 @@ function resumoDaMudanca(antes: ActionCard | undefined, depois: ActionCard): str
   return partes.join(' · ') || 'Salva sem mudança de número'
 }
 
+/** JSON com as chaves em ordem: o `jsonb` do banco reordena as chaves dos
+ *  objetos, e comparar o texto cru acusaria diferença em toda carta. */
+function estavel(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(estavel).join(',')}]`
+  if (v && typeof v === 'object') {
+    const pares = Object.entries(v as Record<string, unknown>)
+      .filter(([, x]) => x !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+    return `{${pares.map(([k, x]) => `${JSON.stringify(k)}:${estavel(x)}`).join(',')}}`
+  }
+  return JSON.stringify(v)
+}
+
+interface Pendencia {
+  carta: ActionCard
+  oQue: string
+  porque: string
+}
+
+/**
+ * O que o baralho do código tem e o banco não: carta nova, ou carta que o
+ * código mudou. Carta que o admin TIROU do jogo (`ativa = false`) fica de
+ * fora — tirar foi uma decisão, e trazer de volta tem que ser outra.
+ */
+function pendenciasDoCodigo(doBanco: ActionCard[]): Pendencia[] {
+  const banco = new Map(doBanco.map((c) => [c.id, c]))
+  const lista: Pendencia[] = []
+  for (const carta of CARTAS_BASE) {
+    const antes = banco.get(carta.id)
+    if (antes?.ativa === false) continue
+    if (antes && estavel(cartaParaBanco(antes)) === estavel(cartaParaBanco(carta))) continue
+    lista.push({
+      carta,
+      oQue: resumoDaMudanca(antes, carta),
+      porque: MOTIVOS_DO_CODIGO[carta.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Carta nova do baralho de referência do código.'),
+    })
+  }
+  return lista
+}
+
+/**
+ * A ponte de volta entre o código e o banco, para DEPOIS da estreia.
+ *
+ * Semear só escreve o que não existe — é o que protege o que foi editado
+ * aqui —, então uma carta ajustada em `cards.ts` nunca chegava ao banco, e
+ * "rodei o schema e as cartas não mudaram" era exatamente isso: o schema
+ * cria tabela e função, não reescreve carta. Esta caixa lista a diferença e
+ * leva o que estiver marcado, uma carta por vez, pelo mesmo
+ * `admin_salvar_carta` da edição — com histórico e motivo, como qualquer
+ * outra mudança. Desmarque a carta que você mudou aqui de propósito: trazer
+ * a do código desfaria a sua edição.
+ */
+function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTerminar: (recado: string) => void }) {
+  const pendencias = pendenciasDoCodigo(cartas)
+  const [fora, setFora] = useState<string[]>([])
+  const [ocupado, setOcupado] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  if (pendencias.length === 0) return null
+
+  async function trazer() {
+    setOcupado(true)
+    setErro(null)
+    let feitas = 0
+    for (const p of pendencias) {
+      if (fora.includes(p.carta.id)) continue
+      const r = await salvarCarta(p.carta, p.oQue, p.porque)
+      if (!r.ok) {
+        setErro(`${p.carta.name}: ${r.erro ?? 'não deu para salvar.'}`)
+        break
+      }
+      feitas += 1
+    }
+    setOcupado(false)
+    if (feitas > 0) aoTerminar(`${feitas} ${feitas === 1 ? 'carta veio' : 'cartas vieram'} do código para o banco.`)
+  }
+
+  const marcadas = pendencias.length - fora.length
+  return (
+    <section className={styles.trazer}>
+      <h2 className={styles.subtitulo}>O código tem cartas que o banco não tem ({pendencias.length})</h2>
+      <p className={styles.dicaSecao}>
+        Semear não sobrescreve nada, e rodar o <code>schema.sql</code> não mexe em carta: por isso
+        o que mudou em <code>cards.ts</code> não chega sozinho. Desmarque o que você editou aqui de
+        propósito — trazer a versão do código desfaria a sua.
+      </p>
+      <ul className={styles.listaTrazer}>
+        {pendencias.map((p) => (
+          <li key={p.carta.id}>
+            <Check
+              marcado={!fora.includes(p.carta.id)}
+              onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.carta.id) : [...f, p.carta.id]))}
+            >
+              <b>{p.carta.name}</b> · {p.oQue}
+            </Check>
+          </li>
+        ))}
+      </ul>
+      {erro ? <p className={styles.erroTopo}>{erro}</p> : null}
+      <button
+        type="button"
+        className={`${buttons.button} ${buttons.primary}`}
+        onClick={trazer}
+        disabled={ocupado || marcadas === 0}
+      >
+        {ocupado ? 'Trazendo…' : `Trazer ${marcadas} para o banco`}
+      </button>
+    </section>
+  )
+}
+
 export default function LabCartasPage() {
   const [cartas, setCartas] = useState<ActionCard[]>(() => todasAsCartas())
   const [doBanco, setDoBanco] = useState(() => catalogoVeioDoBanco())
@@ -225,6 +337,16 @@ export default function LabCartasPage() {
       </p>
 
       <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
+
+      {doBanco ? (
+        <TrazerDoCodigo
+          cartas={cartas}
+          aoTerminar={(r) => {
+            recarregar()
+            setRecado(r)
+          }}
+        />
+      ) : null}
 
       {recado ? <p className={styles.recado}>{recado}</p> : null}
       {erro && !pedindo ? <p className={styles.erroTopo}>{erro}</p> : null}

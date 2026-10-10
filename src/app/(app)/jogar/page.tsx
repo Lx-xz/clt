@@ -25,7 +25,6 @@ import {
   escolherOpcao,
   escolherParaDescartar,
   escolherRecompensa,
-  oferecerRecompensa,
   payBills,
   paySalary,
   playCard,
@@ -44,11 +43,13 @@ import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
 import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
 import { problemasDoBaralho } from '@/game/baralho'
-import { baralhoAtivo, cartasDoBaralho, copiasMaximas, opcoesDeRecompensa } from '@/game/colecao'
-import { numeroDaSemana, regras } from '@/game/regras'
-import { clearRun, loadCollection, unlockCard } from '@/game/storage'
+import Missoes from '@/components/Missoes'
+import { baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
+import { cumprirMissoes } from '@/game/missoes'
+import { regras } from '@/game/regras'
+import { clearRun, loadCollection, saveCollection, unlockCard } from '@/game/storage'
 import { textoDaCondicao } from '@/game/textos'
-import type { CardInstance, GameState } from '@/game/types'
+import type { CardInstance, Collection, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
 
@@ -87,6 +88,10 @@ export default function JogarPage() {
   const [conquistasNovas, setConquistasNovas] = useState<Conquista[]>([])
   /** O recibo de fim de run foi fechado para olhar a mesa como ficou. */
   const [fimFechado, setFimFechado] = useState(false)
+  /** A coleção, para o recibo mostrar as missões e os envelopes por abrir. */
+  const [colecao, setColecao] = useState<Collection | null>(null)
+  /** As missões que a partida que acabou de terminar cumpriu. */
+  const [cumpridasAgora, setCumpridasAgora] = useState<string[]>([])
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
@@ -97,6 +102,7 @@ export default function JogarPage() {
     carregarDoBanco(sessao.id)
       .then(({ run, collection }) => {
         if (!vivo) return
+        setColecao(collection)
         if (run) {
           setState(pularRecompensaSemanal(run))
           return
@@ -123,15 +129,17 @@ export default function JogarPage() {
   }, [sessao.id])
 
   function update(proximo: GameState) {
-    let next = proximo
-    // a run acabou agora: o recibo oferece a recompensa. As opções são
-    // sorteadas UMA vez e gravadas na run — recarregar a página não sorteia
-    // de novo
-    if (next.phase === 'fim' && next.recompensaEscolhida === undefined) {
-      const opcoes = opcoesDeRecompensa(loadCollection(), numeroDaSemana(next.modo, next.day), next.outcome === 'vitoria')
-      next = oferecerRecompensa(next, opcoes)
-    }
+    const next = proximo
     const acabouAgora = next.outcome !== 'jogando' && state?.outcome === 'jogando'
+    // a run acabou agora: é aqui que as missões do dia são conferidas, e o
+    // envelope entra na coleção ANTES do sincronizar logo abaixo, para subir
+    // junto. A carta do recibo (v0.15) saiu: carta vem de envelope agora
+    if (acabouAgora) {
+      const r = cumprirMissoes(loadCollection(), { venceu: next.outcome === 'vitoria' })
+      saveCollection(r.colecao)
+      setColecao(r.colecao)
+      setCumpridasAgora(r.cumpridas.map((m) => m.id))
+    }
     setState(next)
     sincronizar(sessao.id, next, loadCollection(), setStatus)
     // a run terminada vai para o banco na hora, fora do timer do sincronizar:
@@ -175,6 +183,7 @@ export default function JogarPage() {
     setAberta(null)
     setFimFechado(false)
     setConquistasNovas([])
+    setCumpridasAgora([])
     const ativo = baralhoAtivo(loadCollection())
     const problemas = problemasDoBaralho(ativo, regras())
     if (problemas.length > 0) {
@@ -246,6 +255,7 @@ export default function JogarPage() {
   const week = currentWeek(state)
   const evento = state.currentEvent ? getEvent(state.currentEvent) : null
   const acabou = state.outcome !== 'jogando'
+  const fim = acabou ? FIM[state.outcome as keyof typeof FIM] : null
   const esperandoEvento = state.phase === 'evento' && !state.eventRevealed
   const meio = (state.hand.length - 1) / 2
   const escolhendo = state.escolhaDeDescarte
@@ -554,137 +564,154 @@ export default function JogarPage() {
 
       {/* os três painéis da mesa são NOTAS FISCAIS (é dinheiro e resultado) e
           não travam a barra lateral: antes, o de fim de run cobria a barra, e
-          o único jeito de sair dele era começar outra partida */}
-      {state.phase === 'sexta' ? (
-        <Dialogo titulo="Sexta-feira" estilo="nota" semTravarNav>
-          <ol className={styles.passos}>
-            <li className={styles.passo}>
-              <span className={styles.passoRot}>Produtividade da semana</span>
-              <span className={styles.passoVal}>
-                {state.weekProductivity} / {week.weeklyGoal}
+          o único jeito de sair dele era começar outra partida.
+          `aberto`, e não renderizar condicional: a nota precisa de um instante
+          na tela para sair por cima, e o Dialogo congela o conteúdo enquanto
+          isso — senão ela sairia mostrando a segunda-feira */}
+      <Dialogo titulo="Sexta-feira" estilo="nota" semTravarNav aberto={state.phase === 'sexta'}>
+        <ol className={styles.passos}>
+          <li className={styles.passo}>
+            <span className={styles.passoRot}>Produtividade da semana</span>
+            <span className={styles.passoVal}>
+              {state.weekProductivity} / {week.weeklyGoal}
+            </span>
+          </li>
+
+          {state.fridayResult ? (
+            <li className={`${styles.passo} ${styles.passoNovo}`}>
+              <span className={styles.passoRot}>
+                {state.fridayResult.metGoal ? 'Meta batida · salário cheio' : 'Meta falhou · salário reduzido e +1 advertência'}
               </span>
+              <span className={`${styles.passoVal} ${styles.entrada}`}>+R$ {state.fridayResult.salary}</span>
             </li>
+          ) : null}
 
-            {state.fridayResult ? (
-              <li className={`${styles.passo} ${styles.passoNovo}`}>
-                <span className={styles.passoRot}>
-                  {state.fridayResult.metGoal ? 'Meta batida · salário cheio' : 'Meta falhou · salário reduzido e +1 advertência'}
-                </span>
-                <span className={`${styles.passoVal} ${styles.entrada}`}>+R$ {state.fridayResult.salary}</span>
-              </li>
-            ) : null}
-
-            {state.fridayStep === 'descanso' ? (
-              <li className={`${styles.passo} ${styles.passoNovo}`}>
-                <span className={styles.passoRot}>Aluguel e mercado</span>
-                <span className={`${styles.passoVal} ${styles.saida}`}>−R$ {state.modo.contasSemanais}</span>
-              </li>
-            ) : null}
-
-            {state.fridayStep === 'descanso' ? (
-              <li className={`${styles.passo} ${styles.total} ${styles.passoNovo}`}>
-                <span className={styles.passoRot}>Saldo</span>
-                <span className={styles.passoVal}>R$ {state.money}</span>
-              </li>
-            ) : null}
-          </ol>
-
-          <p className={styles.painelTexto}>{textoDaSexta(state)}</p>
-
-          <div className={styles.acoes}>
-            {state.fridayStep === 'salario' ? (
-              <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(paySalary(state))}>
-                Bater o ponto
-              </button>
-            ) : null}
-            {state.fridayStep === 'contas' ? (
-              <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(payBills(state))}>
-                Pagar as contas
-              </button>
-            ) : null}
-            {state.fridayStep === 'descanso' ? (
-              <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(restWeekend(state))}>
-                Ir para o fim de semana
-              </button>
-            ) : null}
-          </div>
-        </Dialogo>
-      ) : null}
-
-      {acabou && !fimFechado ? (
-        <Dialogo
-          titulo={FIM[state.outcome as keyof typeof FIM].title}
-          estilo="nota"
-          semTravarNav
-          onFechar={() => setFimFechado(true)}
-        >
-          <Avatar
-            avatar={sessao.avatar}
-            tamanho={88}
-            className={styles.avatarFim}
-            humor={state.outcome === 'vitoria' ? 'vitoria' : humorDoEstresse(state.stress, state.modo.estresseMaximo)}
-          />
-          <p className={styles.painelTexto}>{FIM[state.outcome as keyof typeof FIM].text}</p>
-          <ol className={styles.passos}>
-            <li className={styles.passo}>
-              <span className={styles.passoRot}>Dias trabalhados</span>
-              <span className={styles.passoVal}>{state.history.length}</span>
+          {state.fridayStep === 'descanso' ? (
+            <li className={`${styles.passo} ${styles.passoNovo}`}>
+              <span className={styles.passoRot}>Aluguel e mercado</span>
+              <span className={`${styles.passoVal} ${styles.saida}`}>−R$ {state.modo.contasSemanais}</span>
             </li>
-            <li className={styles.passo}>
-              <span className={styles.passoRot}>Cartas jogadas</span>
-              <span className={styles.passoVal}>{state.cardsPlayed}</span>
-            </li>
-            <li className={`${styles.passo} ${styles.total}`}>
-              <span className={styles.passoRot}>Pontuação final</span>
+          ) : null}
+
+          {state.fridayStep === 'descanso' ? (
+            <li className={`${styles.passo} ${styles.total} ${styles.passoNovo}`}>
+              <span className={styles.passoRot}>Saldo</span>
               <span className={styles.passoVal}>R$ {state.money}</span>
             </li>
-          </ol>
-          <Recompensa
-            state={state}
-            onEscolher={(id) => {
-              unlockCard(id)
-              update(escolherRecompensa(state, id))
-            }}
-          />
-          {conquistasNovas.length > 0 ? (
-            <ul className={styles.conquistasNovas}>
-              {conquistasNovas.map((c) => (
-                <li key={c.id}>
-                  <Medal size={16} aria-hidden />
-                  <span>
-                    <b>Conquista: {c.nome}</b>
-                    {c.descricao}
-                  </span>
-                </li>
-              ))}
-            </ul>
           ) : null}
-          {registroFalhou ? (
-            <div className={styles.painelAviso}>
-              <p>
-                Esta partida não chegou ao banco. Ela ficou guardada aqui e sobe sozinha da
-                próxima vez que você abrir a mesa.
-              </p>
-              <p className={styles.painelMotivo}>{registroFalhou}</p>
-            </div>
+        </ol>
+
+        <p className={styles.painelTexto}>{textoDaSexta(state)}</p>
+
+        <div className={styles.acoes}>
+          {state.fridayStep === 'salario' ? (
+            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(paySalary(state))}>
+              Bater o ponto
+            </button>
           ) : null}
-          <div className={styles.acoes}>
-            <button
-              type="button"
-              className={`${buttons.button} ${buttons.primary}`}
-              onClick={() => recomecar()}
-            >
-              Nova run
+          {state.fridayStep === 'contas' ? (
+            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(payBills(state))}>
+              Pagar as contas
             </button>
-            <button type="button" className={buttons.button} onClick={() => setHistorico(true)}>
-              Ver o que aconteceu
+          ) : null}
+          {state.fridayStep === 'descanso' ? (
+            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(restWeekend(state))}>
+              Ir para o fim de semana
             </button>
-            <Link className={buttons.button} href="/">
-              Voltar ao início
-            </Link>
+          ) : null}
+        </div>
+      </Dialogo>
+
+      {/* o recibo também fica montado com `aberto`: o "Nova run" troca a
+          run por baixo dele, e é o conteúdo congelado que sai por cima */}
+      <Dialogo
+        titulo={fim?.title ?? ''}
+        estilo="nota"
+        semTravarNav
+        aberto={acabou && !fimFechado}
+        onFechar={() => setFimFechado(true)}
+      >
+        <Avatar
+          avatar={sessao.avatar}
+          tamanho={88}
+          className={styles.avatarFim}
+          humor={state.outcome === 'vitoria' ? 'vitoria' : humorDoEstresse(state.stress, state.modo.estresseMaximo)}
+        />
+        <p className={styles.painelTexto}>{fim?.text}</p>
+        <ol className={styles.passos}>
+          <li className={styles.passo}>
+            <span className={styles.passoRot}>Dias trabalhados</span>
+            <span className={styles.passoVal}>{state.history.length}</span>
+          </li>
+          <li className={styles.passo}>
+            <span className={styles.passoRot}>Cartas jogadas</span>
+            <span className={styles.passoVal}>{state.cardsPlayed}</span>
+          </li>
+          <li className={`${styles.passo} ${styles.total}`}>
+            <span className={styles.passoRot}>Pontuação final</span>
+            <span className={styles.passoVal}>R$ {state.money}</span>
+          </li>
+        </ol>
+        {/* só aparece para a run que acabou antes das missões, com a
+            escolha de carta ainda pendente no save */}
+        <Recompensa
+          state={state}
+          onEscolher={(id) => {
+            unlockCard(id)
+            update(escolherRecompensa(state, id))
+          }}
+        />
+        {acabou && colecao ? (
+          <div className={styles.missoesFim}>
+            <p className={styles.recompensaTitulo}>Missões do dia</p>
+            <Missoes
+              colecao={colecao}
+              cumpridasAgora={cumpridasAgora}
+              onMudar={(c) => {
+                setColecao(c)
+                sincronizar(sessao.id, state, c, setStatus)
+              }}
+            />
           </div>
-        </Dialogo>
-      ) : null}
+        ) : null}
+        {conquistasNovas.length > 0 ? (
+          <ul className={styles.conquistasNovas}>
+            {conquistasNovas.map((c) => (
+              <li key={c.id}>
+                <Medal size={16} aria-hidden />
+                <span>
+                  <b>Conquista: {c.nome}</b>
+                  {c.descricao}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {registroFalhou ? (
+          <div className={styles.painelAviso}>
+            <p>
+              Esta partida não chegou ao banco. Ela ficou guardada aqui e sobe sozinha da
+              próxima vez que você abrir a mesa.
+            </p>
+            <p className={styles.painelMotivo}>{registroFalhou}</p>
+          </div>
+        ) : null}
+        <div className={styles.acoes}>
+          <button
+            type="button"
+            className={`${buttons.button} ${buttons.primary}`}
+            onClick={() => recomecar()}
+          >
+            Nova run
+          </button>
+          <button type="button" className={buttons.button} onClick={() => setHistorico(true)}>
+            Ver o que aconteceu
+          </button>
+          <Link className={buttons.button} href="/">
+            Voltar ao início
+          </Link>
+        </div>
+      </Dialogo>
 
       {/* fechar o recibo deixa a mesa como ficou, para ler; a faixa é o
           caminho de volta, sem precisar adivinhar onde começa outra run */}
@@ -706,10 +733,10 @@ export default function JogarPage() {
 }
 
 /**
- * A recompensa da run, no recibo. Uma cópia para a COLEÇÃO — a run já
- * acabou, então ela não entra em baralho nenhum sozinha; quem a põe é a
- * pessoa, no /baralho. A quantidade e a raridade das opções dizem o quão
- * longe a partida foi (`raridadesDaRecompensa`).
+ * A carta do recibo, da v0.15. Desde as missões diárias nenhuma run nova
+ * oferece carta (`recompensaEscolhida` fica `undefined` e isto não desenha
+ * nada); sobrou para o save que terminou antes delas com a escolha pendente.
+ * Pode sair quando ninguém mais tiver um desses.
  */
 function Recompensa({ state, onEscolher }: { state: GameState; onEscolher: (id: string) => void }) {
   if (state.recompensaEscolhida === undefined) return null

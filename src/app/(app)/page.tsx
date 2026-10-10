@@ -7,6 +7,7 @@ import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import ComoJogar from '@/components/ComoJogar'
 import Conquistas from '@/components/Conquistas'
 import ListaDeAmigos from '@/components/ListaDeAmigos'
+import Missoes from '@/components/Missoes'
 import { useSessao } from '@/components/SessaoGuard'
 import { meusAmigos, pedidosDeAmizade, type Amigo, type Pedido } from '@/data/amizades'
 import { buscarMeusJogos, buscarRanking } from '@/data/analytics'
@@ -15,7 +16,8 @@ import type { JogoResumo } from '@/data/jogadores'
 import { dayLabel } from '@/game/engine'
 import { baralhoAtivo, foraDoBaralho } from '@/game/colecao'
 import { loadCollection, loadRun } from '@/game/storage'
-import type { GameState } from '@/game/types'
+import { carregarDoBanco, sincronizar } from '@/data/sync'
+import type { Collection, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './inicio.module.sass'
 
@@ -49,6 +51,7 @@ export default function InicioPage() {
   const [amigos, setAmigos] = useState<Amigo[] | null>(null)
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [recentes, setRecentes] = useState<Conquista[]>([])
+  const [colecao, setColecao] = useState<Collection | null>(null)
 
   function carregarAmigos() {
     if (sessao.convidado) return
@@ -76,11 +79,35 @@ export default function InicioPage() {
   useEffect(() => {
     const salva = loadRun<GameState>()
     setRun(salva && salva.outcome === 'jogando' ? salva : null)
-    // cópias que a pessoa tem e não estão no baralho equipado
-    const colecao = loadCollection()
-    const ativo = baralhoAtivo(colecao)
-    setNovas(Object.keys(colecao.tenho).reduce((t, id) => t + foraDoBaralho(colecao, ativo, id), 0))
+    const c = loadCollection()
+    setColecao(c)
+    setNovas(contarFora(c))
   }, [])
+
+  // a coleção do espelho local abre a página; a do banco a substitui quando
+  // chegar. Sem isso, abrir um envelope aqui subiria uma coleção velha por
+  // cima da de outro aparelho
+  useEffect(() => {
+    let vivo = true
+    void carregarDoBanco(sessao.id)
+      .then(({ collection }) => {
+        if (!vivo) return
+        setColecao(collection)
+        setNovas(contarFora(collection))
+      })
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [sessao.id])
+
+  /** Abrir envelope aqui muda a coleção sem run nenhuma em jogo: sobe a run
+   *  salva como está (ou nenhuma), junto com a coleção nova. */
+  function mudarColecao(c: Collection) {
+    setColecao(c)
+    setNovas(contarFora(c))
+    sincronizar(sessao.id, loadRun<GameState>(), c, () => {})
+  }
 
   useEffect(() => {
     void buscarMeusJogos(sessao.id)
@@ -149,6 +176,13 @@ export default function InicioPage() {
       ) : null}
 
       <div className={styles.grade}>
+        {colecao ? (
+          <section className={styles.bloco}>
+            <h2 className={styles.titulo}>Missões do dia</h2>
+            <Missoes colecao={colecao} onMudar={mudarColecao} />
+          </section>
+        ) : null}
+
         <section className={styles.bloco}>
           <h2 className={styles.titulo}>Última partida</h2>
           {ultimo === undefined ? <p className={styles.nota}>Carregando…</p> : null}
@@ -224,4 +258,10 @@ export default function InicioPage() {
       {tutorial ? <ComoJogar onFechar={() => setTutorial(false)} /> : null}
     </main>
   )
+}
+
+/** Cópias que a pessoa tem e não estão no baralho equipado. */
+function contarFora(c: Collection): number {
+  const ativo = baralhoAtivo(c)
+  return Object.keys(c.tenho).reduce((t, id) => t + foraDoBaralho(c, ativo, id), 0)
 }
