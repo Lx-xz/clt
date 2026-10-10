@@ -1,3 +1,4 @@
+import { custosDe } from '@/game/custos'
 import { cartasRemovidas, getCard, mudancasDoCatalogo, versaoDoBaralho } from '@/game/catalogo'
 import type { ActionCard, CardId, CartaSnapshot, MudancaDeCarta } from '@/game/types'
 
@@ -55,7 +56,7 @@ export function cartaComoEra(id: CardId, retrato?: CartaSnapshot[]): CartaSnapsh
   const hoje = getCard(id)
   return {
     id, name: hoje.name, cost: hoje.cost, kind: hoje.kind, text: hoje.text,
-    ...(hoje.custoDinheiro ? { custoDinheiro: hoje.custoDinheiro } : {}),
+    ...(hoje.custos?.length ? { custos: hoje.custos } : {}),
   }
 }
 
@@ -65,5 +66,9 @@ export function cartaComoEra(id: CardId, retrato?: CartaSnapshot[]): CartaSnapsh
  * jogar — e uma carta removida não tem regra nenhuma para carregar.
  */
 export function cartaParaMostrar(id: CardId, retrato?: CartaSnapshot[]): ActionCard {
-  return { ...cartaComoEra(id, retrato), efeitos: [], starter: false }
+  const como = cartaComoEra(id, retrato)
+  // o retrato da v0.15 guarda `custoDinheiro`; a carta desenhada lê `custos`
+  const { custoDinheiro: _antigo, ...retratoDela } = como
+  const custos = custosDe(como)
+  return { ...retratoDela, ...(custos.length ? { custos } : {}), efeitos: [], starter: false }
 }

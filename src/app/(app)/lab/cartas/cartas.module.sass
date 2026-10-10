@@ -315,3 +315,24 @@
   padding: 0
   list-style: none
   font-size: 13px
+
+// os custos: uma linha por recurso (qual · quanto · tirar)
+.custosLista
+  display: flex
+  flex-direction: column
+  gap: 6px
+  margin: 4px 0 0
+  padding: 0
+  list-style: none
+
+.custoLinha
+  display: grid
+  grid-template-columns: minmax(0, 1fr) 90px auto
+  gap: 6px
+  align-items: center
+
+.maisCusto
+  align-self: flex-start
+  display: inline-flex
+  align-items: center
+  gap: 4px

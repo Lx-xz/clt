@@ -33,6 +33,7 @@
  */
 
 import { cartasDoJogo, catalogoVeioDoBanco } from '../src/game/catalogo'
+import { custosDe } from '../src/game/custos'
 import * as engine from '../src/game/engine'
 import { baralhoAtivo, cartasDoBaralho, colecaoInicial } from '../src/game/colecao'
 import { regras, totalDeDias } from '../src/game/regras'
@@ -94,9 +95,10 @@ function melhorJogada(state: GameState): string | null {
     if (!carta) return -99
     // carta paga em R$: o bot paga se o saldo continuar cobrindo as contas
     // da sexta. Abaixo disso, o despejo é certo e nenhum descanso vale isso
-    const preco = carta.custoDinheiro ?? 0
+    const preco = custosDe(carta).find((c) => c.qual === 'dinheiro')?.quanto ?? 0
     if (preco > 0 && state.money - preco < state.modo.contasSemanais) return -30
-    const estresse = mexeEm(carta, 'estresse')
+    // estresse pago como CUSTO sobe do mesmo jeito que o de efeito
+    const estresse = mexeEm(carta, 'estresse') + (custosDe(carta).find((c) => c.qual === 'estresse')?.quanto ?? 0)
     // a regra que sustenta o jogo: Energia = 10 − Estresse, então chegar
     // perto do teto encolhe todos os dias seguintes. Um jogador mediano
     // percebe isso e recua

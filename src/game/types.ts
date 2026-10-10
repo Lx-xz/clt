@@ -47,12 +47,22 @@ export interface ActionCard {
   /** Quão difícil é ganhar a carta no fim da run, e quantas cópias dela
    *  cabem na coleção (`copiasMaximas`). Ausente é `comum`. */
   raridade?: Raridade
-  /** Custo em R$, pago ao jogar, além da energia. Sem saldo, a carta não sai
-   *  da mão — é o que separa custo de efeito que tira dinheiro. */
-  custoDinheiro?: number
+  /** O que a carta cobra ALÉM da energia (`cost`): dinheiro, estresse,
+   *  produtividade. Pago antes dos efeitos; sem saldo de dinheiro ou de
+   *  produtividade, a carta não sai da mão. Veja `src/game/custos.ts`.
+   *  Substitui o `custoDinheiro` da v0.15, que é traduzido na leitura. */
+  custos?: Custo[]
 }
 
 export type Raridade = 'comum' | 'incomum' | 'rara'
+
+/** Os recursos que podem ser custo além da energia, que é o `cost`. */
+export type RecursoDeCusto = Exclude<Recurso, 'energia'>
+
+export interface Custo {
+  qual: RecursoDeCusto
+  quanto: number
+}
 
 /**
  * A carta como ela era no dia em que a run foi jogada. Vai gravada dentro da
@@ -65,7 +75,10 @@ export interface CartaSnapshot {
   cost: number
   kind: ClasseDaCarta
   text: string
-  /** Só existe na carta que se paga em R$ (v0.15). */
+  /** Só existe na carta que cobra algo além da energia (v0.17). */
+  custos?: Custo[]
+  /** O formato da v0.15, que continua dentro das runs gravadas antes da
+   *  lista de custos. Quem lê é `custosDe()`; nada novo escreve isto. */
   custoDinheiro?: number
 }
 

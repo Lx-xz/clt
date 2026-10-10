@@ -5,6 +5,7 @@ import type {
   CardId,
   CardKind,
   CartaSnapshot,
+  Custo,
   ClasseDaCarta,
   EventCard,
   EventChoice,
@@ -12,6 +13,7 @@ import type {
   Raridade,
 } from '@/game/types'
 import { migrarAcoes, migrarEfeitos } from '@/game/acoes'
+import { lerCustos } from '@/game/custos'
 import type { Acao, Efeito, Restricao } from '@/game/acoes'
 import { supabase } from './supabase'
 
@@ -43,6 +45,9 @@ interface LinhaCarta {
    *  os manda: caem em `comum` e 0. */
   raridade?: string | null
   custo_dinheiro?: number | null
+  /** v0.17: a lista de custos além da energia. Ausente no banco que ainda
+   *  não rodou o schema novo — aí vale o `custo_dinheiro`. */
+  custos?: unknown
   versao: number
   ativa: boolean
 }
@@ -94,7 +99,7 @@ function paraCarta(linha: LinhaCarta): ActionCard {
     starter: linha.inicial,
     copies: linha.copias ?? undefined,
     raridade: paraRaridade(linha.raridade),
-    custoDinheiro: linha.custo_dinheiro || undefined,
+    custos: custosDaLinha(linha),
     ativa: linha.ativa,
     versao: linha.versao,
   }
@@ -122,6 +127,14 @@ function paraEvento(linha: LinhaEvento): EventCard {
   }
 }
 
+/** A lista quando existe; senão o `custo_dinheiro` da v0.15. A tradução é na
+ *  LEITURA, como a do vocabulário das ações: nada precisa rodar no banco. */
+function custosDaLinha(linha: LinhaCarta): Custo[] | undefined {
+  const lista = lerCustos(linha.custos)
+  if (lista.length > 0) return lista
+  return linha.custo_dinheiro ? [{ qual: 'dinheiro', quanto: linha.custo_dinheiro }] : undefined
+}
+
 /** O caminho de volta: a carta do motor no formato que a RPC espera. */
 export function cartaParaBanco(c: ActionCard): Record<string, unknown> {
   return {
@@ -136,7 +149,11 @@ export function cartaParaBanco(c: ActionCard): Record<string, unknown> {
     inicial: c.starter,
     copias: c.copies ?? null,
     raridade: c.raridade ?? 'comum',
-    custo_dinheiro: c.custoDinheiro ?? 0,
+    custos: c.custos ?? [],
+    // o espelho em R$ da lista: é o que o banco sem a coluna `custos` grava,
+    // e zero quando a carta deixou de custar dinheiro — senão a leitura
+    // acima ressuscitaria o custo antigo
+    custo_dinheiro: c.custos?.find((x) => x.qual === 'dinheiro')?.quanto ?? 0,
   }
 }
 

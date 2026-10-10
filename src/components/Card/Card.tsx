@@ -2,8 +2,9 @@
 
 import { Coffee, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
+import { carimboDoCusto, custosDe, textoDoCusto } from '@/game/custos'
 import type { ActionCard, EventCard } from '@/game/types'
-import { LockIcon, TONE_ICONS, iconeDaClasse } from '../icons'
+import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import styles from './Card.module.sass'
 
 /** Distância em px que separa um clique de um arraste. */
@@ -72,7 +73,7 @@ export default function Card({
   const Icon = evento ? TONE_ICONS[card.tone] : iconeDaClasse(card.kind)
   const custo = evento ? null : (cost ?? card.cost)
   const custoAlto = !evento && custo !== null && custo > card.cost
-  const reais = evento ? 0 : (card.custoDinheiro ?? 0)
+  const extras = evento ? [] : custosDe(card)
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
 
   /** Informa só o deslocamento do ponteiro; o CSS compõe o resto. */
@@ -177,7 +178,7 @@ export default function Card({
     ? faceDown
       ? 'Carta de evento virada para baixo. Clique para revelar.'
       : `${card.name}. ${card.text}`
-    : `${card.name}, custa ${custo} de energia${reais ? ` e R$ ${reais}` : ''}. Clique para ver o detalhe, clique duplo para jogar.`
+    : `${card.name}, custa ${[`${custo} de energia`, ...extras.map(textoDoCusto)].join(' e ')}. Clique para ver o detalhe, clique duplo para jogar.`
 
   return (
     <div className={`${styles.palco} ${className ?? ''}`} style={style}>
@@ -214,13 +215,24 @@ export default function Card({
           ].join(' ')}
         >
           {custo !== null ? (
-            // a carta que só se paga em R$ não mostra o "0" de energia: o
-            // carimbo diz o que ela COBRA, e zero não é cobrança
+            // a carta que só se paga em outra coisa não mostra o "0" de
+            // energia: o carimbo diz o que ela COBRA, e zero não é cobrança.
+            // Cada custo extra é um carimbo na cor do medidor dele — o mesmo
+            // código de cor do HUD, e o ícone porque "2" vermelho sozinho
+            // não diz se é estresse
             <span className={styles.custos}>
-              {custo > 0 || !reais ? (
+              {custo > 0 || extras.length === 0 ? (
                 <span className={`${styles.custo} ${custoAlto ? styles.custoAlto : ''}`}>{custo}</span>
               ) : null}
-              {reais ? <span className={`${styles.custo} ${styles.custoReais}`}>R${reais}</span> : null}
+              {extras.map((c) => {
+                const Icone = RESOURCE_ICONS[c.qual]
+                return (
+                  <span key={c.qual} className={`${styles.custo} ${styles[`custo_${c.qual}`]}`}>
+                    {c.qual === 'dinheiro' ? null : <Icone size={10} aria-hidden />}
+                    {carimboDoCusto(c)}
+                  </span>
+                )
+              })}
             </span>
           ) : null}
           <span className={styles.selo} aria-label={locked ? 'bloqueada' : undefined} aria-hidden={!locked}>

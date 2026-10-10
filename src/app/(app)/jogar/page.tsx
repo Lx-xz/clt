@@ -45,6 +45,7 @@ import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/con
 import { problemasDoBaralho } from '@/game/baralho'
 import Missoes from '@/components/Missoes'
 import { baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
+import { custoQueFalta, custosDe, textoDoCusto } from '@/game/custos'
 import { cumprirMissoes } from '@/game/missoes'
 import { regras } from '@/game/regras'
 import { clearRun, loadCollection, saveCollection, unlockCard } from '@/game/storage'
@@ -808,8 +809,10 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   if (carta.restricao?.exige) {
     return `Esta carta pede: ${textoDaCondicao(carta.restricao.exige)}.`
   }
-  if ((carta.custoDinheiro ?? 0) > state.money) {
-    return `Dinheiro insuficiente: custa R$ ${carta.custoDinheiro} e você tem R$ ${state.money}.`
+  const falta = custoQueFalta(state, custosDe(carta))
+  if (falta) {
+    const tem = falta.qual === 'dinheiro' ? `R$ ${state.money}` : `${state.productivity} de ${falta.qual}`
+    return `Não dá para pagar: custa ${textoDoCusto(falta)} e você tem ${tem}.`
   }
   return `Energia insuficiente: custa ${effectiveCost(state, carta.id)} e você tem ${state.energy}.`
 }

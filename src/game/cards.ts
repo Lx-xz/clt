@@ -101,7 +101,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'terapia', raridade: 'incomum', name: 'Terapia', cost: 0, custoDinheiro: 80, kind: 'descanso',
+    id: 'terapia', raridade: 'incomum', name: 'Terapia', cost: 0, custos: [{ qual: 'dinheiro', quanto: 80 }], kind: 'descanso',
     text: '−3 estresse', starter: false,
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -3 }] }],
   },
@@ -199,12 +199,12 @@ export const CARTAS_BASE: ActionCard[] = [
   // --- v0.15: as que se pagam em R$, e as que faltavam ---
   // As pagas ligam grana a descanso: até aqui o dinheiro só virava pontuação.
   {
-    id: 'delivery', name: 'Delivery', cost: 0, custoDinheiro: 25, kind: 'descanso',
+    id: 'delivery', name: 'Delivery', cost: 0, custos: [{ qual: 'dinheiro', quanto: 25 }], kind: 'descanso',
     text: '+2 energia', starter: false,
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }],
   },
   {
-    id: 'academia-no-almoco', raridade: 'incomum', name: 'Academia no Almoço', cost: 1, custoDinheiro: 40,
+    id: 'academia-no-almoco', raridade: 'incomum', name: 'Academia no Almoço', cost: 1, custos: [{ qual: 'dinheiro', quanto: 40 }],
     kind: 'descanso', text: '−2 estresse. Amanhã: +1 energia', starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'estresse', quanto: -2 },
@@ -212,7 +212,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'uber-pra-casa', name: 'Uber pra Casa', cost: 0, custoDinheiro: 30, kind: 'descanso',
+    id: 'uber-pra-casa', name: 'Uber pra Casa', cost: 0, custos: [{ qual: 'dinheiro', quanto: 30 }], kind: 'descanso',
     text: 'Amanhã: +2 energia', starter: false,
     efeitos: [{ acoes: [{ faz: 'amanha', acoes: [{ faz: 'recurso', qual: 'energia', quanto: 2 }] }] }],
   },
@@ -256,7 +256,7 @@ export const CARTAS_BASE: ActionCard[] = [
     efeitos: [{ acoes: [{ faz: 'comprar', quantas: 2 }] }],
   },
   {
-    id: 'happy-hour', raridade: 'incomum', name: 'Happy Hour', cost: 0, custoDinheiro: 50, kind: 'social',
+    id: 'happy-hour', raridade: 'incomum', name: 'Happy Hour', cost: 0, custos: [{ qual: 'dinheiro', quanto: 50 }], kind: 'social',
     text: '−2 estresse. Amanhã: +1 carta na mão', starter: false,
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'estresse', quanto: -2 },
@@ -272,7 +272,7 @@ export const CARTAS_BASE: ActionCard[] = [
     ] }],
   },
   {
-    id: 'investimento', raridade: 'rara', name: 'Investimento', cost: 0, custoDinheiro: 100, kind: 'grana',
+    id: 'investimento', raridade: 'rara', name: 'Investimento', cost: 0, custos: [{ qual: 'dinheiro', quanto: 100 }], kind: 'grana',
     text: '+R$ 40 toda sexta, pelo resto da run', especial: true, starter: false,
     efeitos: [{ acoes: [{ faz: 'recorrente', qual: 'dinheiro', quanto: 40, cada: 'semana' }] }],
   },

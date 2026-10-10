@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
+import { custosDe, textoDoCusto } from '@/game/custos'
 import type { ActionCard, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from '../Card'
@@ -56,9 +57,11 @@ export default function CardDetail({ card, cost, onClose, onPlay, blockedReason,
                   {custo} de energia
                   {custo !== card.cost ? ` (base ${card.cost})` : ''}
                 </span>
-                {card.custoDinheiro ? (
-                  <span className={`${styles.chip} ${styles.chipDinheiro}`}>R$ {card.custoDinheiro}</span>
-                ) : null}
+                {custosDe(card).map((c) => (
+                  <span key={c.qual} className={`${styles.chip} ${styles[`chip_${c.qual}`]}`}>
+                    {textoDoCusto(c)}
+                  </span>
+                ))}
                 <span className={styles.chip}>{nomeDaClasse(card.kind)}</span>
               </>
             )}

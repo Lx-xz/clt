@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Card from '@/components/Card'
@@ -26,7 +26,8 @@ import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
 import type { Acao, Efeito, Recurso } from '@/game/acoes'
 import { COPIAS_POR_RARIDADE } from '@/game/colecao'
-import type { ActionCard, ClasseDaCarta, Raridade } from '@/game/types'
+import { RECURSOS_DE_CUSTO, lerCustos } from '@/game/custos'
+import type { ActionCard, ClasseDaCarta, Custo, Raridade, RecursoDeCusto } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './cartas.module.sass'
 
@@ -127,8 +128,10 @@ function resumoDaMudanca(antes: ActionCard | undefined, depois: ActionCard): str
   if ((antes.raridade ?? 'comum') !== (depois.raridade ?? 'comum')) {
     partes.push(`Raridade: ${antes.raridade ?? 'comum'} → ${depois.raridade ?? 'comum'}`)
   }
-  if ((antes.custoDinheiro ?? 0) !== (depois.custoDinheiro ?? 0)) {
-    partes.push(`Custo R$ ${antes.custoDinheiro ?? 0} → R$ ${depois.custoDinheiro ?? 0}`)
+  for (const qual of RECURSOS_DE_CUSTO) {
+    const de = antes.custos?.find((c) => c.qual === qual)?.quanto ?? 0
+    const para = depois.custos?.find((c) => c.qual === qual)?.quanto ?? 0
+    if (de !== para) partes.push(`Custo em ${qual} ${de} → ${para}`)
   }
   if ((antes.copies ?? 1) !== (depois.copies ?? 1)) {
     partes.push(`Cópias ${antes.copies ?? 1} → ${depois.copies ?? 1}`)
@@ -136,6 +139,193 @@ function resumoDaMudanca(antes: ActionCard | undefined, depois: ActionCard): str
   if (JSON.stringify(antes.efeitos) !== JSON.stringify(depois.efeitos)) partes.push('Efeito mudou')
   if (antes.text !== depois.text) partes.push('Texto reescrito')
   return partes.join(' · ') || 'Salva sem mudança de número'
+}
+
+type RecursoDaLinha = 'energia' | RecursoDeCusto
+
+const NOMES_DE_CUSTO: Record<RecursoDaLinha, string> = {
+  energia: 'Energia',
+  dinheiro: 'Dinheiro (R$)',
+  estresse: 'Estresse',
+  produtividade: 'Produtividade',
+}
+
+/**
+ * Os custos da carta, como uma lista: "+ custo", escolhe o recurso, diz
+ * quanto. Era um campo por recurso, e a carta que custasse estresse pediria
+ * um terceiro campo. A energia aparece na MESMA lista para quem edita, mas
+ * mora em `cost` (é o custo que toda carta tem, e o que os eventos mexem);
+ * o resto vai para `custos`. Sem linha de energia, a carta custa 0 dela.
+ *
+ * As linhas moram no estado deste componente, e não são deduzidas da carta a
+ * cada render: senão a linha recém-acrescentada com 0 sumiria na hora.
+ */
+function EditorDeCustos({ carta, onChange }: {
+  carta: ActionCard
+  onChange: (cost: number, custos: Custo[] | undefined) => void
+}) {
+  const [linhas, setLinhas] = useState<{ qual: RecursoDaLinha; quanto: number }[]>(() => [
+    ...(carta.cost > 0 || !carta.custos?.length ? [{ qual: 'energia' as const, quanto: carta.cost }] : []),
+    ...(carta.custos ?? []),
+  ])
+
+  function mudar(novas: { qual: RecursoDaLinha; quanto: number }[]) {
+    setLinhas(novas)
+    const energia = novas.find((l) => l.qual === 'energia')?.quanto ?? 0
+    const custos = lerCustos(novas.filter((l) => l.qual !== 'energia'))
+    onChange(Math.max(0, energia), custos.length ? custos : undefined)
+  }
+
+  const livres = (['energia', ...RECURSOS_DE_CUSTO] as RecursoDaLinha[]).filter(
+    (r) => !linhas.some((l) => l.qual === r),
+  )
+
+  return (
+    <div className={comuns.rotulo}>
+      Custos
+      <ul className={styles.custosLista}>
+        {linhas.map((l, i) => (
+          <li key={l.qual} className={styles.custoLinha}>
+            <select
+              className={comuns.campo}
+              value={l.qual}
+              aria-label="Recurso do custo"
+              onChange={(e) => mudar(linhas.map((x, j) => (j === i ? { ...x, qual: e.target.value as RecursoDaLinha } : x)))}
+            >
+              {[l.qual, ...livres].map((r) => (
+                <option key={r} value={r}>{NOMES_DE_CUSTO[r]}</option>
+              ))}
+            </select>
+            <input
+              className={comuns.campo}
+              type="number"
+              min={0}
+              max={l.qual === 'dinheiro' ? 1000 : 20}
+              step={l.qual === 'dinheiro' ? 5 : 1}
+              value={l.quanto}
+              aria-label={`Quanto de ${l.qual}`}
+              onChange={(e) =>
+                mudar(linhas.map((x, j) => (j === i ? { ...x, quanto: Math.max(0, Number(e.target.value) || 0) } : x)))
+              }
+            />
+            <button
+              type="button"
+              className={buttons.button}
+              onClick={() => mudar(linhas.filter((_, j) => j !== i))}
+              aria-label={`Tirar o custo de ${l.qual}`}
+            >
+              <X size={14} aria-hidden />
+            </button>
+          </li>
+        ))}
+      </ul>
+      {livres.length > 0 ? (
+        <button
+          type="button"
+          className={`${buttons.button} ${styles.maisCusto}`}
+          onClick={() => mudar([...linhas, { qual: livres[0], quanto: livres[0] === 'dinheiro' ? 10 : 1 }])}
+        >
+          <Plus size={14} aria-hidden /> Custo
+        </button>
+      ) : null}
+      <span className={comuns.dica}>
+        Tudo é pago ANTES dos efeitos. Sem saldo de dinheiro ou de produtividade a carta não sai
+        da mão; estresse não tem saldo — pagar é subir, mesmo que leve ao burnout.
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Carta que cobra dinheiro pelo EFEITO (um `recurso dinheiro` negativo no
+ * bloco sem condição) em vez de pelo custo. Era o único jeito antes da v0.15,
+ * e o efeito deixa jogar sem saldo: a conta só chega na sexta, como despejo.
+ * Isto acha essas cartas no catálogo VIVO (o do banco, que é onde moram as
+ * cartas editadas no /lab) e propõe a troca, com o "−R$" tirado do texto —
+ * o carimbo verde já diz o preço.
+ */
+function custoEscondido(c: ActionCard): ActionCard | null {
+  const i = blocoSimples(c)
+  if (i < 0) return null
+  const bloco = c.efeitos[i]
+  const pagos = bloco.acoes.filter(
+    (a): a is Extract<Acao, { faz: 'recurso' }> => a.faz === 'recurso' && a.qual === 'dinheiro' && a.quanto < 0,
+  )
+  if (pagos.length === 0) return null
+  const preco = pagos.reduce((t, a) => t - a.quanto, 0)
+  const efeitos = c.efeitos.map((e, j) =>
+    j === i ? { ...e, acoes: e.acoes.filter((a) => !pagos.includes(a as (typeof pagos)[number])) } : e,
+  )
+  const custos = lerCustos([...(c.custos ?? []), { qual: 'dinheiro', quanto: preco }])
+  const text = c.text
+    .replace(/[−-]\s*R\$\s*\d+\s*[,.;·]?\s*/g, '')
+    .replace(/^[\s,.;·]+|[\s,.;·]+$/g, '')
+  return { ...c, efeitos, custos, text: text || c.text }
+}
+
+function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTerminar: (recado: string) => void }) {
+  const achadas = cartas
+    .filter((c) => c.ativa !== false)
+    .map((c) => ({ antes: c, depois: custoEscondido(c) }))
+    .filter((x): x is { antes: ActionCard; depois: ActionCard } => x.depois !== null)
+  const [fora, setFora] = useState<string[]>([])
+  const [ocupado, setOcupado] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  if (achadas.length === 0) return null
+
+  async function converter() {
+    setOcupado(true)
+    setErro(null)
+    let feitas = 0
+    for (const { antes, depois } of achadas) {
+      if (fora.includes(antes.id)) continue
+      const preco = depois.custos?.find((c) => c.qual === 'dinheiro')?.quanto ?? 0
+      const r = await salvarCarta(
+        depois,
+        `O −R$ ${preco} saiu do efeito e virou custo`,
+        'Como efeito, o −R$ deixava jogar sem saldo e só cobrava na sexta. Como custo, sem dinheiro a carta não sai da mão, e o preço aparece no carimbo.',
+      )
+      if (!r.ok) {
+        setErro(`${antes.name}: ${r.erro ?? 'não deu para salvar.'}`)
+        break
+      }
+      feitas += 1
+    }
+    setOcupado(false)
+    if (feitas > 0) aoTerminar(`${feitas} ${feitas === 1 ? 'carta passou' : 'cartas passaram'} a cobrar o dinheiro como custo.`)
+  }
+
+  const marcadas = achadas.length - fora.length
+  return (
+    <section className={styles.trazer}>
+      <h2 className={styles.subtitulo}>Cartas que cobram dinheiro pelo efeito ({achadas.length})</h2>
+      <p className={styles.dicaSecao}>
+        Um −R$ no efeito deixa jogar sem saldo. Convertidas, elas cobram o R$ como custo (o
+        carimbo verde), e o −R$ sai do texto.
+      </p>
+      <ul className={styles.listaTrazer}>
+        {achadas.map(({ antes, depois }) => (
+          <li key={antes.id}>
+            <Check
+              marcado={!fora.includes(antes.id)}
+              onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== antes.id) : [...f, antes.id]))}
+            >
+              <b>{antes.name}</b> · R$ {depois.custos?.find((c) => c.qual === 'dinheiro')?.quanto} · “{antes.text}” → “{depois.text}”
+            </Check>
+          </li>
+        ))}
+      </ul>
+      {erro ? <p className={styles.erroTopo}>{erro}</p> : null}
+      <button
+        type="button"
+        className={`${buttons.button} ${buttons.primary}`}
+        onClick={converter}
+        disabled={ocupado || marcadas === 0}
+      >
+        {ocupado ? 'Convertendo…' : `Converter ${marcadas}`}
+      </button>
+    </section>
+  )
 }
 
 /** JSON com as chaves em ordem: o `jsonb` do banco reordena as chaves dos
@@ -339,6 +529,16 @@ export default function LabCartasPage() {
       <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
 
       {doBanco ? (
+        <ConverterCustos
+          cartas={cartas}
+          aoTerminar={(r) => {
+            recarregar()
+            setRecado(r)
+          }}
+        />
+      ) : null}
+
+      {doBanco ? (
         <TrazerDoCodigo
           cartas={cartas}
           aoTerminar={(r) => {
@@ -400,33 +600,13 @@ export default function LabCartasPage() {
               />
             </label>
 
-            <label className={comuns.rotulo}>
-              Custo em energia
-              <input
-                className={comuns.campo}
-                type="number"
-                min={0}
-                max={20}
-                value={emEdicao.cost}
-                onChange={(e) => setEmEdicao({ ...emEdicao, cost: Number(e.target.value) || 0 })}
-              />
-            </label>
-
-            <label className={comuns.rotulo}>
-              Custo em R$
-              <input
-                className={comuns.campo}
-                type="number"
-                min={0}
-                max={1000}
-                step={5}
-                value={emEdicao.custoDinheiro ?? 0}
-                onChange={(e) =>
-                  setEmEdicao({ ...emEdicao, custoDinheiro: Math.max(0, Number(e.target.value) || 0) || undefined })
-                }
-              />
-            </label>
           </div>
+
+          <EditorDeCustos
+            key={criando ? 'nova' : emEdicao.id}
+            carta={emEdicao}
+            onChange={(cost, custos) => setEmEdicao((c) => (c ? { ...c, cost, custos } : c))}
+          />
 
           <label className={comuns.rotulo}>
             Classe

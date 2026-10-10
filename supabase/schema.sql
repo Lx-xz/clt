@@ -301,6 +301,25 @@ alter table public.cartas drop constraint if exists cartas_custo_dinheiro_ok;
 alter table public.cartas add constraint cartas_custo_dinheiro_ok
   check (custo_dinheiro between 0 and 1000);
 
+-- v0.17: o custo além da energia virou LISTA (`[{qual, quanto}]`): dinheiro,
+-- estresse, produtividade. Carta que custa estresse não pede coluna nova.
+-- `custo_dinheiro` continua, espelhando a parte em R$ da lista — é o que o
+-- site antigo (e o banco que não rodou isto) ainda lê. A cópia do custo_dinheiro
+-- para a lista roda UMA vez, no bloco que cria a coluna.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'cartas' and column_name = 'custos'
+  ) then
+    alter table public.cartas add column custos jsonb not null default '[]'::jsonb;
+    update public.cartas
+      set custos = jsonb_build_array(jsonb_build_object('qual', 'dinheiro', 'quanto', custo_dinheiro))
+      where custo_dinheiro > 0;
+  end if;
+end;
+$$;
+
 create table if not exists public.cartas_evento (
   id            text primary key,
   nome          text not null,
@@ -1572,7 +1591,7 @@ begin
 
   insert into public.cartas as c
     (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias,
-     raridade, custo_dinheiro, versao)
+     raridade, custo_dinheiro, custos, versao)
   values (
     v_id,
     coalesce(p_carta ->> 'nome', 'Sem nome'),
@@ -1586,6 +1605,7 @@ begin
     nullif(p_carta ->> 'copias', '')::smallint,
     coalesce(nullif(p_carta ->> 'raridade', ''), 'comum'),
     coalesce((p_carta ->> 'custo_dinheiro')::smallint, 0),
+    case when jsonb_typeof(p_carta -> 'custos') = 'array' then p_carta -> 'custos' else '[]'::jsonb end,
     1
   )
   on conflict (id) do update set
@@ -1593,6 +1613,7 @@ begin
     texto = excluded.texto, efeitos = excluded.efeitos, restricao = excluded.restricao,
     especial = excluded.especial, inicial = excluded.inicial, copias = excluded.copias,
     raridade = excluded.raridade, custo_dinheiro = excluded.custo_dinheiro,
+    custos = excluded.custos,
     versao = c.versao + 1, ativa = true, atualizada_em = now();
 
   -- carta nova também entra no histórico: "criada" é uma mudança de
@@ -1717,7 +1738,7 @@ begin
   for item in select * from jsonb_array_elements(p_cartas) loop
     insert into public.cartas
       (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias,
-       raridade, custo_dinheiro, versao)
+       raridade, custo_dinheiro, custos, versao)
     values (
       item ->> 'id',
       item ->> 'nome',
@@ -1731,6 +1752,7 @@ begin
       nullif(item ->> 'copias', '')::smallint,
       coalesce(nullif(item ->> 'raridade', ''), 'comum'),
       coalesce((item ->> 'custo_dinheiro')::smallint, 0),
+      case when jsonb_typeof(item -> 'custos') = 'array' then item -> 'custos' else '[]'::jsonb end,
       1
     )
     on conflict (id) do nothing;

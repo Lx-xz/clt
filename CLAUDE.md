@@ -399,18 +399,35 @@ coluna ("No baralho" ↔ "Fora", o mesmo `onPlay` + `dropRef` da mesa). O clique
 simples abre o detalhe, que nesta página leva o seletor de cópias (− n +) e o
 histórico da carta (`MudancasDaCarta`), pelos `children` do `CardDetail`.
 
-### O custo em dinheiro (v0.15)
+### Os custos além da energia (v0.15, lista desde a v0.17)
 
-`ActionCard.custoDinheiro` (coluna `custo_dinheiro`) é CUSTO, não efeito:
-`canPlay` recusa sem saldo, `playCard` paga ANTES dos efeitos (uma carta que
-rende dinheiro não se paga com o próprio rendimento), e o carimbo mostra
-`R$80` em verde ao lado do custo em energia — ou no lugar dele, quando a
-energia é zero. Um efeito `recurso dinheiro −80` continua possível, mas deixa
-jogar no vermelho e só cobra na sexta, como despejo; o `/lab/cartas` avisa.
-`effectiveCost` não mexe no R$: evento de custo é sobre energia.
+A carta cobra energia em `cost` e o resto em `ActionCard.custos`, uma LISTA
+de `{ qual, quanto }` com `qual` entre dinheiro, estresse e produtividade
+(`src/game/custos.ts`). Era um campo por recurso (`custoDinheiro`, coluna
+`custo_dinheiro`), e a carta que custasse estresse pediria outro campo,
+outra coluna e outro `if` em cada tela. A energia ficou fora da lista de
+propósito: toda carta a tem, e os eventos mexem nela (`effectiveCost`). No
+`/lab/cartas` as duas aparecem na MESMA lista ("+ Custo"), e quem separa é
+o `EditorDeCustos`.
 
-O retrato da run só ganha `custoDinheiro` quando ele existe, para o retrato
-das cartas de sempre continuar idêntico — o `--hash` do simulador não mudou.
+- Custo é CUSTO, não efeito: `canPlay` recusa sem saldo de dinheiro ou de
+  produtividade (`custoQueFalta`), e `playCard` paga ANTES dos efeitos — a
+  carta que rende dinheiro não se paga com o próprio rendimento. Estresse
+  não tem saldo: pagar é subir, mesmo até o burnout.
+- Um efeito `recurso dinheiro −80` continua possível, mas deixa jogar no
+  vermelho e só cobra na sexta. O `/lab/cartas` acha essas cartas no
+  catálogo vivo ("Cartas que cobram dinheiro pelo efeito") e as converte,
+  tirando o "−R$" do texto.
+- Um carimbo por custo, na cor do medidor do recurso; a carta que não custa
+  energia não mostra o "0".
+- **Tradução na LEITURA, nas três portas:** `custosDaLinha` (banco: coluna
+  `custos` se tiver algo, senão `custo_dinheiro`), `custosDe` (retrato de
+  run antiga, que guarda `custoDinheiro`) e `lerCustos` (soma repetidos,
+  descarta recurso desconhecido). `custo_dinheiro` continua sendo gravado
+  como espelho da parte em R$ — zero quando ela sai, senão a leitura a
+  ressuscitaria.
+- O retrato da run só ganha `custos` quando eles existem, para o retrato
+  das cartas de sempre continuar idêntico no `--hash` do simulador.
 
 ### A carta neutra
 
@@ -1472,6 +1489,9 @@ e a um bot diferente — não compare os dois.
   baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
   isso não acontece, editar carta é impossível (o botão fica desligado) e o
   jogo funciona normalmente — é o estado intencional, não um bug.
+- **Rodar o `schema.sql` da v0.17** (coluna `cartas.custos`). Sem ele o
+  custo em R$ segue funcionando pelo `custo_dinheiro`, mas custo de estresse
+  ou produtividade salvo no `/lab` não é gravado.
 - **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
   que não existe, e rodar o `schema.sql` não toca em carta. Com o banco já
   semeado, quem leva o código para lá é a caixa "O código tem cartas que o

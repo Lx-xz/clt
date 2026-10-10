@@ -34,6 +34,15 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.17',
+    data: '2026-10-10',
+    titulo: 'Custos de qualquer recurso',
+    itens: [
+      { tipo: 'novo', texto: 'Uma carta pode custar mais do que energia: dinheiro, estresse ou produtividade, cada um com o seu carimbo, na cor do medidor. Tudo é pago antes do efeito; sem dinheiro ou produtividade suficiente, a carta não sai da mão.' },
+      { tipo: 'melhor', texto: 'As cartas que tiravam dinheiro pelo efeito (o "−R$" do texto) passam a cobrar como custo: não dá mais para jogá-las sem saldo e descobrir o despejo só na sexta.' },
+    ],
+  },
+  {
     versao: '0.16',
     data: '2026-10-10',
     titulo: 'Missões diárias e envelopes',

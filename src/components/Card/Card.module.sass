@@ -151,9 +151,21 @@ $levantada: 18px
 .custoAlto
   background: var(--estresse)
 
-.custoReais
+// um carimbo por custo extra, na cor do medidor do recurso
+.custo_dinheiro
   background: var(--dinheiro)
   font-size: 11px
+
+.custo_estresse,
+.custo_produtividade
+  display: flex
+  gap: 2px
+
+.custo_estresse
+  background: var(--estresse)
+
+.custo_produtividade
+  background: var(--produtividade)
 
 .selo
   position: absolute
