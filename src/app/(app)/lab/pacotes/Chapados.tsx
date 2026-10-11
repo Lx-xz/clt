@@ -76,22 +76,23 @@ function Chapa({ w, h, cor, r = 0 }: { w: number; h: number; cor: string; r?: nu
   return <rect width={w} height={h} rx={r} fill={cor} stroke={cor} strokeWidth=".8" />
 }
 
-/** Uma caixa reta, sem giro: frente, topo e os lados que a vista mostrar. */
-function Caixa({ vista, p, tam, cores, frente }: { vista: Vista; p: V3; tam: V3; cores: { frente: string; topo: string; lado: string }; frente?: React.ReactNode }) {
+/** Uma caixa reta (que pode girar junto com uma tampa): frente, topo e os
+ *  lados que a vista mostrar. */
+function Caixa({ vista, t, p, tam, cores, frente }: { vista: Vista; t?: Transf; p: V3; tam: V3; cores: { frente: string; topo: string; lado: string }; frente?: React.ReactNode }) {
   const [x, y, z] = p
   const [w, h, d] = tam
   return (
     <>
-      <Face vista={vista} o={[x, y, z + d]} u={[1, 0, 0]} v={[0, 0, -1]}>
+      <Face vista={vista} t={t} o={[x, y, z + d]} u={[1, 0, 0]} v={[0, 0, -1]}>
         <Chapa w={w} h={d} cor={cores.topo} />
       </Face>
-      <Face vista={vista} o={[x + w, y, z]} u={[0, 0, 1]} v={[0, 1, 0]}>
+      <Face vista={vista} t={t} o={[x + w, y, z]} u={[0, 0, 1]} v={[0, 1, 0]}>
         <Chapa w={d} h={h} cor={cores.lado} />
       </Face>
-      <Face vista={vista} o={[x, y, z + d]} u={[0, 0, -1]} v={[0, 1, 0]}>
+      <Face vista={vista} t={t} o={[x, y, z + d]} u={[0, 0, -1]} v={[0, 1, 0]}>
         <Chapa w={d} h={h} cor={cores.lado} />
       </Face>
-      <Face vista={vista} o={p} u={[1, 0, 0]} v={[0, 1, 0]}>
+      <Face vista={vista} t={t} o={p} u={[1, 0, 0]} v={[0, 1, 0]}>
         <Chapa w={w} h={h} cor={cores.frente} />
         {frente}
       </Face>
@@ -162,6 +163,8 @@ function gotas(fora: number, dentro: number, n: number): string {
   return `${d} Z`
 }
 const BORDA_DA_CERA = gotas(13.4, 11.8, 11)
+// onde a cera do envelope fica: a ponta da aba está em 92
+const CERA_Y = 95.5
 
 /** O selo, centrado na origem: sombra, cera, o anel afundado e a carta. */
 function Cera() {
@@ -187,7 +190,6 @@ function Envelope({ t }: { t: number }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '')
   const vista = { ox: 0, oy: 0.5 }
   const aba = giro('x', [0, 44, 0], -180 * comVolta(t))
-  const quebra = trecho(t, 0, 0.4)
   return (
     <>
       <defs>
@@ -209,8 +211,11 @@ function Envelope({ t }: { t: number }) {
       <path d="M31 128 L80 90 L129 128" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth="2" strokeLinejoin="round" />
       {/* a sombra da aba no bolso */}
       <path d="M22 44 H138 L80 95 Z" fill="rgba(0,0,0,.14)" opacity={1 - trecho(t, 0, 0.25)} />
-      {/* a metade de baixo da cera fica no bolso, e entorta ao rachar */}
-      <g transform={`translate(80 ${91 + 3 * quebra}) rotate(${10 * quebra})`}>
+      {/* a metade de baixo da cera fica no bolso, parada. O centro da cera
+          fica um pouco ABAIXO da ponta da aba: com a racha passando acima
+          da ponta, a ponta cobria o pedaço de baixo e abria um buraco no
+          meio do selo */}
+      <g transform={`translate(80 ${CERA_Y})`}>
         <g clipPath={`url(#baixo${id})`}>
           <Cera />
         </g>
@@ -219,13 +224,21 @@ function Envelope({ t }: { t: number }) {
       <Face vista={vista} t={aba} o={[22, 44, 0]} u={[1, 0, 0]} v={[0, 1, 0]}>
         <path d="M0 0 H116 L58 48 Z" fill="#e6c38a" stroke="#e6c38a" strokeWidth=".8" strokeLinejoin="round" />
         <path d="M6 3 H110" stroke="rgba(255,255,255,.35)" strokeWidth="3" strokeLinecap="round" />
-        <g transform="translate(58 47)">
+        <g transform={`translate(58 ${CERA_Y - 44})`}>
           <g clipPath={`url(#cima${id})`}>
             <Cera />
           </g>
         </g>
       </Face>
+      {/* o avesso. A meia cera continua presa do lado de fora, e com a aba
+          lá em cima, virada para trás, ela aparece atrás da ponta: é o
+          verso da cera, liso, e o triângulo vem por cima dele */}
       <Face vista={vista} t={aba} o={[138, 44, 0]} u={[-1, 0, 0]} v={[0, 1, 0]}>
+        <g transform={`translate(58 ${CERA_Y - 44})`}>
+          <g clipPath={`url(#cima${id})`}>
+            <path d={BORDA_DA_CERA} fill="#77726c" />
+          </g>
+        </g>
         <path d="M0 0 H116 L58 48 Z" fill="#a98049" stroke="#a98049" strokeWidth=".8" strokeLinejoin="round" />
       </Face>
     </>
@@ -303,35 +316,37 @@ function Pacote({ t }: { t: number }) {
 // ------------------------------------------------------------ maleta
 // duas metades de couro, uma atrás da outra, presas pela emenda de baixo.
 // Ao abrir, cada uma tomba POUCO para o seu lado — o bastante para ver o
-// forro pela fresta de cima. Os ferrolhos de ferro são metade em cada
-// metade: fechados, as duas partes se encontram em cima da emenda; abertos,
-// se separam com elas. A alça é da metade de trás
+// forro pela fresta de cima. Ferro, só nas duas trancas de cima: a
+// dobradiça e a lingueta são da metade de trás, e a lingueta passa por cima
+// da emenda e deita no fecho, que é da metade da frente. Ao abrir, ela vai
+// para trás com a sua metade e solta o fecho
 function Maleta({ t }: { t: number }) {
   const vista = { ox: 0.3, oy: 0.5 }
-  const ferro = '#8a9097'
-  const ferroClaro = '#b4bac1'
+  const ferro = { frente: '#8a9097', topo: '#b4bac1', lado: '#6b7178' }
   const a = 15 * comVolta(t)
   const frente = giro('x', [0, 136, 12], a)
   const tras = giro('x', [0, 136, 12], -a)
-  const ferrolhos = (y: number) => [16, 92].map((x) => <rect key={x} x={x} y={y} width="16" height="7" rx="1.5" fill={ferro} />)
-  const alca = (z: number, cor: string) => (
-    <Face vista={vista} t={tras} o={[18, 58, z]} u={[1, 0, 0]} v={[0, 1, 0]}>
-      <path d="M48 0 V-11 Q48 -17 54 -17 H70 Q76 -17 76 -11 V0" fill="none" stroke={cor} strokeWidth="6.5" strokeLinecap="round" />
+  const TRANCAS = [32, 112]
+  // a alça é uma fatia desenhada várias vezes, de trás para a frente, para
+  // ter grossura sem vão: com só duas camadas, o topo da maleta aparecia
+  // entre elas
+  const alca = [20, 19.5, 19, 18.5, 18, 17.5, 17, 16.5, 16].map((z, i, todas) => (
+    <Face key={z} vista={vista} t={tras} o={[18, 58, z]} u={[1, 0, 0]} v={[0, 1, 0]}>
+      <path d="M48 0.5 V-11 Q48 -17 54 -17 H70 Q76 -17 76 -11 V0.5" fill="none" stroke={i === todas.length - 1 ? '#6a4128' : '#4c2e1b'} strokeWidth="6.5" />
     </Face>
-  )
+  ))
   return (
     <>
       <Chao x={84} largura={66} />
-      {/* a metade de trás: a alça (em duas camadas, para ter grossura), o
-          topo com as presilhas e o forro, que só aparece na fresta */}
-      {alca(20, '#4c2e1b')}
+      {/* a metade de trás: o topo, as dobradiças das trancas, a alça e o
+          forro, que só aparece na fresta */}
       <Face vista={vista} t={tras} o={[18, 58, 24]} u={[1, 0, 0]} v={[0, 0, -1]}>
         <Chapa w={124} h={12} cor="#b57b52" />
-        <rect x="44" y="4" width="10" height="5" rx="1.5" fill={ferro} />
-        <rect x="70" y="4" width="10" height="5" rx="1.5" fill={ferro} />
-        {ferrolhos(5)}
       </Face>
-      {alca(17, '#6a4128')}
+      {TRANCAS.map((x) => (
+        <Caixa key={x} vista={vista} t={tras} p={[x - 7, 53, 14]} tam={[14, 5, 6]} cores={ferro} />
+      ))}
+      {alca}
       <Face vista={vista} t={tras} o={[142, 58, 12]} u={[0, 0, 1]} v={[0, 1, 0]}>
         <Chapa w={12} h={78} cor="#74482d" />
       </Face>
@@ -346,28 +361,30 @@ function Maleta({ t }: { t: number }) {
       </Face>
       <Face vista={vista} t={frente} o={[18, 58, 12]} u={[1, 0, 0]} v={[0, 0, -1]}>
         <Chapa w={124} h={12} cor="#bf855b" />
-        {ferrolhos(0)}
-        {[24, 100].map((x) => (
-          <circle key={x} cx={x} cy="4" r="1.3" fill="#3a3f45" />
-        ))}
       </Face>
       <Face vista={vista} t={frente} o={[142, 58, 0]} u={[0, 0, 1]} v={[0, 1, 0]}>
         <Chapa w={12} h={78} cor="#7c4d30" />
-        <rect x="0" y="66" width="12" height="12" fill={ferro} />
       </Face>
       <Face vista={vista} t={frente} o={[18, 58, 0]} u={[1, 0, 0]} v={[0, 1, 0]}>
         <Chapa w={124} h={78} cor="#9a6440" />
         <rect x="9" y="9" width="106" height="60" rx="6" fill="none" stroke="#d6a47a" strokeOpacity=".65" strokeWidth="1.6" strokeDasharray="4 3" />
-        {/* as abas dos ferrolhos descendo pela frente, e as cantoneiras */}
-        {[16, 92].map((x) => (
-          <g key={x}>
-            <rect x={x} y="0" width="16" height="9" rx="1.5" fill={ferro} />
-            <rect x={x} y="0" width="16" height="2.4" fill={ferroClaro} />
-          </g>
-        ))}
-        <path d="M0 64 H6 V72 H14 V78 H0 Z" fill={ferro} />
-        <path d="M124 64 H118 V72 H110 V78 H124 Z" fill={ferro} />
       </Face>
+      {/* os fechos, na borda de cima da frente, com o buraco da chave */}
+      {TRANCAS.map((x) => (
+        <Caixa
+          key={x}
+          vista={vista}
+          t={frente}
+          p={[x - 9, 53, 1]}
+          tam={[18, 5, 8]}
+          cores={ferro}
+          frente={<rect x="8" y="1.4" width="2" height="2.6" rx="1" fill="#3a3f45" />}
+        />
+      ))}
+      {/* as linguetas: por último, porque passam por cima do fecho */}
+      {TRANCAS.map((x) => (
+        <Caixa key={x} vista={vista} t={tras} p={[x - 6, 51.5, 3]} tam={[12, 1.5, 15]} cores={{ frente: '#7d838a', topo: '#c3c8ce', lado: '#62686f' }} />
+      ))}
     </>
   )
 }
