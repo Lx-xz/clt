@@ -322,18 +322,22 @@ function Pacote({ t }: { t: number }) {
 // ------------------------------------------------------------ maleta
 // duas metades de couro, uma atrás da outra, presas pela emenda de baixo.
 // Ao abrir, cada uma tomba POUCO para o seu lado — o bastante para ver o
-// forro pela fresta de cima. Ferro, só nas duas trancas, e elas são
-// CHAPADAS no topo, como o resto: uma placa que a emenda corta ao meio,
-// metade em cada metade da maleta. Fechada, as metades se encontram e a
-// placa fica inteira; aberta, cada metade leva a sua. As trancas com
-// volume (dobradiça, lingueta e fecho) eram detalhe demais para o estilo
+// forro pela fresta de cima. Ferro, só nas duas trancas, e elas são uma
+// tira FINA: a dobradiça na metade de trás, colada na emenda, e a tira
+// que atravessa o topo da metade da frente e dobra a borda, descendo um
+// pouco pela frente até o buraco da chave. As trancas com volume
+// (dobradiça, lingueta e fecho) e a placa larga eram detalhe demais
 function Maleta({ t }: { t: number }) {
   const vista = { ox: 0.3, oy: 0.5 }
   const ferro = '#9aa1a9'
+  const ferroEscuro = '#7d848c'
   const a = 15 * comVolta(t)
   const frente = giro('x', [0, 136, 12], a)
   const tras = giro('x', [0, 136, 12], -a)
-  const TRANCAS = [32, 112]
+  // os centros das trancas, simétricos em volta da alça (que está no meio,
+  // em 80). Estavam em 32 e 112, cujo meio é 72: a da esquerda ficava
+  // longe da alça e a da direita colada nela
+  const TRANCAS = [44, 116].map((x) => x - 18)
   // a alça é uma fatia desenhada várias vezes, de trás para a frente, para
   // ter grossura sem vão: com só duas camadas, o topo da maleta aparecia
   // entre elas
@@ -351,7 +355,7 @@ function Maleta({ t }: { t: number }) {
         <Chapa w={124} h={12} cor="#b57b52" />
         {/* a metade de trás de cada tranca, colada na emenda */}
         {TRANCAS.map((x) => (
-          <path key={x} d={`M${x - 26} 12 V5 Q${x - 26} 3 ${x - 24} 3 H${x - 12} Q${x - 10} 3 ${x - 10} 5 V12 Z`} fill={ferro} />
+          <rect key={x} x={x - 5} y="8.5" width="10" height="3.5" rx="1" fill={ferroEscuro} />
         ))}
       </Face>
       {alca}
@@ -371,10 +375,7 @@ function Maleta({ t }: { t: number }) {
         <Chapa w={124} h={12} cor="#bf855b" />
         {/* a metade da frente, com o buraco da chave */}
         {TRANCAS.map((x) => (
-          <g key={x}>
-            <path d={`M${x - 26} 0 H${x - 10} V7 Q${x - 10} 9 ${x - 12} 9 H${x - 24} Q${x - 26} 9 ${x - 26} 7 Z`} fill={ferro} />
-            <rect x={x - 19} y="2.5" width="2" height="3.5" rx="1" fill="#3a3f45" />
-          </g>
+          <rect key={x} x={x - 3.5} y="0" width="7" height="12" fill={ferro} />
         ))}
       </Face>
       <Face vista={vista} t={frente} o={[142, 58, 0]} u={[0, 0, 1]} v={[0, 1, 0]}>
@@ -383,6 +384,13 @@ function Maleta({ t }: { t: number }) {
       <Face vista={vista} t={frente} o={[18, 58, 0]} u={[1, 0, 0]} v={[0, 1, 0]}>
         <Chapa w={124} h={78} cor="#9a6440" />
         <rect x="9" y="9" width="106" height="60" rx="6" fill="none" stroke="#d6a47a" strokeOpacity=".65" strokeWidth="1.6" strokeDasharray="4 3" />
+        {/* a ponta de cada tranca dobra a borda e desce um pouco pela frente */}
+        {TRANCAS.map((x) => (
+          <g key={x}>
+            <path d={`M${x - 3.5} 0 H${x + 3.5} V5 Q${x + 3.5} 7 ${x + 1.5} 7 H${x - 1.5} Q${x - 3.5} 7 ${x - 3.5} 5 Z`} fill={ferro} />
+            <circle cx={x} cy="3.4" r=".9" fill="#3a3f45" />
+          </g>
+        ))}
       </Face>
     </>
   )
