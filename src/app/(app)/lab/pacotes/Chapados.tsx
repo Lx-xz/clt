@@ -68,12 +68,18 @@ function Face({ vista, t = parado, o, u, v, children }: { vista: Vista; t?: Tran
 }
 
 /**
- * O fundo de uma face. O contorno da mesma cor cobre a fresta que o
- * antisserrilhado deixa entre duas faces vizinhas — é o mesmo remendo do 3D
- * de CSS, e pelo mesmo motivo.
+ * O contorno da mesma cor que cobre a fresta que o antisserrilhado deixa
+ * entre duas faces vizinhas — é o mesmo remendo do 3D de CSS, e pelo mesmo
+ * motivo. Ele é medido na TELA (`non-scaling-stroke`) e tem a quina
+ * redonda: medido na face, a matriz o entortava junto, e a quina em
+ * ponta, num paralelogramo fechado, espetava para fora da aresta — eram os
+ * pixels sobrando nos lados direitos.
  */
-function Chapa({ w, h, cor, r = 0 }: { w: number; h: number; cor: string; r?: number }) {
-  return <rect width={w} height={h} rx={r} fill={cor} stroke={cor} strokeWidth=".8" />
+const EMENDA = { strokeWidth: 0.7, strokeLinejoin: 'round', vectorEffect: 'non-scaling-stroke' } as const
+
+/** O fundo de uma face, com a emenda. */
+function Chapa({ w, h, cor }: { w: number; h: number; cor: string }) {
+  return <rect width={w} height={h} fill={cor} stroke={cor} {...EMENDA} />
 }
 
 /** Uma caixa reta (que pode girar junto com uma tampa): frente, topo e os
@@ -166,14 +172,14 @@ const BORDA_DA_CERA = gotas(13.4, 11.8, 11)
 // onde a cera do envelope fica: a ponta da aba está em 92
 const CERA_Y = 95.5
 
-/** O selo, centrado na origem: sombra, cera, o anel afundado e a carta. */
+/** O selo, centrado na origem: sombra, cera vermelha, o anel afundado e a carta. */
 function Cera() {
   return (
     <>
       <path d={BORDA_DA_CERA} transform="translate(.6 1.2)" fill="rgba(0,0,0,.25)" />
-      <path d={BORDA_DA_CERA} fill="#8f8a84" />
-      <circle r="9.4" fill="#aaa59e" />
-      <circle r="8" fill="#7d7872" />
+      <path d={BORDA_DA_CERA} fill="#b8322f" />
+      <circle r="9.4" fill="#d0504a" />
+      <circle r="8" fill="#9f2724" />
       <rect x="-4" y="-5.5" width="8" height="11" rx="1.6" fill="none" stroke="#fff" strokeWidth="1.6" />
       <path d="M0 -3.2 l2 3.2 -2 3.2 -2 -3.2z" fill="#fff" />
       <path d="M-8.5 -5 A10 10 0 0 1 -1 -9.8" fill="none" stroke="rgba(255,255,255,.55)" strokeWidth="1.6" strokeLinecap="round" />
@@ -222,7 +228,7 @@ function Envelope({ t }: { t: number }) {
       </g>
       {/* a aba: o lado de fora, com a outra metade da cera, e o avesso */}
       <Face vista={vista} t={aba} o={[22, 44, 0]} u={[1, 0, 0]} v={[0, 1, 0]}>
-        <path d="M0 0 H116 L58 48 Z" fill="#e6c38a" stroke="#e6c38a" strokeWidth=".8" strokeLinejoin="round" />
+        <path d="M0 0 H116 L58 48 Z" fill="#e6c38a" stroke="#e6c38a" {...EMENDA} />
         <path d="M6 3 H110" stroke="rgba(255,255,255,.35)" strokeWidth="3" strokeLinecap="round" />
         <g transform={`translate(58 ${CERA_Y - 44})`}>
           <g clipPath={`url(#cima${id})`}>
@@ -236,10 +242,10 @@ function Envelope({ t }: { t: number }) {
       <Face vista={vista} t={aba} o={[138, 44, 0]} u={[-1, 0, 0]} v={[0, 1, 0]}>
         <g transform={`translate(58 ${CERA_Y - 44})`}>
           <g clipPath={`url(#cima${id})`}>
-            <path d={BORDA_DA_CERA} fill="#77726c" />
+            <path d={BORDA_DA_CERA} fill="#8c2220" />
           </g>
         </g>
-        <path d="M0 0 H116 L58 48 Z" fill="#a98049" stroke="#a98049" strokeWidth=".8" strokeLinejoin="round" />
+        <path d="M0 0 H116 L58 48 Z" fill="#a98049" stroke="#a98049" {...EMENDA} />
       </Face>
     </>
   )
@@ -316,13 +322,14 @@ function Pacote({ t }: { t: number }) {
 // ------------------------------------------------------------ maleta
 // duas metades de couro, uma atrás da outra, presas pela emenda de baixo.
 // Ao abrir, cada uma tomba POUCO para o seu lado — o bastante para ver o
-// forro pela fresta de cima. Ferro, só nas duas trancas de cima: a
-// dobradiça e a lingueta são da metade de trás, e a lingueta passa por cima
-// da emenda e deita no fecho, que é da metade da frente. Ao abrir, ela vai
-// para trás com a sua metade e solta o fecho
+// forro pela fresta de cima. Ferro, só nas duas trancas, e elas são
+// CHAPADAS no topo, como o resto: uma placa que a emenda corta ao meio,
+// metade em cada metade da maleta. Fechada, as metades se encontram e a
+// placa fica inteira; aberta, cada metade leva a sua. As trancas com
+// volume (dobradiça, lingueta e fecho) eram detalhe demais para o estilo
 function Maleta({ t }: { t: number }) {
   const vista = { ox: 0.3, oy: 0.5 }
-  const ferro = { frente: '#8a9097', topo: '#b4bac1', lado: '#6b7178' }
+  const ferro = '#9aa1a9'
   const a = 15 * comVolta(t)
   const frente = giro('x', [0, 136, 12], a)
   const tras = giro('x', [0, 136, 12], -a)
@@ -342,10 +349,11 @@ function Maleta({ t }: { t: number }) {
           forro, que só aparece na fresta */}
       <Face vista={vista} t={tras} o={[18, 58, 24]} u={[1, 0, 0]} v={[0, 0, -1]}>
         <Chapa w={124} h={12} cor="#b57b52" />
+        {/* a metade de trás de cada tranca, colada na emenda */}
+        {TRANCAS.map((x) => (
+          <path key={x} d={`M${x - 26} 12 V5 Q${x - 26} 3 ${x - 24} 3 H${x - 12} Q${x - 10} 3 ${x - 10} 5 V12 Z`} fill={ferro} />
+        ))}
       </Face>
-      {TRANCAS.map((x) => (
-        <Caixa key={x} vista={vista} t={tras} p={[x - 7, 53, 14]} tam={[14, 5, 6]} cores={ferro} />
-      ))}
       {alca}
       <Face vista={vista} t={tras} o={[142, 58, 12]} u={[0, 0, 1]} v={[0, 1, 0]}>
         <Chapa w={12} h={78} cor="#74482d" />
@@ -361,6 +369,13 @@ function Maleta({ t }: { t: number }) {
       </Face>
       <Face vista={vista} t={frente} o={[18, 58, 12]} u={[1, 0, 0]} v={[0, 0, -1]}>
         <Chapa w={124} h={12} cor="#bf855b" />
+        {/* a metade da frente, com o buraco da chave */}
+        {TRANCAS.map((x) => (
+          <g key={x}>
+            <path d={`M${x - 26} 0 H${x - 10} V7 Q${x - 10} 9 ${x - 12} 9 H${x - 24} Q${x - 26} 9 ${x - 26} 7 Z`} fill={ferro} />
+            <rect x={x - 19} y="2.5" width="2" height="3.5" rx="1" fill="#3a3f45" />
+          </g>
+        ))}
       </Face>
       <Face vista={vista} t={frente} o={[142, 58, 0]} u={[0, 0, 1]} v={[0, 1, 0]}>
         <Chapa w={12} h={78} cor="#7c4d30" />
@@ -369,22 +384,6 @@ function Maleta({ t }: { t: number }) {
         <Chapa w={124} h={78} cor="#9a6440" />
         <rect x="9" y="9" width="106" height="60" rx="6" fill="none" stroke="#d6a47a" strokeOpacity=".65" strokeWidth="1.6" strokeDasharray="4 3" />
       </Face>
-      {/* os fechos, na borda de cima da frente, com o buraco da chave */}
-      {TRANCAS.map((x) => (
-        <Caixa
-          key={x}
-          vista={vista}
-          t={frente}
-          p={[x - 9, 53, 1]}
-          tam={[18, 5, 8]}
-          cores={ferro}
-          frente={<rect x="8" y="1.4" width="2" height="2.6" rx="1" fill="#3a3f45" />}
-        />
-      ))}
-      {/* as linguetas: por último, porque passam por cima do fecho */}
-      {TRANCAS.map((x) => (
-        <Caixa key={x} vista={vista} t={tras} p={[x - 6, 51.5, 3]} tam={[12, 1.5, 15]} cores={{ frente: '#7d838a', topo: '#c3c8ce', lado: '#62686f' }} />
-      ))}
     </>
   )
 }
@@ -393,7 +392,8 @@ function Maleta({ t }: { t: number }) {
 // aço visto um pouco da direita: frente, lateral e topo, com cantos retos
 // onde as faces se encontram. A porta é uma chapa grossa saltada da frente,
 // presa pela borda esquerda. Antes de abrir, o segredo gira e a manivela
-// vira; aí a porta gira para fora e mostra o avesso, liso e arredondado
+// vira; aí a porta gira para fora e mostra o avesso, liso. Tudo de canto
+// reto: a porta arredondada não encaixava nas bordas retas da chapa
 function Cofre({ t }: { t: number }) {
   const vista = { ox: 0.35, oy: 0.45 }
   const porta = giro('y', [33, 0, 0], 95 * comVolta(trecho(t, 0.45, 1)))
@@ -437,7 +437,7 @@ function Cofre({ t }: { t: number }) {
         <Chapa w={44} h={90} cor="#555c65" />
       </Face>
       <Face vista={vista} o={[26, 40, 0]} u={[1, 0, 0]} v={[0, 1, 0]}>
-        <path d="M0 0 H96 V90 H0 Z M12 7 Q7 7 7 12 V78 Q7 83 12 83 H84 Q89 83 89 78 V12 Q89 7 84 7 Z" fill="#747c87" fillRule="evenodd" stroke="#747c87" strokeWidth=".8" />
+        <path d="M0 0 H96 V90 H0 Z M7 7 V83 H89 V7 Z" fill="#747c87" fillRule="evenodd" stroke="#747c87" {...EMENDA} />
         {/* as dobradiças, no batente da esquerda */}
         <rect x="2" y="16" width="5" height="13" rx="2" fill="#4a5058" />
         <rect x="2" y="61" width="5" height="13" rx="2" fill="#4a5058" />
@@ -453,8 +453,8 @@ function Cofre({ t }: { t: number }) {
         <Chapa w={6} h={76} cor="#5d646d" />
       </Face>
       <Face vista={vista} t={porta} o={[33, 47, -6]} u={[1, 0, 0]} v={[0, 1, 0]}>
-        <Chapa w={82} h={76} cor="#808995" r={3} />
-        <rect x="4" y="4" width="74" height="68" rx="3" fill="none" stroke="#6b737e" strokeWidth="2" />
+        <Chapa w={82} h={76} cor="#808995" />
+        <rect x="4" y="4" width="74" height="68" fill="none" stroke="#6b737e" strokeWidth="2" />
         {[
           [9, 9],
           [73, 9],
@@ -473,8 +473,8 @@ function Cofre({ t }: { t: number }) {
         <rect x="64" y="23" width="7" height="30" rx="3.5" fill="#cfd4da" transform={`rotate(${manivela} 67.5 38)`} />
       </Face>
       <Face vista={vista} t={porta} o={[115, 47, 0]} u={[-1, 0, 0]} v={[0, 1, 0]}>
-        <Chapa w={82} h={76} cor="#8d959f" r={3} />
-        <rect x="8" y="8" width="66" height="60" rx="6" fill="none" stroke="#a5adb7" strokeWidth="1.6" />
+        <Chapa w={82} h={76} cor="#8d959f" />
+        <rect x="8" y="8" width="66" height="60" fill="none" stroke="#a5adb7" strokeWidth="1.6" />
       </Face>
     </g>
   )
