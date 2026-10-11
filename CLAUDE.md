@@ -1777,7 +1777,18 @@ e a um bot diferente — não compare os dois.
   lateral já lê e marca como lida. Falta o aviso sair do site: e-mail, ou push.
   Foi feito assim de propósito — quando isso chegar, o histórico já existe.
 - **O changelog é escrito à mão** (`src/data/changelog.ts`). Ao entregar coisa
-  nova, acrescente a versão no topo e tire o item de `EM_ANDAMENTO`.
+  nova, acrescente a versão no topo e tire o item de `EM_ANDAMENTO`. **Ele é
+  para quem JOGA (v0.23):** nada de banco, lab, editor de cartas ou forma de
+  guardar dado; o que foi desfeito depois sai da lista. Quando a cara de
+  alguma coisa muda, a versão leva `imagens` (antes e agora), em WebP em
+  `src/data/novidades/` e IMPORTADAS — `src` escrito à mão não ganha o
+  `/clt` do Pages. As fotos de antes saíram de builds de commits antigos:
+  `git worktree add` no commit, `node_modules` por link simbólico (as
+  dependências não mudaram desde o começo), build com o Supabase falso, e
+  o Playwright com a sessão de cada época no localStorage
+  (`clt:sessao:v1` até a v0.3, `clt:convidado:v1` depois) e o
+  `Math.random` semeado, para a mesa de antes e a de agora começarem com a
+  mesma sorte.
 - **Convidado é criável à vontade pelo `anon`.** `criar_convidado()` não tem
   limite: dá para encher a tabela de perfis de convidado. Para um trabalho de
   faculdade tudo bem; se virar problema, o caminho é rate limit no Supabase.

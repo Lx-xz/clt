@@ -103,7 +103,51 @@
   background: color-mix(in srgb, var(--estresse) 20%, transparent)
   color: var(--estresse)
 
+// a foto de antes e a de agora, lado a lado
+.comparacao
+  margin: 18px 0 0
+
+  figcaption
+    margin-top: 6px
+    color: var(--tinta-fraca)
+    font-size: 13px
+    text-align: center
+
+.fotos
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: 10px
+
+.foto
+  position: relative
+  display: block
+  overflow: hidden
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  background: var(--papel-alto)
+
+  img
+    display: block
+    width: 100%
+    height: auto
+
+.rotuloFoto
+  position: absolute
+  top: 8px
+  left: 8px
+  padding: 2px 8px
+  background: var(--tinta)
+  border-radius: 3px
+  color: var(--papel-alto)
+  font-family: var(--mono)
+  font-size: 11px
+  font-weight: 700
+  letter-spacing: .04em
+
 @media (max-width: 560px)
+  .fotos
+    grid-template-columns: 1fr
+
   .item
     flex-direction: column
     gap: 2px

@@ -1,6 +1,6 @@
 'use client'
 
-import { EM_ANDAMENTO, ROTULO_TIPO, VERSOES } from '@/data/changelog'
+import { EM_ANDAMENTO, ROTULO_TIPO, VERSOES, type AntesEDepois } from '@/data/changelog'
 import styles from './changelog.module.sass'
 import { TextoComIcones } from '@/components/Dinheiro'
 
@@ -9,12 +9,32 @@ function dataCurta(iso: string): string {
   return `${dia}/${mes}/${ano}`
 }
 
+/** A foto de antes e a de agora, lado a lado (uma embaixo da outra no
+ *  celular). Tocar abre a foto inteira numa aba. */
+function Comparacao({ c }: { c: AntesEDepois }) {
+  const foto = (img: AntesEDepois['antes'], rotulo: string, alt: string) => (
+    <a className={styles.foto} href={img.src} target="_blank" rel="noreferrer">
+      <span className={styles.rotuloFoto}>{rotulo}</span>
+      <img src={img.src} width={img.width} height={img.height} alt={alt} loading="lazy" />
+    </a>
+  )
+  return (
+    <figure className={styles.comparacao}>
+      <div className={styles.fotos}>
+        {foto(c.antes, `Antes · ${c.antesDe}`, `${c.legenda}, na ${c.antesDe}`)}
+        {foto(c.depois, 'Agora', `${c.legenda}, agora`)}
+      </div>
+      <figcaption>{c.legenda}</figcaption>
+    </figure>
+  )
+}
+
 export default function Novidades() {
   return (
     <>
       <p className={styles.intro}>
-        O que já entrou no jogo, e o que está sendo feito agora. Sentiu falta de alguma coisa? A
-        página de <b>Feedbacks</b> é o caminho — o que entra aqui costuma ter
+        O que mudou no jogo, versão por versão, e o que está sendo feito agora. Onde a cara mudou, tem a foto de antes e
+        a de agora. Sentiu falta de alguma coisa? A aba de <b>Feedbacks</b> é o caminho — o que entra aqui costuma ter
         começado lá.
       </p>
 
@@ -48,6 +68,7 @@ export default function Novidades() {
               </li>
             ))}
           </ul>
+          {v.imagens?.map((c) => <Comparacao key={c.legenda} c={c} />)}
         </section>
       ))}
     </>
