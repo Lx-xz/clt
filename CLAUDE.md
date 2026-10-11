@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` · `/lab/pacotes` (a escada única de recompensa em rascunho: envelope chapado, e pacote, maleta e cofre em 3D de CSS, cada um com a sua abertura; a caixa saiu por ficar parecida com o pacote) · `/lab/propostas` (a proposta anterior, fora da lista do lab e guardada de recordação) | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` · `/lab/pacotes` (a escada única de recompensa em rascunho: envelope chapado, e pacote, maleta e cofre em 3D de CSS, cada um com a sua abertura; a caixa saiu por ficar parecida com o pacote; embaixo, a mesma escada CHAPADA, em SVG de cor lisa no jeito dos baús do Duolingo, em `Chapados.tsx`) · `/lab/propostas` (a proposta anterior, fora da lista do lab e guardada de recordação) | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -417,7 +417,14 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   cinco ícones eram cinco coisas para decorar, e a cor já dizia tudo. **A geometria é uma só:** as quatro dobras vão dos
   cantos ao CENTRO, a aba é a dobra de cima (ponta no centro, no fundo do
   V do bolso) e o selo fica nesse ponto; os cantos de cima são retos,
-  porque ali a aba continua o papel. A primeira versão tinha o X das
+  porque ali a aba continua o papel, e os de baixo também (canto
+  arredondado embaixo foi recusado pelo autor). **O selo é cera desenhada**
+  (`Cera`, SVG: borda em gotas, anel afundado, brilho) e é desenhado DUAS
+  vezes, cada cópia recortada numa metade com corte em zigue-zague: a de
+  cima mora num invólucro do tamanho da aba (`.seloAba`) que gira com ela
+  e some de costas (`backface-visibility`), a de baixo fica no bolso. Ao
+  abrir, a cera racha. A aba faz sombra no bolso (`.abaSombra`, o mesmo
+  triângulo mais baixo), que some ao abrir. A primeira versão tinha o X das
   dobras, o V e a ponta da aba em três alturas diferentes. Clicar no envelope de uma missão abre
   as chances (`ChancesDoEnvelope`); clicar num da bandeja "Para abrir" o
   ABRE.
