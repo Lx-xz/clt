@@ -1,6 +1,6 @@
 'use client'
 
-import { Briefcase, Landmark, Layers, Lightbulb, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
+import { Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -13,12 +13,6 @@ import buttons from '@/styles/buttons.module.sass'
 import styles from './lab.module.sass'
 
 const BANCADAS = [
-  {
-    href: '/lab/avatar',
-    titulo: 'Avatar',
-    texto: 'Medidas do rosto, cores de teste e peças novas de cabelo. Devolve código para colar.',
-    Icon: TestTube,
-  },
   {
     href: '/lab/cartas',
     titulo: 'Cartas de ação',
@@ -42,18 +36,6 @@ const BANCADAS = [
     titulo: 'Recompensas',
     texto: 'Abrir envelope, pacote, maleta e cofre de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
     Icon: Mail,
-  },
-  {
-    href: '/lab/maletas',
-    titulo: 'Maletas',
-    texto: 'A recompensa de cosmético, de bronze, prata e ouro. Esta MEXE na sua conta: o que sair fica desbloqueado e dá para vestir.',
-    Icon: Briefcase,
-  },
-  {
-    href: '/lab/pacotes',
-    titulo: 'Escada de recompensa',
-    texto: 'Envelope, pacote, maleta e cofre, do jeito que estão no jogo, abrindo e fechando no toque. É onde se mexe no desenho.',
-    Icon: Lightbulb,
   },
   // a proposta anterior (/lab/propostas) mora no museu, guardada de
   // recordação, a pedido do autor

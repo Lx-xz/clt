@@ -29,6 +29,8 @@ import avatarAntes from './novidades/avatar-antes.webp'
 import avatarDepois from './novidades/avatar-depois.webp'
 import recompensasAntes from './novidades/recompensas-antes.webp'
 import recompensasDepois from './novidades/recompensas-depois.webp'
+import inicioHeroAntes from './novidades/inicio-hero-antes.webp'
+import inicioHeroDepois from './novidades/inicio-hero-depois.webp'
 
 /** Uma foto de antes e uma de agora, da mesma coisa. */
 export interface AntesEDepois {
@@ -65,13 +67,24 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.25',
+    data: '2026-10-11',
+    titulo: 'O início com a sua cara',
+    itens: [
+      { tipo: 'melhor', texto: 'O início abre com o seu avatar grande, de ponta a ponta da tela, como no perfil. Com uma partida em andamento, a cara dele já mostra o estresse em que você parou.' },
+      { tipo: 'melhor', texto: 'A barra lateral ficou mais larga, com os ícones e os nomes maiores.' },
+      { tipo: 'melhor', texto: 'O que vem numa recompensa ficou mais curto: quantas cartas, se pode vir item para o avatar, e a chance de cada raridade numa barra só.' },
+    ],
+    imagens: [{ legenda: 'O início', antes: inicioHeroAntes, antesDe: 'v0.24', depois: inicioHeroDepois }],
+  },
+  {
     versao: '0.24',
     data: '2026-10-11',
     titulo: 'Sete dias seguidos',
     itens: [
       { tipo: 'novo', texto: 'Missão nova: termine uma partida por dia, sete dias sem falhar, e ganhe um cofre. Os dias aparecem no início, um tijolo por dia; se um dia ficar sem partida, a conta recomeça.' },
       { tipo: 'novo', texto: 'Itens para o avatar dentro das recompensas: a maleta tem chance de trazer um, e o cofre traz um garantido (às vezes dois). Só vem peça que você ainda não tem, e ela sobe na abertura já vestida no seu avatar.' },
-      { tipo: 'melhor', texto: 'A quantidade de cartas também é sorteada: o envelope traz de 1 a 3, o pacote de 3 a 5, a maleta de 5 a 7 e o cofre de 7 a 9. Pode vir uma carta só, e épica, ou três comuns. Toque numa recompensa para ver a chance de cada quantidade.' },
+      { tipo: 'melhor', texto: 'A quantidade de cartas também é sorteada: o envelope traz de 1 a 3, o pacote de 3 a 5, a maleta de 5 a 7 e o cofre de 7 a 9. Pode vir uma carta só, e épica, ou três comuns.' },
     ],
   },
   {
@@ -79,7 +92,7 @@ export const VERSOES: Versao[] = [
     data: '2026-10-11',
     titulo: 'Envelope, pacote, maleta e cofre',
     itens: [
-      { tipo: 'novo', texto: 'As recompensas viraram objetos, e o tamanho diz o valor: o envelope (3 cartas) vem de toda partida, o pacote (5) da primeira partida do dia e a maleta (7) da primeira vitória. O cofre (10) e o cofre-forte (15) já existem e esperam a missão que vai dá-los.' },
+      { tipo: 'novo', texto: 'As recompensas viraram objetos, e o tamanho diz o valor: o envelope (3 cartas) vem de toda partida, o pacote (5) da primeira partida do dia e a maleta (7) da primeira vitória. O cofre (10) já existe e espera a missão que vai dá-lo.' },
       { tipo: 'novo', texto: 'Cada um abre do seu jeito: a aba do envelope vira e a cera racha, as abas do pacote caem para os lados, a maleta abre pelo meio, e o cofre gira o segredo antes de abrir a porta. As cartas saem de dentro.' },
       { tipo: 'correcao', texto: 'Sair da conta podia mostrar uma tela cheia de texto técnico no lugar do site.' },
     ],

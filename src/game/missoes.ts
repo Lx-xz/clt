@@ -81,7 +81,7 @@ export interface Envelope {
  * selo; desde a v0.23 cada uma é um OBJETO, numa escada em que o tamanho diz
  * o valor: envelope, pacote, maleta e cofre (`forma`). Nas regras continua
  * sendo só esta tabela, e recompensa melhor dá MAIS cartas, e não só cartas
- * melhores (v0.20): 3, 5, 7, 10 e 15.
+ * melhores (v0.20).
  *
  * Os ids são os de quando elas nasceram (`pardo` é o pacote, `confidencial`
  * a maleta), e não o nome da tela: recompensa guardada na coleção de alguém
@@ -119,9 +119,9 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     itens: [0.3],
     chances: { comum: 0.35, incomum: 0.33, rara: 0.2, epica: 0.09, lendaria: 0.03 },
   },
-  // os dois cofres. O primeiro é o prêmio dos sete dias seguidos; o forte
-  // ainda não sai de missão nenhuma, e a tabela já o tem para a missão que
-  // vier não precisar mexer aqui
+  // o prêmio dos sete dias seguidos, o topo da escada. Já houve um
+  // cofre-forte acima dele (v0.23–v0.24), que nenhuma missão dava: o autor o
+  // tirou, porque o cofre já é forte o bastante
   epico: {
     nome: 'Cofre',
     forma: 'cofre',
@@ -131,16 +131,6 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     pesos: [0.3, 0.45, 0.25],
     itens: [1, 0.25],
     chances: { comum: 0.2, incomum: 0.3, rara: 0.28, epica: 0.16, lendaria: 0.06 },
-  },
-  lendario: {
-    nome: 'Cofre-forte',
-    forma: 'cofre',
-    artigo: 'o',
-    origem: 'Ainda não sai de missão nenhuma.',
-    cartas: [10, 12],
-    pesos: [0.3, 0.45, 0.25],
-    itens: [1, 0.5],
-    chances: { comum: 0.1, incomum: 0.25, rara: 0.3, epica: 0.23, lendaria: 0.12 },
   },
 }
 

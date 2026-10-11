@@ -7,7 +7,7 @@ import type { CardId, Collection, TipoEnvelope } from '@/game/types'
 import AberturaDeEnvelope, { ChancesDoEnvelope, ObjetoDaRecompensa } from '../Envelope'
 import styles from './Missoes.module.sass'
 
-const ORDEM_DA_BANDEJA: TipoEnvelope[] = ['lendario', 'epico', 'confidencial', 'pardo', 'comum']
+const ORDEM_DA_BANDEJA: TipoEnvelope[] = ['epico', 'confidencial', 'pardo', 'comum']
 
 /**
  * As missões do dia e os envelopes por abrir. Mora no início (onde se chega)

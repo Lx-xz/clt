@@ -13,7 +13,7 @@ import type { CardId, Collection, Raridade, TipoEnvelope } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './envelopes.module.sass'
 
-const TIPOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico', 'lendario']
+const TIPOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico']
 const RARIDADES: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']
 const AMOSTRA = 1000
 

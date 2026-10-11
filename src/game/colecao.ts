@@ -2,7 +2,7 @@ import { cartasDoJogo, cartasIniciais, getCard } from './catalogo'
 import { regras } from './regras'
 import type { ActionCard, BaralhoMontado, CardId, Collection, EnvelopeFechado, Raridade, TipoEnvelope } from './types'
 
-const TIPOS_DE_ENVELOPE: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico', 'lendario']
+const TIPOS_DE_ENVELOPE: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico']
 
 /**
  * A coleção do jogador: as cópias que ele TEM e os baralhos montados com elas.

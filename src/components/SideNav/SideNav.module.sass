@@ -3,19 +3,19 @@
 
 // largura do painel aberto no celular — um só lugar, para não desalinhar a
 // largura de verdade (width) do cálculo do arraste (--arraste)
-$painel-largo: 216px
+$painel-largo: 256px
 
 .nav
   flex: none
   position: relative
   z-index: 40
-  width: 62px
+  width: 76px
 
 // painel visível: no desktop é um overlay que cresce sem empurrar o jogo
 .painel
   position: absolute
   inset: 0 auto 0 0
-  width: 62px
+  width: 76px
   height: 100%
   overflow: hidden
   background: var(--papel-alto)
@@ -34,7 +34,7 @@ $painel-largo: 216px
   gap: 4px
   width: $painel-largo
   height: 100%
-  padding: 16px 12px
+  padding: 18px 14px
   // a lista cresceu (feedbacks, novidades, avisos, como jogar): em tela
   // baixa ela passa da altura da barra, e aí é ela quem rola
   overflow-y: auto
@@ -42,8 +42,8 @@ $painel-largo: 216px
 .marca
   display: flex
   align-items: center
-  gap: 11px
-  padding: 2px 6px 14px
+  gap: 14px
+  padding: 2px 5px 16px
   text-decoration: none
   white-space: nowrap
 
@@ -53,7 +53,7 @@ $painel-largo: 216px
   flex-wrap: wrap
   justify-content: center
   gap: 2px
-  width: 34px
+  width: 38px
   color: var(--tinta)
 
   svg:last-child
@@ -80,15 +80,15 @@ $painel-largo: 216px
 .link
   display: flex
   align-items: center
-  gap: 11px
+  gap: 14px
   flex: none
-  padding: 9px
+  padding: 13px
   border: none
   border-radius: var(--raio)
   background: none
   color: var(--tinta-fraca)
   font: inherit
-  font-size: 14px
+  font-size: 16px
   font-weight: 500
   text-align: left
   text-decoration: none
@@ -141,8 +141,8 @@ $painel-largo: 216px
   background: var(--destaque)
 
 // o avatar ocupa o lugar do ícone, então tem o tamanho dele
-// o item do perfil: o avatar redondo de 38 px ocupa a largura inteira da
-// barra recolhida (62 − 2 × 12 de respiro), com o centro na mesma coluna dos
+// o item do perfil: o avatar redondo de 48 px ocupa a largura inteira da
+// barra recolhida (76 − 2 × 14 de respiro), com o centro na mesma coluna dos
 // ícones de cima. Era um quadradinho de 30 px que lia como mais um ícone
 // o canto é o mesmo dos outros links (`.link`), e aberto o fundo do item é
 // o do avatar (inline). Sem respiro em cima e embaixo: o avatar ocupa a

@@ -167,7 +167,7 @@ export default function SideNav() {
   useEffect(() => {
     let x0 = 0
     let y0 = 0
-    let larguraPainel = 216
+    let larguraPainel = 256
     // 'esperando': ainda decidindo se é um arraste do menu; 'seguindo': é, e
     // o painel já está sendo movido; 'ignorando': gesto de outra coisa.
     let fase: 'esperando' | 'seguindo' | 'ignorando' = 'ignorando'
@@ -258,9 +258,9 @@ export default function SideNav() {
           <div className={styles.corpo}>
             <Link className={styles.marca} href="/" onClick={(e) => navegar(e, '/')}>
               <span className={styles.logo} aria-hidden>
-                <Coffee size={15} />
-                <Hammer size={15} />
-                <Droplet size={15} />
+                <Coffee size={17} />
+                <Hammer size={17} />
+                <Droplet size={17} />
               </span>
               <span className={styles.texto}>
                 <span className={styles.sigla}>CLT</span>
@@ -282,7 +282,7 @@ export default function SideNav() {
                       onClick={(e) => navegar(e, href)}
                     >
                       <span className={styles.comSino}>
-                        <Icon size={18} aria-hidden />
+                        <Icon size={22} aria-hidden />
                         {ponto ? <span className={styles.ponto} aria-label="run em andamento" /> : null}
                       </span>
                       <span className={styles.rotulo}>{label}</span>
@@ -300,7 +300,7 @@ export default function SideNav() {
                 href="/lab"
                 onClick={(e) => navegar(e, '/lab')}
               >
-                <TestTube size={18} aria-hidden />
+                <TestTube size={22} aria-hidden />
                 <span className={styles.rotulo}>Lab</span>
               </Link>
             ) : null}
@@ -315,14 +315,14 @@ export default function SideNav() {
               aria-current={noPerfil ? 'page' : undefined}
               onClick={(e) => navegar(e, '/perfil')}
             >
-              <Avatar avatar={sessao.avatar} tamanho={38} redondo className={styles.avatarNav} />
+              <Avatar avatar={sessao.avatar} tamanho={48} redondo className={styles.avatarNav} />
               <span className={styles.rotulo}>Perfil</span>
             </Link>
 
             {sessao.convidado ? null : (
               <button type="button" className={styles.link} onClick={abrirAvisos}>
                 <span className={styles.comSino}>
-                  <Bell size={18} aria-hidden />
+                  <Bell size={22} aria-hidden />
                   {naoLidas > 0 ? <span className={styles.bolinha}>{naoLidas}</span> : null}
                 </span>
                 <span className={styles.rotulo}>
@@ -332,7 +332,7 @@ export default function SideNav() {
             )}
 
             <button type="button" className={styles.link} onClick={() => setConfigurando(true)}>
-              <Settings size={18} aria-hidden />
+              <Settings size={22} aria-hidden />
               <span className={styles.rotulo}>Configurações</span>
             </button>
 

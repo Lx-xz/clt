@@ -1,6 +1,6 @@
 'use client'
 
-import { PlayingCard, X, type LucideIcon } from 'lucide-react'
+import { PlayingCard, Sparkles, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { avatarAleatorio, type Avatar as Receita } from '@/data/avatar'
@@ -30,7 +30,6 @@ export const SELOS: Record<TipoEnvelope, { Icone: LucideIcon; classe: string }> 
   pardo: { Icone: PlayingCard, classe: styles.seloPardo },
   confidencial: { Icone: PlayingCard, classe: styles.seloConfidencial },
   epico: { Icone: PlayingCard, classe: styles.seloEpico },
-  lendario: { Icone: PlayingCard, classe: styles.seloLendario },
 }
 
 /**
@@ -216,49 +215,42 @@ function porcento(x: number): string {
 export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFechar: () => void }) {
   const env = ENVELOPES[tipo]
   const [min, max] = env.cartas
-  const quantidades = Array.from({ length: max - min + 1 }, (_, i) => ({
-    n: min + i,
-    chance: env.pesos ? (env.pesos[i] ?? 0) : 1 / (max - min + 1),
-  }))
   const itens = env.itens ?? []
+  // o resumo, a pedido do autor: quem joga quer saber QUANTO vem e se pode
+  // vir cosmético, não a chance de cada quantidade nem a de cada item — essas
+  // moram na tabela, e o /lab/envelopes mostra as mil aberturas
+  const raridades = ORDEM.filter((r) => env.chances[r] > 0)
   return (
     <Dialogo titulo={env.nome} onFechar={onFechar}>
       <div className={styles.chancesTopo}>
         <ObjetoDaRecompensa tipo={tipo} largura={72} />
-        <p>
-          {env.origem}{' '}
-          <b>{min === max ? `${min} cartas` : `De ${min} a ${max} cartas`}</b>, que podem vir repetidas.
-        </p>
+        <div>
+          <p>{env.origem}</p>
+          <p className={styles.chancesQuanto}>
+            <b>{min === max ? `${min} cartas` : `De ${min} a ${max} cartas`}</b>
+            {itens.length > 0 ? (
+              <span className={styles.chancesItem}>
+                <Sparkles size={13} aria-hidden />
+                {itens[0] >= 1 ? 'Cosmético garantido' : 'Chance de vir cosmético'}
+              </span>
+            ) : null}
+          </p>
+        </div>
       </div>
-      {min === max ? null : (
-        <>
-          <p className={styles.chancesDica}>Quantas cartas vêm:</p>
-          <ul className={styles.quantidades}>
-            {quantidades.map((q) => (
-              <li key={q.n}>
-                <b>{q.n}</b> {q.n === 1 ? 'carta' : 'cartas'}
-                <span>{porcento(q.chance)}</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {itens.length > 0 ? (
-        <p className={styles.chancesItem}>
-          <b>Item para o avatar:</b>{' '}
-          {itens[0] >= 1 ? 'um garantido' : `${porcento(itens[0])} de chance de vir um`}
-          {itens[1] ? `, e ${porcento(itens[1])} de chance de vir mais um` : ''}. Só vem item que você ainda não tem.
-        </p>
-      ) : null}
-      <p className={styles.chancesDica}>A chance de cada carta sair em cada raridade:</p>
-      <ul className={styles.chances}>
-        {ORDEM.map((r) => (
-          <li key={r} className={`${styles.chance} ${styles[`chance_${r}`]}`}>
-            <span className={styles.chanceNome}>{NOMES_DE_RARIDADE[r]}</span>
-            <span className={styles.chanceBarra}>
-              <span style={{ width: `${Math.max(env.chances[r] * 100, env.chances[r] ? 1.5 : 0)}%` }} />
-            </span>
-            <span className={styles.chanceValor}>{porcento(env.chances[r])}</span>
+      <p className={styles.chancesDica}>A raridade de cada carta:</p>
+      {/* uma barra só, com as cinco raridades lado a lado: o tamanho de cada
+          pedaço já é a chance, e a legenda embaixo dá o número */}
+      <div className={styles.barraUnica} role="img" aria-label={raridades.map((r) => `${NOMES_DE_RARIDADE[r]} ${porcento(env.chances[r])}`).join(', ')}>
+        {raridades.map((r) => (
+          <span key={r} className={styles[`chance_${r}`]} style={{ flexGrow: env.chances[r] }} />
+        ))}
+      </div>
+      <ul className={styles.legenda} aria-hidden>
+        {raridades.map((r) => (
+          <li key={r} className={styles[`chance_${r}`]}>
+            <i />
+            {NOMES_DE_RARIDADE[r]}
+            <b>{porcento(env.chances[r])}</b>
           </li>
         ))}
       </ul>

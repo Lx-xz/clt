@@ -1,23 +1,37 @@
 .inicio
+  // a capa vai de ponta a ponta: o `.page` perde a largura máxima e o
+  // respiro, e quem os tem é a coluna embaixo dela. Com o `.page` junto,
+  // para não depender da ordem das folhas
+  &:global(.page)
+    max-width: none
+    padding: 0
+
+// a capa: a mesma do perfil, sem canto e sem margem nenhuma. Com o
+// `.inicio` na frente: só `.hero` empatava com a do AvatarHero
+.inicio .hero
+  height: clamp(220px, 32vw, 320px)
+  border-radius: 0
+
+.coluna
   display: flex
   flex-direction: column
   gap: 20px
-  // o início é uma coluna só, estreita: o avatar e as missões
-  max-width: 640px
+  // embaixo da capa o início é uma coluna só, estreita: quem você é e as
+  // missões
+  max-width: 680px
+  margin: 0 auto
+  padding: 20px 20px 32px
 
 // o cartão de cima: quem é você e o que fazer agora
 .cartao
   display: grid
-  grid-template-columns: auto 1fr auto
+  grid-template-columns: 1fr auto
   align-items: center
   gap: 20px
   padding: 20px
   background: var(--papel-alto)
   border: 1px solid var(--linha)
   border-radius: 10px
-  box-shadow: var(--sombra)
-
-.avatar
   box-shadow: var(--sombra)
 
 .quem
@@ -82,17 +96,12 @@
 
 @media (max-width: 760px)
   .cartao
-    grid-template-columns: auto 1fr
+    grid-template-columns: 1fr
     gap: 14px
     padding: 16px
 
-  .avatar
-    width: 80px !important
-    height: 80px !important
-
-    svg
-      width: 100%
-      height: 100%
+  .coluna
+    padding: 16px 16px 28px
 
   // o botão grande vira uma faixa inteira embaixo do cartão: é o alvo do
   // polegar

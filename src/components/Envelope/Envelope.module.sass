@@ -214,9 +214,6 @@ button.envelope
 .seloEpico
   --cor-selo: var(--raridade-epica)
 
-.seloLendario
-  --cor-selo: var(--raridade-lendaria)
-
 // aberto: a cera racha, a metade de cima vai com a aba, e a aba gira para
 // trás, por trás da carta. A metade de baixo cai um pouco e entorta
 .aberto
@@ -285,25 +282,35 @@ button.envelope
   p
     margin: 0
 
+  .chancesQuanto
+    margin-top: 6px
+
 .chancesDica
   margin: 0
   color: var(--tinta-fraca)
   font-size: 13px
 
-.chances
+.chancesQuanto
   display: flex
-  flex-direction: column
-  gap: 6px
-  margin: 0
-  padding: 0
-  list-style: none
-
-.chance
-  display: grid
-  grid-template-columns: 74px 1fr 64px
+  flex-wrap: wrap
   align-items: center
-  gap: 8px
-  --cor-chance: var(--tinta-fraca)
+  gap: 6px 10px
+
+.chancesItem
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  padding: 3px 10px
+  color: var(--tinta)
+  background: color-mix(in srgb, var(--raridade-lendaria) 16%, var(--papel-alto))
+  border-radius: 999px
+  font-size: 13px
+  font-weight: 600
+
+// as cores da barra e da legenda. Comum não tem cor (como na carta): é o
+// cinza da tinta fraca
+.chance_comum
+  --cor-chance: color-mix(in srgb, var(--tinta-fraca) 55%, var(--papel))
 
 .chance_incomum
   --cor-chance: var(--raridade-incomum)
@@ -317,59 +324,44 @@ button.envelope
 .chance_lendaria
   --cor-chance: var(--raridade-lendaria)
 
-.chanceNome
-  color: var(--cor-chance)
-  font-weight: 650
-  text-transform: capitalize
-
-.chanceBarra
-  height: 10px
+.barraUnica
+  display: flex
+  gap: 2px
+  height: 14px
+  margin: 8px 0 10px
   overflow: hidden
-  background: var(--papel)
   border-radius: 999px
 
   span
-    display: block
-    height: 100%
+    min-width: 4px
+    flex-basis: 0
     background: var(--cor-chance)
-    border-radius: 999px
 
-.chanceValor
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-  font-size: 12px
-  text-align: right
-
-// quantas cartas vêm, em fichas, e a chance do item
-.quantidades
+.legenda
   display: flex
   flex-wrap: wrap
-  gap: 6px
-  margin: 0 0 12px
+  gap: 6px 14px
+  margin: 0
   padding: 0
   list-style: none
+  font-size: 13px
 
   li
-    display: flex
-    align-items: baseline
+    display: inline-flex
+    align-items: center
     gap: 5px
-    padding: 4px 10px
-    background: var(--papel)
-    border-radius: 999px
-    font-size: 13px
 
-  span
+  i
+    width: 10px
+    height: 10px
+    background: var(--cor-chance)
+    border-radius: 3px
+
+  b
     color: var(--tinta-fraca)
     font-family: var(--mono)
     font-size: 12px
-
-.chancesItem
-  margin: 0 0 12px
-  padding: 8px 12px
-  background: color-mix(in srgb, var(--raridade-lendaria) 12%, var(--papel-alto))
-  border-radius: 8px
-  font-size: 13px
-  line-height: 1.5
+    font-weight: 500
 
 // o item que veio, no recibo: uma linha com o ícone do tipo e o nome
 .ganhoItem

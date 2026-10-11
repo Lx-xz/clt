@@ -386,7 +386,7 @@ export interface Collection {
 
 /** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,
  *  e o que chega na mesa de alguém num escritório é envelope. */
-export type TipoEnvelope = 'comum' | 'pardo' | 'confidencial' | 'epico' | 'lendario'
+export type TipoEnvelope = 'comum' | 'pardo' | 'confidencial' | 'epico'
 
 /**
  * Um envelope esperando na coleção. Desde a v0.20 o conteúdo é sorteado

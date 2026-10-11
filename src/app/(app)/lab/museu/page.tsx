@@ -320,7 +320,7 @@ function Bancada({ p, modelo }: { p: (typeof PACOTES)[number]; modelo: Receita }
   )
 }
 
-const ENVELOPES_ANTIGOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico', 'lendario']
+const ENVELOPES_ANTIGOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico']
 const MALETAS_ANTIGAS: TipoMaleta[] = ['bronze', 'prata', 'ouro']
 
 /** Uma peça do museu que abre e fecha no toque. */
@@ -369,8 +369,8 @@ export default function MuseuPage() {
 
       <h2 className={styles.subtitulo}>Maletas de couro · v0.22 (só no lab)</h2>
       <p className={styles.intro}>
-        A primeira maleta, a das peças de avatar: couro liso, só os fechos de metal, abrindo pelo meio. Ela continua
-        sendo a do <Link href="/lab/maletas">/lab/maletas</Link>.
+        A primeira maleta, a das peças de avatar: couro liso, só os fechos de metal, abrindo pelo meio. A bancada
+        dela (/lab/maletas) saiu na v0.25.
       </p>
       <div className={styles.escada}>
         {MALETAS_ANTIGAS.map((tipo) => (

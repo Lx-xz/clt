@@ -3,7 +3,8 @@
 import { Play, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import Avatar, { humorDoEstresse } from '@/components/Avatar'
+import { humorDoEstresse } from '@/components/Avatar'
+import AvatarHero from '@/components/AvatarHero'
 import Missoes from '@/components/Missoes'
 import { useSessao } from '@/components/SessaoGuard'
 import { carregarDoBanco, sincronizar } from '@/data/sync'
@@ -64,38 +65,43 @@ export default function InicioPage() {
 
   return (
     <main className={`page ${styles.inicio}`}>
-      <section className={styles.cartao}>
-        <Avatar
-          avatar={sessao.avatar}
-          tamanho={112}
-          className={styles.avatar}
-          humor={run ? humorDoEstresse(run.stress, run.modo.estresseMaximo) : undefined}
-        />
-        <div className={styles.quem}>
-          <span className={styles.ola}>Bom dia,</span>
-          <h1 className={styles.nick}>{sessao.nick}</h1>
-        </div>
+      {/* a capa, como a do perfil, mas de ponta a ponta: sem margem, sem
+          canto, encostada no topo e nas duas bordas (pedido do autor). A
+          cara é a da run salva, e por isso o estresse aparece ao chegar */}
+      <AvatarHero
+        avatar={sessao.avatar}
+        className={styles.hero}
+        humor={run ? humorDoEstresse(run.stress, run.modo.estresseMaximo) : undefined}
+      />
 
-        <Link className={`${buttons.button} ${buttons.primary} ${styles.jogar}`} href="/jogar">
-          {run ? <RotateCcw size={20} aria-hidden /> : <Play size={20} aria-hidden />}
-          <span className={styles.jogarTexto}>
-            <b>{run ? 'Continuar' : 'Começar o mês'}</b>
-            <span>{run ? dayLabel(run) : 'Quatro semanas, sem surtar'}</span>
-          </span>
-        </Link>
-      </section>
+      <div className={styles.coluna}>
+        <section className={styles.cartao}>
+          <div className={styles.quem}>
+            <span className={styles.ola}>Bom dia,</span>
+            <h1 className={styles.nick}>{sessao.nick}</h1>
+          </div>
 
-      {sessao.convidado ? (
-        <p className={styles.aviso}>
-          Você está como <b>convidado</b>: as partidas e as cartas ficam só neste navegador e se
-          perdem ao sair. <Link href="/auth">Criar uma conta</Link> guarda tudo daqui para a frente.
-        </p>
-      ) : null}
+          <Link className={`${buttons.button} ${buttons.primary} ${styles.jogar}`} href="/jogar">
+            {run ? <RotateCcw size={20} aria-hidden /> : <Play size={20} aria-hidden />}
+            <span className={styles.jogarTexto}>
+              <b>{run ? 'Continuar' : 'Começar o mês'}</b>
+              <span>{run ? dayLabel(run) : 'Quatro semanas, sem surtar'}</span>
+            </span>
+          </Link>
+        </section>
 
-      <section className={styles.missoes}>
-        <h2 className={styles.titulo}>Missões do dia</h2>
-        {colecao ? <Missoes colecao={colecao} onMudar={mudarColecao} /> : null}
-      </section>
+        {sessao.convidado ? (
+          <p className={styles.aviso}>
+            Você está como <b>convidado</b>: as partidas e as cartas ficam só neste navegador e se
+            perdem ao sair. <Link href="/auth">Criar uma conta</Link> guarda tudo daqui para a frente.
+          </p>
+        ) : null}
+
+        <section className={styles.missoes}>
+          <h2 className={styles.titulo}>Missões do dia</h2>
+          {colecao ? <Missoes colecao={colecao} onMudar={mudarColecao} /> : null}
+        </section>
+      </div>
     </main>
   )
 }

@@ -47,7 +47,7 @@ export interface DadosDoRecibo {
   conquistas?: { id: string; nome: string; descricao: string }[]
 }
 
-const TIPOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico', 'lendario']
+const TIPOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico']
 
 /** Os envelopes como vêm do banco (`details.envelopes`, jsonb cru): o que
  *  não tiver formato de envelope fica de fora, como `lerColecao` faz. */

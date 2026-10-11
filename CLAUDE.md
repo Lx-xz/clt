@@ -38,7 +38,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | Rota | O que é |
 |---|---|
 | `/auth` | A porta: entrar, criar conta (e-mail/senha ou Google), ou jogar como convidado. Fora de `(app)`; quem já tem sessão é mandado para `/` |
-| `/` | O início, dentro de `(app)`, LIMPO de propósito (v0.19): avatar, "Continuar — semana 2, quarta" (ou "Começar o mês") e as missões do dia com os envelopes por abrir. Última partida, amigos e conquistas moram no perfil |
+| `/` | O início, dentro de `(app)`, LIMPO de propósito (v0.19): a capa do avatar de ponta a ponta (v0.25, a mesma `AvatarHero` do perfil, sem canto nem margem, com a cara do estresse da run salva), "Continuar — semana 2, quarta" (ou "Começar o mês") e as missões do dia com os envelopes por abrir. Última partida, amigos e conquistas moram no perfil |
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa de mentira, com a animação do jogo) · `/lab/maletas` · `/lab/pacotes` (a escada de recompensa do jogo, abrindo e fechando no toque: é onde se mexe no desenho) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa de mentira, com a animação do jogo) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -386,13 +386,14 @@ envelope vem de MISSÃO DIÁRIA** (`src/game/missoes.ts`). A do recibo amarrava
 a coleção ao número de partidas — largar cedo e recomeçar colecionava mais
 rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
 
-- **Cinco recompensas, todas na tabela `ENVELOPES` (números da v0.24):**
+- **Quatro recompensas, todas na tabela `ENVELOPES` (números da v0.24):**
   o envelope (`comum`, 1 a 3 cartas) vem de TODA partida terminada; o
   pacote (`pardo`, 3 a 5) é da missão "Bater o ponto"; a maleta
   (`confidencial`, 5 a 7, e 30% de chance de um item) é da "Fechar o mês"
   (vencer); o cofre (`epico`, 7 a 9, um item garantido e 25% de um
-  segundo) é da missão dos SETE DIAS SEGUIDOS; o cofre-forte (`lendario`,
-  10 a 12, um item e 50% de outro) ainda espera a missão que o dê. A
+  segundo) é da missão dos SETE DIAS SEGUIDOS. Houve um cofre-forte
+  (`lendario`) acima dele, que missão nenhuma dava, e o autor o tirou na
+  v0.25: o cofre já é forte; `lerColecao` descarta o tipo que não existe. A
   QUANTIDADE é sorteada antes, pelos `pesos` (25/45/30 no envelope,
   30/45/25 nos outros), e a raridade de CADA carta depois, pelas `chances`
   — pode vir uma carta só, e épica, ou três comuns. As cartas podem vir
@@ -436,8 +437,7 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   que ela pode perguntar é o que `FimDeRun` traz, não o `GameState` inteiro.
 - **Desde a v0.23 a recompensa é um OBJETO, numa escada em que o tamanho
   diz o valor:** envelope (`comum`), pacote (`pardo`), maleta
-  (`confidencial`) e cofre (`epico`, 10 cartas, e `lendario`, o
-  cofre-forte de 15). É a `forma` em `ENVELOPES`, com o `artigo` para as
+  (`confidencial`) e cofre (`epico`). É a `forma` em `ENVELOPES`, com o `artigo` para as
   frases ("toque NA maleta"); os ids e o nome `envelope` no código ficaram
   os de antes, porque moram na coleção de quem já os ganhou. O desenho é
   `components/Recompensa`: SVG chapado, no jeito dos baús do Duolingo,
@@ -453,6 +453,12 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   `requestAnimationFrame`) desde o primeiro: misturar com
   `performance.now()` dava passo negativo quando o navegador desacelerava
   as animações, e a maleta dava uma cambalhota.
+- **O popup das chances é RESUMO (v0.25, `ChancesDoEnvelope`):** de onde
+  vem, "De 5 a 7 cartas", "Chance de vir cosmético" (ou "Cosmético
+  garantido") e as cinco raridades numa barra só, com a legenda embaixo.
+  O peso de cada quantidade e a chance exata do item ficaram de fora a
+  pedido do autor: quem joga quer saber o que vem, e a tabela inteira
+  continua no `/lab/envelopes`.
 - **O envelope de antes (v0.16–v0.22) está no museu** (`EnvelopeAntigo`).
   O que segue é a história dele. **Envelope, e não baú** (pedido do autor:
   baú não combina). Era o MESMO
@@ -678,6 +684,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   arraste que começa em cima de uma carta (`[data-carta]`) é ignorado, porque a
   carta já usa esse mesmo gesto para ser jogada — sem essa exclusão, jogar uma
   carta no celular abriria o menu.
+  Recolhida ela tem 76 px e aberta 256 (v0.25: eram 62 e 216), com ícone
+  de 22 e texto de 16; a largura recolhida também mora em `.daMesa` do
+  `Dialogo`, e o avatar do Perfil é a largura da coluna (76 − 2 × 14).
   Muda de página fecha o gaveteiro sozinho. Os links vêm em dois grupos
   separados por um fio — o JOGO (Início, Jogar, Baralho) e a GENTE (Ranking,
   Comunidade) —, o "Jogar" ganha um ponto quando há run em andamento, e o
@@ -782,7 +791,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   raridade de baixo só aparece ali.
 - **Cosméticos saem de MALETA (v0.22; no JOGO desde a v0.24, da maleta e
   do cofre da escada — veja acima; as maletas de bronze, prata e ouro
-  continuam só no `/lab/maletas`).**
+  ficaram só no código, sem bancada desde a v0.25).**
   Envelope dá carta, maleta (bronze, prata, ouro) dá peça de avatar: são
   duas vontades diferentes, e no mesmo pacote o óculos competiria com a
   lendária pela mesma sorte. `src/game/cosmeticos.ts` é a tabela: um
@@ -790,9 +799,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   continua no `Avatar.tsx`, e peça fora da tabela é de todo mundo, como
   sempre. O que a pessoa tem mora em `Collection.cosmeticos` (sobe em
   `saves.collection`, lido vazio por quem gravou antes). Sem peça nova no
-  jogo inteiro, a maleta dá uma REPETIDA em vez de nada. **A bancada das
-  maletas mexe na conta do admin** (é o pedido: abrir e vestir na hora), e
-  tem o "Trancar de novo" para testar outra vez.
+  jogo inteiro, a maleta dá uma REPETIDA em vez de nada.
   **No editor, peça trancada fica ESCONDIDA** (`Formas`): a entrada para
   vê-las é a ÚLTIMA peça da grade da categoria ("ver não desbloqueados"),
   não um botão em cima, e só existe na categoria que tem alguma. A peça já
@@ -1091,7 +1098,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   **Salvar pede um motivo, e a função do banco recusa sem ele.** O histórico
   de uma carta nasce no momento da mudança, porque escrito depois ele não
   seria escrito.
-- **`/lab/avatar` produz código, não salva nada.** O site é export estático:
+- **`/lab/avatar` (até a v0.25, hoje só no git) produzia código, não salvava nada.** O site é export estático:
   não há servidor para escrever arquivo, então a bancada devolve a linha de
   `MEDIDAS` para colar em `Avatar.tsx`. Ela desenha com o **mesmo** componente
   do jogo (pela prop `ajustes`), nunca com uma cópia — laboratório que desenha
@@ -1187,7 +1194,7 @@ que não achou o trecho: ou o Next corrigiu (tire o remendo), ou mudou o
 arquivo (refaça). E sair da conta é recarga inteira (`location.replace`),
 não `router.replace`: sair é recomeçar o site, e assim nem passa por ali.
 
-**3D de CSS se achata em silêncio.** Os pacotes do `/lab/pacotes` são
+**3D de CSS se achata em silêncio.** Os pacotes do museu (`/lab/museu`) são
 sólidos de verdade (`preserve-3d`, seis faces), e qualquer `overflow`,
 `filter`, `opacity` menor que 1, `clip-path` ou `mask` num elemento ENTRE a
 cena e as faces achata tudo de volta para o plano, sem erro. O que precisa
