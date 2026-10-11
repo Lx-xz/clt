@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react'
 import Avatar from '@/components/Avatar'
 import Card from '@/components/Card'
 import { EnvelopeEmPe } from '@/components/Envelope'
-import { MaletaDesenhada } from '@/components/Maleta'
 import { avatarAleatorio, type Avatar as Receita } from '@/data/avatar'
 import { cartasDoJogo } from '@/game/catalogo'
 import type { ActionCard } from '@/game/types'
@@ -41,50 +40,157 @@ const PACOTES: { tipo: Tipo; nome: string; vem: string; dentro: string; cosmetic
 
 type Fase = 'fechado' | 'abrindo' | 'aberto'
 
+type Face = 'frente' | 'tras' | 'dir' | 'esq' | 'topo' | 'base'
+const FACES: Face[] = ['frente', 'tras', 'dir', 'esq', 'topo', 'base']
+
+/**
+ * Um sólido de CSS: seis faces num `preserve-3d`, cada uma empurrada para o
+ * seu lado. `cor` pinta todas, e o sass escurece os lados e clareia o topo —
+ * é a luz vindo de cima que dá o volume, sem degradê. `faces` põe conteúdo
+ * numa face, `sem` tira faces (a caixa sem tampa, a maleta aberta).
+ */
+function Cubo({ w, h, d, cor, className, faces = {}, classes = {}, sem = [], children }: {
+  w: number
+  h: number
+  d: number
+  cor: string
+  className?: string
+  faces?: Partial<Record<Face, React.ReactNode>>
+  classes?: Partial<Record<Face, string>>
+  sem?: Face[]
+  children?: React.ReactNode
+}) {
+  return (
+    <span
+      className={`${styles.cubo} ${className ?? ''}`}
+      style={{ '--w': `${w}px`, '--h': `${h}px`, '--d': `${d}px`, '--cor': cor } as React.CSSProperties}
+    >
+      {FACES.filter((f) => !sem.includes(f)).map((f) => (
+        <span key={f} className={`${styles.face} ${styles[`f_${f}`]} ${classes[f] ?? ''}`}>
+          {faces[f]}
+        </span>
+      ))}
+      {children}
+    </span>
+  )
+}
+
+const KRAFT = '#b78c55'
+const PAPELAO = '#c49a5e'
+const COURO = '#8a5a3b'
+const ACO = '#555b62'
+
 function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
-  if (tipo === 'envelope') return <EnvelopeEmPe tipo="comum" aberto={aberto} largura={80} />
-  if (tipo === 'maleta') return <MaletaDesenhada tipo="ouro" aberta={aberto} largura={140} />
-  const classe = `${styles[tipo]} ${aberto ? styles.aberto : ''}`
+  const a = aberto ? styles.aberto : ''
+  if (tipo === 'envelope') {
+    // uma lâmina fina: o envelope do jogo na frente, e a espessura do papel
+    // nos lados — é o que o faz ler como objeto, e não como figura
+    return (
+      <span className={`${styles.cena} ${a}`}>
+        <span className={styles.mundo}>
+          <Cubo w={80} h={107} d={5} cor="#a9834d" faces={{ frente: <EnvelopeEmPe tipo="comum" aberto={aberto} largura={80} /> }} />
+        </span>
+      </span>
+    )
+  }
   if (tipo === 'pacote') {
     return (
-      <span className={classe} role="img" aria-label="Pacote">
-        <span className={styles.miolo} />
-        <span className={`${styles.papel} ${styles.papelE}`} />
-        <span className={`${styles.papel} ${styles.papelD}`} />
-        <span className={styles.barbanteV} />
-        <span className={styles.barbanteH} />
-        <span className={styles.laco} />
-        <span className={styles.etiqueta} />
+      <span className={`${styles.cena} ${a}`}>
+        <span className={styles.mundo}>
+          <Cubo
+            w={112}
+            h={64}
+            d={84}
+            cor={KRAFT}
+            sem={['topo']}
+            classes={{ frente: styles.barbante, tras: styles.barbante, dir: styles.barbante, esq: styles.barbante }}
+            faces={{ frente: <span className={styles.etiqueta} /> }}
+          >
+            {/* o fundo escuro de dentro, logo abaixo da tampa */}
+            <span className={styles.oco} />
+            {/* a tampa rasga em duas: cada metade gira pela borda de fora */}
+            <span className={`${styles.tampa} ${styles.tampaE} ${styles.rasgoE}`} />
+            <span className={`${styles.tampa} ${styles.tampaD} ${styles.rasgoD}`} />
+            <span className={styles.laco} />
+          </Cubo>
+        </span>
       </span>
     )
   }
   if (tipo === 'caixa') {
     return (
-      <span className={classe} role="img" aria-label="Caixa">
-        <span className={styles.dentroCaixa} />
-        <span className={`${styles.aba} ${styles.abaE}`} />
-        <span className={`${styles.aba} ${styles.abaD}`} />
-        <span className={`${styles.fita} ${styles.fitaE}`} />
-        <span className={`${styles.fita} ${styles.fitaD}`} />
-        <span className={styles.frente}>
-          <span className={styles.seta}>↑↑</span>
+      <span className={`${styles.cena} ${a}`}>
+        <span className={styles.mundo}>
+          <Cubo
+            w={116}
+            h={84}
+            d={96}
+            cor={PAPELAO}
+            sem={['topo']}
+            classes={{ frente: styles.fitaFrente }}
+            faces={{ frente: <span className={styles.seta}>↑↑</span> }}
+          >
+            <span className={styles.oco} />
+            <span className={`${styles.tampa} ${styles.tampaE} ${styles.abaCaixa}`} />
+            <span className={`${styles.tampa} ${styles.tampaD} ${styles.abaCaixa}`} />
+          </Cubo>
+        </span>
+      </span>
+    )
+  }
+  if (tipo === 'maleta') {
+    // duas metades de verdade, uma atrás da outra, presas pela borda de
+    // baixo. Vista um pouco de cima, a abertura entre elas aparece — o que a
+    // versão chapada só conseguia fingir
+    return (
+      <span className={`${styles.cena} ${a}`}>
+        <span className={styles.mundo}>
+          <span className={styles.maleta3d}>
+            <span className={styles.metadeTras}>
+              <Cubo w={140} h={92} d={17} cor={COURO} classes={{ frente: styles.forro }}>
+                <span className={styles.alca3d} />
+              </Cubo>
+            </span>
+            <span className={styles.metadeFrente}>
+              <Cubo
+                w={140}
+                h={92}
+                d={17}
+                cor={COURO}
+                classes={{ tras: styles.forro }}
+                faces={{
+                  frente: (
+                    <>
+                      <span className={`${styles.encaixe3d} ${styles.esq3d}`} />
+                      <span className={`${styles.encaixe3d} ${styles.dir3d}`} />
+                    </>
+                  ),
+                }}
+              />
+            </span>
+            <span className={`${styles.presilha3d} ${styles.esq3d}`} />
+            <span className={`${styles.presilha3d} ${styles.dir3d}`} />
+          </span>
         </span>
       </span>
     )
   }
   return (
-    <span className={classe} role="img" aria-label="Cofre">
-      <span className={styles.corpoCofre}>
-        <span className={styles.interior} />
-        <span className={styles.porta}>
-          <span className={styles.disco}>
-            <span className={styles.marcas} />
+    <span className={`${styles.cena} ${a}`}>
+      <span className={styles.mundo}>
+        <Cubo w={96} h={104} d={84} cor={ACO} sem={['frente']}>
+          {/* a luz de dentro, um pouco atrás da boca do cofre */}
+          <span className={styles.dentroCofre} />
+          <span className={styles.porta3d}>
+            <span className={styles.disco}>
+              <span className={styles.marcas} />
+            </span>
+            <span className={styles.manivela} />
           </span>
-          <span className={styles.manivela} />
-        </span>
+          <span className={`${styles.pe3d} ${styles.esq3d}`} />
+          <span className={`${styles.pe3d} ${styles.dir3d}`} />
+        </Cubo>
       </span>
-      <span className={`${styles.pe} ${styles.peE}`} />
-      <span className={`${styles.pe} ${styles.peD}`} />
     </span>
   )
 }

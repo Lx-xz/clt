@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` · `/lab/pacotes` (a escada única de recompensa em rascunho: envelope, pacote, caixa, maleta, cofre, cada um com a sua abertura) · `/lab/propostas` (a proposta anterior, fora da lista do lab e guardada de recordação) | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` · `/lab/pacotes` (a escada única de recompensa em rascunho: envelope, pacote, caixa, maleta, cofre, em 3D de CSS, cada um com a sua abertura) · `/lab/propostas` (a proposta anterior, fora da lista do lab e guardada de recordação) | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -1132,6 +1132,15 @@ no `postinstall`. Ao subir o Next, rode `npm ci` e veja se o remendo avisa
 que não achou o trecho: ou o Next corrigiu (tire o remendo), ou mudou o
 arquivo (refaça). E sair da conta é recarga inteira (`location.replace`),
 não `router.replace`: sair é recomeçar o site, e assim nem passa por ali.
+
+**3D de CSS se achata em silêncio.** Os pacotes do `/lab/pacotes` são
+sólidos de verdade (`preserve-3d`, seis faces), e qualquer `overflow`,
+`filter`, `opacity` menor que 1, `clip-path` ou `mask` num elemento ENTRE a
+cena e as faces achata tudo de volta para o plano, sem erro. O que precisa
+de recorte (o rasgo do pacote) vai na própria face, que é folha; o fade do
+barbante é um `::after` dela. E a ordem do `transform` é a geometria: a
+tampa é `rotateX(90deg) translateZ(h/2) rotateY(φ)` — deitar, subir, e só
+então girar no eixo da dobra; trocando a ordem, gira no eixo errado.
 
 **Popup dentro da nota fiscal precisa de portal.** `mask` (a serrilha) e
 `filter` (o drop-shadow da moldura) também viram bloco contentor de
