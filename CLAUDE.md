@@ -1121,6 +1121,18 @@ recibo: o Esc que pulava a animação fechava o recibo atrás dela. A abertura
 ouve na CAPTURA (`addEventListener(..., true)`) e para a propagação ali.
 Qualquer sobreposição nova que nasça de dentro de outra precisa do mesmo.
 
+**Navegação que falha mostra o arquivo de DADOS da página.** No export
+estático o roteador do Next busca `.../pagina/index.txt`; quando essa busca
+falha (a aba aberta numa versão velha do site, depois de um deploy, é o caso
+comum), ele recarrega a página — mas no endereço do `.txt`, e o navegador
+mostra o texto cru (`1:"$Sreact.fragment"…`). Mordeu ao sair da conta. É
+defeito do Next (o ramo do erro em `fetch-server-response.js` não tira o
+marcador, e a 15.5.27 ainda tem), remendado por `scripts/remendar-next.mjs`
+no `postinstall`. Ao subir o Next, rode `npm ci` e veja se o remendo avisa
+que não achou o trecho: ou o Next corrigiu (tire o remendo), ou mudou o
+arquivo (refaça). E sair da conta é recarga inteira (`location.replace`),
+não `router.replace`: sair é recomeçar o site, e assim nem passa por ali.
+
 **Popup dentro da nota fiscal precisa de portal.** `mask` (a serrilha) e
 `filter` (o drop-shadow da moldura) também viram bloco contentor de
 `position: fixed`, como o `perspective` abaixo: o popup do envelope, aberto

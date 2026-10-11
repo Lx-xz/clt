@@ -34,6 +34,14 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.22.1',
+    data: '2026-10-11',
+    titulo: 'Sair sem texto estranho',
+    itens: [
+      { tipo: 'correcao', texto: 'Sair da conta (ou trocar de página com o site aberto desde antes de uma atualização) podia mostrar uma tela cheia de texto técnico no lugar do site.' },
+    ],
+  },
+  {
     versao: '0.22',
     data: '2026-10-10',
     titulo: 'Maletas e cosméticos (em teste)',

@@ -152,7 +152,12 @@ export default function SideNav() {
     // o espelho local do jogo não pode sobrar para o próximo que entrar
     cancelarSync()
     limparLocalDoJogo()
-    void sair().finally(() => router.replace('/auth'))
+    // recarga INTEIRA, e não `router.replace`: sair é recomeçar o site do
+    // zero (sessão, catálogo, o que estiver em memória), e a navegação do
+    // roteador, com a aba numa versão antiga depois de um deploy, caía no
+    // arquivo de dados da página e mostrava texto cru (veja
+    // `scripts/remendar-next.mjs`). O basePath vem do próprio Next
+    void sair().finally(() => window.location.replace(`${process.env.__NEXT_ROUTER_BASEPATH ?? ''}/auth/`))
   }
 
   // no celular a barra fica escondida: arrastar da esquerda para a direita em

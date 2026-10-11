@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "build:pages": "DEPLOY_TARGET=gh-pages next build",
-    "simular": "tsx scripts/simular.ts"
+    "simular": "tsx scripts/simular.ts",
+    "postinstall": "node scripts/remendar-next.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
