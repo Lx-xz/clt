@@ -4,7 +4,7 @@ import { Check, Medal, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import type { Avatar as Receita } from '@/data/avatar'
-import { MISSOES, abrirEnvelope } from '@/game/missoes'
+import { abrirEnvelope, missaoPorId } from '@/game/missoes'
 import type { CardId, Collection, EnvelopeGanho, TipoEnvelope } from '@/game/types'
 import Avatar, { humorDoEstresse } from '../Avatar'
 import Dinheiro from '../Dinheiro'
@@ -62,6 +62,7 @@ export function lerEnvelopesGanhos(bruto: unknown): EnvelopeGanho[] {
         tipo: o.tipo as TipoEnvelope,
         id: typeof o.id === 'string' ? o.id : '',
         cartas: Array.isArray(o.cartas) ? o.cartas.filter((c): c is string => typeof c === 'string') : [],
+        ...(Array.isArray(o.cosmeticos) ? { cosmeticos: o.cosmeticos.filter((c): c is string => typeof c === 'string') } : {}),
         ...(typeof o.missao === 'string' ? { missao: o.missao } : {}),
       },
     ]
@@ -132,11 +133,12 @@ export default function Recibo({
   const [abrindo, setAbrindo] = useState<{
     tipo: TipoEnvelope
     cartas: CardId[]
+    cosmeticos: string[]
     novas: CardId[]
   } | null>(null)
   const fim = FIM[dados.outcome]
   const envelopes = dados.envelopes ?? []
-  const missoes = envelopes.flatMap((e) => MISSOES.filter((m) => m.id === e.missao).map((m) => m.nome))
+  const missoes = envelopes.flatMap((e) => (e.missao ? [missaoPorId(e.missao)?.nome].filter((n): n is string => !!n) : []))
   const fechados = new Set((colecao?.envelopes ?? []).map((e) => e.id).filter(Boolean))
 
   function abrir(id: string) {
@@ -151,6 +153,7 @@ export default function Recibo({
     setAbrindo({
       tipo: r.tipo,
       cartas: r.cartas,
+      cosmeticos: r.cosmeticos,
       novas: r.cartas.filter((c) => !(colecao.tenho[c] > 0)),
     })
   }
@@ -214,6 +217,7 @@ export default function Recibo({
                 key={e.id}
                 tipo={e.tipo}
                 cartas={e.cartas}
+                cosmeticos={e.cosmeticos}
                 fechado={fechado}
                 onAbrir={fechado && onMudarColecao ? () => abrir(e.id) : undefined}
               />

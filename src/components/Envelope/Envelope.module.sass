@@ -340,6 +340,47 @@ button.envelope
   font-size: 12px
   text-align: right
 
+// quantas cartas vêm, em fichas, e a chance do item
+.quantidades
+  display: flex
+  flex-wrap: wrap
+  gap: 6px
+  margin: 0 0 12px
+  padding: 0
+  list-style: none
+
+  li
+    display: flex
+    align-items: baseline
+    gap: 5px
+    padding: 4px 10px
+    background: var(--papel)
+    border-radius: 999px
+    font-size: 13px
+
+  span
+    color: var(--tinta-fraca)
+    font-family: var(--mono)
+    font-size: 12px
+
+.chancesItem
+  margin: 0 0 12px
+  padding: 8px 12px
+  background: color-mix(in srgb, var(--raridade-lendaria) 12%, var(--papel-alto))
+  border-radius: 8px
+  font-size: 13px
+  line-height: 1.5
+
+// o item que veio, no recibo: uma linha com o ícone do tipo e o nome
+.ganhoItem
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  margin-top: 6px
+  color: var(--tinta)
+  font-size: 13px
+  font-weight: 600
+
 // ============================================= a abertura, em tela cheia
 .cortina
   position: fixed
@@ -452,6 +493,28 @@ button.envelope
   --carta-h: 230px
   --carta-w: 152px
   --carta-arte: 90px
+
+// o item é um quadrado de 176px, e não uma carta de 152: centralizado igual
+.itemSaindo
+  margin-left: -88px
+
+.itemPequeno,
+.itemResumo
+  flex: none
+  overflow: hidden
+  line-height: 0
+  border-radius: 8px
+
+.itemPequeno
+  margin-top: 17px
+
+.nomeDoItem
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  color: #f4efe3
+  font-size: 13px
+  font-weight: 650
 
 // desvirou: um pulo e o brilho da raridade atrás
 .revelada .cartaGrande

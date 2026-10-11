@@ -1,5 +1,6 @@
 import { cartasDoJogo } from './catalogo'
 import { copiasMaximas, ganharCopia } from './colecao'
+import { sortearCosmetico } from './cosmeticos'
 import type { CardId, Collection, EnvelopeGanho, Raridade, TipoEnvelope } from './types'
 
 /**
@@ -60,8 +61,16 @@ export interface Envelope {
   artigo: 'o' | 'a'
   /** De onde ele vem, numa frase — é o que o popup de chances diz no topo. */
   origem: string
-  /** Quantas cartas: um número, ou um intervalo sorteado por igual. */
+  /** Quantas cartas: de `min` a `max`. */
   cartas: [min: number, max: number]
+  /** A chance de cada quantidade, de `min` a `max` (soma 1). Sem ela, todas
+   *  saem por igual. A quantidade é sorteada antes, e a raridade de CADA
+   *  carta depois: pode vir uma carta só, e épica, ou três comuns. */
+  pesos?: number[]
+  /** Os itens (peças do avatar): a chance de cada um, independentes. `[0.3]`
+   *  é "pode vir um"; `[1, 0.25]` é "um garantido, e às vezes um segundo".
+   *  A raridade do item sai das mesmas `chances` das cartas. */
+  itens?: number[]
   /** A chance de CADA carta sair em cada raridade (soma 1). As cartas são
    *  sorteadas uma a uma, então podem vir repetidas. */
   chances: Record<Raridade, number>
@@ -87,7 +96,8 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     forma: 'envelope',
     artigo: 'o',
     origem: 'Vem ao fim de toda partida, ganhando ou perdendo.',
-    cartas: [3, 3],
+    cartas: [1, 3],
+    pesos: [0.25, 0.45, 0.3],
     chances: { comum: 0.8, incomum: 0.15, rara: 0.04, epica: 0.01, lendaria: 0 },
   },
   pardo: {
@@ -95,7 +105,8 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     forma: 'pacote',
     artigo: 'o',
     origem: 'A missão "Bater o ponto": a primeira partida terminada do dia.',
-    cartas: [5, 5],
+    cartas: [3, 5],
+    pesos: [0.3, 0.45, 0.25],
     chances: { comum: 0.55, incomum: 0.3, rara: 0.1, epica: 0.04, lendaria: 0.01 },
   },
   confidencial: {
@@ -103,18 +114,22 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     forma: 'maleta',
     artigo: 'a',
     origem: 'A missão "Fechar o mês": a primeira vitória do dia.',
-    cartas: [7, 7],
+    cartas: [5, 7],
+    pesos: [0.3, 0.45, 0.25],
+    itens: [0.3],
     chances: { comum: 0.35, incomum: 0.33, rara: 0.2, epica: 0.09, lendaria: 0.03 },
   },
-  // os dois de cima ainda não saem de missão nenhuma: a tabela já os tem
-  // para a missão que vier não precisar mexer aqui. São os dois cofres: o
-  // de 10 cartas e o forte, de 15
+  // os dois cofres. O primeiro é o prêmio dos sete dias seguidos; o forte
+  // ainda não sai de missão nenhuma, e a tabela já o tem para a missão que
+  // vier não precisar mexer aqui
   epico: {
     nome: 'Cofre',
     forma: 'cofre',
     artigo: 'o',
-    origem: 'Ainda não sai de missão nenhuma.',
-    cartas: [10, 10],
+    origem: 'A missão "Sete dias seguidos": terminar uma partida por dia, sete dias sem falhar.',
+    cartas: [7, 9],
+    pesos: [0.3, 0.45, 0.25],
+    itens: [1, 0.25],
     chances: { comum: 0.2, incomum: 0.3, rara: 0.28, epica: 0.16, lendaria: 0.06 },
   },
   lendario: {
@@ -122,7 +137,9 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     forma: 'cofre',
     artigo: 'o',
     origem: 'Ainda não sai de missão nenhuma.',
-    cartas: [15, 15],
+    cartas: [10, 12],
+    pesos: [0.3, 0.45, 0.25],
+    itens: [1, 0.5],
     chances: { comum: 0.1, incomum: 0.25, rara: 0.3, epica: 0.23, lendaria: 0.12 },
   },
 }
@@ -132,6 +149,43 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
 export function hoje(agora: Date = new Date()): string {
   const d = (n: number) => String(n).padStart(2, '0')
   return `${agora.getFullYear()}-${d(agora.getMonth() + 1)}-${d(agora.getDate())}`
+}
+
+/** O dia anterior a `dia` (`AAAA-MM-DD`), no calendário local. */
+export function ontem(dia: string): string {
+  const [a, m, d] = dia.split('-').map(Number)
+  return hoje(new Date(a, m - 1, d - 1))
+}
+
+/**
+ * A missão dos dias SEGUIDOS: terminar uma partida por dia, sete dias sem
+ * falhar, dá um cofre. Não mora em `MISSOES` porque não é do dia — ela
+ * atravessa a semana, e quem a conta é `Collection.sequencia`. Mas tem a
+ * mesma cara de missão (`Missao`), para o recibo e a lista a mostrarem igual.
+ */
+export const SEQUENCIA: Missao & { dias: number } = {
+  id: 'sete-dias',
+  nome: 'Sete dias seguidos',
+  descricao: 'Termine uma partida por dia, sete dias sem falhar.',
+  premio: 'epico',
+  dias: 7,
+  cumpre: () => false,
+}
+
+/** Uma missão pelo id, a do dia ou a dos sete dias. */
+export function missaoPorId(id: string): Missao | undefined {
+  return id === SEQUENCIA.id ? SEQUENCIA : MISSOES.find((m) => m.id === id)
+}
+
+/**
+ * Quantos dias seguidos valem HOJE: os da sequência gravada, se o último dia
+ * dela foi hoje ou ontem; senão a corrente quebrou, e vale zero. `hojeConta`
+ * diz se a partida de hoje já entrou.
+ */
+export function sequenciaDeHoje(c: Collection, dia: string = hoje()): { dias: number; hojeConta: boolean } {
+  const s = c.sequencia
+  if (!s || (s.dia !== dia && s.dia !== ontem(dia))) return { dias: 0, hojeConta: false }
+  return { dias: s.dias, hojeConta: s.dia === dia }
 }
 
 /** O que já foi feito HOJE. A lista gravada é de outro dia? Vale vazia. */
@@ -155,6 +209,14 @@ export function cumprirMissoes(
 ): { colecao: Collection; cumpridas: Missao[]; ganhos: EnvelopeGanho[] } {
   const feitas = feitasHoje(c, dia)
   const cumpridas = MISSOES.filter((m) => !feitas.includes(m.id) && m.cumpre(fim))
+  // os dias seguidos: a primeira partida do dia soma um (ou recomeça do um,
+  // se ontem ficou sem); no sétimo, sai o cofre e a conta volta a zero
+  const atual = sequenciaDeHoje(c, dia)
+  let sequencia = atual.hojeConta ? c.sequencia! : { dia, dias: atual.dias + 1 }
+  if (sequencia.dias >= SEQUENCIA.dias) {
+    cumpridas.push(SEQUENCIA)
+    sequencia = { dia, dias: 0 }
+  }
   // o envelope comum vem de TODA partida, e por isso não é missão: missão é
   // o que vale uma vez por dia
   const tipos: { tipo: TipoEnvelope; missao?: string }[] = [
@@ -167,25 +229,57 @@ export function cumprirMissoes(
   let virtual = comPendentes(c)
   const ganhos: EnvelopeGanho[] = tipos.map(({ tipo, missao }, i) => {
     const r = sortearCartas(virtual, tipo, sorte)
-    virtual = r.colecao
-    return { tipo, id: `${runId}:${i}`, cartas: r.cartas, ...(missao ? { missao } : {}) }
+    const itens = sortearItens(r.colecao, tipo, sorte)
+    virtual = itens.colecao
+    return { tipo, id: `${runId}:${i}`, cartas: r.cartas, ...(itens.ids.length ? { cosmeticos: itens.ids } : {}), ...(missao ? { missao } : {}) }
   })
   return {
     colecao: {
       ...c,
-      envelopes: [...c.envelopes, ...ganhos.map(({ tipo, id, cartas }) => ({ tipo, id, cartas }))],
-      missoes: { dia, feitas: [...feitas, ...cumpridas.map((m) => m.id)] },
+      envelopes: [...c.envelopes, ...ganhos.map(({ tipo, id, cartas, cosmeticos }) => ({ tipo, id, cartas, ...(cosmeticos ? { cosmeticos } : {}) }))],
+      missoes: { dia, feitas: [...feitas, ...cumpridas.filter((m) => m !== SEQUENCIA).map((m) => m.id)] },
+      sequencia,
     },
     cumpridas,
     ganhos,
   }
 }
 
-/** A coleção como se todo envelope fechado já tivesse sido aberto. */
+/** A coleção como se todo envelope fechado já tivesse sido aberto — as
+ *  cartas e os itens: dois cofres não podem prometer a mesma peça. */
 function comPendentes(c: Collection): Collection {
   let v = c
   for (const e of c.envelopes) for (const id of e.cartas ?? []) v = ganharCopia(v, id)
-  return v
+  const prometidos = c.envelopes.flatMap((e) => e.cosmeticos ?? [])
+  return prometidos.length ? { ...v, cosmeticos: [...v.cosmeticos, ...prometidos] } : v
+}
+
+/** Os itens de uma recompensa: cada chance de `itens` é um sorteio à parte,
+ *  e cada peça sorteada sai da lista das disponíveis para a próxima. */
+function sortearItens(c: Collection, tipo: TipoEnvelope, sorte: () => number): { colecao: Collection; ids: string[] } {
+  const envelope = ENVELOPES[tipo]
+  const ids: string[] = []
+  let colecao = c
+  for (const chance of envelope.itens ?? []) {
+    if (sorte() >= chance) continue
+    const item = sortearCosmetico(envelope.chances, colecao.cosmeticos, sorte)
+    if (!item) break
+    ids.push(item.id)
+    colecao = { ...colecao, cosmeticos: [...colecao.cosmeticos, item.id] }
+  }
+  return { colecao, ids }
+}
+
+/** Quantas cartas: pelos `pesos`, se houver, senão por igual. */
+function sortearQuantas(envelope: Envelope, sorte: () => number): number {
+  const [min, max] = envelope.cartas
+  if (!envelope.pesos) return min + Math.floor(sorte() * (max - min + 1))
+  let resto = sorte()
+  for (let i = 0; i < envelope.pesos.length; i++) {
+    resto -= envelope.pesos[i]
+    if (resto < 0) return Math.min(max, min + i)
+  }
+  return max
 }
 
 const ORDEM: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']
@@ -220,8 +314,7 @@ function cartaDe(c: Collection, alvo: Raridade, sorte: () => number): CardId | n
  *  dada: a segunda cópia da mesma carta conta para o teto da terceira. */
 function sortearCartas(c: Collection, tipo: TipoEnvelope, sorte: () => number): { colecao: Collection; cartas: CardId[] } {
   const envelope = ENVELOPES[tipo]
-  const [min, max] = envelope.cartas
-  const quantas = min + Math.floor(sorte() * (max - min + 1))
+  const quantas = sortearQuantas(envelope, sorte)
   let colecao = c
   const cartas: CardId[] = []
   for (let n = 0; n < quantas; n++) {
@@ -250,12 +343,20 @@ export function abrirEnvelope(
   c: Collection,
   indice = 0,
   sorte: () => number = Math.random,
-): { colecao: Collection; tipo: TipoEnvelope; cartas: CardId[] } | null {
+): { colecao: Collection; tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[] } | null {
   const envelope = c.envelopes[indice]
   if (!envelope) return null
   const semEle: Collection = { ...c, envelopes: c.envelopes.filter((_, i) => i !== indice) }
-  if (!envelope.cartas) return { ...sortearCartas(semEle, envelope.tipo, sorte), tipo: envelope.tipo }
-  let colecao = semEle
+  if (!envelope.cartas) {
+    const r = sortearCartas(semEle, envelope.tipo, sorte)
+    const itens = sortearItens(comPendentes(r.colecao), envelope.tipo, sorte)
+    const cosmeticos = itens.ids
+    return { colecao: { ...r.colecao, cosmeticos: [...r.colecao.cosmeticos, ...cosmeticos] }, tipo: envelope.tipo, cartas: r.cartas, cosmeticos }
+  }
+  // o item entra na coleção ao abrir, como a carta; o que a pessoa já tiver
+  // (ganhou por outro caminho entre o sorteio e a abertura) não entra de novo
+  const cosmeticos = (envelope.cosmeticos ?? []).filter((id) => !semEle.cosmeticos.includes(id))
+  let colecao: Collection = cosmeticos.length ? { ...semEle, cosmeticos: [...semEle.cosmeticos, ...cosmeticos] } : semEle
   const cartas: CardId[] = []
   for (const id of envelope.cartas) {
     const depois = ganharCopia(colecao, id)
@@ -263,5 +364,5 @@ export function abrirEnvelope(
     colecao = depois
     cartas.push(id)
   }
-  return { colecao, tipo: envelope.tipo, cartas }
+  return { colecao, tipo: envelope.tipo, cartas, cosmeticos }
 }

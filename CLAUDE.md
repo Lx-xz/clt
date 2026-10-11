@@ -386,16 +386,40 @@ envelope vem de MISSÃO DIÁRIA** (`src/game/missoes.ts`). A do recibo amarrava
 a coleção ao número de partidas — largar cedo e recomeçar colecionava mais
 rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
 
-- **Cinco envelopes, todos na tabela `ENVELOPES`, e envelope melhor dá
-  MAIS cartas (v0.20):** o `comum` (3, quase sempre comuns, nunca
-  lendária) vem de TODA partida terminada; o `pardo` ("Envelope incomum",
-  5) é da missão "Bater o ponto"; o `confidencial` ("Envelope raro", 7) é
-  da missão "Fechar o mês" (vencer); `epico` (10) e `lendario` (15) já
-  existem e esperam a missão que os dê. Cada um diz quantas cartas e a
-  CHANCE de cada raridade, por carta. As cartas são sorteadas uma a uma e
-  podem vir repetidas; raridade esgotada cai para a de baixo e, só sem
-  nenhuma, para a de cima. Os ids `pardo`/`confidencial` ficaram os
-  antigos porque moram na coleção de quem já os ganhou.
+- **Cinco recompensas, todas na tabela `ENVELOPES` (números da v0.24):**
+  o envelope (`comum`, 1 a 3 cartas) vem de TODA partida terminada; o
+  pacote (`pardo`, 3 a 5) é da missão "Bater o ponto"; a maleta
+  (`confidencial`, 5 a 7, e 30% de chance de um item) é da "Fechar o mês"
+  (vencer); o cofre (`epico`, 7 a 9, um item garantido e 25% de um
+  segundo) é da missão dos SETE DIAS SEGUIDOS; o cofre-forte (`lendario`,
+  10 a 12, um item e 50% de outro) ainda espera a missão que o dê. A
+  QUANTIDADE é sorteada antes, pelos `pesos` (25/45/30 no envelope,
+  30/45/25 nos outros), e a raridade de CADA carta depois, pelas `chances`
+  — pode vir uma carta só, e épica, ou três comuns. As cartas podem vir
+  repetidas; raridade esgotada cai para a de baixo e, só sem nenhuma, para
+  a de cima. Os ids `pardo`/`confidencial` ficaram os antigos porque
+  moram na coleção de quem já os ganhou. Simulado com o código de verdade
+  (`missoes.ts` rodando fora do navegador): quem joga 1 partida por dia
+  completa as 152 cópias das 48 cartas em ~20 dias, 2 por dia em ~14, 3
+  por dia em ~11. A coleção, e não a recompensa, é o que limita: carta
+  nova estica isso mais do que qualquer número aqui.
+- **O ITEM (peça do avatar) é sorteado junto com as cartas, ao ganhar**
+  (`itens` em `ENVELOPES`: a chance de cada um, independentes;
+  `sortearCosmetico` em `cosmeticos.ts`), e mora em
+  `EnvelopeFechado.cosmeticos` até abrir. Só vem peça que a pessoa não
+  tem e que nenhuma outra recompensa fechada já prometeu — repetida não
+  vale nada, e um item que não é item seria o recibo mentindo; sem peça
+  nova no jogo, a recompensa vem só com as cartas. Na abertura ele sobe
+  DEPOIS das cartas, vestido no avatar de quem abre (ou num sorteado, se
+  ainda é o manequim, que não veste nada), com o mesmo prêmio que desvira
+  da maleta do lab (`CosmeticoVirando`).
+- **Os sete dias seguidos** (`SEQUENCIA` em `missoes.ts`) não moram em
+  `MISSOES`: não renovam à meia-noite, atravessam a semana. Quem conta é
+  `Collection.sequencia` (`{ dia, dias }`, opcional: quem gravou antes
+  começa do zero): a primeira partida terminada do dia soma um, ou
+  recomeça do um se ontem ficou sem; no sétimo sai o cofre e a conta volta
+  a zero naquele dia. `sequenciaDeHoje` diz quantos valem hoje (zero se a
+  corrente quebrou). Abandono não conta, como nas outras missões.
 - **O conteúdo é sorteado ao GANHAR, não ao abrir (v0.20).**
   `cumprirMissoes` sorteia as cartas e as guarda DENTRO do envelope
   fechado (`EnvelopeFechado.cartas`), contra a coleção mais o que já está
@@ -756,7 +780,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   `saveCollection` ou `sincronizar`. Embaixo, mil aberturas de cada tipo
   com o que saiu DE FATO contra a tabela de chances — a queda para a
   raridade de baixo só aparece ali.
-- **Cosméticos saem de MALETA (v0.22, por enquanto só no `/lab/maletas`).**
+- **Cosméticos saem de MALETA (v0.22; no JOGO desde a v0.24, da maleta e
+  do cofre da escada — veja acima; as maletas de bronze, prata e ouro
+  continuam só no `/lab/maletas`).**
   Envelope dá carta, maleta (bronze, prata, ouro) dá peça de avatar: são
   duas vontades diferentes, e no mesmo pacote o óculos competiria com a
   lendária pela mesma sorte. `src/game/cosmeticos.ts` é a tabela: um

@@ -98,7 +98,8 @@ export async function imagemDoRecibo(d: DadosDoRecibo, svgDoAvatar?: SVGSVGEleme
   if (d.estresse != null) linhas.push(['Estresse no fim', `${d.estresse}/${d.estresseMaximo ?? 10}`])
   const extras: { texto: string; cor: string }[] = []
   for (const e of d.envelopes ?? []) {
-    extras.push({ texto: `${ENVELOPES[e.tipo].nome} · ${e.cartas.length} cartas`, cor: COR.tinta })
+    const n = e.cartas.length
+    extras.push({ texto: `${ENVELOPES[e.tipo].nome} · ${n} ${n === 1 ? 'carta' : 'cartas'}${e.cosmeticos?.length ? ' + item' : ''}`, cor: COR.tinta })
   }
   for (const c of d.conquistas ?? []) extras.push({ texto: `Conquista: ${c.nome}`, cor: COR.destaque })
 

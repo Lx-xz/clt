@@ -3,13 +3,18 @@
 import { PlayingCard, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { avatarAleatorio, type Avatar as Receita } from '@/data/avatar'
 import { getCard } from '@/game/catalogo'
+import { COSMETICOS, cosmeticoPorId, type Cosmetico } from '@/game/cosmeticos'
 import { NOMES_DE_RARIDADE } from '@/game/colecao'
 import { ENVELOPES, type FormaDaRecompensa } from '@/game/missoes'
 import type { CardId, Raridade, TipoEnvelope } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
+import Avatar from '../Avatar'
 import Card from '../Card'
 import Dialogo from '../Dialogo'
+import { CosmeticoVirando, IconeDoCosmetico } from '../Maleta'
+import { useSessaoSeHouver } from '../SessaoGuard'
 import { DesenhoDaRecompensa, DURACAO, useAndamento } from '../Recompensa'
 import styles from './Envelope.module.sass'
 
@@ -33,9 +38,10 @@ export const SELOS: Record<TipoEnvelope, { Icone: LucideIcon; classe: string }> 
  * — é a linha do recibo. Fechado (ainda na bandeja de quem o ganhou), ele
  * aparece lacrado e sem as cartas: o recibo não estraga a surpresa.
  */
-export function EnvelopeComCartas({ tipo, cartas, fechado = false, retrato, onAbrir }: {
+export function EnvelopeComCartas({ tipo, cartas, cosmeticos, fechado = false, retrato, onAbrir }: {
   tipo: TipoEnvelope
   cartas: CardId[]
+  cosmeticos?: string[]
   fechado?: boolean
   /** As cartas como eram na run (o replay de uma partida antiga). */
   retrato?: (id: CardId) => ReturnType<typeof getCard>
@@ -58,14 +64,21 @@ export function EnvelopeComCartas({ tipo, cartas, fechado = false, retrato, onAb
         <span className={styles.ganhoNome}>{env.nome}</span>
         {fechado ? (
           <p className={styles.ganhoDica}>{onAbrir ? 'Fechado. Toque para abrir.' : 'Ainda fechado.'}</p>
-        ) : cartas.length === 0 ? (
+        ) : cartas.length === 0 && !cosmeticos?.length ? (
           <p className={styles.ganhoDica}>Veio vazio: a coleção já estava completa.</p>
         ) : (
-          <div className={styles.ganhoCartas}>
-            {cartas.map((id, i) => (
-              <Card key={i} card={carta(id)} />
+          <>
+            <div className={styles.ganhoCartas}>
+              {cartas.map((id, i) => (
+                <Card key={i} card={carta(id)} />
+              ))}
+            </div>
+            {itensDe(cosmeticos).map((c) => (
+              <span key={c.id} className={styles.ganhoItem}>
+                <IconeDoCosmetico cosmetico={c} size={14} /> + {c.nome}
+              </span>
             ))}
-          </div>
+          </>
         )}
       </div>
     </div>
@@ -203,6 +216,11 @@ function porcento(x: number): string {
 export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFechar: () => void }) {
   const env = ENVELOPES[tipo]
   const [min, max] = env.cartas
+  const quantidades = Array.from({ length: max - min + 1 }, (_, i) => ({
+    n: min + i,
+    chance: env.pesos ? (env.pesos[i] ?? 0) : 1 / (max - min + 1),
+  }))
+  const itens = env.itens ?? []
   return (
     <Dialogo titulo={env.nome} onFechar={onFechar}>
       <div className={styles.chancesTopo}>
@@ -212,6 +230,26 @@ export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFe
           <b>{min === max ? `${min} cartas` : `De ${min} a ${max} cartas`}</b>, que podem vir repetidas.
         </p>
       </div>
+      {min === max ? null : (
+        <>
+          <p className={styles.chancesDica}>Quantas cartas vêm:</p>
+          <ul className={styles.quantidades}>
+            {quantidades.map((q) => (
+              <li key={q.n}>
+                <b>{q.n}</b> {q.n === 1 ? 'carta' : 'cartas'}
+                <span>{porcento(q.chance)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {itens.length > 0 ? (
+        <p className={styles.chancesItem}>
+          <b>Item para o avatar:</b>{' '}
+          {itens[0] >= 1 ? 'um garantido' : `${porcento(itens[0])} de chance de vir um`}
+          {itens[1] ? `, e ${porcento(itens[1])} de chance de vir mais um` : ''}. Só vem item que você ainda não tem.
+        </p>
+      ) : null}
       <p className={styles.chancesDica}>A chance de cada carta sair em cada raridade:</p>
       <ul className={styles.chances}>
         {ORDEM.map((r) => (
@@ -268,9 +306,28 @@ function semMovimento(): boolean {
  * Vai por PORTAL para o `body`: aberto de dentro do recibo de fim, a máscara
  * da nota prenderia o `position: fixed` no tamanho do recibo.
  */
-export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
+/** Os itens que existem de verdade, na ordem em que vieram. */
+function itensDe(ids: readonly string[] = []): Cosmetico[] {
+  return ids.map(cosmeticoPorId).filter((c): c is Cosmetico => !!c)
+}
+
+/** O avatar que veste o item: o de quem abre, ou — se ainda é o manequim,
+ *  que não veste nada — um sorteado, só para mostrar a peça no corpo. */
+function useModelo(): Receita {
+  const sessao = useSessaoSeHouver()
+  const [modelo] = useState<Receita>(() =>
+    sessao?.avatar && sessao.avatar.rosto !== 'manequim' ? sessao.avatar : avatarAleatorio(COSMETICOS.map((c) => c.id)),
+  )
+  return modelo
+}
+
+const vestindo = (modelo: Receita, item: Cosmetico): Receita => ({ ...modelo, [item.campo]: item.valor }) as Receita
+
+export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, onFechar }: {
   tipo: TipoEnvelope
   cartas: CardId[]
+  /** Os itens (peças do avatar) que vieram junto: sobem depois das cartas. */
+  cosmeticos?: string[]
   /** As que a pessoa não tinha nenhuma cópia antes: ganham o selo "nova". */
   novas: CardId[]
   onFechar: () => void
@@ -285,6 +342,10 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
   const abrir = Math.round(DURACAO[env.forma] * 0.9)
   const t = useAndamento(fase === 'abrindo' || fase === 'revelando', DURACAO[env.forma])
   const saida = SAIDA[env.forma]
+  // as cartas primeiro, e os itens depois, um por toque, como mais um prêmio
+  const itens = itensDe(cosmeticos)
+  const total = cartas.length + itens.length
+  const modelo = useModelo()
 
   // o palco é desenhado em 360×560 e ESCALADO para caber: as animações
   // trabalham em pixels fixos, e é isso que deixa a carta sair da boca do
@@ -329,12 +390,12 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
       setFase('abrindo')
       setTimeout(() => {
         ocupado.current = false
-        setFase(cartas.length > 0 ? 'revelando' : 'resumo')
+        setFase(total > 0 ? 'revelando' : 'resumo')
       }, semMovimento() ? 0 : abrir)
       return
     }
     if (fase === 'revelando' && virada) {
-      if (atual >= cartas.length - 1) return setFase('resumo')
+      if (atual >= total - 1) return setFase('resumo')
       ocupado.current = true
       setGuardando(true)
       setTimeout(() => {
@@ -366,9 +427,12 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
     return () => window.removeEventListener('keydown', tecla, true)
   })
 
-  const carta = cartas[atual] ? getCard(cartas[atual]) : null
-  const raridade = carta?.raridade ?? 'comum'
-  const guardadas = cartas.slice(0, guardando ? atual + 1 : atual)
+  const carta = atual < cartas.length ? getCard(cartas[atual]) : null
+  const item = atual >= cartas.length ? (itens[atual - cartas.length] ?? null) : null
+  const raridade = carta?.raridade ?? item?.raridade ?? 'comum'
+  const saidas = guardando ? atual + 1 : atual
+  const guardadas = cartas.slice(0, Math.min(cartas.length, saidas))
+  const itensGuardados = itens.slice(0, Math.max(0, saidas - cartas.length))
   // a fileira cabe na tela: com muitas cartas, elas se sobrepõem (margem
   // negativa) em vez de quebrar a linha e empurrar o palco
   const larguraFileira = typeof window === 'undefined' ? 360 : Math.min(window.innerWidth - 32, 900)
@@ -379,8 +443,8 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
     fase === 'esperando'
       ? `Toque ${env.artigo === 'a' ? 'na' : 'no'} ${env.nome.toLowerCase()} para abrir`
       : fase === 'revelando' && virada
-        ? atual < cartas.length - 1
-          ? `Toque para a próxima · ${atual + 1} de ${cartas.length}`
+        ? atual < total - 1
+          ? `Toque para a próxima · ${atual + 1} de ${total}`
           : 'Toque para ver tudo'
         : ' '
 
@@ -401,10 +465,10 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
                 <DesenhoDaRecompensa forma={env.forma} t={t} camada="tras" className={styles.camadaTras} />
                 <DesenhoDaRecompensa forma={env.forma} t={t} camada="frente" className={styles.camadaFrente} />
               </div>
-              {fase === 'revelando' && carta ? (
+              {fase === 'revelando' && (carta || item) ? (
                 <div
                   key={atual}
-                  className={`${styles.cartaSaindo} ${virada ? styles.revelada : ''} ${guardando ? styles.guardando : ''} ${styles[`brilho_${raridade}`]}`}
+                  className={`${styles.cartaSaindo} ${item ? styles.itemSaindo : ''} ${virada ? styles.revelada : ''} ${guardando ? styles.guardando : ''} ${styles[`brilho_${raridade}`]}`}
                   style={
                     {
                       '--de': `${saida.de}px`,
@@ -414,17 +478,23 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
                     } as React.CSSProperties
                   }
                 >
-                  <span className={styles.brilho} aria-hidden />
-                  {raridade === 'epica' || raridade === 'lendaria' ? <span className={styles.raios} aria-hidden /> : null}
-                  <Card card={carta} faceDown={!virada} className={styles.cartaGrande} />
-                  <span className={styles.rotuloRaridade} aria-live="polite">
-                    {virada ? (
-                      <>
-                        {novas.includes(carta.id) ? <b className={styles.nova}>nova</b> : null}
-                        {NOMES_DE_RARIDADE[raridade]}
-                      </>
-                    ) : null}
-                  </span>
+                  {carta ? (
+                    <>
+                      <span className={styles.brilho} aria-hidden />
+                      {raridade === 'epica' || raridade === 'lendaria' ? <span className={styles.raios} aria-hidden /> : null}
+                      <Card card={carta} faceDown={!virada} className={styles.cartaGrande} />
+                      <span className={styles.rotuloRaridade} aria-live="polite">
+                        {virada ? (
+                          <>
+                            {novas.includes(carta.id) ? <b className={styles.nova}>nova</b> : null}
+                            {NOMES_DE_RARIDADE[raridade]}
+                          </>
+                        ) : null}
+                      </span>
+                    </>
+                  ) : item ? (
+                    <CosmeticoVirando cosmetico={item} avatar={vestindo(modelo, item)} virado={virada} />
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -433,15 +503,20 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
             {guardadas.map((id, i) => (
               <Card key={i} card={getCard(id)} className={styles.cartaPequena} />
             ))}
+            {itensGuardados.map((c) => (
+              <span key={c.id} className={styles.itemPequeno}>
+                <Avatar avatar={vestindo(modelo, c)} tamanho={69} />
+              </span>
+            ))}
           </div>
           <p className={styles.dica}>{dica}</p>
         </>
       ) : (
         <div className={styles.resumo}>
           <h2 className={styles.resumoTitulo}>
-            Cartas que vieram {env.artigo === 'a' ? 'na' : 'no'} {env.nome.toLowerCase()}
+            O que veio {env.artigo === 'a' ? 'na' : 'no'} {env.nome.toLowerCase()}
           </h2>
-          {cartas.length === 0 ? (
+          {total === 0 ? (
             <p className={styles.vazio}>Coleção completa: não havia carta que coubesse aqui.</p>
           ) : (
             <div className={styles.resumoCartas}>
@@ -457,9 +532,27 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
                   </div>
                 )
               })}
+              {itens.map((c, i) => (
+                <div key={c.id} className={styles.resumoItem} style={{ '--i': cartas.length + i } as React.CSSProperties}>
+                  <span className={styles.itemResumo}>
+                    <Avatar avatar={vestindo(modelo, c)} tamanho={138} />
+                  </span>
+                  <span className={styles.nomeDoItem}>
+                    <IconeDoCosmetico cosmetico={c} size={15} /> {c.nome}
+                  </span>
+                  <span className={`${styles.rotuloResumo} ${styles[`texto_${c.raridade}`]}`}>
+                    <b className={styles.nova}>item</b>
+                    {NOMES_DE_RARIDADE[c.raridade]}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
-          <p className={styles.dicaResumo}>Elas já estão na coleção. Ponha no baralho pela página do Baralho.</p>
+          <p className={styles.dicaResumo}>
+            {itens.length > 0
+              ? 'As cartas já estão na coleção, e o item já aparece no editor do avatar.'
+              : 'Elas já estão na coleção. Ponha no baralho pela página do Baralho.'}
+          </p>
           <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={onFechar} autoFocus>
             Continuar
           </button>

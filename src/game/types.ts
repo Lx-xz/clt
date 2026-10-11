@@ -378,6 +378,10 @@ export interface Collection {
    *  Na coleção pelo mesmo motivo dos envelopes: é coisa que se tem, e sobe
    *  em `saves.collection` sem coluna nova. */
   cosmeticos: string[]
+  /** Os dias SEGUIDOS em que a pessoa terminou partida (a missão dos sete
+   *  dias). `dia` é o último que contou. Opcional: quem gravou antes começa
+   *  do zero, sem migração. */
+  sequencia?: { dia: string; dias: number }
 }
 
 /** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,
@@ -397,6 +401,8 @@ export interface EnvelopeFechado {
   tipo: TipoEnvelope
   id?: string
   cartas?: CardId[]
+  /** Os itens (cosméticos, `campo:valor`) sorteados junto com as cartas. */
+  cosmeticos?: string[]
 }
 
 /** O envelope que uma run deu, com o que veio dentro. */
@@ -404,6 +410,8 @@ export interface EnvelopeGanho {
   tipo: TipoEnvelope
   id: string
   cartas: CardId[]
+  /** Os itens que vieram junto (maleta e cofre). */
+  cosmeticos?: string[]
   /** A missão que o deu; sem ela, é o envelope de toda partida. */
   missao?: string
 }

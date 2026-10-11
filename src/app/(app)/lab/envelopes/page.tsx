@@ -38,7 +38,7 @@ type Base = 'inicial' | 'minha'
 export default function LabEnvelopesPage() {
   const [base, setBase] = useState<Base>('inicial')
   const [colecao, setColecao] = useState<Collection>(() => colecaoInicial())
-  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; novas: CardId[] } | null>(null)
+  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[]; novas: CardId[] } | null>(null)
   const [abertos, setAbertos] = useState(0)
 
   function partida(b: Base): Collection {
@@ -59,7 +59,7 @@ export default function LabEnvelopesPage() {
     if (!r) return
     setColecao(r.colecao)
     setAbertos((n) => n + 1)
-    setAbrindo({ tipo, cartas: r.cartas, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)) })
+    setAbrindo({ tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)) })
   }
 
   // a amostra é refeita só quando a base muda: mil aberturas de cada tipo

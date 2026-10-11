@@ -96,6 +96,66 @@ function semMovimento(): boolean {
 }
 
 /**
+ * O cosmético que sobe de uma recompensa, sem o lugar no palco: a caixa com
+ * o avatar inteiro vestindo a peça, o verso de carta, a luz da raridade, e
+ * o nome, o ícone do tipo e a raridade embaixo. Desvira quando `virado`.
+ * É o mesmo prêmio da maleta do lab; a abertura das recompensas do jogo o
+ * põe dentro da sua própria subida (`AberturaDeEnvelope`).
+ */
+export function CosmeticoVirando({ cosmetico, avatar, virado, nova = true }: {
+  cosmetico: Cosmetico
+  /** O avatar de quem abre, já vestindo a peça. */
+  avatar: Receita
+  virado: boolean
+  nova?: boolean
+}) {
+  const raios = cosmetico.raridade === 'epica' || cosmetico.raridade === 'lendaria'
+  const IconeDoTipo = ICONE_DA_ABA[cosmetico.aba]
+  return (
+    <div className={`${styles.premioSolto} ${virado ? styles.revelado : ''} ${styles[`premio_${cosmetico.raridade}`]}`}>
+      <span className={styles.brilho} aria-hidden />
+      {raios ? <span className={styles.raios} aria-hidden /> : null}
+      <div className={styles.giro}>
+        <div className={`${styles.face} ${styles.faceFrente}`}>
+          <Avatar avatar={avatar} tamanho={176} />
+        </div>
+        <div className={`${styles.face} ${styles.faceVerso}`} aria-hidden>
+          {ICONES_VERSO.map((Icone, i) => (
+            <Icone key={i} strokeWidth={1.5} />
+          ))}
+        </div>
+      </div>
+      <div className={styles.legenda} aria-live="polite">
+        {virado ? (
+          <>
+            <b className={styles.premioNome}>
+              <IconeDoTipo size={20} />
+              {cosmetico.nome}
+            </b>
+            <span className={styles.premioRaridade}>
+              {nova ? (
+                <i className={styles.nova}>
+                  <Sparkles size={11} aria-hidden /> item novo
+                </i>
+              ) : (
+                <i className={styles.repetida}>repetido</i>
+              )}
+              {NOMES_DE_RARIDADE[cosmetico.raridade]}
+            </span>
+          </>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+/** O ícone do tipo de um cosmético (a aba do editor onde ele mora). */
+export function IconeDoCosmetico({ cosmetico, size = 16 }: { cosmetico: Cosmetico; size?: number }) {
+  const Icone = ICONE_DA_ABA[cosmetico.aba]
+  return <Icone size={size} />
+}
+
+/**
  * A abertura de uma maleta, em tela cheia, no ritmo do envelope: ela chega,
  * espera o toque, os fechos soltam e ela abre pelo meio, e o prêmio sobe
  * de dentro VIRADO, como a carta do envelope — e só desvira lá em cima. A

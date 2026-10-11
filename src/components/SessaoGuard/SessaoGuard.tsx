@@ -17,6 +17,13 @@ export function useSessao(): Sessao {
   return sessao
 }
 
+/** A sessão, se houver guarda em volta; fora dela, `null` em vez de erro.
+ *  É para o que aparece dentro e fora do jogo, como a abertura das
+ *  recompensas (que veste o item no avatar de quem abre). */
+export function useSessaoSeHouver(): Sessao | null {
+  return useContext(Contexto)
+}
+
 /**
  * Troca a sessão em memória sem ida ao banco. A guarda vive no layout, que
  * não remonta ao navegar entre páginas — sem isto, trocar o avatar só

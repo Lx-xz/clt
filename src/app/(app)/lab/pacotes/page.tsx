@@ -27,7 +27,7 @@ function Degrau({ tipo }: { tipo: TipoEnvelope }) {
       <figcaption>
         <b>{env.nome}</b>
         <span>
-          {env.cartas[0]} cartas · {env.origem}
+          {env.cartas[0]}–{env.cartas[1]} cartas{env.itens?.length ? ' e item' : ''} · {env.origem}
         </span>
       </figcaption>
     </figure>

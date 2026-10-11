@@ -65,7 +65,7 @@ export function colecaoInicial(): Collection {
 
 /** Envelopes e missões chegaram depois das coleções: quem gravou antes não
  *  tem os campos, e a leitura os dá vazios — o mesmo padrão do resto. */
-function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes' | 'cosmeticos'> {
+function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes' | 'cosmeticos' | 'sequencia'> {
   // até a v0.19 a fila era só o tipo (`'pardo'`); desde a v0.20 é o envelope
   // com as cartas já sorteadas. O antigo vira `{ tipo }`, e é sorteado na
   // abertura, como era
@@ -77,6 +77,7 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
       tipo: obj.tipo as TipoEnvelope,
       ...(typeof obj.id === 'string' ? { id: obj.id } : {}),
       ...(Array.isArray(obj.cartas) ? { cartas: (obj.cartas as unknown[]).filter((c): c is string => typeof c === 'string') } : {}),
+      ...(Array.isArray(obj.cosmeticos) ? { cosmeticos: (obj.cosmeticos as unknown[]).filter((c): c is string => typeof c === 'string') } : {}),
     })
   }
   const m = bruta.missoes as Record<string, unknown> | undefined
@@ -88,7 +89,11 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
   const cosmeticos = Array.isArray(bruta.cosmeticos)
     ? (bruta.cosmeticos as unknown[]).filter((c): c is string => typeof c === 'string')
     : []
-  return { envelopes, missoes, cosmeticos }
+  // a sequência dos sete dias chegou na v0.24: quem gravou antes começa do zero
+  const s = bruta.sequencia as Record<string, unknown> | undefined
+  const sequencia =
+    s && typeof s === 'object' && typeof s.dia === 'string' && typeof s.dias === 'number' ? { dia: s.dia, dias: Math.max(0, Math.floor(s.dias)) } : undefined
+  return { envelopes, missoes, cosmeticos, ...(sequencia ? { sequencia } : {}) }
 }
 
 function numero(x: unknown): number {

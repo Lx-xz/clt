@@ -8,9 +8,10 @@ import type { Raridade } from './types'
  * e misturar as duas no mesmo pacote faria o óculos competir com a carta
  * lendária pela mesma sorte.
  *
- * Por enquanto a maleta só existe no /lab: é para testar o modelo, a
- * animação e o caminho de uma peça até o editor do avatar antes de decidir
- * de onde ela sai no jogo (missão, conquista, ranking).
+ * No jogo, desde a v0.24, o item sai da MALETA e do COFRE da escada de
+ * recompensa, junto com as cartas (`sortearCosmetico`, chamado por
+ * `missoes.ts`). As maletas de bronze, prata e ouro (`MALETAS`) continuam
+ * só no /lab: foram o teste do modelo e da animação.
  *
  * Um cosmético é um VALOR de um campo da receita do avatar (`oculos: 'sol'`).
  * O desenho continua morando no `Avatar.tsx`, como toda peça; esta tabela só
@@ -89,4 +90,43 @@ export function abrirMaleta(
     if (pool.length) return { cosmetico: pool[Math.floor(sorte() * pool.length)], nova: true }
   }
   return { cosmetico: COSMETICOS[Math.floor(sorte() * COSMETICOS.length)], nova: false }
+}
+
+/**
+ * O item de uma recompensa do JOGO (maleta e cofre, desde a v0.24): uma
+ * peça que a pessoa ainda não tem e que nenhuma outra recompensa fechada já
+ * prometeu (`indisponiveis`). A raridade sai das `chances` da recompensa,
+ * com a mesma queda das cartas: esgotada, a de baixo, e só sem nenhuma a de
+ * cima.
+ *
+ * Diferente da maleta do lab, aqui NÃO há repetida: peça repetida não vale
+ * nada, e um item que não é item seria o recibo mentindo. Sem peça nova no
+ * jogo, `null`, e a recompensa vem só com as cartas.
+ */
+export function sortearCosmetico(
+  chances: Record<Raridade, number>,
+  indisponiveis: readonly string[],
+  sorte: () => number = Math.random,
+): Cosmetico | null {
+  const novas = COSMETICOS.filter((c) => !indisponiveis.includes(c.id))
+  if (novas.length === 0) return null
+  let resto = sorte()
+  let alvo: Raridade = 'comum'
+  for (const r of ORDEM) {
+    resto -= chances[r]
+    if (resto < 0) {
+      alvo = r
+      break
+    }
+  }
+  const i = ORDEM.indexOf(alvo)
+  for (const r of [...ORDEM.slice(0, i + 1).reverse(), ...ORDEM.slice(i + 1)]) {
+    const pool = novas.filter((c) => c.raridade === r)
+    if (pool.length) return pool[Math.floor(sorte() * pool.length)]
+  }
+  return null
+}
+
+export function cosmeticoPorId(id: string): Cosmetico | undefined {
+  return COSMETICOS.find((c) => c.id === id)
 }

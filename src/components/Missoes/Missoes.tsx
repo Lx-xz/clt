@@ -2,7 +2,7 @@
 
 import { Check } from 'lucide-react'
 import { useState } from 'react'
-import { ENVELOPES, MISSOES, abrirEnvelope, feitasHoje } from '@/game/missoes'
+import { ENVELOPES, MISSOES, SEQUENCIA, abrirEnvelope, feitasHoje, sequenciaDeHoje } from '@/game/missoes'
 import type { CardId, Collection, TipoEnvelope } from '@/game/types'
 import AberturaDeEnvelope, { ChancesDoEnvelope, ObjetoDaRecompensa } from '../Envelope'
 import styles from './Missoes.module.sass'
@@ -29,7 +29,7 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
   /** No recibo de fim, só a bandeja: as missões já foram mostradas no início. */
   compacto?: boolean
 }) {
-  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; novas: CardId[] } | null>(null)
+  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[]; novas: CardId[] } | null>(null)
   const [chances, setChances] = useState<TipoEnvelope | null>(null)
   const feitas = feitasHoje(colecao)
 
@@ -39,8 +39,13 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
     // a coleção muda ANTES da animação: pular ou fechar no meio não pode
     // perder a carta
     onMudar(r.colecao)
-    setAbrindo({ tipo: r.tipo, cartas: r.cartas, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)) })
+    setAbrindo({ tipo: r.tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)) })
   }
+
+  // os dias seguidos: com a conta zerada HOJE, o cofre acabou de sair
+  const seq = sequenciaDeHoje(colecao)
+  const cofreHoje = seq.hojeConta && seq.dias === 0
+  const diasNaBarra = cofreHoje ? SEQUENCIA.dias : seq.dias
 
   const naBandeja = ORDEM_DA_BANDEJA.map((tipo) => ({
     tipo,
@@ -81,6 +86,37 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
               </li>
             )
           })}
+          {/* a dos dias seguidos: não renova à meia-noite, atravessa a semana */}
+          <li className={`${styles.missao} ${cofreHoje ? styles.feita : ''}`}>
+            <div className={styles.texto}>
+              <b>{SEQUENCIA.nome}</b>
+              <span>
+                {cofreHoje
+                  ? 'Sete dias sem falhar: o cofre está na bandeja. A conta recomeça amanhã.'
+                  : seq.hojeConta
+                    ? `${SEQUENCIA.descricao} Hoje já contou.`
+                    : SEQUENCIA.descricao}
+              </span>
+              <span className={styles.progresso}>
+                <span className={styles.dias} role="progressbar" aria-valuemin={0} aria-valuemax={SEQUENCIA.dias} aria-valuenow={diasNaBarra}>
+                  {Array.from({ length: SEQUENCIA.dias }, (_, i) => (
+                    <span key={i} className={i < diasNaBarra ? styles.diaFeito : ''} />
+                  ))}
+                </span>
+                <span className={styles.conta}>
+                  {cofreHoje ? <Check size={13} aria-label="feita" /> : null}
+                  {diasNaBarra}/{SEQUENCIA.dias}
+                </span>
+              </span>
+            </div>
+            <ObjetoDaRecompensa
+              tipo={SEQUENCIA.premio}
+              largura={58}
+              className={cofreHoje ? styles.envelopeGanho : ''}
+              rotulo={`${ENVELOPES[SEQUENCIA.premio].nome}: ver o que ele pode trazer`}
+              onClick={() => setChances(SEQUENCIA.premio)}
+            />
+          </li>
           <li className={`${styles.missao} ${styles.sempre}`}>
             <div className={styles.texto}>
               <b>Toda partida</b>

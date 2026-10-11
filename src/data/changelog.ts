@@ -56,7 +56,7 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
   'Rebalancear: hoje quase toda partida acaba em burnout ainda na primeira semana — o jogo está mais duro do que deveria.',
-  'Peças para o avatar que se ganham, saindo do pacote, da maleta e do cofre.',
+  'Mais peças para o avatar, e fundos de mesa para escolher onde jogar.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
   'Uma recompensa para quem manda bom feedback.',
   'Um aviso fora do site (e-mail ou no celular) quando o seu relato mudar de estado.',
@@ -64,6 +64,16 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.24',
+    data: '2026-10-11',
+    titulo: 'Sete dias seguidos',
+    itens: [
+      { tipo: 'novo', texto: 'Missão nova: termine uma partida por dia, sete dias sem falhar, e ganhe um cofre. Os dias aparecem no início, um tijolo por dia; se um dia ficar sem partida, a conta recomeça.' },
+      { tipo: 'novo', texto: 'Itens para o avatar dentro das recompensas: a maleta tem chance de trazer um, e o cofre traz um garantido (às vezes dois). Só vem peça que você ainda não tem, e ela sobe na abertura já vestida no seu avatar.' },
+      { tipo: 'melhor', texto: 'A quantidade de cartas também é sorteada: o envelope traz de 1 a 3, o pacote de 3 a 5, a maleta de 5 a 7 e o cofre de 7 a 9. Pode vir uma carta só, e épica, ou três comuns. Toque numa recompensa para ver a chance de cada quantidade.' },
+    ],
+  },
   {
     versao: '0.23',
     data: '2026-10-11',

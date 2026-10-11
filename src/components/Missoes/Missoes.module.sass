@@ -83,6 +83,24 @@
   svg
     color: var(--produtividade)
 
+// os sete dias, um tijolo por dia: a sequência se conta em dias, e uma
+// barra contínua não diria quantos faltam
+.dias
+  flex: 1
+  display: grid
+  grid-template-columns: repeat(7, 1fr)
+  gap: 3px
+
+  span
+    height: 8px
+    background: var(--papel)
+    border: 1px solid var(--linha)
+    border-radius: 999px
+
+  .diaFeito
+    background: var(--produtividade)
+    border-color: var(--produtividade)
+
 // o envelope da missão já ganha: continua ali (dá para ver as chances), mas
 // apagado — o prêmio dele foi para a bandeja
 .envelopeGanho
