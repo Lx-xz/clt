@@ -1146,6 +1146,12 @@ aberto é um segundo cubo `interno` (as faces viradas para dentro, com a luz
 de quem olha pela boca: chão claro, teto e fundo escuros). Sem isso, olhando
 por dentro, o teto aparecia claro como o topo de fora — era o "sombreamento
 errado". A aba que abre é um invólucro com duas folhas, a de fora e o avesso.
+Duas faces que se encontram numa aresta deixam meio pixel de fresta, e o
+fundo vaza por ela ("os lados não encaixam"): cada face leva um `outline`
+de 1px na própria cor (`--fundo`, com `outline-offset: -.5px`), e por isso
+classe que troca a cor de uma face troca o `--fundo`, não o `background`.
+Objeto com paredes grossas (o cofre) é montado PAREDE a parede, cada uma um
+cubo, e a face de cada uma que olha para dentro leva a cor do interior.
 
 **Popup dentro da nota fiscal precisa de portal.** `mask` (a serrilha) e
 `filter` (o drop-shadow da moldura) também viram bloco contentor de

@@ -167,17 +167,24 @@
   display: grid
   place-items: center
   box-sizing: border-box
-  background: var(--cor)
+  background: var(--fundo)
   backface-visibility: hidden
   -webkit-backface-visibility: hidden
+  // duas faces que se encontram numa aresta deixam uma fresta de meio pixel
+  // de antisserrilhado, e o fundo vazava por ela: era o "lado desencaixado".
+  // O contorno, na cor da própria face, passa meio pixel da borda e cobre a
+  // emenda da vizinha
+  outline: 1px solid var(--fundo)
+  outline-offset: -.5px
 
 .f_frente
+  --fundo: var(--cor)
   inset: 0
   transform: translateZ(calc(var(--d) / 2)) var(--virar,)
 
 .f_tras
   inset: 0
-  background: color-mix(in srgb, var(--cor) 62%, #000)
+  --fundo: color-mix(in srgb, var(--cor) 62%, #000)
   transform: rotateY(180deg) translateZ(calc(var(--d) / 2)) var(--virar,)
 
 .f_dir,
@@ -188,12 +195,12 @@
   height: 100%
 
 .f_dir
-  background: color-mix(in srgb, var(--cor) 74%, #000)
+  --fundo: color-mix(in srgb, var(--cor) 74%, #000)
   transform: rotateY(90deg) translateZ(calc(var(--w) / 2)) var(--virar,)
 
 // a esquerda pega a luz: quase a cor da frente
 .f_esq
-  background: color-mix(in srgb, var(--cor) 94%, #fff)
+  --fundo: color-mix(in srgb, var(--cor) 94%, #fff)
   transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)) var(--virar,)
 
 .f_topo,
@@ -204,11 +211,11 @@
   height: var(--d)
 
 .f_topo
-  background: color-mix(in srgb, var(--cor) 84%, #fff)
+  --fundo: color-mix(in srgb, var(--cor) 84%, #fff)
   transform: rotateX(90deg) translateZ(calc(var(--h) / 2)) var(--virar,)
 
 .f_base
-  background: color-mix(in srgb, var(--cor) 50%, #000)
+  --fundo: color-mix(in srgb, var(--cor) 50%, #000)
   transform: rotateX(-90deg) translateZ(calc(var(--h) / 2)) var(--virar,)
 
 // o forro: as faces viradas para DENTRO, cada uma com a luz de quem olha
@@ -217,15 +224,15 @@
   --virar: rotateY(180deg)
 
   .f_base
-    background: color-mix(in srgb, var(--cor) 92%, #fff)
+    --fundo: color-mix(in srgb, var(--cor) 92%, #fff)
 
   .f_esq,
   .f_dir
-    background: color-mix(in srgb, var(--cor) 80%, #000)
+    --fundo: color-mix(in srgb, var(--cor) 80%, #000)
 
   .f_tras,
   .f_topo
-    background: color-mix(in srgb, var(--cor) 62%, #000)
+    --fundo: color-mix(in srgb, var(--cor) 62%, #000)
 
 // ================================================================ pacote
 // papel pardo e barbante em cruz, dando a volta nas faces, com o laço em cima
@@ -283,13 +290,17 @@
   inset: 0
   backface-visibility: hidden
   -webkit-backface-visibility: hidden
+  outline: 1px solid var(--fundo)
+  outline-offset: -.5px
 
 .tampaFora
-  background: color-mix(in srgb, var(--cor) 84%, #fff)
+  --fundo: color-mix(in srgb, var(--cor) 84%, #fff)
+  background: var(--fundo)
 
 // o avesso do papel: mais escuro, sem barbante
 .tampaDentro
-  background: color-mix(in srgb, var(--cor) 70%, #000)
+  --fundo: color-mix(in srgb, var(--cor) 70%, #000)
+  background: var(--fundo)
   transform: rotateY(180deg)
 
 // na tampa o barbante faz a cruz: a perna da profundidade na borda de
@@ -300,35 +311,64 @@
 .barbanteTampaD
   background: linear-gradient(90deg, #efe2c4 0 2px, transparent 0), linear-gradient(0deg, transparent calc(50% - 2px), #efe2c4 calc(50% - 2px) calc(50% + 2px), transparent 0), color-mix(in srgb, var(--cor) 84%, #fff)
 
-// o laço fica de pé em cima da aba da esquerda, no meio da tampa: preso
-// pela base e levantado 90° para fora do papel
+// o laço é dois: cada metade fica de pé na borda de dentro de uma aba,
+// presa pela base e levantada 90° para fora do papel. A volta aponta para
+// FORA do nó (a ponta presa é a do meio) e a perna cai para o mesmo lado;
+// juntas, as duas metades fecham o nó no centro da tampa. Ao abrir, cada aba
+// leva a sua, e o laço se divide no meio
 .laco
   position: absolute
-  top: calc(50% - 17px)
-  left: calc(100% - 17px)
-  width: 34px
-  height: 17px
+  top: calc(50% - 22px)
+  width: 25px
+  height: 22px
   transform-origin: 50% 100%
   transform: rotateX(-90deg)
 
-  &::before,
+  // a volta
+  &::before
+    content: ""
+    position: absolute
+    bottom: 4px
+    width: 22px
+    height: 17px
+    border: 5px solid #efe2c4
+    box-sizing: border-box
+
+  // a metade do nó, e a perna caindo
   &::after
     content: ""
     position: absolute
     bottom: 0
-    width: 15px
-    height: 14px
-    border: 4px solid #efe2c4
-    border-radius: 50% 50% 50% 0
-    box-sizing: border-box
+    width: 6px
+    height: 11px
+    background: #e2d2ae
+    border-radius: 2px
+
+.lacoE
+  left: calc(100% - 25px)
 
   &::before
-    left: 0
-    transform: rotate(-20deg)
+    right: 2px
+    border-radius: 60% 40% 0 60%
+    transform-origin: 100% 100%
+    transform: rotate(-12deg)
 
   &::after
     right: 0
-    transform: scaleX(-1) rotate(-20deg)
+    box-shadow: -6px 3px 0 -2px #efe2c4
+
+.lacoD
+  left: 0
+
+  &::before
+    left: 2px
+    border-radius: 40% 60% 60% 0
+    transform-origin: 0 100%
+    transform: rotate(12deg)
+
+  &::after
+    left: 0
+    box-shadow: 6px 3px 0 -2px #efe2c4
 
 .aberto
   .tampaE
@@ -363,12 +403,17 @@
 .metadeFrente
   transform: translateZ(8.5px) rotateX(0)
 
-// a faixa mais escura embaixo da frente, a dobra do couro
-.couroFrente
-  background: linear-gradient(to top, color-mix(in srgb, var(--cor) 78%, #000) 0 14%, var(--cor) 14%)
-
 .forro
-  background: #2e1d16 !important
+  --fundo: #2e1d16 !important
+
+// a costura em volta da frente (e das costas): o couro liso, sem faixa
+// nenhuma, e o pesponto dizendo que é maleta e não caixa
+.costura
+  position: absolute
+  inset: 8px
+  border: 1.5px dashed color-mix(in srgb, var(--cor) 55%, #e8c9a0)
+  border-radius: 5px
+  opacity: .8
 
 // a alça mora na metade de trás, de pé em cima dela, perto da emenda
 .alca3d
@@ -381,55 +426,18 @@
   transform-style: preserve-3d
   transform: translateZ(4px)
 
-.encaixe3d
-  position: absolute
-  top: 13px
-  width: 10%
-  height: 7px
-  background: #ddb23a
-  border-bottom: 2px solid #a8811a
-  border-radius: 2px
-
-.esq3d
-  left: 18%
-
-.dir3d
-  right: 18%
-
-.encaixe3d.esq3d
-  left: 19%
-
-.encaixe3d.dir3d
-  right: 19%
-
-// a presilha tem duas partes: a que corre DEITADA por cima da maleta, de
-// trás até a borda da frente, e a que desce pela frente até o encaixe,
-// presa nessa borda. Solta, a de frente gira para cima e deita em cima da
-// maleta, junto da outra — ela não some atrás de nada
-.presilhaTopo,
-.presilhaFrente
-  position: absolute
-  width: 12%
-  background: #ddb23a
-
-.presilhaTopo
-  top: -17px
-  height: 34px
-  background: #e6bf4c
-  transform: rotateX(90deg) translateZ(.6px)
-
-.presilhaFrente
-  top: 0
-  height: 18px
-  border-bottom: 3px solid #a8811a
-  border-radius: 0 0 2px 2px
-  transform-origin: 50% 0
-  transform: translateZ(17.6px) rotateX(0)
-  transition: transform .45s cubic-bezier(.4, 0, .3, 1)
+// os ferrolhos, em CIMA da maleta, um de cada lado da alça. O bloco é da
+// metade da frente, e a lingueta, da de trás: ela sai da dobradiça, passa
+// por cima da emenda e deita sobre o bloco. Para abrir, ela se levanta
+// pela dobradiça (antes de as metades se afastarem), e o fecho fica solto
+.lingueta
+  transform-origin: 50% 100% -6px
+  transform: translateZ(8.5px) rotateX(0)
+  transition: transform .4s cubic-bezier(.3, 1.4, .5, 1)
 
 .aberto
-  .presilhaFrente
-    transform: translateZ(17.6px) rotateX(-88deg)
+  .lingueta
+    transform: translateZ(8.5px) rotateX(75deg)
 
   .metadeFrente
     transform: translateZ(8.5px) rotateX(-24deg)
@@ -437,15 +445,36 @@
   .metadeTras
     transform: translateZ(-8.5px) rotateX(14deg)
 
+// o buraco da chave na frente do bloco
+.fechadura
+  width: 3px
+  height: 3px
+  background: #6b4f12
+  border-radius: 50%
+
 // ================================================================= cofre
 // aço, pés com volume, e a porta é uma chapa grossa presa pela borda
 // esquerda: gira PARA FORA de verdade. A frente tem o segredo; o lado de
 // dentro, as trancas. Antes o disco gira e a manivela vira
-.miolo3d
-  position: absolute
-  left: 4px
-  top: 4px
+.cofre3d
+  position: relative
+  display: block
   transform-style: preserve-3d
+
+// o lado de dentro das paredes, com a luz de quem olha pela porta: o chão
+// pega um pouco, as paredes menos, e o fundo e o teto ficam no escuro. É a
+// cor de dentro, e não uma luz pintada por cima
+.dentroChao
+  --fundo: #4a5058 !important
+
+.dentroLado
+  --fundo: #353a40 !important
+
+.dentroFundo
+  --fundo: #2b2f34 !important
+
+.dentroTeto
+  --fundo: #24272b !important
 
 // a cinta de papel do maço de dinheiro, na frente e em cima
 .cinta
@@ -465,7 +494,7 @@
 // o lado de dentro da porta: a chapa mais clara, sem o segredo, com os
 // pinos das trancas na borda que encaixa no batente
 .portaDentro
-  background: #7b828b !important
+  --fundo: #7b828b !important
 
 .trancas
   position: absolute
@@ -564,7 +593,7 @@
   .tampa,
   .metadeTras,
   .metadeFrente,
-  .presilhaFrente,
+  .lingueta,
   .porta3d,
   .disco,
   .manivela,

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import Avatar from '@/components/Avatar'
 import Card from '@/components/Card'
 import { EnvelopeEmPe } from '@/components/Envelope'
@@ -86,6 +86,8 @@ const KRAFT = '#b78c55'
 const COURO = '#8a5a3b'
 const COURO_ESCURO = '#5f3a24'
 const ACO = '#5a6068'
+const OURO = '#d9ad34'
+const OURO_ESCURO = '#a8811a'
 
 function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
   const a = aberto ? styles.aberto : ''
@@ -109,15 +111,18 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
               <Cubo w={108} h={60} d={80} cor="#6e5030" interno sem={['topo']} />
             </span>
             {/* a tampa em duas abas, cada uma com o lado de fora (papel e
-                barbante) e o de dentro; o laço vai preso na da esquerda */}
+                barbante) e o de dentro. O laço é DOIS: cada volta, com a
+                metade do nó, vai presa numa aba, e ao abrir ele se divide
+                no meio, uma para cada lado */}
             <span className={`${styles.tampa} ${styles.tampaE}`}>
               <span className={`${styles.tampaFora} ${styles.barbanteTampaE}`} />
               <span className={styles.tampaDentro} />
-              <span className={styles.laco} />
+              <span className={`${styles.laco} ${styles.lacoE}`} />
             </span>
             <span className={`${styles.tampa} ${styles.tampaD}`}>
               <span className={`${styles.tampaFora} ${styles.barbanteTampaD}`} />
               <span className={styles.tampaDentro} />
+              <span className={`${styles.laco} ${styles.lacoD}`} />
             </span>
           </Cubo>
         </span>
@@ -126,89 +131,81 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
   }
   if (tipo === 'maleta') {
     // duas metades de verdade, uma atrás da outra, presas pela borda de
-    // baixo. Vista um pouco de cima, a abertura entre elas aparece
+    // baixo. Vista um pouco de cima, a abertura entre elas aparece. Em cima,
+    // a alça e os dois ferrolhos: o bloco dourado mora na metade da frente,
+    // a lingueta na de trás, deitada por cima do bloco — ao abrir, ela se
+    // levanta, e só então as metades se afastam
+    const ferrolho = (x: number) => ({ position: 'absolute', left: x, top: -5, transform: 'translateZ(-4.5px)' }) as React.CSSProperties
+    const lingueta = (x: number) => ({ position: 'absolute', left: x, top: -7 }) as React.CSSProperties
     return (
       <span className={`${styles.cena} ${a}`}>
         <span className={styles.mundo}>
           <span className={styles.maleta3d}>
             <span className={styles.metadeTras}>
-              <Cubo w={140} h={92} d={17} cor={COURO} classes={{ frente: styles.forro }} />
-              {/* a alça, de couro e com volume: dois pés e a barra */}
+              <Cubo w={140} h={92} d={17} cor={COURO} classes={{ frente: styles.forro }} faces={{ tras: <span className={styles.costura} /> }} />
               <span className={styles.alca3d}>
                 <Cubo w={7} h={17} d={8} cor={COURO_ESCURO} style={{ position: 'absolute', left: 0, bottom: 0 }} />
                 <Cubo w={7} h={17} d={8} cor={COURO_ESCURO} style={{ position: 'absolute', right: 0, bottom: 0 }} />
                 <Cubo w={52} h={7} d={8} cor={COURO_ESCURO} style={{ position: 'absolute', left: 0, top: 0 }} />
               </span>
+              {[22, 102].map((x) => (
+                <Fragment key={x}>
+                  <Cubo w={16} h={5} d={4} cor={OURO_ESCURO} style={{ position: 'absolute', left: x, top: -5, transform: 'translateZ(4.5px)' }} />
+                  <Cubo w={14} h={2} d={12} cor={OURO} className={styles.lingueta} style={lingueta(x + 1)} />
+                </Fragment>
+              ))}
             </span>
             <span className={styles.metadeFrente}>
-              <Cubo
-                w={140}
-                h={92}
-                d={17}
-                cor={COURO}
-                classes={{ tras: styles.forro, frente: styles.couroFrente }}
-                faces={{
-                  frente: (
-                    <>
-                      <span className={`${styles.encaixe3d} ${styles.esq3d}`} />
-                      <span className={`${styles.encaixe3d} ${styles.dir3d}`} />
-                    </>
-                  ),
-                }}
-              />
+              <Cubo w={140} h={92} d={17} cor={COURO} classes={{ tras: styles.forro }} faces={{ frente: <span className={styles.costura} /> }} />
+              {[21, 101].map((x) => (
+                <Cubo key={x} w={18} h={5} d={8} cor={OURO} style={ferrolho(x)} faces={{ frente: <span className={styles.fechadura} /> }} />
+              ))}
             </span>
-            {/* a presilha: a parte que corre por CIMA da maleta e a que desce
-                pela frente até o encaixe. Solta, a de frente deita em cima */}
-            {(['esq3d', 'dir3d'] as const).map((lado) => (
-              <span key={lado}>
-                <span className={`${styles.presilhaTopo} ${styles[lado]}`} />
-                <span className={`${styles.presilhaFrente} ${styles[lado]}`} />
-              </span>
-            ))}
           </span>
         </span>
       </span>
     )
   }
+  // o cofre é montado em PAREDES grossas, como a porta: aberto, a borda do
+  // aço aparece na boca dele. A face de cada parede que olha para dentro
+  // ganha a cor do interior, com a luz de quem olha pela porta
+  const W = 96
+  const H = 104
+  const D = 84
+  const T = 8
+  const parede = (x: number, y: number, z: number): React.CSSProperties => ({ position: 'absolute', left: x, top: y, transform: `translateZ(${z}px)` })
   return (
     <span className={`${styles.cena} ${a}`}>
       <span className={styles.mundo}>
-        <Cubo w={96} h={104} d={84} cor={ACO} sem={['frente']}>
-          {/* o miolo: paredes de dentro, uma prateleira, barras de ouro em
-              cima dela e maços de dinheiro no chão — o cofre mostra o que
-              guarda, em vez de uma luz no vazio */}
-          <span className={styles.miolo3d}>
-            <Cubo w={88} h={96} d={76} cor="#2d3136" interno sem={['frente']} />
-          </span>
-          <Cubo w={86} h={4} d={70} cor="#4a4f56" style={{ position: 'absolute', left: 5, top: 50, transform: 'translateZ(-3px)' }} />
+        <span className={styles.cofre3d} style={{ width: W, height: H }}>
+          <Cubo w={W} h={H} d={T} cor={ACO} classes={{ frente: styles.dentroFundo }} style={parede(0, 0, -D / 2 + T / 2)} />
+          <Cubo w={T} h={H} d={D - T} cor={ACO} classes={{ dir: styles.dentroLado }} style={parede(0, 0, T / 2)} />
+          <Cubo w={T} h={H} d={D - T} cor={ACO} classes={{ esq: styles.dentroLado }} style={parede(W - T, 0, T / 2)} />
+          <Cubo w={W - 2 * T} h={T} d={D - T} cor={ACO} classes={{ base: styles.dentroTeto }} style={parede(T, 0, T / 2)} />
+          <Cubo w={W - 2 * T} h={T} d={D - T} cor={ACO} classes={{ topo: styles.dentroChao }} style={parede(T, H - T, T / 2)} />
+          {/* a prateleira, as barras de ouro em cima dela e os maços de
+              dinheiro no chão: o cofre mostra o que guarda */}
+          <Cubo w={W - 2 * T} h={4} d={D - T - 8} cor="#4a4f56" style={parede(T, 50, T / 2 - 4)} />
           {[
-            [24, 43, -12],
-            [50, 43, -12],
-            [37, 36, -12],
-          ].map(([x, y, z], i) => (
-            <Cubo key={`o${i}`} w={20} h={7} d={11} cor="#d9ad34" style={{ position: 'absolute', left: x, top: y, transform: `translateZ(${z}px)` }} />
+            [24, 43],
+            [48, 43],
+            [36, 36],
+          ].map(([x, y], i) => (
+            <Cubo key={`o${i}`} w={20} h={7} d={11} cor={OURO} style={parede(x, y, -12)} />
           ))}
           {[
-            [16, 91, -8],
-            [46, 91, -8],
-            [16, 83, -8],
-          ].map(([x, y, z], i) => (
-            <Cubo
-              key={`d${i}`}
-              w={24}
-              h={8}
-              d={14}
-              cor="#5c8a4a"
-              classes={{ frente: styles.cinta, topo: styles.cintaTopo }}
-              style={{ position: 'absolute', left: x, top: y, transform: `translateZ(${z}px)` }}
-            />
+            [18, H - T - 8],
+            [46, H - T - 8],
+            [18, H - T - 16],
+          ].map(([x, y], i) => (
+            <Cubo key={`d${i}`} w={24} h={8} d={14} cor="#5c8a4a" classes={{ frente: styles.cinta, topo: styles.cintaTopo }} style={parede(x, y, -8)} />
           ))}
-          {/* a porta: uma chapa com espessura, presa pela borda esquerda. A
-              frente tem o segredo; o lado de DENTRO, as trancas */}
-          <span className={styles.porta3d}>
+          {/* a porta: uma chapa grossa presa pela borda esquerda. A frente tem
+              o segredo; o lado de DENTRO, as trancas */}
+          <span className={styles.porta3d} style={{ '--d': `${D}px` } as React.CSSProperties}>
             <Cubo
-              w={96}
-              h={104}
+              w={W}
+              h={H}
               d={7}
               cor="#6a7079"
               classes={{ tras: styles.portaDentro }}
@@ -230,16 +227,15 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
               }}
             />
           </span>
-          {/* os pés, com volume, nos quatro cantos de baixo */}
           {[
             [6, 30],
-            [74, 30],
+            [W - 22, 30],
             [6, -30],
-            [74, -30],
+            [W - 22, -30],
           ].map(([x, z], i) => (
-            <Cubo key={`p${i}`} w={16} h={9} d={14} cor="#2f3338" style={{ position: 'absolute', left: x, top: 104, transform: `translateZ(${z}px)` }} />
+            <Cubo key={`p${i}`} w={16} h={9} d={14} cor="#2f3338" style={parede(x, H, z)} />
           ))}
-        </Cubo>
+        </span>
       </span>
     </span>
   )
