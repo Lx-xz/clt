@@ -13,29 +13,29 @@ import buttons from '@/styles/buttons.module.sass'
 import styles from './pacotes.module.sass'
 
 /**
- * A escada única de recompensa, em rascunho: envelope, pacote, caixa, maleta
- * e cofre. Junta o que eram duas linhas (envelopes de carta e maletas de
+ * A escada única de recompensa, em rascunho: envelope, pacote, maleta e
+ * cofre. (A caixa saiu: em 3D ela e o pacote ficaram parecidos demais.)
+ * Junta o que eram duas linhas (envelopes de carta e maletas de
  * cosmético) numa só, em que o TAMANHO do objeto diz o que ele vale — e o
- * cosmético entra a partir da caixa, num lugar próprio, além das cartas, em
+ * cosmético entra a partir do pacote, num lugar próprio, além das cartas, em
  * vez de disputar a sorte com uma lendária.
  *
  * Só para ver e mexer: cada um abre com a sua animação ao toque, e o que sai
  * é de mentira (uma carta qualquer do catálogo, e o óculos de sol num avatar
  * sorteado). Nada vai para a coleção de ninguém.
  *
- * Todos chapados, como o resto. Envelope e maleta são os do jogo; pacote,
- * caixa e cofre nascem aqui e migram para `src/components` se a escada for
- * aprovada.
+ * O envelope é o do jogo, chapado (ele é fino de verdade); pacote, maleta e
+ * cofre são sólidos de CSS (`Cubo`) e migram para `src/components` se a
+ * escada for aprovada.
  */
 
-type Tipo = 'envelope' | 'pacote' | 'caixa' | 'maleta' | 'cofre'
+type Tipo = 'envelope' | 'pacote' | 'maleta' | 'cofre'
 
 const PACOTES: { tipo: Tipo; nome: string; vem: string; dentro: string; cosmetico: boolean; abrir: number }[] = [
   { tipo: 'envelope', nome: 'Envelope', vem: 'de toda partida', dentro: '3 cartas', cosmetico: false, abrir: 900 },
-  { tipo: 'pacote', nome: 'Pacote', vem: 'da primeira partida do dia', dentro: '5 cartas', cosmetico: false, abrir: 1100 },
-  { tipo: 'caixa', nome: 'Caixa', vem: 'da primeira vitória do dia', dentro: '7 cartas e chance de cosmético', cosmetico: true, abrir: 1200 },
-  { tipo: 'maleta', nome: 'Maleta', vem: 'de conquista ou sequência de dias', dentro: '10 cartas e 1 cosmético', cosmetico: true, abrir: 1100 },
-  { tipo: 'cofre', nome: 'Cofre', vem: 'do raro de verdade', dentro: '15 cartas e 1 cosmético raro', cosmetico: true, abrir: 1700 },
+  { tipo: 'pacote', nome: 'Pacote', vem: 'da primeira partida do dia', dentro: '5 cartas e chance de cosmético', cosmetico: false, abrir: 1100 },
+  { tipo: 'maleta', nome: 'Maleta', vem: 'da primeira vitória do dia', dentro: '7 cartas e 1 cosmético', cosmetico: true, abrir: 1150 },
+  { tipo: 'cofre', nome: 'Cofre', vem: 'do raro de verdade', dentro: '15 cartas e 1 cosmético raro', cosmetico: true, abrir: 1800 },
 ]
 
 type Fase = 'fechado' | 'abrindo' | 'aberto'
@@ -46,15 +46,22 @@ const FACES: Face[] = ['frente', 'tras', 'dir', 'esq', 'topo', 'base']
 /**
  * Um sólido de CSS: seis faces num `preserve-3d`, cada uma empurrada para o
  * seu lado. `cor` pinta todas, e o sass escurece os lados e clareia o topo —
- * é a luz vindo de cima que dá o volume, sem degradê. `faces` põe conteúdo
- * numa face, `sem` tira faces (a caixa sem tampa, a maleta aberta).
+ * é a luz vindo de cima que dá o volume. Cada face só aparece pelo lado de
+ * FORA (`backface-visibility`): sem isso, olhando por dentro de uma caixa
+ * aberta, o teto aparecia claro como o lado de fora.
+ *
+ * `interno` vira as faces para DENTRO: é o forro de um objeto aberto, que só
+ * se vê por dentro, com as cores próprias do interior. `sem` tira faces (a
+ * boca da caixa), `faces` e `classes` enfeitam uma face.
  */
-function Cubo({ w, h, d, cor, className, faces = {}, classes = {}, sem = [], children }: {
+function Cubo({ w, h, d, cor, className, style, interno, faces = {}, classes = {}, sem = [], children }: {
   w: number
   h: number
   d: number
   cor: string
   className?: string
+  style?: React.CSSProperties
+  interno?: boolean
   faces?: Partial<Record<Face, React.ReactNode>>
   classes?: Partial<Record<Face, string>>
   sem?: Face[]
@@ -62,8 +69,8 @@ function Cubo({ w, h, d, cor, className, faces = {}, classes = {}, sem = [], chi
 }) {
   return (
     <span
-      className={`${styles.cubo} ${className ?? ''}`}
-      style={{ '--w': `${w}px`, '--h': `${h}px`, '--d': `${d}px`, '--cor': cor } as React.CSSProperties}
+      className={`${styles.cubo} ${interno ? styles.interno : ''} ${className ?? ''}`}
+      style={{ '--w': `${w}px`, '--h': `${h}px`, '--d': `${d}px`, '--cor': cor, ...style } as React.CSSProperties}
     >
       {FACES.filter((f) => !sem.includes(f)).map((f) => (
         <span key={f} className={`${styles.face} ${styles[`f_${f}`]} ${classes[f] ?? ''}`}>
@@ -76,23 +83,14 @@ function Cubo({ w, h, d, cor, className, faces = {}, classes = {}, sem = [], chi
 }
 
 const KRAFT = '#b78c55'
-const PAPELAO = '#c49a5e'
 const COURO = '#8a5a3b'
-const ACO = '#555b62'
+const COURO_ESCURO = '#5f3a24'
+const ACO = '#5a6068'
 
 function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
   const a = aberto ? styles.aberto : ''
-  if (tipo === 'envelope') {
-    // uma lâmina fina: o envelope do jogo na frente, e a espessura do papel
-    // nos lados — é o que o faz ler como objeto, e não como figura
-    return (
-      <span className={`${styles.cena} ${a}`}>
-        <span className={styles.mundo}>
-          <Cubo w={80} h={107} d={5} cor="#a9834d" faces={{ frente: <EnvelopeEmPe tipo="comum" aberto={aberto} largura={80} /> }} />
-        </span>
-      </span>
-    )
-  }
+  // o envelope é fino por natureza: fica chapado, como no jogo
+  if (tipo === 'envelope') return <EnvelopeEmPe tipo="comum" aberto={aberto} largura={84} />
   if (tipo === 'pacote') {
     return (
       <span className={`${styles.cena} ${a}`}>
@@ -106,33 +104,21 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
             classes={{ frente: styles.barbante, tras: styles.barbante, dir: styles.barbante, esq: styles.barbante }}
             faces={{ frente: <span className={styles.etiqueta} /> }}
           >
-            {/* o fundo escuro de dentro, logo abaixo da tampa */}
-            <span className={styles.oco} />
-            {/* a tampa rasga em duas: cada metade gira pela borda de fora */}
-            <span className={`${styles.tampa} ${styles.tampaE} ${styles.rasgoE}`} />
-            <span className={`${styles.tampa} ${styles.tampaD} ${styles.rasgoD}`} />
-            <span className={styles.laco} />
-          </Cubo>
-        </span>
-      </span>
-    )
-  }
-  if (tipo === 'caixa') {
-    return (
-      <span className={`${styles.cena} ${a}`}>
-        <span className={styles.mundo}>
-          <Cubo
-            w={116}
-            h={84}
-            d={96}
-            cor={PAPELAO}
-            sem={['topo']}
-            classes={{ frente: styles.fitaFrente }}
-            faces={{ frente: <span className={styles.seta}>↑↑</span> }}
-          >
-            <span className={styles.oco} />
-            <span className={`${styles.tampa} ${styles.tampaE} ${styles.abaCaixa}`} />
-            <span className={`${styles.tampa} ${styles.tampaD} ${styles.abaCaixa}`} />
+            {/* o lado de dentro do papel, que só aparece com a tampa aberta */}
+            <span className={styles.recheio}>
+              <Cubo w={108} h={60} d={80} cor="#6e5030" interno sem={['topo']} />
+            </span>
+            {/* a tampa em duas abas, cada uma com o lado de fora (papel e
+                barbante) e o de dentro; o laço vai preso na da esquerda */}
+            <span className={`${styles.tampa} ${styles.tampaE}`}>
+              <span className={`${styles.tampaFora} ${styles.barbanteTampaE}`} />
+              <span className={styles.tampaDentro} />
+              <span className={styles.laco} />
+            </span>
+            <span className={`${styles.tampa} ${styles.tampaD}`}>
+              <span className={`${styles.tampaFora} ${styles.barbanteTampaD}`} />
+              <span className={styles.tampaDentro} />
+            </span>
           </Cubo>
         </span>
       </span>
@@ -140,16 +126,19 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
   }
   if (tipo === 'maleta') {
     // duas metades de verdade, uma atrás da outra, presas pela borda de
-    // baixo. Vista um pouco de cima, a abertura entre elas aparece — o que a
-    // versão chapada só conseguia fingir
+    // baixo. Vista um pouco de cima, a abertura entre elas aparece
     return (
       <span className={`${styles.cena} ${a}`}>
         <span className={styles.mundo}>
           <span className={styles.maleta3d}>
             <span className={styles.metadeTras}>
-              <Cubo w={140} h={92} d={17} cor={COURO} classes={{ frente: styles.forro }}>
-                <span className={styles.alca3d} />
-              </Cubo>
+              <Cubo w={140} h={92} d={17} cor={COURO} classes={{ frente: styles.forro }} />
+              {/* a alça, de couro e com volume: dois pés e a barra */}
+              <span className={styles.alca3d}>
+                <Cubo w={7} h={17} d={8} cor={COURO_ESCURO} style={{ position: 'absolute', left: 0, bottom: 0 }} />
+                <Cubo w={7} h={17} d={8} cor={COURO_ESCURO} style={{ position: 'absolute', right: 0, bottom: 0 }} />
+                <Cubo w={52} h={7} d={8} cor={COURO_ESCURO} style={{ position: 'absolute', left: 0, top: 0 }} />
+              </span>
             </span>
             <span className={styles.metadeFrente}>
               <Cubo
@@ -157,7 +146,7 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
                 h={92}
                 d={17}
                 cor={COURO}
-                classes={{ tras: styles.forro }}
+                classes={{ tras: styles.forro, frente: styles.couroFrente }}
                 faces={{
                   frente: (
                     <>
@@ -168,8 +157,14 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
                 }}
               />
             </span>
-            <span className={`${styles.presilha3d} ${styles.esq3d}`} />
-            <span className={`${styles.presilha3d} ${styles.dir3d}`} />
+            {/* a presilha: a parte que corre por CIMA da maleta e a que desce
+                pela frente até o encaixe. Solta, a de frente deita em cima */}
+            {(['esq3d', 'dir3d'] as const).map((lado) => (
+              <span key={lado}>
+                <span className={`${styles.presilhaTopo} ${styles[lado]}`} />
+                <span className={`${styles.presilhaFrente} ${styles[lado]}`} />
+              </span>
+            ))}
           </span>
         </span>
       </span>
@@ -179,16 +174,71 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
     <span className={`${styles.cena} ${a}`}>
       <span className={styles.mundo}>
         <Cubo w={96} h={104} d={84} cor={ACO} sem={['frente']}>
-          {/* a luz de dentro, um pouco atrás da boca do cofre */}
-          <span className={styles.dentroCofre} />
-          <span className={styles.porta3d}>
-            <span className={styles.disco}>
-              <span className={styles.marcas} />
-            </span>
-            <span className={styles.manivela} />
+          {/* o miolo: paredes de dentro, uma prateleira, barras de ouro em
+              cima dela e maços de dinheiro no chão — o cofre mostra o que
+              guarda, em vez de uma luz no vazio */}
+          <span className={styles.miolo3d}>
+            <Cubo w={88} h={96} d={76} cor="#2d3136" interno sem={['frente']} />
           </span>
-          <span className={`${styles.pe3d} ${styles.esq3d}`} />
-          <span className={`${styles.pe3d} ${styles.dir3d}`} />
+          <Cubo w={86} h={4} d={70} cor="#4a4f56" style={{ position: 'absolute', left: 5, top: 50, transform: 'translateZ(-3px)' }} />
+          {[
+            [24, 43, -12],
+            [50, 43, -12],
+            [37, 36, -12],
+          ].map(([x, y, z], i) => (
+            <Cubo key={`o${i}`} w={20} h={7} d={11} cor="#d9ad34" style={{ position: 'absolute', left: x, top: y, transform: `translateZ(${z}px)` }} />
+          ))}
+          {[
+            [16, 91, -8],
+            [46, 91, -8],
+            [16, 83, -8],
+          ].map(([x, y, z], i) => (
+            <Cubo
+              key={`d${i}`}
+              w={24}
+              h={8}
+              d={14}
+              cor="#5c8a4a"
+              classes={{ frente: styles.cinta, topo: styles.cintaTopo }}
+              style={{ position: 'absolute', left: x, top: y, transform: `translateZ(${z}px)` }}
+            />
+          ))}
+          {/* a porta: uma chapa com espessura, presa pela borda esquerda. A
+              frente tem o segredo; o lado de DENTRO, as trancas */}
+          <span className={styles.porta3d}>
+            <Cubo
+              w={96}
+              h={104}
+              d={7}
+              cor="#6a7079"
+              classes={{ tras: styles.portaDentro }}
+              faces={{
+                frente: (
+                  <>
+                    <span className={styles.disco}>
+                      <span className={styles.marcas} />
+                    </span>
+                    <span className={styles.manivela} />
+                  </>
+                ),
+                tras: (
+                  <>
+                    <span className={styles.trancas} />
+                    <span className={styles.chapaDentro} />
+                  </>
+                ),
+              }}
+            />
+          </span>
+          {/* os pés, com volume, nos quatro cantos de baixo */}
+          {[
+            [6, 30],
+            [74, 30],
+            [6, -30],
+            [74, -30],
+          ].map(([x, z], i) => (
+            <Cubo key={`p${i}`} w={16} h={9} d={14} cor="#2f3338" style={{ position: 'absolute', left: x, top: 104, transform: `translateZ(${z}px)` }} />
+          ))}
         </Cubo>
       </span>
     </span>
@@ -268,8 +318,8 @@ export default function PacotesPage() {
       </Link>
       <h1 className={styles.titulo}>Escada de recompensa</h1>
       <p className={styles.intro}>
-        Envelope, pacote, caixa, maleta e cofre: uma linha só, em que o tamanho diz o valor. Os dois primeiros
-        dão só cartas; da caixa para cima vem também um cosmético, num lugar próprio. <b>Rascunho</b> — toque
+        Envelope, pacote, maleta e cofre: uma linha só, em que o tamanho diz o valor. O envelope dá só
+        cartas; do pacote para cima vem também um cosmético, num lugar próprio. <b>Rascunho</b> — toque
         em cada um para ver ele abrir; o que sai é de mentira e nada vai para a sua coleção.
       </p>
       <button type="button" className={`${buttons.button} ${styles.recomecar}`} onClick={() => setChave((c) => c + 1)}>

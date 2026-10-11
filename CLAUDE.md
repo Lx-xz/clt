@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` · `/lab/pacotes` (a escada única de recompensa em rascunho: envelope, pacote, caixa, maleta, cofre, em 3D de CSS, cada um com a sua abertura) · `/lab/propostas` (a proposta anterior, fora da lista do lab e guardada de recordação) | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` · `/lab/pacotes` (a escada única de recompensa em rascunho: envelope chapado, e pacote, maleta e cofre em 3D de CSS, cada um com a sua abertura; a caixa saiu por ficar parecida com o pacote) · `/lab/propostas` (a proposta anterior, fora da lista do lab e guardada de recordação) | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -1141,6 +1141,11 @@ de recorte (o rasgo do pacote) vai na própria face, que é folha; o fade do
 barbante é um `::after` dela. E a ordem do `transform` é a geometria: a
 tampa é `rotateX(90deg) translateZ(h/2) rotateY(φ)` — deitar, subir, e só
 então girar no eixo da dobra; trocando a ordem, gira no eixo errado.
+Toda face é `backface-visibility: hidden`, e o lado de dentro de um objeto
+aberto é um segundo cubo `interno` (as faces viradas para dentro, com a luz
+de quem olha pela boca: chão claro, teto e fundo escuros). Sem isso, olhando
+por dentro, o teto aparecia claro como o topo de fora — era o "sombreamento
+errado". A aba que abre é um invólucro com duas folhas, a de fora e o avesso.
 
 **Popup dentro da nota fiscal precisa de portal.** `mask` (a serrilha) e
 `filter` (o drop-shadow da moldura) também viram bloco contentor de
