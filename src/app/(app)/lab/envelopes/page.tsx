@@ -3,7 +3,7 @@
 import { ArrowLeft, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import AberturaDeEnvelope, { EnvelopeEmPe } from '@/components/Envelope'
+import AberturaDeEnvelope, { ObjetoDaRecompensa } from '@/components/Envelope'
 import Segmentado from '@/components/Segmentado'
 import { getCard } from '@/game/catalogo'
 import { NOMES_DE_RARIDADE, colecaoInicial } from '@/game/colecao'
@@ -20,7 +20,8 @@ const AMOSTRA = 1000
 type Base = 'inicial' | 'minha'
 
 /**
- * A bancada dos envelopes: abrir envelope de mentira, com a animação de
+ * A bancada das recompensas (que o código chama de envelopes, de quando
+ * eram todas envelope): abrir de mentira, com a animação de
  * verdade, sem que nada chegue à coleção de ninguém.
  *
  * A coleção desta página é uma CÓPIA em memória — a inicial, ou a sua como
@@ -88,9 +89,9 @@ export default function LabEnvelopesPage() {
       <Link href="/lab" className={styles.voltar}>
         <ArrowLeft size={14} aria-hidden /> Lab
       </Link>
-      <h1 className={styles.titulo}>Envelopes</h1>
+      <h1 className={styles.titulo}>Recompensas</h1>
       <p className={styles.intro}>
-        Abra envelopes de mentira, com a animação de verdade. <b>Nada vai para a sua coleção</b>: as cartas caem numa
+        Abra envelope, pacote, maleta e cofre de mentira, com a animação de verdade. <b>Nada vai para a sua coleção</b>: as cartas caem numa
         cópia que só existe nesta página, e somem ao sair dela.
       </p>
 
@@ -117,10 +118,10 @@ export default function LabEnvelopesPage() {
           const env = ENVELOPES[tipo]
           return (
             <div key={tipo} className={styles.envelope}>
-              <EnvelopeEmPe
+              <ObjetoDaRecompensa
                 tipo={tipo}
                 largura={84}
-                rotulo={`Abrir um ${env.nome.toLowerCase()} de teste`}
+                rotulo={`Abrir ${env.artigo === 'a' ? 'uma' : 'um'} ${env.nome.toLowerCase()} de teste`}
                 onClick={() => abrir(tipo)}
               />
               <b>{env.nome}</b>
@@ -141,7 +142,7 @@ export default function LabEnvelopesPage() {
         <table className={styles.tabela}>
           <thead>
             <tr>
-              <th>Envelope</th>
+              <th>Recompensa</th>
               {RARIDADES.map((r) => (
                 <th key={r} className={styles[`r_${r}`]}>
                   {NOMES_DE_RARIDADE[r]}
@@ -160,7 +161,7 @@ export default function LabEnvelopesPage() {
                     <span className={styles.tabelada}>{(ENVELOPES[tipo].chances[r] * 100).toFixed(0)}%</span>
                   </td>
                 ))}
-                <td>{(novas / AMOSTRA).toFixed(1)} por envelope</td>
+                <td>{(novas / AMOSTRA).toFixed(1)} por abertura</td>
               </tr>
             ))}
           </tbody>

@@ -5,19 +5,20 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getCard } from '@/game/catalogo'
 import { NOMES_DE_RARIDADE } from '@/game/colecao'
-import { ENVELOPES } from '@/game/missoes'
+import { ENVELOPES, type FormaDaRecompensa } from '@/game/missoes'
 import type { CardId, Raridade, TipoEnvelope } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from '../Card'
 import Dialogo from '../Dialogo'
+import { DesenhoDaRecompensa, DURACAO, useAndamento } from '../Recompensa'
 import styles from './Envelope.module.sass'
 
 /**
- * Os envelopes são o MESMO envelope em pé; o que os separa é o selo de cera,
- * como num escritório de verdade, e no selo o que muda é só a COR — a da
- * raridade que dá nome ao envelope, a mesma da borda da carta. O ícone é um
- * só, a carta de baralho (é o que vem dentro): cinco ícones diferentes eram
- * cinco coisas para decorar, e a cor já dizia tudo.
+ * O selo do envelope ANTIGO (v0.16–v0.22), que hoje só aparece no museu do
+ * lab: os envelopes eram o mesmo envelope em pé, e o que os separava era o
+ * selo de cera, na cor da raridade que dava nome ao envelope. O ícone era um
+ * só, a carta de baralho: cinco ícones eram cinco coisas para decorar, e a
+ * cor já dizia tudo.
  */
 export const SELOS: Record<TipoEnvelope, { Icone: LucideIcon; classe: string }> = {
   comum: { Icone: PlayingCard, classe: styles.seloComum },
@@ -45,18 +46,18 @@ export function EnvelopeComCartas({ tipo, cartas, fechado = false, retrato, onAb
   const carta = retrato ?? getCard
   return (
     <div className={styles.ganho}>
-      <EnvelopeEmPe
+      <ObjetoDaRecompensa
         tipo={tipo}
         aberto={!fechado}
         largura={52}
         className={fechado ? undefined : styles.abertoParado}
-        rotulo={fechado && onAbrir ? `Abrir o ${env.nome.toLowerCase()}` : env.nome}
+        rotulo={fechado && onAbrir ? `Abrir ${env.artigo} ${env.nome.toLowerCase()}` : env.nome}
         onClick={fechado ? onAbrir : undefined}
       />
       <div className={styles.ganhoInfo}>
         <span className={styles.ganhoNome}>{env.nome}</span>
         {fechado ? (
-          <p className={styles.ganhoDica}>{onAbrir ? 'Fechado. Toque nele para abrir.' : 'Ainda fechado.'}</p>
+          <p className={styles.ganhoDica}>{onAbrir ? 'Fechado. Toque para abrir.' : 'Ainda fechado.'}</p>
         ) : cartas.length === 0 ? (
           <p className={styles.ganhoDica}>Veio vazio: a coleção já estava completa.</p>
         ) : (
@@ -111,9 +112,44 @@ function Cera({ classe, tipo }: { classe: string; tipo: TipoEnvelope }) {
   )
 }
 
-/** O envelope desenhado, em pé. Só CSS: costas, bolso da frente com o V,
- *  a aba de cima (que gira para trás ao abrir) e o selo na ponta da aba. */
-export function EnvelopeEmPe({ tipo, aberto = false, largura = 64, className, rotulo, onClick }: {
+/**
+ * A recompensa desenhada, parada: o objeto da forma dela (envelope,
+ * pacote, maleta ou cofre), fechado ou aberto. Com `onClick`, vira botão.
+ * `largura` é a de um envelope antigo nesse lugar: o objeto ocupa um
+ * quadrado um pouco maior, da mesma altura que o envelope em pé tinha, e
+ * o que abre para cima (a aba, as abas, a porta) passa da caixa sem
+ * empurrar nada — quem precisa de lugar em cima é o `abertoParado`.
+ */
+export function ObjetoDaRecompensa({ tipo, aberto = false, largura = 64, className, rotulo, onClick }: {
+  tipo: TipoEnvelope
+  aberto?: boolean
+  largura?: number
+  className?: string
+  rotulo?: string
+  onClick?: () => void
+}) {
+  const env = ENVELOPES[tipo]
+  const lado = Math.round(largura * 1.3)
+  const corpo = <DesenhoDaRecompensa forma={env.forma} t={aberto ? 1 : 0} viewBox="17 19 138 135" className={styles.objetoDesenho} />
+  const props = {
+    className: `${styles.objeto} ${className ?? ''}`,
+    style: { width: lado, height: lado } as React.CSSProperties,
+  }
+  return onClick ? (
+    <button type="button" {...props} onClick={onClick} aria-label={rotulo ?? env.nome}>
+      {corpo}
+    </button>
+  ) : (
+    <span {...props} role="img" aria-label={rotulo ?? env.nome}>
+      {corpo}
+    </span>
+  )
+}
+
+/** O envelope ANTIGO (v0.16–v0.22), desenhado em pé, só com CSS: costas,
+ *  bolso da frente com o V, a aba de cima (que gira para trás ao abrir) e o
+ *  selo na ponta da aba. Hoje só o museu do lab o mostra. */
+export function EnvelopeAntigo({ tipo, aberto = false, largura = 64, className, rotulo, onClick }: {
   tipo: TipoEnvelope
   aberto?: boolean
   largura?: number
@@ -170,7 +206,7 @@ export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFe
   return (
     <Dialogo titulo={env.nome} onFechar={onFechar}>
       <div className={styles.chancesTopo}>
-        <EnvelopeEmPe tipo={tipo} largura={72} />
+        <ObjetoDaRecompensa tipo={tipo} largura={72} />
         <p>
           {env.origem}{' '}
           <b>{min === max ? `${min} cartas` : `De ${min} a ${max} cartas`}</b>, que podem vir repetidas.
@@ -194,8 +230,25 @@ export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFe
 
 type Fase = 'chegando' | 'esperando' | 'abrindo' | 'revelando' | 'resumo'
 
-/** Os tempos da abertura. Cada um bate com uma animação do sass. */
-const T = { chegada: 650, abrir: 750, subir: 900, guardar: 420 }
+/** Os tempos da abertura. Cada um bate com uma animação do sass; o de abrir
+ *  é o de cada objeto (`DURACAO`): o cofre gira o segredo antes da porta. */
+const T = { chegada: 650, subir: 900, guardar: 420 }
+
+/**
+ * Por onde a carta sai de cada objeto, em pixels do palco (360×560, com o
+ * objeto desenhado em 300px encostado embaixo). Ela nasce DENTRO dele, entre
+ * a camada de trás e a da frente (`de`, com o tamanho `s0`), sobe, e em
+ * `meio` já passou da parede da frente e pula para a frente de tudo. Os
+ * números saem do desenho: a carta começa abaixo da boca e menor que ela —
+ * maior, ela vazava por baixo do pacote. O cofre abre de FRENTE, então a
+ * carta já nasce na frente, no meio da porta aberta.
+ */
+const SAIDA: Record<FormaDaRecompensa, { de: number; meio: number; s0: number; naFrente?: boolean }> = {
+  envelope: { de: 298, meio: 190, s0: 0.58 },
+  pacote: { de: 326, meio: 195, s0: 0.45 },
+  maleta: { de: 299, meio: 200, s0: 0.5 },
+  cofre: { de: 299, meio: 160, s0: 0.45, naFrente: true },
+}
 
 function semMovimento(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -229,6 +282,9 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
   const [escala, setEscala] = useState(1)
   const ocupado = useRef(false)
   const env = ENVELOPES[tipo]
+  const abrir = Math.round(DURACAO[env.forma] * 0.9)
+  const t = useAndamento(fase === 'abrindo' || fase === 'revelando', DURACAO[env.forma])
+  const saida = SAIDA[env.forma]
 
   // o palco é desenhado em 360×560 e ESCALADO para caber: as animações
   // trabalham em pixels fixos, e é isso que deixa a carta sair da boca do
@@ -274,7 +330,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
       setTimeout(() => {
         ocupado.current = false
         setFase(cartas.length > 0 ? 'revelando' : 'resumo')
-      }, semMovimento() ? 0 : T.abrir)
+      }, semMovimento() ? 0 : abrir)
       return
     }
     if (fase === 'revelando' && virada) {
@@ -321,7 +377,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
 
   const dica =
     fase === 'esperando'
-      ? 'Toque no envelope para abrir'
+      ? `Toque ${env.artigo === 'a' ? 'na' : 'no'} ${env.nome.toLowerCase()} para abrir`
       : fase === 'revelando' && virada
         ? atual < cartas.length - 1
           ? `Toque para a próxima · ${atual + 1} de ${cartas.length}`
@@ -340,13 +396,23 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
               mesmo gesto, onde quer que o dedo caia */}
           <div className={styles.areaToque} onClick={avancar} style={{ '--escala': escala } as React.CSSProperties}>
             <div className={styles.palco}>
-              <div className={`${styles.envelopeNoPalco} ${styles[`fase_${fase}`]}`}>
-                <EnvelopeEmPe tipo={tipo} aberto={fase === 'abrindo' || fase === 'revelando'} largura={190} />
+              {/* o objeto em duas camadas, e a carta passa entre elas */}
+              <div className={`${styles.objetoNoPalco} ${styles[`fase_${fase}`]}`}>
+                <DesenhoDaRecompensa forma={env.forma} t={t} camada="tras" className={styles.camadaTras} />
+                <DesenhoDaRecompensa forma={env.forma} t={t} camada="frente" className={styles.camadaFrente} />
               </div>
               {fase === 'revelando' && carta ? (
                 <div
                   key={atual}
                   className={`${styles.cartaSaindo} ${virada ? styles.revelada : ''} ${guardando ? styles.guardando : ''} ${styles[`brilho_${raridade}`]}`}
+                  style={
+                    {
+                      '--de': `${saida.de}px`,
+                      '--meio': `${saida.meio}px`,
+                      '--s0': saida.s0,
+                      '--z0': saida.naFrente ? 6 : 2,
+                    } as React.CSSProperties
+                  }
                 >
                   <span className={styles.brilho} aria-hidden />
                   {raridade === 'epica' || raridade === 'lendaria' ? <span className={styles.raios} aria-hidden /> : null}
@@ -372,9 +438,11 @@ export default function AberturaDeEnvelope({ tipo, cartas, novas, onFechar }: {
         </>
       ) : (
         <div className={styles.resumo}>
-          <h2 className={styles.resumoTitulo}>Cartas que vieram no envelope</h2>
+          <h2 className={styles.resumoTitulo}>
+            Cartas que vieram {env.artigo === 'a' ? 'na' : 'no'} {env.nome.toLowerCase()}
+          </h2>
           {cartas.length === 0 ? (
-            <p className={styles.vazio}>Coleção completa: não havia carta que coubesse no envelope.</p>
+            <p className={styles.vazio}>Coleção completa: não havia carta que coubesse aqui.</p>
           ) : (
             <div className={styles.resumoCartas}>
               {cartas.map((id, i) => {

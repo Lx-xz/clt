@@ -8,7 +8,7 @@ import { MISSOES, abrirEnvelope } from '@/game/missoes'
 import type { CardId, Collection, EnvelopeGanho, TipoEnvelope } from '@/game/types'
 import Avatar, { humorDoEstresse } from '../Avatar'
 import Dinheiro from '../Dinheiro'
-import AberturaDeEnvelope, { EnvelopeComCartas, EnvelopeEmPe } from '../Envelope'
+import AberturaDeEnvelope, { EnvelopeComCartas, ObjetoDaRecompensa } from '../Envelope'
 import styles from './Recibo.module.sass'
 
 export type Desfecho = 'vitoria' | 'burnout' | 'demissao' | 'despejo' | 'abandono'
@@ -205,7 +205,7 @@ export default function Recibo({
 
       {envelopes.length > 0 ? (
         <section className={styles.secao}>
-          <p className={styles.secaoTitulo}>Envelopes</p>
+          <p className={styles.secaoTitulo}>Recompensas</p>
           {missoes.length > 0 ? <p className={styles.missoes}>Missão cumprida: {missoes.join(' e ')}</p> : null}
           {envelopes.map((e) => {
             const fechado = fechados.has(e.id)
@@ -273,7 +273,7 @@ export function ReciboResumido({ id, dados, className }: { id: number; dados: Da
         {dados.envelopes && dados.envelopes.length > 0 ? (
           <span className={styles.resumidoEnvelopes}>
             {dados.envelopes.map((e) => (
-              <EnvelopeEmPe key={e.id} tipo={e.tipo} largura={22} />
+              <ObjetoDaRecompensa key={e.id} tipo={e.tipo} largura={22} />
             ))}
             <span>+{plural(dados.envelopes.reduce((n, e) => n + e.cartas.length, 0), 'carta', 'cartas')}</span>
           </span>

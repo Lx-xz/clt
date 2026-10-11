@@ -1,6 +1,6 @@
 'use client'
 
-import { Briefcase, Layers, Lightbulb, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
+import { Briefcase, Landmark, Layers, Lightbulb, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -39,8 +39,8 @@ const BANCADAS = [
   },
   {
     href: '/lab/envelopes',
-    titulo: 'Envelopes',
-    texto: 'Abrir envelope de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
+    titulo: 'Recompensas',
+    texto: 'Abrir envelope, pacote, maleta e cofre de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
     Icon: Mail,
   },
   {
@@ -49,13 +49,19 @@ const BANCADAS = [
     texto: 'A recompensa de cosmético, de bronze, prata e ouro. Esta MEXE na sua conta: o que sair fica desbloqueado e dá para vestir.',
     Icon: Briefcase,
   },
-  // a proposta anterior (/lab/propostas) saiu da lista mas continua no ar,
-  // guardada de recordação, a pedido do autor
   {
     href: '/lab/pacotes',
     titulo: 'Escada de recompensa',
-    texto: 'Envelope, pacote, caixa, maleta e cofre: uma linha só, cada um com a sua abertura. Rascunho — nada vai para a coleção.',
+    texto: 'Envelope, pacote, maleta e cofre, do jeito que estão no jogo, abrindo e fechando no toque. É onde se mexe no desenho.',
     Icon: Lightbulb,
+  },
+  // a proposta anterior (/lab/propostas) mora no museu, guardada de
+  // recordação, a pedido do autor
+  {
+    href: '/lab/museu',
+    titulo: 'Museu',
+    texto: 'As versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D. Para comparar; nada aqui está no jogo.',
+    Icon: Landmark,
   },
 ]
 

@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` · `/lab/maletas` · `/lab/pacotes` (a escada única de recompensa em rascunho: envelope chapado, e pacote, maleta e cofre em 3D de CSS, cada um com a sua abertura; a caixa saiu por ficar parecida com o pacote; embaixo, a mesma escada CHAPADA, em SVG de cor lisa no jeito dos baús do Duolingo, em `Chapados.tsx`: cada face é desenhada no próprio plano e projetada por uma matriz OBLÍQUA, sem perspectiva, e a tampa abre girando de verdade em volta da dobradiça, quadro a quadro; qual lado dela aparece é para onde a face aponta. A primeira versão trocava um desenho de "fechado" por um de "aberto", e nada encaixava) · `/lab/propostas` (a proposta anterior, fora da lista do lab e guardada de recordação) | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/avatar` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa de mentira, com a animação do jogo) · `/lab/maletas` · `/lab/pacotes` (a escada de recompensa do jogo, abrindo e fechando no toque: é onde se mexe no desenho) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -410,8 +410,29 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   recibo o mostra lacrado e deixa abrir; aberto, com as cartas ao lado.
 - `MISSOES` é uma tabela (como `CABELOS_FORMA`). Missão nova é uma linha; o
   que ela pode perguntar é o que `FimDeRun` traz, não o `GameState` inteiro.
-- **Envelope, e não baú** (pedido do autor: baú não combina). É o MESMO
-  envelope em pé (`EnvelopeEmPe`, só CSS), e o que os distingue é o SELO de
+- **Desde a v0.23 a recompensa é um OBJETO, numa escada em que o tamanho
+  diz o valor:** envelope (`comum`), pacote (`pardo`), maleta
+  (`confidencial`) e cofre (`epico`, 10 cartas, e `lendario`, o
+  cofre-forte de 15). É a `forma` em `ENVELOPES`, com o `artigo` para as
+  frases ("toque NA maleta"); os ids e o nome `envelope` no código ficaram
+  os de antes, porque moram na coleção de quem já os ganhou. O desenho é
+  `components/Recompensa`: SVG chapado, no jeito dos baús do Duolingo,
+  montado em FACES planas projetadas por uma matriz oblíqua — a tampa abre
+  girando de verdade em volta da dobradiça (`useAndamento`, um laço de
+  quadros), e qual lado dela aparece é para onde a face aponta. Cada
+  desenho se divide em CAMADA de trás e da frente, e a abertura em tela
+  cheia põe a carta entre as duas: ela nasce dentro do objeto, atrás da
+  parede da frente, sobe e pula para a frente (`SAIDA` em `Envelope.tsx`
+  diz de onde, por objeto; o cofre abre de frente, então a carta já nasce
+  na frente, no meio da porta). Parado (missões, bandeja, recibo), é o
+  `ObjetoDaRecompensa`. O relógio do laço é o do PRÓPRIO quadro (o
+  `requestAnimationFrame`) desde o primeiro: misturar com
+  `performance.now()` dava passo negativo quando o navegador desacelerava
+  as animações, e a maleta dava uma cambalhota.
+- **O envelope de antes (v0.16–v0.22) está no museu** (`EnvelopeAntigo`).
+  O que segue é a história dele. **Envelope, e não baú** (pedido do autor:
+  baú não combina). Era o MESMO
+  envelope em pé (`EnvelopeEmPe`, só CSS), e o que os distinguia era o SELO de
   cera, na cor da raridade que dá nome ao envelope (o comum é cinza,
   `--selo-comum`), e o ícone é um só para todos (a carta de baralho, v0.21):
   cinco ícones eram cinco coisas para decorar, e a cor já dizia tudo. **A geometria é uma só:** as quatro dobras vão dos

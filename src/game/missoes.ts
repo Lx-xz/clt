@@ -49,8 +49,15 @@ export const MISSOES: Missao[] = [
   },
 ]
 
+/** O desenho da recompensa: a escada de valor, do mais simples ao mais raro. */
+export type FormaDaRecompensa = 'envelope' | 'pacote' | 'maleta' | 'cofre'
+
 export interface Envelope {
   nome: string
+  /** O objeto que a recompensa é na tela (`components/Recompensa`). */
+  forma: FormaDaRecompensa
+  /** Para as frases: "toque NO pacote", "toque NA maleta". */
+  artigo: 'o' | 'a'
   /** De onde ele vem, numa frase — é o que o popup de chances diz no topo. */
   origem: string
   /** Quantas cartas: um número, ou um intervalo sorteado por igual. */
@@ -61,46 +68,59 @@ export interface Envelope {
 }
 
 /**
- * Os envelopes. São o mesmo envelope em pé; o que os distingue na tela é o
- * SELO (`SELOS` em `Envelope.tsx`), na cor da raridade que dá nome a ele, e
- * nas regras é só esta tabela. Envelope melhor dá MAIS cartas, e não só
- * cartas melhores (v0.20): 3, 5, 7, 10 e 15.
+ * As recompensas. Até a v0.22 eram todas o mesmo envelope, distinguido pelo
+ * selo; desde a v0.23 cada uma é um OBJETO, numa escada em que o tamanho diz
+ * o valor: envelope, pacote, maleta e cofre (`forma`). Nas regras continua
+ * sendo só esta tabela, e recompensa melhor dá MAIS cartas, e não só cartas
+ * melhores (v0.20): 3, 5, 7, 10 e 15.
  *
- * Os ids são os de quando eles nasceram (`pardo` é o incomum, `confidencial`
- * o raro), e não o nome da tela: envelope guardado na coleção de alguém
- * carrega o id, e renomear o id o faria sumir.
+ * Os ids são os de quando elas nasceram (`pardo` é o pacote, `confidencial`
+ * a maleta), e não o nome da tela: recompensa guardada na coleção de alguém
+ * carrega o id, e renomear o id a faria sumir. O código continua chamando
+ * todas de "envelope" pelo mesmo motivo.
  */
 export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
   // o de toda partida: quase sempre comum, e nunca lendária — é o que mantém
   // a coleção andando sem fazer de cada derrota um prêmio
   comum: {
-    nome: 'Envelope comum',
+    nome: 'Envelope',
+    forma: 'envelope',
+    artigo: 'o',
     origem: 'Vem ao fim de toda partida, ganhando ou perdendo.',
     cartas: [3, 3],
     chances: { comum: 0.8, incomum: 0.15, rara: 0.04, epica: 0.01, lendaria: 0 },
   },
   pardo: {
-    nome: 'Envelope incomum',
+    nome: 'Pacote',
+    forma: 'pacote',
+    artigo: 'o',
     origem: 'A missão "Bater o ponto": a primeira partida terminada do dia.',
     cartas: [5, 5],
     chances: { comum: 0.55, incomum: 0.3, rara: 0.1, epica: 0.04, lendaria: 0.01 },
   },
   confidencial: {
-    nome: 'Envelope raro',
+    nome: 'Maleta',
+    forma: 'maleta',
+    artigo: 'a',
     origem: 'A missão "Fechar o mês": a primeira vitória do dia.',
     cartas: [7, 7],
     chances: { comum: 0.35, incomum: 0.33, rara: 0.2, epica: 0.09, lendaria: 0.03 },
   },
   // os dois de cima ainda não saem de missão nenhuma: a tabela já os tem
-  // para a missão que vier não precisar mexer em envelope
+  // para a missão que vier não precisar mexer aqui. São os dois cofres: o
+  // de 10 cartas e o forte, de 15
   epico: {
-    nome: 'Envelope épico',
+    nome: 'Cofre',
+    forma: 'cofre',
+    artigo: 'o',
     origem: 'Ainda não sai de missão nenhuma.',
     cartas: [10, 10],
     chances: { comum: 0.2, incomum: 0.3, rara: 0.28, epica: 0.16, lendaria: 0.06 },
   },
   lendario: {
-    nome: 'Envelope lendário',
+    nome: 'Cofre-forte',
+    forma: 'cofre',
+    artigo: 'o',
     origem: 'Ainda não sai de missão nenhuma.',
     cartas: [15, 15],
     chances: { comum: 0.1, incomum: 0.25, rara: 0.3, epica: 0.23, lendaria: 0.12 },

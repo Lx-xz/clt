@@ -4,7 +4,7 @@ import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { ENVELOPES, MISSOES, abrirEnvelope, feitasHoje } from '@/game/missoes'
 import type { CardId, Collection, TipoEnvelope } from '@/game/types'
-import AberturaDeEnvelope, { ChancesDoEnvelope, EnvelopeEmPe } from '../Envelope'
+import AberturaDeEnvelope, { ChancesDoEnvelope, ObjetoDaRecompensa } from '../Envelope'
 import styles from './Missoes.module.sass'
 
 const ORDEM_DA_BANDEJA: TipoEnvelope[] = ['lendario', 'epico', 'confidencial', 'pardo', 'comum']
@@ -71,7 +71,7 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
                     </span>
                   </span>
                 </div>
-                <EnvelopeEmPe
+                <ObjetoDaRecompensa
                   tipo={m.premio}
                   largura={58}
                   className={feita ? styles.envelopeGanho : ''}
@@ -84,9 +84,9 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
           <li className={`${styles.missao} ${styles.sempre}`}>
             <div className={styles.texto}>
               <b>Toda partida</b>
-              <span>Ganhando ou perdendo, terminar uma partida dá um envelope comum.</span>
+              <span>Ganhando ou perdendo, terminar uma partida dá um envelope.</span>
             </div>
-            <EnvelopeEmPe
+            <ObjetoDaRecompensa
               tipo="comum"
               largura={48}
               rotulo={`${ENVELOPES.comum.nome}: ver o que ele pode trazer`}
@@ -102,18 +102,18 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
           <div className={styles.bandejaEnvelopes}>
             {naBandeja.map(({ tipo, quantos }) => (
               <span key={tipo} className={styles.pilha}>
-                <EnvelopeEmPe
+                <ObjetoDaRecompensa
                   tipo={tipo}
                   largura={64}
                   className={styles.paraAbrir}
-                  rotulo={`Abrir o ${ENVELOPES[tipo].nome.toLowerCase()}`}
+                  rotulo={`Abrir ${ENVELOPES[tipo].artigo} ${ENVELOPES[tipo].nome.toLowerCase()}`}
                   onClick={() => abrir(tipo)}
                 />
                 {quantos > 1 ? <span className={styles.quantos}>×{quantos}</span> : null}
               </span>
             ))}
           </div>
-          <span className={styles.bandejaDica}>Toque num envelope para abrir</span>
+          <span className={styles.bandejaDica}>Toque para abrir</span>
         </div>
       ) : compacto ? null : feitas.length === MISSOES.length ? (
         <p className={styles.nota}>Tudo feito por hoje. As missões renovam à meia-noite.</p>

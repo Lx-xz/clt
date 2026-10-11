@@ -111,6 +111,14 @@
   justify-content: center
   gap: 18px
 
+  // no celular, os quatro degraus da escada cabem numa linha só
+  @media (max-width: 480px)
+    gap: 6px
+
+    > * > *
+      width: 68px !important
+      height: 68px !important
+
 .pilha
   position: relative
 
