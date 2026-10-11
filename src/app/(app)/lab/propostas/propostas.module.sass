@@ -1,0 +1,366 @@
+.voltar
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  margin-bottom: 8px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-decoration: none
+
+.titulo
+  margin: 0
+  font-size: clamp(24px, 5vw, 32px)
+
+.intro
+  max-width: 64ch
+  margin: 6px 0 12px
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.6
+
+.secao
+  margin: 28px 0 14px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  letter-spacing: .1em
+  text-transform: uppercase
+
+.grade
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr))
+  gap: 16px
+
+.item
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 12px
+  margin: 0
+  padding: 18px 14px 14px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 10px
+
+  figcaption
+    display: flex
+    flex-direction: column
+    align-items: center
+    gap: 3px
+    text-align: center
+
+    b
+      font-size: 18px
+
+    span
+      color: var(--tinta-fraca)
+      font-size: 12px
+
+    q
+      margin-top: 4px
+      color: var(--tinta)
+      font-size: 13px
+      font-style: italic
+
+// todos do mesmo tamanho de palco, alinhados por baixo: é a diferença de
+// TAMANHO entre eles que conta a progressão
+.palco
+  display: flex
+  align-items: flex-end
+  justify-content: center
+  height: 160px
+
+.pequeno
+  display: flex
+  align-items: center
+  gap: 8px
+  padding-top: 10px
+  border-top: 1px dashed var(--linha)
+  width: 100%
+  justify-content: center
+
+  > span:last-child
+    color: var(--tinta-fraca)
+    font-size: 11px
+
+// ============================================================ envelopes
+// a mesma geometria do envelope do jogo — as dobras dos cantos ao centro —,
+// e o que muda de um para o outro é o TAMANHO, a cor do papel e o fecho:
+// fita (o mais simples), lacre, e cordão de botões com carimbo (o maior)
+.env
+  position: relative
+  display: inline-block
+  flex: none
+  width: var(--w)
+  aspect-ratio: 3 / 4
+  border-radius: 0 0 3px 3px
+  box-shadow: var(--sombra)
+  --k: #c9a46c
+  --k-escuro: #a9834d
+
+.envelopinho
+  --k: #dcc193
+  --k-escuro: #bfa06c
+
+// o envelopão é mais largo e mais escuro, e ESTUFADO: um claro no meio do
+// bolso, como papel esticado por cima do que tem dentro
+.envelopao
+  aspect-ratio: 4 / 4.6
+  --k: #b98f55
+  --k-escuro: #8e6a39
+
+.costas
+  position: absolute
+  inset: 0
+  background: var(--k-escuro)
+  border-radius: inherit
+
+.bolso
+  position: absolute
+  inset: 0
+  background: var(--k)
+  border-radius: inherit
+  clip-path: polygon(0 0, 50% 50%, 100% 0, 100% 100%, 0 100%)
+
+  &::before,
+  &::after
+    content: ""
+    position: absolute
+    inset: 0
+    background: color-mix(in srgb, var(--k) 88%, #000)
+
+  &::before
+    clip-path: polygon(0 0, 50% 50%, 0 100%)
+
+  &::after
+    clip-path: polygon(100% 0, 50% 50%, 100% 100%)
+    background: color-mix(in srgb, var(--k) 92%, #000)
+
+.envelopao .bolso
+  background: radial-gradient(ellipse 60% 45% at 50% 74%, color-mix(in srgb, var(--k) 80%, #fff), var(--k) 100%)
+
+.aba
+  position: absolute
+  inset: 0 0 auto
+  height: 50%
+  background: color-mix(in srgb, var(--k) 94%, #fff)
+  clip-path: polygon(0 0, 100% 0, 50% 100%)
+
+// envelopinho: um pedaço de fita segurando a ponta da aba
+.fita
+  position: absolute
+  top: 50%
+  left: 50%
+  width: 34%
+  height: 10%
+  background: rgba(244, 236, 210, .82)
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .12)
+  transform: translate(-50%, -60%) rotate(-9deg)
+
+// envelope: o lacre de cera de hoje
+.lacre
+  position: absolute
+  top: 50%
+  left: 50%
+  display: grid
+  place-items: center
+  width: 28%
+  aspect-ratio: 1
+  border-radius: 50%
+  background: #a8332b
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .35), inset 0 0 0 2px #7d2420
+  color: rgba(255, 255, 255, .88)
+  translate: -50% -58%
+
+  svg
+    width: 52%
+    height: 52%
+
+// envelopão: o cordão de botões do vai-e-vem e o carimbo
+.cordao
+  position: absolute
+  inset: 0
+  width: 100%
+  height: 100%
+  overflow: visible
+
+  path
+    fill: none
+    stroke: #efe2c4
+    stroke-width: calc(var(--w) * .022)
+    stroke-linecap: round
+    stroke-linejoin: round
+    vector-effect: non-scaling-stroke
+
+.botao
+  position: absolute
+  left: 50%
+  width: 11%
+  aspect-ratio: 1
+  border-radius: 50%
+  background: #7a5a33
+  box-shadow: inset 0 0 0 calc(var(--w) * .012) #5a3f20
+  translate: -50% -50%
+
+.botaoCima
+  top: 50%
+
+.botaoBaixo
+  top: 70%
+
+.carimbo
+  position: absolute
+  right: 8%
+  bottom: 9%
+  padding: 1px 4px
+  border: calc(var(--w) * .018) solid #b03028
+  border-radius: 3px
+  color: #b03028
+  font-family: var(--mono)
+  font-size: calc(var(--w) * .085)
+  font-weight: 800
+  letter-spacing: .06em
+  opacity: .85
+  transform: rotate(-11deg)
+  line-height: 1.1
+
+// ============================================================== pasta
+// papelão, fina, com o furo de alça e o elástico: a bagagem de quem está
+// começando. O metal é só o rebite do elástico, de bronze
+.pasta
+  position: relative
+  display: inline-block
+  flex: none
+  width: var(--w)
+  height: calc(var(--w) * .62)
+  background: linear-gradient(to top, #8f8574 0 12%, #a99f8b 12%)
+  border-radius: calc(var(--w) * .04)
+  box-shadow: var(--sombra)
+
+// o furo da alça: o vazado de onde se segura a pasta
+.pastaFuro
+  position: absolute
+  top: 9%
+  left: 36%
+  width: 28%
+  height: 12%
+  background: #5d5548
+  border-radius: 999px
+
+.elastico
+  position: absolute
+  top: 0
+  bottom: 0
+  right: 16%
+  width: 4%
+  background: #2f2a26
+
+.rebite
+  position: absolute
+  right: calc(16% - var(--w) * .01)
+  width: calc(var(--w) * .06)
+  aspect-ratio: 1
+  border-radius: 50%
+  background: #c07f45
+  box-shadow: inset 0 calc(var(--w) * -.01) 0 #8a5528
+
+.rebiteCima
+  top: 14%
+
+.rebiteBaixo
+  bottom: 16%
+
+// ============================================================= malote
+// lona escura, costura aparente, zíper em cima e cadeado de segredo de ouro:
+// a bagagem do dinheiro
+.malote
+  position: relative
+  display: inline-block
+  flex: none
+  width: var(--w)
+  height: calc(var(--w) * .8)
+
+.alca
+  position: absolute
+  top: 0
+  width: 22%
+  height: 26%
+  box-sizing: border-box
+  border: calc(var(--w) * .035) solid #2b302a
+  border-bottom: 0
+  border-radius: calc(var(--w) * .08) calc(var(--w) * .08) 0 0
+
+.alcaE
+  left: 22%
+
+.alcaD
+  right: 22%
+
+.maloteCorpo
+  position: absolute
+  inset: 20% 0 0
+  background: linear-gradient(to top, #353b33 0 13%, #474f44 13%)
+  border-radius: calc(var(--w) * .07) calc(var(--w) * .07) calc(var(--w) * .09) calc(var(--w) * .09)
+  box-shadow: var(--sombra)
+  // a costura: um tracejado claro por dentro da borda
+  outline: calc(var(--w) * .01) dashed rgba(230, 225, 205, .35)
+  outline-offset: calc(var(--w) * -.045)
+
+.ziper
+  position: absolute
+  top: 12%
+  left: 8%
+  right: 8%
+  height: calc(var(--w) * .035)
+  background: repeating-linear-gradient(90deg, #b8b39f 0 calc(var(--w) * .012), #2b302a calc(var(--w) * .012) calc(var(--w) * .024))
+  border-radius: 2px
+
+.estencil
+  position: absolute
+  left: 0
+  right: 0
+  top: 44%
+  color: rgba(235, 230, 210, .32)
+  font-family: var(--mono)
+  font-size: calc(var(--w) * .1)
+  font-weight: 800
+  letter-spacing: .16em
+  text-align: center
+
+.cadeado
+  position: absolute
+  top: calc(var(--w) * .2)
+  right: 10%
+  width: 18%
+  z-index: 2
+
+.arco
+  display: block
+  width: 56%
+  height: calc(var(--w) * .07)
+  margin: 0 auto calc(var(--w) * -.01)
+  box-sizing: border-box
+  border: calc(var(--w) * .022) solid #a8811a
+  border-bottom: 0
+  border-radius: 999px 999px 0 0
+
+.segredo
+  display: flex
+  justify-content: center
+  gap: 1px
+  padding: calc(var(--w) * .012)
+  background: #ddb23a
+  border-bottom: calc(var(--w) * .018) solid #a8811a
+  border-radius: calc(var(--w) * .02)
+
+  i
+    display: grid
+    place-items: center
+    width: calc(var(--w) * .045)
+    height: calc(var(--w) * .06)
+    background: #2b2622
+    border-radius: 1px
+    color: #f1e6cf
+    font-family: var(--mono)
+    font-size: calc(var(--w) * .04)
+    font-style: normal
+    font-weight: 700

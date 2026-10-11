@@ -1,6 +1,6 @@
 'use client'
 
-import { Briefcase, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
+import { Briefcase, Layers, Lightbulb, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, TestTube, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -48,6 +48,12 @@ const BANCADAS = [
     titulo: 'Maletas',
     texto: 'A recompensa de cosmético, de bronze, prata e ouro. Esta MEXE na sua conta: o que sair fica desbloqueado e dá para vestir.',
     Icon: Briefcase,
+  },
+  {
+    href: '/lab/propostas',
+    titulo: 'Proposta de nomes',
+    texto: 'Envelopinho, envelope e envelopão; pasta, maleta e malote. Só os desenhos, para escolher — nada muda no jogo.',
+    Icon: Lightbulb,
   },
 ]
 
