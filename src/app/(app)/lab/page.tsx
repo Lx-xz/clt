@@ -49,10 +49,12 @@ const BANCADAS = [
     texto: 'A recompensa de cosmético, de bronze, prata e ouro. Esta MEXE na sua conta: o que sair fica desbloqueado e dá para vestir.',
     Icon: Briefcase,
   },
+  // a proposta anterior (/lab/propostas) saiu da lista mas continua no ar,
+  // guardada de recordação, a pedido do autor
   {
-    href: '/lab/propostas',
-    titulo: 'Proposta de nomes',
-    texto: 'Envelopinho, envelope e envelopão; pasta, maleta e malote. Só os desenhos, para escolher — nada muda no jogo.',
+    href: '/lab/pacotes',
+    titulo: 'Escada de recompensa',
+    texto: 'Envelope, pacote, caixa, maleta e cofre: uma linha só, cada um com a sua abertura. Rascunho — nada vai para a coleção.',
     Icon: Lightbulb,
   },
 ]
