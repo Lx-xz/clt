@@ -34,6 +34,16 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.22.2',
+    data: '2026-10-11',
+    titulo: 'Selo de cera de verdade',
+    itens: [
+      { tipo: 'melhor', texto: 'O selo do envelope virou cera: borda em gotas, o anel que o carimbo afundou e um brilho na beirada.' },
+      { tipo: 'melhor', texto: 'Ao abrir, a cera racha no meio: a metade de cima vai junto com a aba, e a de baixo fica no envelope.' },
+      { tipo: 'melhor', texto: 'A aba faz sombra no papel de baixo, e o envelope perdeu o canto arredondado embaixo.' },
+    ],
+  },
+  {
     versao: '0.22.1',
     data: '2026-10-11',
     titulo: 'Sair sem texto estranho',

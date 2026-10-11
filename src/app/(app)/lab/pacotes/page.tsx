@@ -10,6 +10,7 @@ import { avatarAleatorio, type Avatar as Receita } from '@/data/avatar'
 import { cartasDoJogo } from '@/game/catalogo'
 import type { ActionCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
+import { Chapado } from './Chapados'
 import styles from './pacotes.module.sass'
 
 /**
@@ -87,7 +88,9 @@ const COURO = '#8a5a3b'
 const COURO_ESCURO = '#5f3a24'
 const ACO = '#5a6068'
 const OURO = '#d9ad34'
-const OURO_ESCURO = '#a8811a'
+// os ferrolhos da maleta são de ferro: o ouro fica para o que vem dentro
+const FERRO = '#8a9097'
+const FERRO_ESCURO = '#5d636a'
 
 function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
   const a = aberto ? styles.aberto : ''
@@ -106,10 +109,11 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
             classes={{ frente: styles.barbante, tras: styles.barbante, dir: styles.barbante, esq: styles.barbante }}
             faces={{ frente: <span className={styles.etiqueta} /> }}
           >
-            {/* o lado de dentro do papel, que só aparece com a tampa aberta */}
-            <span className={styles.recheio}>
-              <Cubo w={108} h={60} d={80} cor="#6e5030" interno sem={['topo']} />
-            </span>
+            {/* o lado de dentro do papel, que só aparece com a tampa aberta.
+                É do MESMO tamanho da caixa: as faces de dentro e as de fora
+                ficam no mesmo plano, cada uma visível de um lado só. Menor,
+                sobrava uma fresta na boca entre a parede e a dobra da aba */}
+            <Cubo w={112} h={64} d={84} cor="#6e5030" interno sem={['topo']} className={styles.recheio} />
             {/* a tampa em duas abas, cada uma com o lado de fora (papel e
                 barbante) e o de dentro. O laço é DOIS: cada volta, com a
                 metade do nó, vai presa numa aba, e ao abrir ele se divide
@@ -132,7 +136,7 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
   if (tipo === 'maleta') {
     // duas metades de verdade, uma atrás da outra, presas pela borda de
     // baixo. Vista um pouco de cima, a abertura entre elas aparece. Em cima,
-    // a alça e os dois ferrolhos: o bloco dourado mora na metade da frente,
+    // a alça e os dois ferrolhos de ferro: o bloco mora na metade da frente,
     // a lingueta na de trás, deitada por cima do bloco — ao abrir, ela se
     // levanta, e só então as metades se afastam
     const ferrolho = (x: number) => ({ position: 'absolute', left: x, top: -5, transform: 'translateZ(-4.5px)' }) as React.CSSProperties
@@ -150,15 +154,15 @@ function Desenho({ tipo, aberto }: { tipo: Tipo; aberto: boolean }) {
               </span>
               {[22, 102].map((x) => (
                 <Fragment key={x}>
-                  <Cubo w={16} h={5} d={4} cor={OURO_ESCURO} style={{ position: 'absolute', left: x, top: -5, transform: 'translateZ(4.5px)' }} />
-                  <Cubo w={14} h={2} d={12} cor={OURO} className={styles.lingueta} style={lingueta(x + 1)} />
+                  <Cubo w={16} h={5} d={4} cor={FERRO_ESCURO} style={{ position: 'absolute', left: x, top: -5, transform: 'translateZ(4.5px)' }} />
+                  <Cubo w={14} h={2} d={12} cor={FERRO} className={styles.lingueta} style={lingueta(x + 1)} />
                 </Fragment>
               ))}
             </span>
             <span className={styles.metadeFrente}>
               <Cubo w={140} h={92} d={17} cor={COURO} classes={{ tras: styles.forro }} faces={{ frente: <span className={styles.costura} /> }} />
               {[21, 101].map((x) => (
-                <Cubo key={x} w={18} h={5} d={8} cor={OURO} style={ferrolho(x)} faces={{ frente: <span className={styles.fechadura} /> }} />
+                <Cubo key={x} w={18} h={5} d={8} cor={FERRO} style={ferrolho(x)} faces={{ frente: <span className={styles.fechadura} /> }} />
               ))}
             </span>
           </span>
@@ -303,6 +307,21 @@ function Bancada({ p, modelo }: { p: (typeof PACOTES)[number]; modelo: Receita }
   )
 }
 
+function ChapadoNaBancada({ p }: { p: (typeof PACOTES)[number] }) {
+  const [aberto, setAberto] = useState(false)
+  return (
+    <figure className={styles.item}>
+      <button type="button" className={styles.palco} onClick={() => setAberto((a) => !a)} aria-label={`${aberto ? 'Fechar' : 'Abrir'}: ${p.nome}`}>
+        <Chapado tipo={p.tipo} aberto={aberto} />
+      </button>
+      <figcaption>
+        <b>{p.nome}</b>
+        <span>{p.dentro}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
 export default function PacotesPage() {
   // o manequim não veste nada: o cosmético de mentira vai num avatar sorteado
   const [modelo] = useState<Receita>(() => ({ ...avatarAleatorio(), acessorio: 'nenhum' }))
@@ -324,6 +343,16 @@ export default function PacotesPage() {
       <div className={styles.escada} key={chave}>
         {PACOTES.map((p) => (
           <Bancada key={p.tipo} p={p} modelo={modelo} />
+        ))}
+      </div>
+      <h2 className={styles.subtitulo}>Proposta chapada</h2>
+      <p className={styles.intro}>
+        Os mesmos quatro, sem 3D nenhum: desenho de cor lisa, no jeito dos baús do Duolingo. Quem dá o
+        volume é a vista um pouco de cima e dois ou três tons por peça. Toque para abrir e fechar.
+      </p>
+      <div className={styles.escada}>
+        {PACOTES.map((p) => (
+          <ChapadoNaBancada key={p.tipo} p={p} />
         ))}
       </div>
       <p className={styles.nota}>

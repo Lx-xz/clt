@@ -22,7 +22,7 @@
   padding: 0
   background: none
   border: none
-  border-radius: 0 0 3px 3px
+  border-radius: 0
   box-shadow: var(--sombra)
   isolation: isolate
   vertical-align: middle
@@ -85,6 +85,19 @@ button.envelope
   transform: perspective(500px) rotateX(0)
   transition: transform .5s cubic-bezier(.3, .7, .3, 1) .18s, filter .5s ease .18s
 
+// a sombra que a aba faz no bolso: o mesmo triângulo, um pouco mais
+// baixo e escuro. É ela que descola a aba do papel de baixo. Some quando a
+// aba abre
+.abaSombra
+  position: absolute
+  inset: 0 0 auto
+  z-index: 4
+  height: 50%
+  background: rgba(0, 0, 0, .16)
+  clip-path: polygon(0 0, 100% 0, 50% 100%)
+  transform: translateY(5%)
+  transition: opacity .2s ease .18s
+
 // o selo de cera, na ponta da aba — que é o centro do envelope
 .selo
   position: absolute
@@ -93,20 +106,70 @@ button.envelope
   left: 50%
   display: grid
   place-items: center
-  width: 28%
+  width: 30%
   aspect-ratio: 1
-  border-radius: 50%
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--cor-selo) 70%, #fff) 0 18%, var(--cor-selo) 55%, color-mix(in srgb, var(--cor-selo) 70%, #000) 100%)
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .35), inset 0 0 0 2px color-mix(in srgb, var(--cor-selo) 80%, #000)
-  color: rgba(255, 255, 255, .88)
-  // `translate` em separado do `transform`: o estalo da cera mexe no
-  // transform, e a centralização não pode ir junto
-  translate: -50% -58%
-  transition: transform .25s ease, opacity .25s ease
+  color: rgba(255, 255, 255, .9)
+  translate: -50% -50%
+  transition: transform .35s ease .18s
 
-  svg
-    width: 52%
-    height: 52%
+  svg:not(.cera)
+    position: relative
+    width: 44%
+    height: 44%
+    filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--cor-selo) 55%, #000))
+
+.cera
+  position: absolute
+  inset: 0
+  width: 100%
+  height: 100%
+  overflow: visible
+
+.ceraSombra
+  fill: rgba(0, 0, 0, .3)
+
+.ceraCorpo
+  fill: var(--cor-selo)
+
+// o anel que o carimbo deixou: um fundo um pouco mais escuro, e a borda de
+// cima mais clara, como luz batendo na beirada do afundado
+.ceraAnel
+  fill: color-mix(in srgb, var(--cor-selo) 80%, #fff)
+
+.ceraMiolo
+  fill: color-mix(in srgb, var(--cor-selo) 86%, #000)
+
+.ceraBrilho
+  fill: none
+  stroke: rgba(255, 255, 255, .5)
+  stroke-width: 1.8
+  stroke-linecap: round
+
+// cada cópia do selo mostra uma metade, e o corte é em zigue-zague: é por
+// onde a cera racha
+.metadeCima
+  clip-path: polygon(0 0, 100% 0, 100% 52%, 84% 46%, 68% 56%, 52% 47%, 36% 56%, 18% 47%, 0 54%)
+
+.metadeBaixo
+  clip-path: polygon(0 54%, 18% 47%, 36% 56%, 52% 47%, 68% 56%, 84% 46%, 100% 52%, 100% 100%, 0 100%)
+
+// a metade de cima mora num invólucro do tamanho da aba e gira com ela,
+// no mesmo eixo e no mesmo tempo. Virada, ela fica do lado de FORA da aba,
+// que é o lado que não se vê
+.seloAba
+  position: absolute
+  inset: 0 0 auto
+  z-index: 5
+  height: 50%
+  transform-origin: top
+  transform: perspective(500px) rotateX(0)
+  transition: transform .5s cubic-bezier(.3, .7, .3, 1) .18s
+  backface-visibility: hidden
+  -webkit-backface-visibility: hidden
+  pointer-events: none
+
+  .selo
+    top: 100%
 
 // o selo tem a cor da raridade que dá nome ao envelope; o comum, cinza
 .seloComum
@@ -124,11 +187,18 @@ button.envelope
 .seloLendario
   --cor-selo: var(--raridade-lendaria)
 
-// aberto: a cera estala e some, e a aba gira para trás, por trás da carta
+// aberto: a cera racha, a metade de cima vai com a aba, e a aba gira para
+// trás, por trás da carta. A metade de baixo cai um pouco e entorta
 .aberto
-  .selo
-    transform: scale(1.35) rotate(-14deg)
+  .seloAba
+    z-index: 0
+    transform: perspective(500px) rotateX(180deg)
+
+  .abaSombra
     opacity: 0
+
+  .metadeBaixo
+    transform: translateY(6%) rotate(8deg)
 
   .aba
     z-index: 0

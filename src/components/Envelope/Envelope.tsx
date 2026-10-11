@@ -71,6 +71,46 @@ export function EnvelopeComCartas({ tipo, cartas, fechado = false, retrato, onAb
   )
 }
 
+// a borda da cera não é um círculo: são gotas, como a cera que escorre
+// antes de o carimbo descer. Doze ondas, alternando um pouco para fora e
+// um pouco para dentro
+const BORDA_DA_CERA = (() => {
+  const pontos: string[] = []
+  const n = 12
+  for (let i = 0; i < n * 2; i++) {
+    const a = (i / (n * 2)) * Math.PI * 2
+    const r = i % 2 ? 17.2 : 19.4
+    pontos.push(`${(20 + Math.cos(a) * r).toFixed(2)} ${(20 + Math.sin(a) * r).toFixed(2)}`)
+  }
+  // as pontas são ligadas por curvas, para a borda ondular e não serrilhar
+  let d = `M ${pontos[0]}`
+  for (let i = 1; i <= pontos.length; i++) {
+    const [x, y] = pontos[i % pontos.length].split(' ').map(Number)
+    const [x0, y0] = pontos[i - 1].split(' ').map(Number)
+    d += ` Q ${x0.toFixed(2)} ${y0.toFixed(2)} ${((x0 + x) / 2).toFixed(2)} ${((y0 + y) / 2).toFixed(2)}`
+  }
+  return `${d} Z`
+})()
+
+/** O selo de cera: a borda em gotas, o anel que o carimbo afundou e o
+ *  ícone no meio, em alto-relevo. Desenhado, e não um círculo com
+ *  gradiente: é o que faz ele ler como cera de perto. */
+function Cera({ classe, tipo }: { classe: string; tipo: TipoEnvelope }) {
+  const { Icone } = SELOS[tipo]
+  return (
+    <span className={`${styles.selo} ${classe}`}>
+      <svg viewBox="0 0 40 40" className={styles.cera}>
+        <path d={BORDA_DA_CERA} transform="translate(.6 1.2)" className={styles.ceraSombra} />
+        <path d={BORDA_DA_CERA} className={styles.ceraCorpo} />
+        <circle cx="20" cy="20" r="12.6" className={styles.ceraAnel} />
+        <circle cx="20" cy="20" r="11" className={styles.ceraMiolo} />
+        <path d="M 11.5 15 A 10 10 0 0 1 21 9.6" className={styles.ceraBrilho} />
+      </svg>
+      <Icone />
+    </span>
+  )
+}
+
 /** O envelope desenhado, em pé. Só CSS: costas, bolso da frente com o V,
  *  a aba de cima (que gira para trás ao abrir) e o selo na ponta da aba. */
 export function EnvelopeEmPe({ tipo, aberto = false, largura = 64, className, rotulo, onClick }: {
@@ -82,15 +122,20 @@ export function EnvelopeEmPe({ tipo, aberto = false, largura = 64, className, ro
   rotulo?: string
   onClick?: () => void
 }) {
-  const { Icone, classe } = SELOS[tipo]
+  const { classe } = SELOS[tipo]
   const corpo = (
     <>
       <span className={styles.costas} aria-hidden />
       <span className={styles.bolso} aria-hidden />
+      <span className={styles.abaSombra} aria-hidden />
       <span className={styles.aba} aria-hidden />
-      <span className={`${styles.selo} ${classe}`} aria-hidden>
-        <Icone />
+      {/* o selo é desenhado duas vezes e cada cópia mostra uma metade: a de
+          cima vai com a aba (no mesmo giro dela), a de baixo fica no bolso.
+          Ao abrir, a cera racha no meio, como racharia de verdade */}
+      <span className={styles.seloAba} aria-hidden>
+        <Cera classe={`${classe} ${styles.metadeCima}`} tipo={tipo} />
       </span>
+      <Cera classe={`${classe} ${styles.metadeBaixo}`} tipo={tipo} />
     </>
   )
   const props = {

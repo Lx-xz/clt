@@ -1,0 +1,220 @@
+// a proposta chapada: SVG de cor lisa, no jeito dos baús do Duolingo. Toda
+// peça que se mexe gira ou encolhe em volta de um ponto do QUADRO (160×160),
+// e não da própria caixa: é o `transform-box: view-box`, e é ele que deixa
+// escrever a dobradiça com os números do desenho
+.chapado
+  width: 190px
+  height: 190px
+  overflow: visible
+  animation: respira 2.4s ease-in-out infinite
+
+  *
+    transform-box: view-box
+
+.aberto
+  animation: abre .5s cubic-bezier(.3, 1.6, .5, 1) both
+
+// ---------------------------------------------------------- o brilho
+.brilho
+  opacity: 0
+  transition: opacity .3s ease
+
+.aberto .brilho
+  opacity: 1
+  transition-delay: .3s
+
+.facho
+  transform-origin: 80px 60px
+
+.aberto .facho
+  animation: pulsa 2.6s ease-in-out infinite
+
+.estrela
+  opacity: 0
+  transform: translate(var(--x), var(--y)) scale(0)
+
+.aberto .estrela
+  animation: brilha 1.8s ease-in-out infinite
+
+// a carta: escondida atrás da frente, sobe quando abre
+.premio
+  transition: transform .55s cubic-bezier(.25, 1.4, .4, 1) .35s
+
+.aberto .premio
+  transform: translateY(-44px)
+
+// ---------------------------------------------------------- envelope
+.abaEnvelope
+  transform-origin: 80px 44px
+  transition: transform .2s ease-in
+
+.abaAbertaEnv
+  transform-origin: 80px 44px
+  transform: scaleY(0)
+  transition: transform .3s cubic-bezier(.3, 1.5, .5, 1) .18s
+
+.someAoAbrir
+  transition: opacity .1s ease
+
+.ceraQueFica
+  transform-origin: 80px 96px
+  transition: transform .3s ease .1s
+
+.envelope.aberto
+  .abaEnvelope
+    transform: scaleY(0)
+
+  .abaAbertaEnv
+    transform: none
+
+  .someAoAbrir
+    opacity: 0
+
+  .ceraQueFica
+    transform: translateY(4px) rotate(10deg)
+
+  .premio
+    transform: translateY(-56px)
+
+// ------------------------------------------------------------ pacote
+// a aba fechada encolhe até a dobra de fora, e a aberta cresce dela depois
+.abaFechada,
+.abaAberta,
+.lacoFechado
+  transition: transform .22s ease-in, opacity .1s linear
+
+.abaFechadaE,
+.abaAbertaE
+  transform-origin: 29px 57px
+
+.abaFechadaD,
+.abaAbertaD
+  transform-origin: 131px 57px
+
+.lacoFechado
+  transform-origin: 80px 56px
+
+.abaAberta
+  opacity: 0
+  transform: scaleX(0)
+
+.pacote.aberto
+  .abaFechada
+    transform: scaleX(0)
+
+  .lacoFechado
+    transform: scale(0)
+
+  .abaAberta
+    opacity: 1
+    transform: none
+    transition: transform .35s cubic-bezier(.3, 1.6, .5, 1) .2s, opacity .05s linear .2s
+
+// ------------------------------------------------------------ maleta
+.costasDaMaleta
+  opacity: 0
+  transform-origin: 80px 60px
+  transform: scaleY(0)
+  transition: transform .4s cubic-bezier(.3, 1.5, .5, 1) .15s, opacity .05s linear .15s
+
+.topoDaMaleta
+  transition: opacity .15s ease
+
+.beiradaDaMaleta
+  opacity: 0
+  transition: opacity .15s ease
+
+.maleta.aberto
+  .costasDaMaleta
+    opacity: 1
+    transform: none
+
+  .topoDaMaleta
+    opacity: 0
+
+  .beiradaDaMaleta
+    opacity: 1
+
+// ------------------------------------------------------------- cofre
+// antes de abrir, o segredo gira e a manivela vira; só então a porta vai
+.segredo
+  transform-origin: 68px 85px
+  transition: transform .6s cubic-bezier(.4, 0, .2, 1)
+
+.manivela
+  transform-origin: 101.5px 85px
+  transition: transform .25s ease .5s
+
+.portaFechada
+  transform-origin: 33px 85px
+  transition: transform .2s ease-in .75s
+
+.portaAberta
+  opacity: 0
+  transform-origin: 33px 85px
+  transform: scaleX(0)
+  transition: transform .35s cubic-bezier(.3, 1.5, .5, 1) .95s, opacity .05s linear .95s
+
+.dentroDoCofre
+  opacity: 0
+  transition: opacity .05s linear .75s
+
+.cofre .brilho
+  transition-delay: 1s
+
+.cofre.aberto
+  .segredo
+    transform: rotate(-540deg)
+
+  .manivela
+    transform: rotate(90deg)
+
+  .portaFechada
+    transform: scaleX(0)
+
+  .portaAberta
+    opacity: 1
+    transform: none
+
+  .dentroDoCofre
+    opacity: 1
+
+  .brilho
+    transition-delay: 1.05s
+
+// -------------------------------------------------------- animações
+@keyframes respira
+  0%, 100%
+    transform: scale(1)
+  50%
+    transform: scale(1.03, .98)
+
+@keyframes abre
+  from
+    transform: scale(.92, 1.06)
+  to
+    transform: none
+
+@keyframes pulsa
+  0%, 100%
+    opacity: .7
+  50%
+    opacity: 1
+
+@keyframes brilha
+  0%, 100%
+    opacity: 0
+    transform: translate(var(--x), var(--y)) scale(0)
+  40%, 60%
+    opacity: 1
+    transform: translate(var(--x), var(--y)) scale(var(--t))
+
+@media (prefers-reduced-motion: reduce)
+  .chapado,
+  .aberto .facho,
+  .aberto .estrela
+    animation: none
+
+  .chapado *
+    transition-duration: 0s !important
+    transition-delay: 0s !important

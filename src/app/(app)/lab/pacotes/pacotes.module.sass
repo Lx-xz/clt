@@ -11,6 +11,10 @@
   margin: 0
   font-size: clamp(24px, 5vw, 32px)
 
+.subtitulo
+  margin: 34px 0 0
+  font-size: clamp(20px, 4vw, 24px)
+
 .intro,
 .nota
   max-width: 66ch
@@ -241,9 +245,8 @@
 // separa), e o laço vai preso na aba da esquerda
 .recheio
   position: absolute
-  left: 2px
-  top: 2px
-  transform-style: preserve-3d
+  left: 0
+  top: 0
 
 .barbante::after
   content: ""
@@ -313,62 +316,58 @@
 
 // o laço é dois: cada metade fica de pé na borda de dentro de uma aba,
 // presa pela base e levantada 90° para fora do papel. A volta aponta para
-// FORA do nó (a ponta presa é a do meio) e a perna cai para o mesmo lado;
-// juntas, as duas metades fecham o nó no centro da tampa. Ao abrir, cada aba
-// leva a sua, e o laço se divide no meio
+// FORA do nó (a ponta presa é a do meio); juntas, as duas metades fecham o
+// nó no centro da tampa. Ao abrir, cada aba leva a sua, e o laço se divide
+// no meio. Nada dele pode passar da base, nem girado: o que passa fura a
+// aba e aparece do outro lado — por isso ele também sobe meio pixel
 .laco
   position: absolute
   top: calc(50% - 22px)
   width: 25px
   height: 22px
   transform-origin: 50% 100%
-  transform: rotateX(-90deg)
+  transform: translateZ(.5px) rotateX(-90deg)
 
   // a volta
   &::before
     content: ""
     position: absolute
-    bottom: 4px
-    width: 22px
+    bottom: 2px
+    width: 21px
     height: 17px
     border: 5px solid #efe2c4
     box-sizing: border-box
 
-  // a metade do nó, e a perna caindo
+  // a metade do nó
   &::after
     content: ""
     position: absolute
     bottom: 0
     width: 6px
-    height: 11px
+    height: 10px
     background: #e2d2ae
-    border-radius: 2px
 
 .lacoE
   left: calc(100% - 25px)
 
   &::before
     right: 2px
-    border-radius: 60% 40% 0 60%
-    transform-origin: 100% 100%
-    transform: rotate(-12deg)
+    border-radius: 60% 30% 4px 60%
 
   &::after
     right: 0
-    box-shadow: -6px 3px 0 -2px #efe2c4
+    border-radius: 3px 0 0 3px
 
 .lacoD
   left: 0
 
   &::before
     left: 2px
-    border-radius: 40% 60% 60% 0
-    transform-origin: 0 100%
-    transform: rotate(12deg)
+    border-radius: 30% 60% 60% 4px
 
   &::after
     left: 0
-    box-shadow: 6px 3px 0 -2px #efe2c4
+    border-radius: 0 3px 3px 0
 
 .aberto
   .tampaE
