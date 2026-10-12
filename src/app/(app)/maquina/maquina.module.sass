@@ -382,11 +382,28 @@
     min-height: 0
     padding-bottom: 4px
 
+  // com a prateleira da abóbora são três: tudo encolhe pela altura da
+  // tela, senão a máquina passava dela num celular baixo
   .produto
-    min-height: clamp(70px, 14dvh, 108px)
+    min-height: clamp(52px, 10.5dvh, 108px)
 
   .cartaNaVaga
-    --carta-h: clamp(70px, 14dvh, 104px)
+    --carta-h: clamp(58px, 11dvh, 104px)
+
+  .item > span:first-child
+    width: clamp(48px, 10dvh, 84px) !important
+    height: clamp(48px, 10dvh, 84px) !important
+
+    svg
+      width: 100%
+      height: 100%
+
+  .aboboraNaVaga
+    width: clamp(52px, 10dvh, 94px) !important
+    height: clamp(52px, 10dvh, 94px) !important
+
+  .letreiro
+    display: none
     --carta-w: calc(var(--carta-h) * .66)
     --carta-arte: calc(var(--carta-h) * .38)
 

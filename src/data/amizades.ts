@@ -2,6 +2,8 @@
 
 import { faltaFuncao } from './jogadores'
 import { lerAvatar, type Avatar } from './avatar'
+import { lerColecao } from '@/game/colecao'
+import type { Collection } from '@/game/types'
 import { supabase } from './supabase'
 
 /**
@@ -86,4 +88,19 @@ export async function pedidosDeAmizade(): Promise<Pedido[]> {
     ...p,
     avatar: lerAvatar(p.avatar),
   }))
+}
+
+/**
+ * A coleção de um AMIGO (v0.34): os baralhos e as cartas dele, para o
+ * perfil. Null quando não são amigos (quem decide é o banco,
+ * `colecao_de_amigo`), quando ele ainda não tem save ou quando o banco não
+ * tem a função.
+ */
+export async function colecaoDeAmigo(nick: string): Promise<Collection | null> {
+  const { data, error } = await banco().rpc('colecao_de_amigo', { p_nick: nick })
+  if (error) {
+    if (faltaFuncao(error)) return null
+    throw new Error(error.message)
+  }
+  return data ? lerColecao(data) : null
 }

@@ -43,13 +43,13 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
 | `/ranking` | Placar público, no jeito do Duolingo: medalha nas três primeiras, avatar redondo, nick e V/D à direita. A linha inteira leva ao perfil; não há mais "abrir para ver mais" |
-| `/perfil` | O seu: avatar, rank, a ÚLTIMA partida (recibo resumido; "ver todas" leva a `/meus-jogos`), as conquistas em selos ("ver todas" num popup) e amigos. Nome, e-mail, pontos e Sair NÃO moram aqui: moram em Configurações |
+| `/perfil` | O seu. Desde a v0.34 o seu e o dos outros são o MESMO componente (`components/Perfil`): capa, nick, "desde", o placar (posição, vitórias, derrotas, melhor saldo) e as abas Resumo (última partida, selos das conquistas, amigos), Conquistas (era popup), Baralhos e Cartas. Nome, e-mail, pontos e Sair NÃO moram aqui: moram em Configurações |
 | `/perfil/editar` | O editor do avatar |
-| `/jogador?nick=` | O perfil de outra pessoa: avatar, placar, o botão de amizade, conquistas e partidas (que abrem o replay). **Sem nome, e-mail ou pontos** |
+| `/jogador?nick=` | O perfil de outra pessoa, o mesmo componente do seu, com o botão de amizade. Quem NÃO é amigo vê só o resumo; o AMIGO vê também os baralhos e as cartas, e pode copiar um baralho dele para o seu (por cima do equipado, ou num baralho novo; só entra o que a pessoa tem, `copiarBaralho`). Quem decide é o banco (`colecao_de_amigo` confere a amizade e só devolve carta: nada de saldo, recompensa fechada ou máquina). **Sem nome, e-mail ou pontos** |
 | `/meus-jogos` · `?nick=` | Todas as partidas, como recibos resumidos, com filtro por desfecho e ordem. Sem `nick` é a sua (a única que mostra as de "pediu demissão") |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
-| `/maquina` | A máquina de vendas (v0.29): três cartas e três itens por dia, comprados com tokens, SEM texto nenhum na página (v0.33: só a máquina, que cabe inteira no celular sem rolar). **Só admin por enquanto** (o link na barra e o `GuardaAdmin` no layout) |
+| `/maquina` | A máquina de vendas (v0.29): três cartas e três itens por dia, comprados com tokens, SEM texto nenhum na página (v0.33: só a máquina, que cabe inteira no celular sem rolar). De TODO MUNDO desde a v0.34. Na temporada de Halloween (`temporadaDeHalloween`: outubro e 1–2 de novembro) ganha a prateleira C, a abóbora: `PRECO_DA_ABOBORA` tokens, a primeira grátis (`Collection.aboboraGratis`), e ela traz um item de Halloween que a pessoa NÃO tem — nem prometido numa recompensa fechada (`halloweenQueFalta`). Comprada, entra fechada na fila de recompensas e abre ao tocar na boca. No celular, com três prateleiras, os itens encolhem pela altura da tela (`dvh`) e o letreiro some. O início mostra o aviso "O Halloween chegou ao escritório" na temporada, e o aviso inteiro é o link para a máquina |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
 | `/lab` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa com a animação do jogo, e o que sai vai para a conta do admin) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
 
@@ -323,8 +323,12 @@ quando as 13 desbloqueáveis acabavam. Hoje (`src/game/colecao.ts`):
 
 - `Collection = { tenho, baralhos, ativo }`: cópias possuídas por carta, até
   `MAXIMO_DE_BARALHOS` (3) baralhos com nome, e qual está equipado.
-- **O teto de cópias é da raridade** (`COPIAS_POR_RARIDADE`: comum 4, incomum
-  3, rara 2, épica 1, lendária 1), nunca abaixo das cópias iniciais da carta.
+- **O teto de cópias é da raridade** (`COPIAS_POR_RARIDADE`, desde a v0.34
+  comum 5, incomum 4, rara 3, épica 2, lendária 1, a pedido do autor; eram
+  4/3/2/1/1), nunca abaixo das cópias iniciais da carta. É também o máximo
+  da carta num baralho, porque não se põe mais do que se tem. As contas de
+  "dias para completar a coleção" abaixo são de antes: as 152 cópias
+  viraram 198.
 - **Cinco raridades desde a v0.18**: comum, incomum, rara, `epica`, `lendaria`
   (os ids sem acento moram na coluna; o nome é `NOMES_DE_RARIDADE`). Elas
   foram ACRESCENTADAS em cima, e não renomeadas: trocar "incomum → rara, rara
@@ -1946,6 +1950,20 @@ e a um bot diferente — não compare os dois.
   ou evento no código, peça ao autor o texto do "Copiar para levar ao
   código"** e traga o `cards.ts`/`events.ts` até o banco: o número que vale
   é o dele.
+- **Rodar o `schema.sql` da v0.34** (as colunas novas de `conquistas` —
+  `oculta`, `tokens`, `grupo`, `nivel` —, as conquistas novas e
+  `colecao_de_amigo`). Sem ele as conquistas aparecem como antes, sem níveis
+  nem tokens, e a aba de baralhos do amigo não abre.
+- **As conquistas (v0.34):** algumas são OCULTAS (`minhas_conquistas` as
+  devolve sem nome nem descrição enquanto não são ganhas — quem esconde é o
+  banco), algumas sobem de NÍVEL (linhas com o mesmo `grupo`, `nivel` 1 a 3:
+  bronze, prata e ouro; o `colecionador` antigo virou o bronze do grupo
+  dele, e quem o tinha continua com ele), e todas pagam TOKENS. O saldo
+  mora na coleção, então quem paga é o site: `pagarConquistas` credita as
+  ganhas que não estão em `Collection.conquistasPagas` — na mesa, depois de
+  conferir, e no perfil, ao abrir a lista (é o que paga, de uma vez, quem
+  ganhou antes de valerem token). O componente `Conquistas` junta o grupo
+  numa entrada só, com os três metais.
 - **Rodar o `schema.sql` da v0.33** (`admin_versoes`). Sem ele as caixas
   de versões do lab mostram o aviso de que a função falta.
 - **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o

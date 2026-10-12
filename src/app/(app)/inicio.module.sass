@@ -40,6 +40,41 @@
   font-weight: 800
   letter-spacing: .02em
 
+// o aviso da temporada de Halloween: noite e abóbora, cores próprias como as
+// da máquina — é um cartaz colado no escritório, não um pedaço do tema
+.banner
+  display: flex
+  align-items: center
+  gap: 14px
+  padding: 12px 16px
+  background: linear-gradient(100deg, #2b2140, #3d2a4f)
+  border-radius: 12px
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25)
+  color: #fbe9d0
+  text-decoration: none
+  transition: transform .12s ease
+
+  &:hover
+    transform: translateY(-1px)
+
+  svg:last-child
+    margin-left: auto
+    color: #f29b3c
+
+.bannerTexto
+  display: flex
+  flex-direction: column
+  gap: 2px
+  line-height: 1.25
+
+  b
+    color: #ffb35c
+    font-size: 16px
+
+  span
+    font-size: 13px
+    opacity: .85
+
 .aviso
   margin: 0
   padding: 10px 14px

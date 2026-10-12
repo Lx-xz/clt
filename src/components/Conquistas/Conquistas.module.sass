@@ -88,3 +88,108 @@
   overflow: hidden
   clip-path: inset(50%)
   white-space: nowrap
+
+// ------------------------------------------------------- a aba (v0.34)
+// os metais dos níveis: cores próprias, como as medalhas do ranking
+.bronze
+  --metal: #c07a45
+.prata
+  --metal: #9aa6b2
+.ouro
+  --metal: #d9a83a
+
+.aba
+  display: flex
+  flex-direction: column
+  gap: 14px
+
+.resumo
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 14px
+
+  b
+    color: var(--tinta)
+    font-size: 18px
+
+.tokens,
+.paga
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  font-family: var(--mono)
+
+.paga
+  flex: none
+  margin-left: auto
+  padding: 2px 8px
+  background: var(--papel-baixo)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.niveis
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.nivelCartao
+  display: flex
+  align-items: center
+  gap: 12px
+  padding: 12px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-left: 4px solid var(--metal, var(--linha))
+  border-radius: 8px
+
+.nivelIcone
+  flex: none
+  display: grid
+  place-items: center
+  width: 40px
+  height: 40px
+  border-radius: 50%
+  background: var(--metal, var(--papel-baixo))
+  color: var(--papel-alto)
+
+.nivelCartao:not(.bronze):not(.prata):not(.ouro) .nivelIcone
+  color: var(--tinta-fraca)
+
+.metal
+  margin-left: 6px
+  color: var(--metal)
+  font-size: 11px
+  font-style: normal
+  letter-spacing: .06em
+  text-transform: uppercase
+
+.medalhas
+  display: flex
+  flex: none
+  gap: 3px
+
+.medalha
+  width: 12px
+  height: 12px
+  border: 2px solid var(--metal)
+  border-radius: 50%
+  opacity: .45
+
+.acesa
+  background: var(--metal)
+  opacity: 1
+
+// a oculta ainda não ganha: o ponto de interrogação, e nada mais
+.oculta
+  border-style: dotted
+
+// no resumo, o selo de nível ganha a cor do metal
+.ganhaRedondo.bronze,
+.ganhaRedondo.prata,
+.ganhaRedondo.ouro
+  border-color: var(--metal)
+  background: var(--metal)

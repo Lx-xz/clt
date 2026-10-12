@@ -54,17 +54,19 @@ export function comTokens(c: Collection, n: number): Collection {
 }
 
 /** O que uma vaga da máquina guarda. */
-export type Vaga = { tipo: 'carta'; id: CardId } | { tipo: 'cosmetico'; id: string }
+export type Vaga = { tipo: 'carta'; id: CardId } | { tipo: 'cosmetico'; id: string } | { tipo: 'abobora'; id: 'abobora' }
 
 export function chaveDaVaga(v: Vaga): string {
   return `${v.tipo}:${v.id}`
 }
 
 export function raridadeDaVaga(v: Vaga): Raridade {
+  if (v.tipo === 'abobora') return 'epica'
   return v.tipo === 'carta' ? (getCard(v.id).raridade ?? 'comum') : (cosmeticoPorId(v.id)?.raridade ?? 'comum')
 }
 
-export function precoDaVaga(v: Vaga): number {
+export function precoDaVaga(v: Vaga, c?: Collection): number {
+  if (v.tipo === 'abobora') return c ? precoDaAbobora(c) : PRECO_DA_ABOBORA
   return PRECO_NA_MAQUINA[raridadeDaVaga(v)]
 }
 
@@ -113,6 +115,7 @@ export function maquinaDeHoje(c: Collection, dia: string, sorte: () => number = 
  * português, para a máquina escrever no visor.
  */
 export function comprar(c: Collection, v: Vaga): Collection | string {
+  if (v.tipo === 'abobora') return comprarAbobora(c)
   const m = c.maquina
   const naVitrine = v.tipo === 'carta' ? m?.cartas.includes(v.id) : m?.cosmeticos.includes(v.id)
   if (!m || !naVitrine) return 'Fora da máquina hoje'
@@ -128,4 +131,72 @@ export function comprar(c: Collection, v: Vaga): Collection | string {
     depois = { ...c, cosmeticos: [...c.cosmeticos, v.id] }
   }
   return { ...depois, tokens: saldo(c) - preco, maquina: { ...m, vendidos: [...m.vendidos, chaveDaVaga(v)] } }
+}
+
+// ------------------------------------------------------------- a abóbora
+
+/** O preço da abóbora na máquina (v0.34). Cara de propósito: ela GARANTE um
+ *  item de Halloween que a pessoa ainda não tem, e o item avulso mais raro
+ *  custa 70. */
+export const PRECO_DA_ABOBORA = 40
+
+/**
+ * A temporada de Halloween: outubro inteiro e os dois primeiros dias de
+ * novembro. Fora dela a máquina não vende abóbora e o início não mostra o
+ * aviso. `dia` é a data LOCAL (`hoje()`), como a das missões.
+ */
+export function temporadaDeHalloween(dia: string): boolean {
+  const [, mes, d] = dia.split('-').map(Number)
+  return mes === 10 || (mes === 11 && d <= 2)
+}
+
+/** Os itens de Halloween que a pessoa ainda não tem: é deles que a abóbora
+ *  da máquina sorteia, e por isso ela nunca repete. */
+export function halloweenQueFalta(c: Collection): string[] {
+  // o que já está prometido numa recompensa fechada também conta como tido:
+  // senão a segunda abóbora, comprada antes de abrir a primeira, repetiria
+  const prometidos = c.envelopes.flatMap((e) => e.cosmeticos ?? [])
+  return COSMETICOS.filter((x) => x.tema === 'halloween' && !c.cosmeticos.includes(x.id) && !prometidos.includes(x.id)).map((x) => x.id)
+}
+
+/** Quanto a abóbora custa para esta pessoa agora: zero na primeira. */
+export function precoDaAbobora(c: Collection): number {
+  return c.aboboraGratis ? PRECO_DA_ABOBORA : 0
+}
+
+/**
+ * Compra a abóbora: ela entra FECHADA na frente da fila de recompensas, já
+ * com o item sorteado dentro (um que a pessoa não tem), e quem compra a abre
+ * na hora. Devolve a coleção nova ou o motivo, como `comprar`.
+ */
+export function comprarAbobora(c: Collection, sorte: () => number = Math.random): Collection | string {
+  const falta = halloweenQueFalta(c)
+  if (!falta.length) return 'Você já tem toda a coleção'
+  const preco = precoDaAbobora(c)
+  if (saldo(c) < preco) return 'Saldo insuficiente'
+  const item = falta[Math.floor(sorte() * falta.length)]
+  return {
+    ...c,
+    tokens: saldo(c) - preco,
+    aboboraGratis: true,
+    envelopes: [{ tipo: 'abobora', id: `maquina:${Date.now()}`, cartas: [], cosmeticos: [item] }, ...c.envelopes],
+  }
+}
+
+// ---------------------------------------------------------- as conquistas
+
+/**
+ * Credita os tokens das conquistas ganhas que ainda não pagaram. Quem confere
+ * a conquista é o banco; o saldo mora na coleção, e `conquistasPagas` é o que
+ * impede de pagar duas vezes. Quem ganhou conquista antes de elas valerem
+ * token recebe tudo de uma vez, na primeira leitura.
+ */
+export function creditarConquistas(c: Collection, ganhas: { id: string; tokens: number }[]): Collection {
+  const pagas = new Set(c.conquistasPagas ?? [])
+  const novas = ganhas.filter((g) => !pagas.has(g.id))
+  if (!novas.length) return c
+  return {
+    ...comTokens(c, novas.reduce((t, g) => t + (g.tokens || 0), 0)),
+    conquistasPagas: [...pagas, ...novas.map((g) => g.id)],
+  }
 }

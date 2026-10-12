@@ -224,19 +224,41 @@ create table if not exists public.conquistas_do_jogador (
   primary key (player_id, conquista)
 );
 
+-- v0.34: conquista OCULTA (o nome e o como-se-ganha só aparecem depois de
+-- ganha), conquista em NÍVEIS (o mesmo `grupo`, com `nivel` 1, 2 e 3 —
+-- bronze, prata e ouro), e os TOKENS que cada uma dá. Os tokens são pagos
+-- no site, na coleção (`conquistasPagas`), porque é lá que o saldo mora
+alter table public.conquistas add column if not exists oculta boolean not null default false;
+alter table public.conquistas add column if not exists tokens smallint not null default 10;
+alter table public.conquistas add column if not exists grupo  text;
+alter table public.conquistas add column if not exists nivel  smallint;
+
 -- a lista em si: rodar o arquivo de novo atualiza o texto sem perder quem
--- já ganhou
-insert into public.conquistas (id, nome, descricao, icone, ordem) values
-  ('primeira-semana', 'Sobreviveu à primeira semana', 'Chegar à semana 2 de algum mês.', 'calendar', 1),
-  ('mes-fechado',     'Mês fechado',                  'Chegar ao fim das quatro semanas empregado e com as contas pagas.', 'trophy', 2),
-  ('ficha-limpa',     'Ficha limpa',                  'Fechar um mês sem nenhuma advertência.', 'shield', 3),
-  ('zen',             'Zen',                          'Fechar um mês com o estresse em 3 ou menos.', 'leaf', 4),
-  ('embalo',          'No embalo',                    'Jogar 4 cartas seguidas da mesma classe num dia.', 'flame', 5),
-  ('rico',            'Pé-de-meia',                   'Terminar uma partida com R$ 1.000 ou mais.', 'piggy', 6),
-  ('segunda-feira',   'Nem chegou a terça',           'Ter um burnout logo no primeiro dia.', 'skull', 7),
-  ('colecionador',    'Colecionador',                 'Ter 12 cartas diferentes na coleção.', 'layers', 8)
+-- já ganhou. O `colecionador` antigo virou o bronze do grupo: quem já o
+-- tinha continua com ele
+insert into public.conquistas (id, nome, descricao, icone, ordem, oculta, tokens, grupo, nivel) values
+  ('primeira-semana',    'Sobreviveu à primeira semana', 'Chegar à semana 2 de algum mês.', 'calendar', 1, false, 10, null, null),
+  ('mes-fechado',        'Mês fechado',                  'Chegar ao fim das quatro semanas empregado e com as contas pagas.', 'trophy', 2, false, 20, null, null),
+  ('ficha-limpa',        'Ficha limpa',                  'Fechar um mês sem nenhuma advertência.', 'shield', 3, false, 25, null, null),
+  ('zen',                'Zen',                          'Fechar um mês com o estresse em 3 ou menos.', 'leaf', 4, false, 25, null, null),
+  ('embalo',             'No embalo',                    'Jogar 4 cartas seguidas da mesma classe num dia.', 'flame', 5, false, 15, null, null),
+  ('rico',               'Pé-de-meia',                   'Terminar uma partida com R$ 1.000 ou mais.', 'piggy', 6, false, 20, null, null),
+  ('colecionador',       'Colecionador',                 'Ter 12 cartas diferentes na coleção.', 'layers', 10, false, 10, 'colecionador', 1),
+  ('colecionador-prata', 'Colecionador',                 'Ter 24 cartas diferentes na coleção.', 'layers', 11, false, 25, 'colecionador', 2),
+  ('colecionador-ouro',  'Colecionador',                 'Ter 40 cartas diferentes na coleção.', 'layers', 12, false, 50, 'colecionador', 3),
+  ('veterano',           'Veterano',                     'Terminar 10 partidas.', 'calendar', 13, false, 10, 'veterano', 1),
+  ('veterano-prata',     'Veterano',                     'Terminar 50 partidas.', 'calendar', 14, false, 25, 'veterano', 2),
+  ('veterano-ouro',      'Veterano',                     'Terminar 150 partidas.', 'calendar', 15, false, 50, 'veterano', 3),
+  ('funcionario',        'Funcionário do mês',           'Fechar 3 meses.', 'trophy', 16, false, 10, 'funcionario', 1),
+  ('funcionario-prata',  'Funcionário do mês',           'Fechar 10 meses.', 'trophy', 17, false, 25, 'funcionario', 2),
+  ('funcionario-ouro',   'Funcionário do mês',           'Fechar 25 meses.', 'trophy', 18, false, 50, 'funcionario', 3),
+  ('segunda-feira',      'Nem chegou a terça',           'Ter um burnout logo no primeiro dia.', 'skull', 30, true, 20, null, null),
+  ('despejado',          'Despejado',                    'Não conseguir pagar as contas de sexta.', 'piggy', 31, true, 20, null, null),
+  ('justa-causa',        'Justa causa',                  'Ser demitido com três advertências.', 'skull', 32, true, 20, null, null),
+  ('por-um-fio',         'Por um fio',                   'Fechar um mês com o estresse em 9.', 'flame', 33, true, 30, null, null)
 on conflict (id) do update
-  set nome = excluded.nome, descricao = excluded.descricao, icone = excluded.icone, ordem = excluded.ordem;
+  set nome = excluded.nome, descricao = excluded.descricao, icone = excluded.icone, ordem = excluded.ordem,
+      oculta = excluded.oculta, tokens = excluded.tokens, grupo = excluded.grupo, nivel = excluded.nivel;
 
 -- ------------------------------------------------------------- o catálogo
 -- As cartas saíram do código e vieram para cá. O que torna isso seguro é que
@@ -572,6 +594,7 @@ drop function if exists public.conferir_conquistas(uuid);
 drop function if exists public.minhas_conquistas(uuid);
 drop function if exists public.conquistas_publicas(text);
 drop function if exists public.conquistas_da_run(bigint);
+drop function if exists public.colecao_de_amigo(text);
 
 -- O perfil nasce junto com a conta. Fazer isso por gatilho, e não pelo
 -- site, garante que nunca exista conta sem perfil — nem se o navegador
@@ -2136,10 +2159,31 @@ begin
     union all
     select 'segunda-feira', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'burnout' and r.day = 1 order by r.ended_at limit 1)
     union all
+    -- as que contam partidas: a run que fechou a conta é a de número N
+    select 'veterano', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 9 limit 1)
+    union all
+    select 'veterano-prata', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 49 limit 1)
+    union all
+    select 'veterano-ouro', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 149 limit 1)
+    union all
+    select 'funcionario', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 2 limit 1)
+    union all
+    select 'funcionario-prata', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 9 limit 1)
+    union all
+    select 'funcionario-ouro', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 24 limit 1)
+    union all
+    -- as ocultas
+    select 'despejado', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'despejo' order by r.ended_at limit 1)
+    union all
+    select 'justa-causa', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'demissao' order by r.ended_at limit 1)
+    union all
+    select 'por-um-fio', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria'
+                          and (r.details -> 'history' -> -1 ->> 'stress')::int >= 9 order by r.ended_at limit 1)
+    union all
     -- da coleção, não de uma run: o run_id fica nulo. Lê os dois formatos:
     -- o antigo (`equipped`/`unequipped`) e o de cópias da v0.15 (`tenho`),
     -- que esta conta não via — e por isso ninguém ganhava a conquista
-    select 'colecionador', case when (
+    select n.c, case when (
       select count(distinct t.x) from public.saves s,
         lateral (
           select jsonb_array_elements_text(coalesce(s.collection -> 'equipped', '[]') || coalesce(s.collection -> 'unequipped', '[]'))
@@ -2147,7 +2191,8 @@ begin
           select jsonb_object_keys(case when jsonb_typeof(s.collection -> 'tenho') = 'object' then s.collection -> 'tenho' else '{}'::jsonb end)
         ) as t(x)
       where s.player_id = p_player_id
-    ) >= 12 then 0::bigint end
+    ) >= n.meta then 0::bigint end
+    from (values ('colecionador', 12), ('colecionador-prata', 24), ('colecionador-ouro', 40)) as n(c, meta)
   )
   insert into public.conquistas_do_jogador (player_id, conquista, run_id)
   select p_player_id, c.c, nullif(c.run, 0)
@@ -2162,14 +2207,21 @@ grant execute on function public.conferir_conquistas(uuid) to anon, authenticate
 
 -- todas as conquistas, com a data para as que este jogador já tem — a tela
 -- mostra as que faltam apagadas, porque saber o que existe é metade da graça
+-- a OCULTA que ainda não foi ganha sai sem nome e sem como-se-ganha: é o
+-- banco que esconde, e não a tela
 create function public.minhas_conquistas(p_player_id uuid)
-returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz)
+returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz,
+               oculta boolean, tokens smallint, grupo text, nivel smallint)
 language sql
 security definer
 stable
 set search_path = public, pg_temp
 as $$
-  select c.id, c.nome, c.descricao, c.icone, j.ganha_em
+  select c.id,
+         case when c.oculta and j.ganha_em is null then 'Conquista oculta' else c.nome end,
+         case when c.oculta and j.ganha_em is null then 'Só se descobre ganhando.' else c.descricao end,
+         case when c.oculta and j.ganha_em is null then 'oculta' else c.icone end,
+         j.ganha_em, c.oculta, c.tokens, c.grupo, c.nivel
   from public.conquistas c
   left join public.conquistas_do_jogador j on j.conquista = c.id and j.player_id = p_player_id
   order by c.ordem;
@@ -2179,13 +2231,14 @@ grant execute on function public.minhas_conquistas(uuid) to anon, authenticated;
 
 -- as de outra pessoa: só as ganhas
 create function public.conquistas_publicas(p_nick text)
-returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz)
+returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz,
+               oculta boolean, tokens smallint, grupo text, nivel smallint)
 language sql
 security definer
 stable
 set search_path = public, pg_temp
 as $$
-  select c.id, c.nome, c.descricao, c.icone, j.ganha_em
+  select c.id, c.nome, c.descricao, c.icone, j.ganha_em, c.oculta, c.tokens, c.grupo, c.nivel
   from public.conquistas_do_jogador j
   join public.conquistas c on c.id = j.conquista
   join public.players p on p.id = j.player_id
@@ -2200,13 +2253,14 @@ grant execute on function public.conquistas_publicas(text) to anon, authenticate
 -- o que esta função acrescenta é ler por ela. Abre o mesmo que o replay
 -- público abre: run guardada, e a do abandono só não tem conquista nenhuma
 create function public.conquistas_da_run(p_run_id bigint)
-returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz)
+returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz,
+               oculta boolean, tokens smallint, grupo text, nivel smallint)
 language sql
 security definer
 stable
 set search_path = public, pg_temp
 as $$
-  select c.id, c.nome, c.descricao, c.icone, j.ganha_em
+  select c.id, c.nome, c.descricao, c.icone, j.ganha_em, c.oculta, c.tokens, c.grupo, c.nivel
   from public.conquistas_do_jogador j
   join public.conquistas c on c.id = j.conquista
   join public.runs r on r.id = j.run_id
@@ -2215,6 +2269,54 @@ as $$
 $$;
 
 grant execute on function public.conquistas_da_run(bigint) to anon, authenticated;
+
+-- ------------------------------------------------------ a coleção do amigo
+-- O perfil de um AMIGO mostra os baralhos e as cartas dele (v0.34), e quem
+-- não é amigo vê só o resumo. Quem decide é aqui: a amizade aceita, nos dois
+-- sentidos, ou a própria pessoa. Sai só o que é carta — o que tem, os
+-- baralhos e qual está equipado —, e nunca o saldo, as recompensas fechadas
+-- ou a máquina, que não são da conta de ninguém
+create function public.colecao_de_amigo(p_nick text)
+returns jsonb
+language plpgsql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+declare
+  v_eu    uuid := auth.uid();
+  v_outro uuid;
+  v_col   jsonb;
+begin
+  if v_eu is null then
+    return null;
+  end if;
+  select id into v_outro from public.players where nick = lower(trim(p_nick));
+  if v_outro is null then
+    return null;
+  end if;
+  if v_outro <> v_eu and not exists (
+    select 1 from public.amizades a
+    where a.estado = 'aceita'
+      and ((a.de = v_eu and a.para = v_outro) or (a.de = v_outro and a.para = v_eu))
+  ) then
+    return null;
+  end if;
+  select s.collection into v_col from public.saves s where s.player_id = v_outro;
+  if v_col is null then
+    return null;
+  end if;
+  return jsonb_build_object(
+    'tenho', v_col -> 'tenho',
+    'baralhos', v_col -> 'baralhos',
+    'ativo', v_col -> 'ativo',
+    'equipped', v_col -> 'equipped',
+    'unequipped', v_col -> 'unequipped'
+  );
+end;
+$$;
+
+grant execute on function public.colecao_de_amigo(text) to authenticated;
 
 -- ------------------------------------------------------------------ admin
 -- Não existe tela para promover ninguém, e é de propósito: admin se dá aqui,

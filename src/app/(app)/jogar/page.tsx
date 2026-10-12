@@ -42,7 +42,7 @@ import {
 } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
-import { conferirConquistas, minhasConquistas, type Conquista } from '@/data/conquistas'
+import { conferirConquistas, minhasConquistas, pagarConquistas, type Conquista } from '@/data/conquistas'
 import { problemasDoBaralho } from '@/game/baralho'
 import Recibo, { BotaoCompartilhar, FIM, type DadosDoRecibo, type Desfecho } from '@/components/Recibo'
 import { NOMES_DE_RARIDADE, baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
@@ -152,6 +152,15 @@ export default function JogarPage() {
           if (novas.length === 0) return
           const todas = await minhasConquistas(sessao.id).catch(() => null)
           setConquistasNovas((todas ?? []).filter((c) => novas.includes(c.id)))
+          // a conquista paga tokens (v0.34): eles entram na coleção aqui
+          if (todas) {
+            const antes = loadCollection()
+            const depois = pagarConquistas(antes, todas)
+            if (depois !== antes) {
+              saveCollection(depois)
+              sincronizar(sessao.id, next, depois, setStatus)
+            }
+          }
         })
       })
     }

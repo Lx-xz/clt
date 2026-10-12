@@ -61,6 +61,17 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.34',
+    data: '2026-10-12',
+    titulo: 'O Halloween chegou ao escritório',
+    itens: [
+      { tipo: 'novo', texto: 'A máquina de vendas abriu para todo mundo, com abóboras à venda: cada uma traz um item de Halloween que você ainda não tem. A primeira é grátis.' },
+      { tipo: 'novo', texto: 'No perfil de um amigo dá para ver os baralhos e as cartas dele, e copiar um baralho para o seu.' },
+      { tipo: 'novo', texto: 'Conquistas dão tokens, algumas sobem de nível (bronze, prata e ouro) e outras são ocultas.' },
+      { tipo: 'melhor', texto: 'Cada carta tem mais cópias conforme a raridade: comum 5, incomum 4, rara 3, épica 2 e lendária 1.' },
+    ],
+  },
+  {
     versao: '0.33',
     data: '2026-10-12',
     titulo: 'O baralho refeito',

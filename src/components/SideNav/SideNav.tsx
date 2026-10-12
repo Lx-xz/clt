@@ -305,24 +305,22 @@ export default function SideNav() {
 
             <span className={styles.empurra} />
 
-            {/* a máquina de vendas: por enquanto só para admin, com o saldo
+            {/* a máquina de vendas, de todo mundo desde a v0.34, com o saldo
                 de tokens ao lado do nome — é o dinheiro dela */}
-            {admin ? (
-              <Link
-                className={`${styles.link} ${pathname.startsWith('/maquina') ? styles.ativo : ''}`}
-                href="/maquina"
-                onClick={(e) => navegar(e, '/maquina')}
-              >
-                <MaquinaIcon size={22} />
-                <span className={`${styles.rotulo} ${styles.rotuloComSaldo}`}>
-                  Máquina
-                  <span className={styles.saldo} aria-label={`${tokens} tokens`}>
-                    <TokenIcon size={16} />
-                    {tokens}
-                  </span>
+            <Link
+              className={`${styles.link} ${pathname.startsWith('/maquina') ? styles.ativo : ''}`}
+              href="/maquina"
+              onClick={(e) => navegar(e, '/maquina')}
+            >
+              <MaquinaIcon size={22} />
+              <span className={`${styles.rotulo} ${styles.rotuloComSaldo}`}>
+                Máquina
+                <span className={styles.saldo} aria-label={`${tokens} tokens`}>
+                  <TokenIcon size={16} />
+                  {tokens}
                 </span>
-              </Link>
-            ) : null}
+              </span>
+            </Link>
 
             {admin ? (
               <Link

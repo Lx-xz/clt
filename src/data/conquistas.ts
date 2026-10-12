@@ -1,6 +1,8 @@
 'use client'
 
 import { faltaFuncao } from './jogadores'
+import { creditarConquistas } from '@/game/tokens'
+import type { Collection } from '@/game/types'
 import { supabase } from './supabase'
 
 /**
@@ -16,6 +18,25 @@ export interface Conquista {
   icone: string
   /** Null na que ainda não foi ganha. */
   ganha_em: string | null
+  /** v0.34 (banco sem o `schema.sql` novo não manda): a oculta só tem nome
+   *  depois de ganha; `tokens` é o que ela paga; `grupo` e `nivel` (1 a 3,
+   *  bronze a ouro) juntam as que sobem de nível. */
+  oculta?: boolean
+  tokens?: number
+  grupo?: string | null
+  nivel?: number | null
+}
+
+/**
+ * Paga os tokens das conquistas ganhas que ainda não pagaram, e devolve a
+ * coleção nova (a mesma, se não havia nada a pagar). Quem chama sobe a
+ * coleção. O saldo mora na coleção, e a conquista no banco: a ponte é aqui.
+ */
+export function pagarConquistas(colecao: Collection, lista: Conquista[]): Collection {
+  return creditarConquistas(
+    colecao,
+    lista.filter((c) => c.ganha_em).map((c) => ({ id: c.id, tokens: c.tokens ?? 0 })),
+  )
 }
 
 /**

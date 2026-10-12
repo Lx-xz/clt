@@ -23,7 +23,9 @@ export const MAXIMO_DE_BARALHOS = 3
 
 /** Quantas cópias da carta cabem na coleção. Raridade é escassez, e o teto
  *  é o que faz a recompensa ter o que dar por muito tempo. */
-export const COPIAS_POR_RARIDADE: Record<Raridade, number> = { comum: 4, incomum: 3, rara: 2, epica: 1, lendaria: 1 }
+// v0.34, a pedido do autor: um degrau por raridade, de 5 a 1. É também o
+// máximo da carta num baralho, porque não dá para pôr mais do que se tem
+export const COPIAS_POR_RARIDADE: Record<Raridade, number> = { comum: 5, incomum: 4, rara: 3, epica: 2, lendaria: 1 }
 
 export const NOMES_DE_RARIDADE: Record<Raridade, string> = {
   comum: 'comum',
@@ -65,7 +67,7 @@ export function colecaoInicial(): Collection {
 
 /** Envelopes e missões chegaram depois das coleções: quem gravou antes não
  *  tem os campos, e a leitura os dá vazios — o mesmo padrão do resto. */
-function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes' | 'cosmeticos' | 'sequencia' | 'tokens' | 'maquina'> {
+function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes' | 'cosmeticos' | 'sequencia' | 'tokens' | 'maquina' | 'aboboraGratis' | 'conquistasPagas'> {
   // até a v0.19 a fila era só o tipo (`'pardo'`); desde a v0.20 é o envelope
   // com as cartas já sorteadas. O antigo vira `{ tipo }`, e é sorteado na
   // abertura, como era
@@ -103,7 +105,19 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
     mq && typeof mq === 'object' && typeof mq.dia === 'string'
       ? { dia: mq.dia, cartas: textos(mq.cartas), cosmeticos: textos(mq.cosmeticos), vendidos: textos(mq.vendidos) }
       : undefined
-  return { envelopes, missoes, cosmeticos, ...(sequencia ? { sequencia } : {}), ...(tokens ? { tokens } : {}), ...(maquina ? { maquina } : {}) }
+  // v0.34: a abóbora grátis da máquina (uma vez) e as conquistas que já
+  // pagaram os seus tokens
+  const pagas = textos(bruta.conquistasPagas)
+  return {
+    envelopes,
+    missoes,
+    cosmeticos,
+    ...(sequencia ? { sequencia } : {}),
+    ...(tokens ? { tokens } : {}),
+    ...(maquina ? { maquina } : {}),
+    ...(bruta.aboboraGratis === true ? { aboboraGratis: true } : {}),
+    ...(pagas.length ? { conquistasPagas: pagas } : {}),
+  }
 }
 
 function numero(x: unknown): number {
@@ -278,4 +292,31 @@ export function apagarBaralho(c: Collection, id: string): Collection {
 
 export function ativarBaralho(c: Collection, id: string): Collection {
   return c.baralhos.some((b) => b.id === id) ? { ...c, ativo: id } : c
+}
+
+/**
+ * Copia o baralho de OUTRA pessoa (v0.34, do perfil de um amigo): para um
+ * baralho novo (`novo`) ou por cima do que está equipado. Só entra o que a
+ * pessoa tem — não dá para pôr no baralho a carta que ela não ganhou —, e
+ * `faltaram` diz quantas cópias ficaram de fora, para a tela contar.
+ */
+export function copiarBaralho(
+  c: Collection,
+  cartas: Record<CardId, number>,
+  nome: string,
+  novo: boolean,
+): { colecao: Collection; faltaram: number } {
+  const dentro: Record<CardId, number> = {}
+  let faltaram = 0
+  for (const [id, n] of Object.entries(cartas)) {
+    const q = Math.min(n, c.tenho[id] ?? 0)
+    if (q > 0) dentro[id] = q
+    faltaram += n - q
+  }
+  if (novo) {
+    if (c.baralhos.length >= MAXIMO_DE_BARALHOS) return { colecao: c, faltaram: 0 }
+    const b: BaralhoMontado = { id: idDeBaralho(), nome: nome.trim().slice(0, 24) || `Baralho ${c.baralhos.length + 1}`, cartas: dentro }
+    return { colecao: { ...c, baralhos: [...c.baralhos, b], ativo: b.id }, faltaram }
+  }
+  return { colecao: comBaralho(c, c.ativo, (b) => ({ ...b, cartas: dentro })), faltaram }
 }

@@ -388,6 +388,11 @@ export interface Collection {
   /** A vitrine da máquina de HOJE: montada uma vez por dia, com o que já
    *  foi comprado dela (`vendidos`, `carta:id`/`cosmetico:id`). */
   maquina?: { dia: string; cartas: CardId[]; cosmeticos: string[]; vendidos: string[] }
+  /** A abóbora grátis da máquina já foi pega (v0.34): é uma por pessoa. */
+  aboboraGratis?: boolean
+  /** As conquistas que já pagaram os seus tokens (v0.34). Sem isto, cada
+   *  leitura da lista pagaria de novo. */
+  conquistasPagas?: string[]
 }
 
 /** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,

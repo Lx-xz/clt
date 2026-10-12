@@ -1,6 +1,6 @@
 'use client'
 
-import { Play, RotateCcw } from 'lucide-react'
+import { ChevronRight, Play, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { humorDoEstresse } from '@/components/Avatar'
@@ -10,6 +10,9 @@ import { useSessao } from '@/components/SessaoGuard'
 import { carregarDoBanco, sincronizar } from '@/data/sync'
 import { dayLabel } from '@/game/engine'
 import { loadCollection, loadRun } from '@/game/storage'
+import { hoje } from '@/game/missoes'
+import { temporadaDeHalloween } from '@/game/tokens'
+import { AboboraIcon } from '@/components/icons'
 import type { Collection, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './inicio.module.sass'
@@ -87,6 +90,19 @@ export default function InicioPage() {
           {run ? <RotateCcw size={22} aria-hidden /> : <Play size={22} aria-hidden />}
           {run ? 'Continuar' : 'Jogar'}
         </Link>
+
+        {/* o aviso da temporada: o banner inteiro é o botão para a máquina,
+            onde a abóbora está à venda (e a primeira é grátis) */}
+        {temporadaDeHalloween(hoje()) ? (
+          <Link className={styles.banner} href="/maquina">
+            <AboboraIcon size={34} />
+            <span className={styles.bannerTexto}>
+              <b>O Halloween chegou ao escritório</b>
+              <span>{colecao && !colecao.aboboraGratis ? 'Pegue a sua abóbora grátis na máquina' : 'Abóboras na máquina de vendas'}</span>
+            </span>
+            <ChevronRight size={20} aria-hidden />
+          </Link>
+        ) : null}
 
         {sessao.convidado ? (
           <p className={styles.aviso}>

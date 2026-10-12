@@ -4,15 +4,27 @@ import { useEffect, useState } from 'react'
 import Avatar from '@/components/Avatar'
 import Card from '@/components/Card'
 import { AboboraIcon, TokenIcon } from '@/components/icons'
+import AberturaDeEnvelope, { ObjetoDaRecompensa } from '@/components/Envelope'
 import { useSessao } from '@/components/SessaoGuard'
 import { avatarAleatorio, vestirParaMostrar, type Avatar as Receita } from '@/data/avatar'
 import { carregarDoBanco, sincronizar } from '@/data/sync'
 import { getCard } from '@/game/catalogo'
 import { NOMES_DE_RARIDADE } from '@/game/colecao'
 import { COSMETICOS, cosmeticoPorId, type Cosmetico } from '@/game/cosmeticos'
-import { hoje } from '@/game/missoes'
+import { abrirEnvelope, hoje, type Abertura } from '@/game/missoes'
 import { loadCollection, loadRun } from '@/game/storage'
-import { VAGAS, chaveDaVaga, comprar, maquinaDeHoje, precoDaVaga, raridadeDaVaga, saldo, type Vaga } from '@/game/tokens'
+import {
+  VAGAS,
+  chaveDaVaga,
+  comprar,
+  halloweenQueFalta,
+  maquinaDeHoje,
+  precoDaVaga,
+  raridadeDaVaga,
+  saldo,
+  temporadaDeHalloween,
+  type Vaga,
+} from '@/game/tokens'
 import type { Collection, GameState } from '@/game/types'
 import styles from './maquina.module.sass'
 
@@ -37,6 +49,7 @@ export default function MaquinaPage() {
   const [visor, setVisor] = useState<{ texto: string; erro?: boolean } | null>(null)
   const [caindo, setCaindo] = useState<Vaga | null>(null)
   const [naBoca, setNaBoca] = useState<Vaga | null>(null)
+  const [abrindo, setAbrindo] = useState<(Omit<Abertura, 'colecao' | 'tokens'> & { novas: string[] }) | null>(null)
   // quem veste o item na vitrine: o seu avatar, ou um sorteado se ainda é
   // o manequim (que não veste nada)
   const [modelo] = useState<Receita>(() =>
@@ -69,6 +82,9 @@ export default function MaquinaPage() {
     Array.from({ length: VAGAS.cartas }, (_, i) => m.cartas[i]).map((id) => (id ? { tipo: 'carta' as const, id } : null)).filter(Boolean) as Vaga[],
     Array.from({ length: VAGAS.cosmeticos }, (_, i) => m.cosmeticos[i]).map((id) => (id ? { tipo: 'cosmetico' as const, id } : null)).filter(Boolean) as Vaga[],
   ]
+  // a prateleira da abóbora (v0.34): só na temporada, e só enquanto houver
+  // item de Halloween que a pessoa não tem — a abóbora daqui nunca repete
+  if (temporadaDeHalloween(hoje()) && halloweenQueFalta(colecao).length > 0) vagas.push([{ tipo: 'abobora', id: 'abobora' }])
   const vendida = (v: Vaga) => m.vendidos.includes(chaveDaVaga(v))
   const meuSaldo = saldo(colecao)
 
@@ -92,16 +108,32 @@ export default function MaquinaPage() {
     setVisor({ texto: 'Obrigado!' })
     const v = escolhida
     setEscolhida(null)
+    if (v.tipo === 'abobora') setVisor({ texto: 'Toque na abóbora' })
     setTimeout(() => {
       setCaindo(null)
       setNaBoca(v)
     }, QUEDA_MS)
   }
 
+  /** A abóbora comprada entrou fechada na coleção; abrir é aqui, na boca.
+   *  Abre ANTES da animação, como toda recompensa: fechar no meio não perde
+   *  o item, e sair da página sem abrir a deixa na fila do início. */
+  function abrirAbobora() {
+    if (!colecao) return
+    const i = colecao.envelopes.findIndex((e) => e.tipo === 'abobora')
+    const r = i >= 0 ? abrirEnvelope(colecao, i) : null
+    setNaBoca(null)
+    if (!r) return
+    setColecao(r.colecao)
+    sincronizar(sessao.id, loadRun<GameState>(), r.colecao, () => {})
+    setAbrindo({ tipo: r.tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, emToken: r.emToken, novas: [] })
+    setVisor(null)
+  }
+
   const textoDoVisor = visor
     ? visor.texto
     : escolhida
-      ? `${codigo(escolhida, vagas)} · ${nomeDaVaga(escolhida)}`
+      ? `${codigo(escolhida, vagas)} · ${nomeDaVaga(escolhida, colecao)}`
       : 'Escolha uma vaga'
 
   return (
@@ -130,10 +162,12 @@ export default function MaquinaPage() {
                       className={`${styles.vaga} ${escolhida && chaveDaVaga(escolhida) === chaveDaVaga(v) ? styles.escolhida : ''} ${vazia ? styles.vazia : ''}`}
                       onClick={() => escolher(v)}
                       disabled={vazia}
-                      aria-label={`${codigo(v, vagas)}: ${nomeDaVaga(v)}, ${precoDaVaga(v)} tokens${vazia ? ', esgotado' : ''}`}
+                      aria-label={`${codigo(v, vagas)}: ${nomeDaVaga(v, colecao)}, ${precoDaVaga(v, colecao)} tokens${vazia ? ', esgotado' : ''}`}
                     >
                       <span className={`${styles.produto} ${caindo && chaveDaVaga(caindo) === chaveDaVaga(v) ? styles.caindo : ''}`}>
-                        {vazia ? null : v.tipo === 'carta' ? (
+                        {vazia ? null : v.tipo === 'abobora' ? (
+                          <ObjetoDaRecompensa tipo="abobora" largura={72} className={styles.aboboraNaVaga} />
+                        ) : v.tipo === 'carta' ? (
                           <Card card={getCard(v.id)} className={styles.cartaNaVaga} />
                         ) : cosmetico ? (
                           <ItemNaVitrine cosmetico={cosmetico} modelo={modelo} tamanho={84} />
@@ -145,10 +179,14 @@ export default function MaquinaPage() {
                         {vazia ? (
                           'esgotado'
                         ) : (
-                          <>
-                            <TokenIcon size={14} />
-                            {precoDaVaga(v)}
-                          </>
+                          precoDaVaga(v, colecao) === 0 ? (
+                            'grátis'
+                          ) : (
+                            <>
+                              <TokenIcon size={14} />
+                              {precoDaVaga(v, colecao)}
+                            </>
+                          )
                         )}
                       </span>
                     </button>
@@ -172,8 +210,8 @@ export default function MaquinaPage() {
             {escolhida ? (
               <div className={styles.preco}>
                 <span>Preço</span>
-                <b className={meuSaldo < precoDaVaga(escolhida) ? styles.falta : ''}>
-                  <TokenIcon size={18} /> {precoDaVaga(escolhida)}
+                <b className={meuSaldo < precoDaVaga(escolhida, colecao) ? styles.falta : ''}>
+                  <TokenIcon size={18} /> {precoDaVaga(escolhida, colecao)}
                 </b>
               </div>
             ) : null}
@@ -189,19 +227,27 @@ export default function MaquinaPage() {
         <button
           type="button"
           className={`${styles.boca} ${naBoca ? styles.bocaCheia : ''}`}
-          onClick={() => setNaBoca(null)}
+          onClick={() => (naBoca?.tipo === 'abobora' ? abrirAbobora() : setNaBoca(null))}
           disabled={!naBoca}
-          aria-label={naBoca ? `${nomeDaVaga(naBoca)} — já está na sua coleção. Toque para tirar.` : 'Boca da máquina, vazia'}
+          aria-label={
+            naBoca
+              ? naBoca.tipo === 'abobora'
+                ? 'A abóbora comprada: toque para abrir'
+                : `${nomeDaVaga(naBoca, colecao)} — já está na sua coleção. Toque para tirar.`
+              : 'Boca da máquina, vazia'
+          }
         >
           {naBoca ? (
             <span className={styles.premio}>
-              {naBoca.tipo === 'carta' ? (
+              {naBoca.tipo === 'abobora' ? (
+                <ObjetoDaRecompensa tipo="abobora" largura={64} />
+              ) : naBoca.tipo === 'carta' ? (
                 <Card card={getCard(naBoca.id)} className={styles.cartaNaBoca} />
               ) : cosmeticoPorId(naBoca.id) ? (
                 <ItemNaVitrine cosmetico={cosmeticoPorId(naBoca.id)!} modelo={modelo} tamanho={72} />
               ) : null}
               <span className={styles.premioTexto}>
-                <b>{nomeDaVaga(naBoca)}</b>
+                <b>{naBoca.tipo === 'abobora' ? 'Toque para abrir' : nomeDaVaga(naBoca, colecao)}</b>
               </span>
             </span>
           ) : (
@@ -209,17 +255,21 @@ export default function MaquinaPage() {
           )}
         </button>
       </div>
+      {abrindo ? <AberturaDeEnvelope {...abrindo} onFechar={() => setAbrindo(null)} /> : null}
     </main>
   )
 }
 
-/** "A1", "B3": a fileira (A cartas, B itens) e a posição, como na máquina. */
+/** "A1", "B3": a fileira (A cartas, B itens, C a abóbora) e a posição, como
+ *  na máquina. */
 function codigo(v: Vaga, vagas: Vaga[][]): string {
+  if (v.tipo === 'abobora') return 'C1'
   const f = v.tipo === 'carta' ? 0 : 1
   return `${'AB'[f]}${vagas[f].findIndex((x) => x.id === v.id) + 1}`
 }
 
-function nomeDaVaga(v: Vaga): string {
+function nomeDaVaga(v: Vaga, c?: Collection): string {
+  if (v.tipo === 'abobora') return c && !c.aboboraGratis ? 'Abóbora (grátis)' : 'Abóbora'
   const nome = v.tipo === 'carta' ? getCard(v.id).name : (cosmeticoPorId(v.id)?.nome ?? v.id)
   return `${nome} (${NOMES_DE_RARIDADE[raridadeDaVaga(v)]})`
 }
