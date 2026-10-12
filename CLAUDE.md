@@ -1966,15 +1966,37 @@ e a um bot diferente — não compare os dois.
   numa entrada só, com os três metais.
 - **Rodar o `schema.sql` da v0.33** (`admin_versoes`). Sem ele as caixas
   de versões do lab mostram o aviso de que a função falta.
-- **O id da carta é código interno, e não muda (v0.35).** Carta e evento
-  NOVOS ganham o próximo número (`proximoId`, de 100 em diante: o banco pede
-  dois caracteres), e o lab mostra o id só para ler (`IdInterno`) — o nome
-  muda à vontade. Os ids antigos (`hora-extra`) ficaram de propósito: estão
-  na coleção e nos baralhos de cada jogador, no retrato de toda partida e no
-  histórico; trocá-los seria migrar o save de todo mundo por uma coisa que
-  jogador nenhum vê.
+- **O id da carta e do evento é UUID (v0.35), e o nome muda à vontade.**
+  Era o nome em hífens (`hora-extra`), o que não fazia sentido nenhum:
+  renomear a carta deixava o id contando o nome velho. Carta e evento novos
+  nascem com `crypto.randomUUID()`, e o lab mostra o id só para ler
+  (`IdInterno`). **O id antigo vira o uuid por uma CONTA, não por tabela:**
+  é o uuid v5 dele no espaço `ESPACO` (`src/game/ids.ts`), e o
+  `schema.sql` faz a mesma conta (`uuid_generate_v5`). Por isso nada além do
+  catálogo é reescrito no banco: o save, a coleção, o retrato e o
+  histórico de cada run gravada continuam falando `hora-extra`, e quem
+  traduz é a LEITURA, como sempre — `idAtual` nos campos que se sabe que
+  são id (`lerColecao`, `getCard`, `migrarAcao` no `ganharCarta`), e
+  `traduzirIds` no que não tem formato fixo (`migrarRun`, o `details` do
+  replay e das listas de partidas). `traduzirIds` só troca os ids antigos
+  CONHECIDOS (`IDS_ANTIGOS_DO_CODIGO` mais o `id_antigo` que o banco
+  devolve, que cobre as cartas criadas no lab antes disto): ele anda num
+  objeto qualquer, e trocar toda string que não é uuid trocaria texto.
+  **Nunca mude o `ESPACO`**, e não apague `idsAntigos.ts`: sem os dois, o
+  save de quem jogou antes perde as cartas. As estatísticas do banco
+  (`cartas_jogadas` e companhia) contam o id antigo e o novo separados, e
+  o site soma os dois (`juntarPorId` em `analytics.ts`). Conferido com o
+  simulador (300 runs, saída idêntica antes e depois), com um save, uma
+  run pela metade e um replay gravados pelo código de antes, e com o
+  `schema.sql` rodado duas vezes num Postgres com o catálogo antigo.
+- **Rodar o `schema.sql` da v0.35 antes de salvar qualquer carta no lab.**
+  Enquanto o catálogo do banco ainda tiver id antigo, o jogo funciona (a
+  leitura traduz), mas salvar criaria uma SEGUNDA carta com o uuid ao lado
+  da antiga: por isso o lab mostra o aviso vermelho e `escrever()` recusa
+  tudo menos as regras (`catalogoComIdsAntigos`).
 - **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
-  que não existe, e rodar o `schema.sql` não toca em carta. Com o banco já
+  que não existe, e rodar o `schema.sql` não toca no que a carta faz (só
+  troca o id antigo pelo uuid, uma vez). Com o banco já
   semeado, quem leva o código para lá é a caixa "O código tem cartas que o
   banco não tem" do `/lab/cartas` (v0.16): lista as novas e as diferentes,
   deixa desmarcar o que o admin editou de propósito, e salva pelo mesmo

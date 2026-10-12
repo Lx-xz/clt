@@ -14,31 +14,31 @@ import type { EventCard } from './types'
 export const EVENTOS_BASE: EventCard[] = [
   // negativas
   {
-    id: 'sistema-fora-do-ar', name: 'Sistema Fora do Ar', tone: 'negativo',
+    id: '540d7c81-046e-5924-b9b3-4d019b16d50f', name: 'Sistema Fora do Ar', tone: 'negativo',
     text: 'Você não pode jogar cartas de Tarefa hoje',
     efeitos: [{ acoes: [{ faz: 'bloquearClasse', classe: 'tarefa' }] }],
   },
   {
-    id: 'reuniao-de-alinhamento', name: 'Reunião de Alinhamento', tone: 'negativo',
+    id: '0c3214af-7625-5024-acd7-678c269efa16', name: 'Reunião de Alinhamento', tone: 'negativo',
     text: '−3 energia',
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: -3 }] }],
   },
   {
-    id: 'chefe-de-mau-humor', name: 'Chefe de Mau Humor', tone: 'negativo',
+    id: 'fe92514c-a55e-5017-9826-d5d8662d4423', name: 'Chefe de Mau Humor', tone: 'negativo',
     text: '+2 estresse',
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: 2 }] }],
   },
   {
-    id: 'relatorio-de-ultima-hora', name: 'Relatório de Última Hora', tone: 'negativo',
+    id: 'e93bd273-46b1-5fa5-94bc-c85c1b135573', name: 'Relatório de Última Hora', tone: 'negativo',
     text: 'Sua cota do dia aumenta em +2',
     efeitos: [{ acoes: [{ faz: 'cota', quanto: 2 }] }],
   },
   {
-    id: 'transito', name: 'Trânsito', tone: 'negativo', text: '−2 energia',
+    id: '5c5445ab-5081-58c3-8a4a-b41dd75ef504', name: 'Trânsito', tone: 'negativo', text: '−2 energia',
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: -2 }] }],
   },
   {
-    id: 'colega-faltou', name: 'Colega Faltou', tone: 'negativo',
+    id: '620244e4-7a3c-5b0a-a302-26d3197095ca', name: 'Colega Faltou', tone: 'negativo',
     text: 'Cota do dia +1, mas +R$ 20',
     efeitos: [{ acoes: [
       { faz: 'cota', quanto: 1 },
@@ -46,7 +46,7 @@ export const EVENTOS_BASE: EventCard[] = [
     ] }],
   },
   {
-    id: 'ar-condicionado-quebrado', name: 'Ar-Condicionado Quebrado', tone: 'negativo',
+    id: 'e1e8c912-72f8-5c14-8e7b-47cbd263a897', name: 'Ar-Condicionado Quebrado', tone: 'negativo',
     text: 'Todas as cartas custam +1 energia hoje',
     efeitos: [{ acoes: [{ faz: 'custo', quanto: 1 }] }],
   },
@@ -54,38 +54,38 @@ export const EVENTOS_BASE: EventCard[] = [
   // Ar-Condicionado mexia só na energia; com cartas que se pagam em outra
   // coisa, o dia também pode mudar o preço delas
   {
-    id: 'black-friday', name: 'Black Friday', tone: 'positivo',
+    id: '3329ebd7-3563-5966-9f50-d7d913888275', name: 'Black Friday', tone: 'positivo',
     text: 'Cartas que custam dinheiro custam R$ 20 a menos hoje',
     efeitos: [{ acoes: [{ faz: 'custo', qual: 'dinheiro', quanto: -20 }] }],
   },
   {
-    id: 'inflacao', name: 'Inflação', tone: 'negativo',
+    id: '78b694c1-5c12-5fe9-8f49-a64646343f28', name: 'Inflação', tone: 'negativo',
     text: 'Cartas que custam dinheiro custam R$ 15 a mais hoje',
     efeitos: [{ acoes: [{ faz: 'custo', qual: 'dinheiro', quanto: 15 }] }],
   },
   {
-    id: 'chefe-de-folga', name: 'Chefe de Folga', tone: 'positivo',
+    id: 'ce999b9d-fa95-5001-a053-f6c86be98797', name: 'Chefe de Folga', tone: 'positivo',
     text: 'Cartas que custam estresse custam 1 a menos hoje',
     efeitos: [{ acoes: [{ faz: 'custo', qual: 'estresse', quanto: -1 }] }],
   },
   {
-    id: 'pressao-por-resultado', name: 'Pressão por Resultado', tone: 'negativo',
+    id: 'a8125c87-8fa0-511b-ab28-76be4c57ae57', name: 'Pressão por Resultado', tone: 'negativo',
     text: 'Cartas que custam estresse custam 1 a mais hoje',
     efeitos: [{ acoes: [{ faz: 'custo', qual: 'estresse', quanto: 1 }] }],
   },
   {
-    id: 'dia-de-entrega', name: 'Dia de Entrega', tone: 'negativo',
+    id: '6912e771-28f2-56df-ab1c-e7c2c1295130', name: 'Dia de Entrega', tone: 'negativo',
     text: 'Cartas que custam produtividade custam 1 a mais hoje, e a cota sobe 1',
     efeitos: [{ acoes: [{ faz: 'custo', qual: 'produtividade', quanto: 1 }, { faz: 'cota', quanto: 1 }] }],
   },
   {
-    id: 'fofoca-de-corredor', name: 'Fofoca de Corredor', tone: 'negativo',
+    id: '42b9a922-0ec0-5ae2-89de-30d90ca896f7', name: 'Fofoca de Corredor', tone: 'negativo',
     text: 'Descarte 1 carta da sua mão ao acaso',
     // depois de comprar, senão não haveria mão para descartar
     efeitos: [{ quando: 'aposComprar', acoes: [{ faz: 'descartar', quantas: 1, aleatorio: true, porque: 'Fofoca de Corredor' }] }],
   },
   {
-    id: 'limpeza-de-mesa', name: 'Limpeza de Mesa', tone: 'negativo',
+    id: '902ea8dc-76a0-59ca-97a1-fbf871f6aaed', name: 'Limpeza de Mesa', tone: 'negativo',
     text: 'O chefe mandou "organizar": descarte 2 cartas à sua escolha',
     // depois de comprar, senão não haveria mão para escolher
     efeitos: [{ quando: 'aposComprar', acoes: [
@@ -93,12 +93,12 @@ export const EVENTOS_BASE: EventCard[] = [
     ] }],
   },
   {
-    id: 'internet-caiu', name: 'Internet Caiu', tone: 'negativo',
+    id: '317fb236-1dec-5a6e-87b8-ba2a5aaa3ab6', name: 'Internet Caiu', tone: 'negativo',
     text: 'Descarte a mão e compre 3 cartas novas',
     efeitos: [{ acoes: [{ faz: 'maoDoDia', quantas: 3 }] }],
   },
   {
-    id: 'cobranca-no-zap', name: 'Cobrança no Grupo do Zap', tone: 'negativo',
+    id: '72f9933c-75be-5fa8-a21a-c0ba966534ec', name: 'Cobrança no Grupo do Zap', tone: 'negativo',
     text: '+1 estresse. Se você não bater a cota hoje: +2 estresse extra.',
     efeitos: [
       { acoes: [{ faz: 'recurso', qual: 'estresse', quanto: 1 }] },
@@ -115,19 +115,19 @@ export const EVENTOS_BASE: EventCard[] = [
 
   // positivas
   {
-    id: 'dormiu-bem', name: 'Dormiu Bem', tone: 'positivo', text: '+3 energia',
+    id: '73b723b8-3dcf-555f-bb53-aba393d84ce5', name: 'Dormiu Bem', tone: 'positivo', text: '+3 energia',
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'energia', quanto: 3 }] }],
   },
   {
-    id: 'bolo-na-copa', name: 'Bolo na Copa', tone: 'positivo', text: '−2 estresse',
+    id: '93d76337-cb02-5a03-8a82-cfa40029545c', name: 'Bolo na Copa', tone: 'positivo', text: '−2 estresse',
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'estresse', quanto: -2 }] }],
   },
   {
-    id: 'sexta-de-folga', name: 'Sexta de Folga', tone: 'positivo', text: 'Nenhuma cota hoje',
+    id: '1d5c9c9f-75d4-59fe-96b8-92ec5bf937e3', name: 'Sexta de Folga', tone: 'positivo', text: 'Nenhuma cota hoje',
     efeitos: [{ acoes: [{ faz: 'cota', quanto: 0, absoluto: true }] }],
   },
   {
-    id: 'elogio-do-chefe', name: 'Elogio do Chefe', tone: 'positivo',
+    id: '97a168f0-d090-5753-9186-733ed9300efd', name: 'Elogio do Chefe', tone: 'positivo',
     text: '−1 estresse, +1 produtividade',
     efeitos: [{ acoes: [
       { faz: 'recurso', qual: 'estresse', quanto: -1 },
@@ -135,17 +135,17 @@ export const EVENTOS_BASE: EventCard[] = [
     ] }],
   },
   {
-    id: 'reembolso-atrasado', name: 'Reembolso Atrasado', tone: 'positivo', text: '+R$ 40',
+    id: 'fe4cce8c-25fe-5dd6-a9bf-4c6f02b3d8a3', name: 'Reembolso Atrasado', tone: 'positivo', text: '+R$ 40',
     efeitos: [{ acoes: [{ faz: 'recurso', qual: 'dinheiro', quanto: 40 }] }],
   },
   {
-    id: 'dia-tranquilo', name: 'Dia Tranquilo', tone: 'positivo', text: 'Compre 2 cartas a mais hoje',
+    id: '8fbb9914-04c0-5c0c-84ef-34d775ce128b', name: 'Dia Tranquilo', tone: 'positivo', text: 'Compre 2 cartas a mais hoje',
     efeitos: [{ acoes: [{ faz: 'maoDoDia', quantas: 2, relativo: true }] }],
   },
 
   // ambíguas
   {
-    id: 'hora-extra-nao-solicitada',
+    id: '18942650-6db3-576e-a27e-4d49ad00925d',
     name: 'Hora Extra Não Solicitada',
     tone: 'ambiguo',
     text: 'O chefe pergunta se você pode ficar mais um pouco.',
@@ -164,7 +164,7 @@ export const EVENTOS_BASE: EventCard[] = [
     ],
   },
   {
-    id: 'convite-happy-hour',
+    id: 'c82b74c9-2b17-5525-9b06-d991bfd22f9c',
     name: 'Convite pro Happy Hour',
     tone: 'ambiguo',
     text: 'O time vai sair depois do expediente.',
@@ -180,7 +180,7 @@ export const EVENTOS_BASE: EventCard[] = [
     ],
   },
   {
-    id: 'freela-de-um-amigo',
+    id: '0a5a91fc-36e0-5618-8e79-1b9d16eca945',
     name: 'Freela de Um Amigo',
     tone: 'ambiguo',
     text: 'Um amigo te chama para um bico rápido.',
@@ -196,7 +196,7 @@ export const EVENTOS_BASE: EventCard[] = [
     ],
   },
   {
-    id: 'chamado-de-madrugada',
+    id: 'ee88ab97-f4dc-55bb-8662-1eff0373f34d',
     name: 'Chamado de Madrugada',
     tone: 'ambiguo',
     text: 'O celular toca às 3h da manhã.',
@@ -216,9 +216,9 @@ export const EVENTOS_BASE: EventCard[] = [
 /** O porquê dos eventos que o código mudou ou criou, para o "Trazer do
  *  código" do /lab/eventos — o mesmo papel de `MOTIVOS_DO_CODIGO` nas cartas. */
 export const MOTIVOS_DOS_EVENTOS: Record<string, string> = {
-  'black-friday': 'Com cartas pagas em dinheiro, o dia também pode baratear o preço delas.',
-  inflacao: 'O outro lado da Black Friday: o dia em que tudo que se paga em dinheiro encarece.',
-  'chefe-de-folga': 'Um alívio para as cartas pagas em estresse.',
-  'pressao-por-resultado': 'O dia em que as cartas pagas em estresse pesam mais.',
-  'dia-de-entrega': 'O primeiro evento que mexe no custo em produtividade.',
+  '3329ebd7-3563-5966-9f50-d7d913888275': 'Com cartas pagas em dinheiro, o dia também pode baratear o preço delas.', // Black Friday
+  '78b694c1-5c12-5fe9-8f49-a64646343f28': 'O outro lado da Black Friday: o dia em que tudo que se paga em dinheiro encarece.', // Inflação
+  'ce999b9d-fa95-5001-a053-f6c86be98797': 'Um alívio para as cartas pagas em estresse.', // Chefe de Folga
+  'a8125c87-8fa0-511b-ab28-76be4c57ae57': 'O dia em que as cartas pagas em estresse pesam mais.', // Pressão por Resultado
+  '6912e771-28f2-56df-ab1c-e7c2c1295130': 'O primeiro evento que mexe no custo em produtividade.', // Dia de Entrega
 }

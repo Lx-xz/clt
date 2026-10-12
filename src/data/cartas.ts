@@ -15,7 +15,19 @@ import type {
 import { migrarAcoes, migrarEfeitos } from '@/game/acoes'
 import { lerCustos } from '@/game/custos'
 import type { Acao, Efeito, Restricao } from '@/game/acoes'
+import { ehUuid, idAtual, registrarIdsAntigos } from '@/game/ids'
 import { supabase } from './supabase'
+
+/**
+ * O banco ainda tem id antigo (não rodou a migração da v0.35)? Ler funciona
+ * igual — a leitura traduz —, mas GRAVAR não: a carta salva com o uuid viraria
+ * uma linha nova ao lado da antiga. O lab pergunta isto e não deixa salvar.
+ */
+let idsAntigosNoBanco = false
+
+export function catalogoComIdsAntigos(): boolean {
+  return idsAntigosNoBanco
+}
 
 /**
  * O catálogo, do lado do banco.
@@ -50,6 +62,10 @@ interface LinhaCarta {
   custos?: unknown
   versao: number
   ativa: boolean
+  /** v0.35: o id de antes do uuid (`hora-extra`), guardado pela migração do
+   *  `schema.sql`. É por ele que um save velho com carta criada no lab acha
+   *  o uuid dela. */
+  id_antigo?: string | null
 }
 
 interface LinhaEvento {
@@ -61,6 +77,7 @@ interface LinhaEvento {
   escolhas: EventChoice[] | null
   versao: number
   ativa: boolean
+  id_antigo?: string | null
 }
 
 const CLASSES_VALIDAS: CardKind[] = ['tarefa', 'descanso', 'grana', 'social']
@@ -90,8 +107,11 @@ function paraRaridade(bruta: string | null | undefined): Raridade | undefined {
  * migração para rodar no banco.
  */
 function paraCarta(linha: LinhaCarta): ActionCard {
+  if (!ehUuid(linha.id)) idsAntigosNoBanco = true
   return {
-    id: linha.id,
+    // o banco que ainda não rodou a migração da v0.35 manda o id antigo: ele
+    // vira o uuid na leitura, igual ao que a migração vai gravar
+    id: idAtual(linha.id),
     name: linha.nome,
     cost: linha.custo,
     kind: paraClasse(linha.classe),
@@ -110,8 +130,9 @@ function paraCarta(linha: LinhaCarta): ActionCard {
 
 function paraEvento(linha: LinhaEvento): EventCard {
   const escolhas = linha.escolhas
+  if (!ehUuid(linha.id)) idsAntigosNoBanco = true
   return {
-    id: linha.id,
+    id: idAtual(linha.id),
     name: linha.nome,
     tone: linha.tom,
     text: linha.texto,
@@ -197,11 +218,16 @@ function paraRegras(bruto: Partial<Regras> & { id?: string }): Regras {
 }
 
 function traduzir(bruto: RespostaCatalogo): CatalogoCarregado {
+  idsAntigosNoBanco = false
+  // os ids antigos que só o banco conhece (carta criada no lab antes do
+  // uuid): sem eles, um save velho com essa carta não seria traduzido
+  registrarIdsAntigos([...(bruto.cartas ?? []), ...(bruto.eventos ?? [])].flatMap((l) => (l.id_antigo ? [l.id_antigo] : [])))
+  registrarIdsAntigos([...(bruto.cartas ?? []), ...(bruto.eventos ?? [])].map((l) => l.id))
   return {
     versao: bruto.versao ?? 1,
     cartas: (bruto.cartas ?? []).map(paraCarta),
     eventos: (bruto.eventos ?? []).map(paraEvento),
-    mudancas: bruto.mudancas ?? [],
+    mudancas: (bruto.mudancas ?? []).map((m) => ({ ...m, carta: idAtual(m.carta) })),
     // a removida chega como a linha inteira que ela era; o replay só precisa
     // do retrato
     removidas: (bruto.removidas ?? []).map((l): CartaSnapshot => {
@@ -255,6 +281,12 @@ async function escrever(
   args: Record<string, unknown>,
 ): Promise<{ ok: boolean; erro?: string }> {
   if (!supabase) return { ok: false, erro: 'Banco não configurado.' }
+  // com o banco ainda nos ids antigos, toda escrita duplicaria a carta (ela
+  // sobe com o uuid, e a linha antiga continua lá): a regra mora aqui, e não
+  // só no botão, porque são várias as caixas do lab que gravam
+  if (idsAntigosNoBanco && fn !== 'admin_salvar_modo') {
+    return { ok: false, erro: 'O banco ainda usa os ids antigos: rode o supabase/schema.sql (a migração para uuid) antes.' }
+  }
   const { data, error } = await supabase.rpc(fn, args)
   if (error) return { ok: false, erro: error.message }
   if (data) {
@@ -355,11 +387,11 @@ async function versoes(familia: 'acao' | 'evento'): Promise<LinhaVersao[] | stri
 export async function versoesDasCartas(): Promise<VersaoAntiga<ActionCard>[] | string> {
   const r = await versoes('acao')
   if (typeof r === 'string') return r
-  return r.map((l) => ({ ...l, dados: paraCarta(l.dados as LinhaCarta) }))
+  return r.map((l) => ({ ...l, carta: idAtual(l.carta), dados: paraCarta(l.dados as LinhaCarta) }))
 }
 
 export async function versoesDosEventos(): Promise<VersaoAntiga<EventCard>[] | string> {
   const r = await versoes('evento')
   if (typeof r === 'string') return r
-  return r.map((l) => ({ ...l, dados: paraEvento(l.dados as LinhaEvento) }))
+  return r.map((l) => ({ ...l, carta: idAtual(l.carta), dados: paraEvento(l.dados as LinhaEvento) }))
 }

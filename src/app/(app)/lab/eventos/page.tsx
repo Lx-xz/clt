@@ -10,7 +10,6 @@ import Segmentado from '@/components/Segmentado'
 import {
   BotaoExcluir,
   IdInterno,
-  proximoId,
   Origem,
   PedirMotivo,
   estilosDaBancada as comuns,
@@ -27,6 +26,7 @@ import {
   eventoParaBanco,
   excluirDoCatalogo,
   salvarEvento,
+  catalogoComIdsAntigos,
   semearCatalogo,
   versoesDosEventos,
 } from '@/data/cartas'
@@ -237,6 +237,16 @@ export default function LabEventosPage() {
 
       <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
 
+      {/* o banco ainda tem o id antigo: ler funciona (a leitura traduz), mas
+          gravar faria a carta salva com o uuid virar uma linha NOVA ao lado
+          da antiga. Até rodar a migração, o lab não grava */}
+      {catalogoComIdsAntigos() ? (
+        <p className={styles.erroTopo}>
+          O banco ainda usa os ids antigos das cartas. Rode o <code>supabase/schema.sql</code> (a migração para uuid)
+          antes de salvar qualquer coisa aqui: salvar agora duplicaria a carta.
+        </p>
+      ) : null}
+
       {doBanco ? (
         <DesfeitasPeloCodigo
           familia="eventos"
@@ -273,7 +283,7 @@ export default function LabEventosPage() {
         <button
           type="button"
           className={`${buttons.button} ${buttons.primary}`}
-          onClick={() => abrir({ ...novo(), id: proximoId(eventos.map((x) => x.id)) }, true)}
+          onClick={() => abrir({ ...novo(), id: crypto.randomUUID() }, true)}
           disabled={!doBanco}
         >
           <Plus size={15} aria-hidden /> Evento novo
@@ -394,7 +404,7 @@ export default function LabEventosPage() {
             <button
               type="button"
               className={`${buttons.button} ${buttons.primary}`}
-              disabled={!emEdicao.id}
+              disabled={!emEdicao.id || catalogoComIdsAntigos()}
               onClick={() => { setErro(null); setPedindo('salvar') }}
             >
               Salvar no banco

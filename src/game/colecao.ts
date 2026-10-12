@@ -1,3 +1,4 @@
+import { idAtual, traduzirIds } from './ids'
 import { cartasDoJogo, cartasIniciais, getCard } from './catalogo'
 import { regras } from './regras'
 import type { ActionCard, BaralhoMontado, CardId, Collection, EnvelopeFechado, Raridade, TipoEnvelope } from './types'
@@ -78,7 +79,7 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
     envelopes.push({
       tipo: obj.tipo as TipoEnvelope,
       ...(typeof obj.id === 'string' ? { id: obj.id } : {}),
-      ...(Array.isArray(obj.cartas) ? { cartas: (obj.cartas as unknown[]).filter((c): c is string => typeof c === 'string') } : {}),
+      ...(Array.isArray(obj.cartas) ? { cartas: (obj.cartas as unknown[]).filter((c): c is string => typeof c === 'string').map((c) => idAtual(c)) } : {}),
       ...(Array.isArray(obj.cosmeticos) ? { cosmeticos: (obj.cosmeticos as unknown[]).filter((c): c is string => typeof c === 'string') } : {}),
     })
   }
@@ -103,7 +104,12 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
   const textos = (x: unknown) => (Array.isArray(x) ? x.filter((i): i is string => typeof i === 'string') : [])
   const maquina =
     mq && typeof mq === 'object' && typeof mq.dia === 'string'
-      ? { dia: mq.dia, cartas: textos(mq.cartas), cosmeticos: textos(mq.cosmeticos), vendidos: textos(mq.vendidos) }
+      ? {
+          dia: mq.dia,
+          cartas: textos(mq.cartas).map((c) => idAtual(c)),
+          cosmeticos: textos(mq.cosmeticos),
+          vendidos: textos(mq.vendidos).map((v) => (v.startsWith('carta:') ? `carta:${idAtual(v.slice(6))}` : v)),
+        }
       : undefined
   // v0.34: a abóbora grátis da máquina (uma vez) e as conquistas que já
   // pagaram os seus tokens
@@ -135,13 +141,17 @@ function numero(x: unknown): number {
  */
 export function lerColecao(bruta: unknown): Collection {
   if (!bruta || typeof bruta !== 'object') return colecaoInicial()
-  const b = bruta as Record<string, unknown>
+  // v0.35: os ids de carta viraram uuid. A coleção gravada antes fala
+  // `hora-extra` nas chaves, nos baralhos, nas recompensas e na máquina;
+  // `traduzirIds` troca os conhecidos, e `idAtual` (abaixo, nos campos que
+  // se SABE que são id) troca até o de uma carta criada no lab
+  const b = traduzirIds(bruta) as Record<string, unknown>
   const conhecidas = new Map(cartasDoJogo().map((c) => [c.id, c]))
 
   if (Array.isArray(b.equipped)) {
-    const equipadas = (b.equipped as unknown[]).filter((id): id is string => typeof id === 'string' && conhecidas.has(id))
+    const equipadas = (b.equipped as unknown[]).flatMap((id) => (typeof id === 'string' && conhecidas.has(idAtual(id)) ? [idAtual(id)] : []))
     const fora = Array.isArray(b.unequipped)
-      ? (b.unequipped as unknown[]).filter((id): id is string => typeof id === 'string' && conhecidas.has(id))
+      ? (b.unequipped as unknown[]).flatMap((id) => (typeof id === 'string' && conhecidas.has(idAtual(id)) ? [idAtual(id)] : []))
       : []
     const copiasDe = (id: CardId) => {
       const c = conhecidas.get(id)!
@@ -159,7 +169,8 @@ export function lerColecao(bruta: unknown): Collection {
 
   const tenho: Record<CardId, number> = {}
   if (b.tenho && typeof b.tenho === 'object') {
-    for (const [id, n] of Object.entries(b.tenho as Record<string, unknown>)) {
+    for (const [bruto, n] of Object.entries(b.tenho as Record<string, unknown>)) {
+      const id = idAtual(bruto)
       const carta = conhecidas.get(id)
       const q = Math.min(numero(n), carta ? copiasMaximas(carta) : 0)
       if (carta && q > 0) tenho[id] = q
@@ -172,7 +183,8 @@ export function lerColecao(bruta: unknown): Collection {
       const x = bruto as Record<string, unknown>
       const cartas: Record<CardId, number> = {}
       if (x.cartas && typeof x.cartas === 'object') {
-        for (const [id, n] of Object.entries(x.cartas as Record<string, unknown>)) {
+        for (const [bruto, n] of Object.entries(x.cartas as Record<string, unknown>)) {
+          const id = idAtual(bruto)
           // nunca mais cópias no baralho do que a pessoa tem
           const q = Math.min(numero(n), tenho[id] ?? 0)
           if (q > 0) cartas[id] = q

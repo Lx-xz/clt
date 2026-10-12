@@ -1,3 +1,4 @@
+import { idAtual, traduzirIds } from '@/game/ids'
 import type { Regras } from '@/game/regras'
 import type { CartaSnapshot, DayLog, EnvelopeGanho, LinhaDoLog } from '@/game/types'
 import { faltaFuncao } from './jogadores'
@@ -65,7 +66,8 @@ export async function buscarMeusJogos(playerId: string): Promise<LinhaMeuJogo[]>
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase.rpc('meus_jogos', { p_player_id: playerId })
   if (error) throw new Error(error.message)
-  return (data as LinhaMeuJogo[]) ?? []
+  // as runs gravadas antes da v0.35 falam o id antigo das cartas
+  return traduzirIds((data as LinhaMeuJogo[]) ?? [])
 }
 
 export interface DetalheDoJogo extends LinhaMeuJogo {
@@ -93,7 +95,7 @@ export async function buscarDetalheDoJogo(runId: number, playerId: string): Prom
     .rpc('jogo_detalhe', { p_run_id: runId, p_player_id: playerId })
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return (data as DetalheDoJogo) ?? null
+  return data ? traduzirIds(data as DetalheDoJogo) : null
 }
 
 /** O replay de outra pessoa: o mesmo dia-a-dia, mais quem jogou. Null quando
@@ -110,7 +112,7 @@ export async function buscarJogoPublico(runId: number): Promise<JogoPublico | nu
     if (faltaFuncao(error)) return null
     throw new Error(error.message)
   }
-  return (data as JogoPublico) ?? null
+  return data ? traduzirIds(data as JogoPublico) : null
 }
 
 // ------------------------------------------------------ estatísticas nerds
@@ -138,6 +140,19 @@ export async function buscarEstatisticasNerds(): Promise<EstatisticasNerds> {
   return data as EstatisticasNerds
 }
 
+/**
+ * As runs de antes da v0.35 falam o id antigo da carta, e as de depois o
+ * uuid: a mesma carta chega em duas linhas. Aqui elas viram uma só.
+ */
+function juntarPorId(linhas: CartaJogada[]): CartaJogada[] {
+  const somas = new Map<string, number>()
+  for (const l of linhas) {
+    const id = idAtual(l.card_id)
+    somas.set(id, (somas.get(id) ?? 0) + Number(l.vezes))
+  }
+  return [...somas].map(([card_id, vezes]) => ({ card_id, vezes })).sort((a, b) => b.vezes - a.vezes)
+}
+
 export interface CartaJogada {
   card_id: string
   vezes: number
@@ -147,7 +162,7 @@ export async function buscarCartasJogadas(): Promise<CartaJogada[]> {
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase.rpc('cartas_jogadas')
   if (error) throw new Error(error.message)
-  return (data as CartaJogada[]) ?? []
+  return juntarPorId((data as CartaJogada[]) ?? [])
 }
 
 /** As que mais ficaram na mão sem ser jogadas. Mesmo formato de CartaJogada. */
@@ -155,7 +170,7 @@ export async function buscarCartasEncalhadas(): Promise<CartaJogada[]> {
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase.rpc('cartas_encalhadas')
   if (error) throw new Error(error.message)
-  return (data as CartaJogada[]) ?? []
+  return juntarPorId((data as CartaJogada[]) ?? [])
 }
 
 export interface CartaFatal {
@@ -168,7 +183,14 @@ export async function buscarCartasFatais(): Promise<CartaFatal[]> {
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase.rpc('cartas_fatais')
   if (error) throw new Error(error.message)
-  return (data as CartaFatal[]) ?? []
+  const somas = new Map<string, CartaFatal>()
+  for (const l of (data as CartaFatal[]) ?? []) {
+    const id = idAtual(l.card_id)
+    const k = `${l.outcome}|${id}`
+    const antes = somas.get(k)
+    somas.set(k, { ...l, card_id: id, vezes: (antes?.vezes ?? 0) + Number(l.vezes) })
+  }
+  return [...somas.values()].sort((a, b) => b.vezes - a.vezes)
 }
 
 export interface EscolhaDeEvento {
@@ -181,7 +203,14 @@ export async function buscarEscolhasDeEvento(): Promise<EscolhaDeEvento[]> {
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase.rpc('escolhas_de_evento')
   if (error) throw new Error(error.message)
-  return (data as EscolhaDeEvento[]) ?? []
+  const somas = new Map<string, EscolhaDeEvento>()
+  for (const l of (data as EscolhaDeEvento[]) ?? []) {
+    const id = idAtual(l.event_id)
+    const k = `${l.escolha}|${id}`
+    const antes = somas.get(k)
+    somas.set(k, { ...l, event_id: id, vezes: (antes?.vezes ?? 0) + Number(l.vezes) })
+  }
+  return [...somas.values()]
 }
 
 export interface EstressePorDia {

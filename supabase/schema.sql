@@ -382,6 +382,50 @@ create table if not exists public.cartas_antigas (
 
 create index if not exists antigas_carta_idx on public.cartas_antigas (carta_id, id desc);
 
+-- v0.35: o id da carta e do evento virou UUID. Era o nome em hífens
+-- (`hora-extra`), e renomear a carta deixava o id contando o nome velho.
+--
+-- O uuid novo é o uuid v5 do id antigo, num espaço de nomes FIXO — a mesma
+-- conta que o site faz em `src/game/ids.ts`. Por isso não existe tabela de
+-- tradução: o site chega ao mesmo uuid sozinho, e é ele que traduz, NA
+-- LEITURA, o id antigo que mora nos saves, nas runs gravadas e no
+-- localStorage de cada um. Aqui só se reescreve o catálogo, que é de onde os
+-- uuids nascem. `id_antigo` fica para o site reconhecer, nos dados antigos,
+-- as cartas que o admin criou no lab antes disto (essas o código não conhece).
+--
+-- Roda quantas vezes for preciso: só toca no que ainda não é uuid. E NÃO
+-- mude o espaço de nomes: com outro, o mesmo id antigo daria outro uuid.
+create schema if not exists extensions;
+create extension if not exists "uuid-ossp" with schema extensions;
+alter table public.cartas        add column if not exists id_antigo text;
+alter table public.cartas_evento add column if not exists id_antigo text;
+
+do $$
+declare
+  ns constant uuid := '3336ec3e-fbe1-4dfb-9b02-794d74311adc';
+  re constant text := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+begin
+  -- o histórico: a chave e a carta guardada inteira (é ela que "Usar esta"
+  -- devolve ao editor). O modo não é carta, e fica como está
+  update public.cartas_antigas
+    set carta_id = extensions.uuid_generate_v5(ns, carta_id)::text
+    where familia in ('acao', 'evento') and carta_id !~ re;
+  update public.cartas_antigas
+    set dados = jsonb_set(dados, '{id}', to_jsonb(extensions.uuid_generate_v5(ns, dados ->> 'id')::text))
+    where familia in ('acao', 'evento')
+      and jsonb_typeof(dados) = 'object'
+      and dados ->> 'id' is not null
+      and dados ->> 'id' !~ re;
+
+  update public.cartas
+    set id_antigo = id, id = extensions.uuid_generate_v5(ns, id)::text
+    where id !~ re;
+  update public.cartas_evento
+    set id_antigo = id, id = extensions.uuid_generate_v5(ns, id)::text
+    where id !~ re;
+end;
+$$;
+
 -- Uma linha só, para sempre. A versão do baralho é global: ela diz em que
 -- balanceamento uma run foi jogada, e é isso que a torna comparável entre
 -- runs. A `check` na chave primária é o truque que impede a segunda linha.
@@ -1612,8 +1656,9 @@ begin
   if not public.sou_admin() then
     raise exception 'Só admin mexe no catálogo.';
   end if;
-  if v_id is null or v_id !~ '^[a-z0-9-]{2,40}$' then
-    raise exception 'Id inválido: use minúsculas, números e hífen.';
+  -- v0.35: carta e evento novos nascem com uuid (`crypto.randomUUID()`)
+  if v_id is null or v_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    raise exception 'Id inválido: o id da carta é um uuid.';
   end if;
   if coalesce(btrim(p_porque), '') = '' then
     raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';
@@ -1682,8 +1727,9 @@ begin
   if not public.sou_admin() then
     raise exception 'Só admin mexe no catálogo.';
   end if;
-  if v_id is null or v_id !~ '^[a-z0-9-]{2,40}$' then
-    raise exception 'Id inválido: use minúsculas, números e hífen.';
+  -- v0.35: carta e evento novos nascem com uuid (`crypto.randomUUID()`)
+  if v_id is null or v_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    raise exception 'Id inválido: o id da carta é um uuid.';
   end if;
   if coalesce(btrim(p_porque), '') = '' then
     raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';

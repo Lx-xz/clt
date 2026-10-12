@@ -7,6 +7,7 @@ import type {
   EventCard,
   MudancaDeCarta,
 } from './types'
+import { idAtual } from './ids'
 
 /**
  * O catálogo vivo: quais cartas e eventos EXISTEM agora.
@@ -142,6 +143,9 @@ export function cartasRemovidas(): CartaSnapshot[] {
  * ver e descartar, e avisa no console de quem estiver olhando.
  */
 export function getCard(id: CardId): ActionCard {
+  // o id antigo (`hora-extra`) ainda chega de save velho: vira o uuid aqui
+  // também, além de na leitura (veja `ids.ts`)
+  id = idAtual(id)
   const carta = atual.cartas.get(id)
   if (carta) return carta
   if (typeof console !== 'undefined') console.warn(`Carta fora do catálogo: ${id}`)
@@ -158,6 +162,7 @@ export function getCard(id: CardId): ActionCard {
 }
 
 export function getEvent(id: CardId): EventCard {
+  id = idAtual(id)
   const evento = atual.eventos.get(id)
   if (evento) return evento
   if (typeof console !== 'undefined') console.warn(`Evento fora do catálogo: ${id}`)

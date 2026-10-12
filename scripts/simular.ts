@@ -243,7 +243,8 @@ const usos = new Map<string, number>()
 for (const r of relatorios) for (const id of r.cartas) usos.set(id, (usos.get(id) ?? 0) + 1)
 console.log(`\nCARTAS (vezes jogadas por run)`)
 for (const [id, n] of [...usos].sort((a, b) => b[1] - a[1])) {
-  console.log(`  ${id.padEnd(22)} ${(n / QUANTAS).toFixed(2)}`)
+  // pelo NOME: o id virou uuid (v0.35), e uuid não diz qual carta é
+  console.log(`  ${(cartasDoJogo().find((c) => c.id === id)?.name ?? id).padEnd(26)} ${(n / QUANTAS).toFixed(2)}`)
 }
 
 // o vocabulário novo tem que EXECUTAR, e não só compilar: zero aqui quer

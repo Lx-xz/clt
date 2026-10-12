@@ -138,24 +138,6 @@ export function estavel(v: unknown): string {
   return JSON.stringify(v)
 }
 
-/**
- * O id da carta (ou evento) NOVA: o próximo NÚMERO, depois do maior que já
- * existe (v0.35). O id era digitado, e por costume era o nome em hífens —
- * aí renomear a carta deixava o id contando o nome velho. Número não conta
- * nome nenhum, e o nome muda à vontade.
- *
- * Os ids antigos (`hora-extra`) ficam como estão, de propósito: o id está
- * dentro da coleção e dos baralhos de cada jogador, do retrato de toda
- * partida jogada e do histórico das cartas. Trocá-los seria migrar o save de
- * todo mundo para mudar uma coisa que jogador nenhum vê.
- */
-export function proximoId(ids: readonly string[]): string {
-  // começa no 100: o banco pede pelo menos dois caracteres no id
-  // (`admin_salvar_carta`), e três dígitos dão novecentas cartas
-  const numeros = ids.filter((id) => /^\d+$/.test(id)).map(Number)
-  return String(Math.max(99, ...numeros) + 1)
-}
-
 /** O id na edição: só de leitura, porque não muda nunca. */
 export function IdInterno({ id }: { id: string }) {
   return (

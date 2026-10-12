@@ -91,7 +91,8 @@ function derrotas(jogo: Regras) {
 }
 
 /** Três cartas do baralho inicial, para o desenho falar antes do texto. */
-const EXEMPLOS = ['tarefa-simples', 'cafe', 'hora-extra']
+// Tarefa Simples, Café e Hora Extra
+const EXEMPLOS = ['ced5bff1-3c5e-5aaa-ac5c-5783d18e3d43', '49efebc8-f8b2-5495-ad28-472e360fc73b', 'bea0a018-64c8-57a7-a8df-c33aa2248983']
 
 export default function ComoJogar({ onFechar }: { onFechar: () => void }) {
   // as regras de HOJE: o tutorial explica o jogo, não uma partida específica

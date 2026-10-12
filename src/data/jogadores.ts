@@ -1,5 +1,6 @@
 'use client'
 
+import { traduzirIds } from '@/game/ids'
 import { lerAvatar, type Avatar } from './avatar'
 import { supabase } from './supabase'
 
@@ -51,7 +52,8 @@ export async function jogosDoJogador(nick: string): Promise<JogoResumo[]> {
   if (!supabase) throw new Error('O banco não está configurado neste site.')
   const { data, error } = await supabase.rpc('jogos_do_jogador', { p_nick: nick })
   if (error) throw new Error(error.message)
-  return (data as JogoResumo[]) ?? []
+  // as runs gravadas antes da v0.35 falam o id antigo das cartas
+  return traduzirIds((data as JogoResumo[]) ?? [])
 }
 
 /**

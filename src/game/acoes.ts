@@ -1,4 +1,5 @@
 import { numeroDaSemana } from './regras'
+import { idAtual } from './ids'
 import type { CardId, CardKind, GameState } from './types'
 
 /**
@@ -432,6 +433,9 @@ type AcaoAntiga =
   | { faz: 'aviso'; texto: string }
 
 function migrarAcao(acao: Acao): Acao {
+  // a carta citada pela ação tinha o id antigo (`hora-extra`) até a v0.35;
+  // vira o uuid na leitura, como tudo (veja `ids.ts`)
+  if (acao.faz === 'ganharCarta' && acao.carta) return { ...acao, carta: idAtual(acao.carta) }
   const velha = acao as unknown as AcaoAntiga
   switch (velha.faz) {
     case 'salarioPermanente':
