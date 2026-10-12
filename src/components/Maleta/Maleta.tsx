@@ -8,7 +8,7 @@ import { NOMES_DE_RARIDADE } from '@/game/colecao'
 import { MALETAS, type Cosmetico, type TipoMaleta } from '@/game/cosmeticos'
 import buttons from '@/styles/buttons.module.sass'
 import Avatar from '../Avatar'
-import { BarbaIcon, CabeloIcon, ExpressaoIcon, ExtrasIcon, FundoIcon, RostoIcon, RoupaIcon } from '../icons'
+import { AboboraIcon, BarbaIcon, CabeloIcon, ExpressaoIcon, ExtrasIcon, FundoIcon, RostoIcon, RoupaIcon } from '../icons'
 import styles from './Maleta.module.sass'
 
 const METAIS: Record<TipoMaleta, string> = {
@@ -118,6 +118,7 @@ export function CosmeticoVirando({ cosmetico, avatar, virado, nova = true }: {
       <div className={styles.giro}>
         <div className={`${styles.face} ${styles.faceFrente}`}>
           <Avatar avatar={avatar} tamanho={176} />
+          {cosmetico.tema === 'halloween' ? <AboboraIcon size={28} className={styles.temaNoCanto} /> : null}
         </div>
         <div className={`${styles.face} ${styles.faceVerso}`} aria-hidden>
           {ICONES_VERSO.map((Icone, i) => (

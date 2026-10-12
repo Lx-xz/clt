@@ -44,6 +44,7 @@ export type CorRoupa =
   | 'vinho'
   | 'areia'
   | 'grafite'
+  | 'abobora'
   | 'terracota'
   | 'petroleo'
   | 'mostarda'
@@ -64,6 +65,9 @@ export type CorFundo =
   | 'poeiraEscuro'
   | 'lavandaEscuro'
   | 'pessegoEscuro'
+  // de Halloween (cosméticos): abóbora e a noite
+  | 'abobora'
+  | 'noite'
 export type Olhos =
   | 'amendoa'
   | 'desenho'
@@ -111,7 +115,10 @@ export type Tronco =
 /** Óculos e chapéu são campos SEPARADOS: um é do rosto e o outro da cabeça, e
  *  quem quer os dois não deveria ter que escolher. */
 export type Oculos = 'nenhum' | 'redondo' | 'quadrado' | 'sol'
-export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'headset'
+export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'bruxa' | 'headset'
+/** Os cílios: nenhum (o de sempre, o desenho é chapado) ou longos — o
+ *  colecionável, três fios no canto de fora de cada olho. */
+export type Cilios = 'nenhum' | 'longos'
 /** A cor da barba: a do cabelo (o padrão), ou outra — barba grisalha com o
  *  cabelo ainda escuro é a combinação mais comum que a receita não deixava. */
 export type CorDaBarba = 'cabelo' | CorCabelo
@@ -136,6 +143,7 @@ export interface Avatar {
   olhos: Olhos
   corOlhos: CorDosOlhos
   iris: Iris
+  cilios: Cilios
   barba: Barba
   corBarba: CorDaBarba
   ladoBarba: LadoDaBarba
@@ -168,6 +176,7 @@ export const AVATAR_PADRAO: Avatar = {
   olhos: 'amendoa',
   corOlhos: 'castanho',
   iris: 'normal',
+  cilios: 'nenhum',
   barba: 'nenhuma',
   corBarba: 'cabelo',
   ladoBarba: 'conecta',
@@ -299,6 +308,8 @@ export const ROUPAS: Opcao<CorRoupa>[] = [
   { valor: 'vinho', rotulo: 'Vinho' },
   { valor: 'areia', rotulo: 'Areia' },
   { valor: 'grafite', rotulo: 'Grafite' },
+  // trancada: de Halloween (`src/game/cosmeticos.ts`)
+  { valor: 'abobora', rotulo: 'Abóbora' },
 ]
 
 export const OCULOS: Opcao<Oculos>[] = [
@@ -314,6 +325,8 @@ export const ACESSORIOS: Opcao<Acessorio>[] = [
   { valor: 'bone', rotulo: 'Boné' },
   { valor: 'chapeu', rotulo: 'Chapéu' },
   { valor: 'headset', rotulo: 'Headset' },
+  // trancado: de Halloween
+  { valor: 'bruxa', rotulo: 'Chapéu de bruxa' },
 ]
 
 export const CORES_DA_BARRA: Opcao<CorDaBarba>[] = [
@@ -361,6 +374,11 @@ export const IRIS: Opcao<Iris>[] = [
   { valor: 'colorido', rotulo: 'Todo colorido' },
 ]
 
+export const CILIOS: Opcao<Cilios>[] = [
+  { valor: 'nenhum', rotulo: 'Sem cílios' },
+  { valor: 'longos', rotulo: 'Cílios longos' },
+]
+
 export const BRINCOS: Opcao<Brinco>[] = [
   { valor: 'nenhum', rotulo: 'Sem brinco' },
   { valor: 'um', rotulo: 'Numa orelha' },
@@ -397,6 +415,9 @@ export const FUNDOS: Opcao<CorFundo>[] = [
   { valor: 'lavandaEscuro', rotulo: 'Lavanda escuro' },
   { valor: 'pessegoEscuro', rotulo: 'Pêssego escuro' },
   { valor: 'poeiraEscuro', rotulo: 'Poeira escuro' },
+  // trancados: de Halloween
+  { valor: 'abobora', rotulo: 'Abóbora' },
+  { valor: 'noite', rotulo: 'Noite' },
 ]
 
 function um<T extends string>(lista: Opcao<T>[], bruto: unknown, padrao: T): T {
@@ -439,6 +460,7 @@ export function lerAvatar(bruto: unknown): Avatar {
     olhos: um(OLHOS, a.olhos, AVATAR_PADRAO.olhos),
     corOlhos: um(CORES_DOS_OLHOS, a.corOlhos, AVATAR_PADRAO.corOlhos),
     iris: um(IRIS, a.iris, AVATAR_PADRAO.iris),
+    cilios: um(CILIOS, a.cilios, AVATAR_PADRAO.cilios),
     barba: um(BARBAS, a.barba, AVATAR_PADRAO.barba),
     corBarba: um(CORES_DA_BARRA, a.corBarba, AVATAR_PADRAO.corBarba),
     // antes desta escolha existir, só a barba cheia tinha costeleta: quem
@@ -489,6 +511,7 @@ export function avatarAleatorio(tenho: readonly string[] = []): Avatar {
     // a íris diferente é colecionável: o sorteio só a dá a quem tem (o laço
     // de baixo tira a trancada), e mesmo assim raramente
     iris: talvez(IRIS, 'normal', 0.1),
+    cilios: talvez(CILIOS, 'nenhum', 0.2),
     barba: talvez(BARBAS, 'nenhuma', 0.35),
     // quase sempre a do cabelo; às vezes grisalha, que é o caso comum
     corBarba: Math.random() < 0.15 ? 'grisalho' : 'cabelo',

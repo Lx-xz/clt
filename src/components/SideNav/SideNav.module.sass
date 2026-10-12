@@ -177,6 +177,26 @@ $painel-largo: 256px
   letter-spacing: .06em
   white-space: nowrap
 
+// o link da máquina leva o saldo de tokens na ponta direita
+.rotuloComSaldo
+  display: flex
+  flex: 1
+  align-items: center
+  justify-content: space-between
+  gap: 8px
+
+.saldo
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  padding: 2px 8px 2px 4px
+  background: color-mix(in srgb, #e3b23c 18%, transparent)
+  border-radius: 999px
+  color: inherit
+  font-family: var(--mono)
+  font-size: 13px
+  font-weight: 700
+
 // os rótulos só aparecem com a barra aberta
 .rotulo,
 .texto,

@@ -100,6 +100,7 @@ export const TONS_DE_ROUPA: Record<CorRoupa, string> = {
   vinho: '#8c5a58',
   areia: '#c2ab86',
   grafite: '#4f4d48',
+  abobora: '#d9772b',
 }
 
 /** As cores de boné e chapéu — mais vivas que as de roupa, de propósito. */
@@ -134,6 +135,8 @@ export const TONS_DE_FUNDO: Record<CorFundo, string> = {
   lavanda: '#c1bcd1',
   pessego: '#dcc0a8',
   poeira: '#cbbfc4',
+  abobora: '#e39a4f',
+  noite: '#3b3352',
 }
 
 /**
@@ -1035,6 +1038,33 @@ export const ACESSORIOS: Record<Acessorio, {
       )
     },
   },
+  bruxa: {
+    rotulo: 'Chapéu de bruxa',
+    // o chapéu de cima, com a copa trocada por um cone que entorta na ponta.
+    // A aba é a mesma (e na mesma altura, pelo mesmo motivo da sobrancelha),
+    // então o cabelo por baixo segue a regra do chapéu sem nada novo
+    aba: (m) => m.topo + altura(m) * 0.22,
+    desenhar: (m, cor, sombra) => {
+      const L = m.larg + 0.6
+      const a = altura(m)
+      const y = m.topo + a * 0.22
+      // a ponta baixa o bastante para caber no quadro (com a ponta fora, o
+      // cone lia como um funil), e a base da largura da cabeça: mais
+      // estreita, o alto da cabeça aparecia dos lados do cone
+      const ponta = Math.max(5, m.topo - a * 0.2)
+      return (
+        <>
+          <ellipse cx="50" cy={y} rx={L + 14} ry={4.8} fill={cor} />
+          <path
+            d={`M${50 - L} ${y} C${50 - L * 0.6} ${y - a * 0.22} ${45} ${ponta + 9} ${58} ${ponta} C${52} ${ponta + 10} ${50 + L * 0.5} ${y - a * 0.22} ${50 + L} ${y} Z`}
+            fill={cor}
+          />
+          <path d={`M${50 - L} ${y} L${50 + L} ${y} L${50 + L * 0.88} ${y - 3.4} L${50 - L * 0.88} ${y - 3.4} Z`} fill={sombra} />
+          <rect x={47.6} y={y - 3.6} width={4.8} height={3.8} rx={0.6} fill="none" stroke="#d8a93c" strokeWidth={0.9} />
+        </>
+      )
+    },
+  },
   headset: {
     rotulo: 'Headset',
     // o fone de call center: arco por cima da cabeça, as duas conchas na
@@ -1451,6 +1481,35 @@ export interface DesenhoDeOlho {
   sombra: string
   /** O feitio por dentro: a íris de sempre, ou uma das colecionáveis. */
   iris?: Iris
+  /** Os cílios longos (colecionável): três fios no canto de fora. */
+  cilios?: boolean
+}
+
+/**
+ * Os fios dos cílios, cada um saindo de uma base e apontando para fora e
+ * para cima (`ang`, em graus a partir da horizontal de FORA do olho). Em
+ * coordenadas do próprio olho, então giram e piscam junto com ele.
+ */
+function fios(o: DesenhoDeOlho, bases: { x: number; y: number; ang: number }[]): ReactNode {
+  return (
+    <g stroke="#241f1b" strokeWidth={0.75} strokeLinecap="round">
+      {bases.map((b, i) => {
+        const a = (b.ang * Math.PI) / 180
+        return <line key={i} x1={b.x} y1={b.y} x2={b.x + o.lado * Math.cos(a) * 1.9} y2={b.y - Math.sin(a) * 1.9} />
+      })}
+    </g>
+  )
+}
+
+/** Os cílios na borda de cima do branco, do canto de fora para o meio. */
+function ciliosNaBorda(o: DesenhoDeOlho, rx: number, ry: number): ReactNode {
+  return fios(
+    o,
+    [18, 40, 62].map((g) => {
+      const t = (g * Math.PI) / 180
+      return { x: o.lado * rx * Math.cos(t), y: -ry * Math.sin(t), ang: 20 + g * 0.9 }
+    }),
+  )
 }
 
 /** A cor da íris. Escuras o bastante para ler em cima do branco no tamanho
@@ -1489,15 +1548,17 @@ function miolo(
   olha = true,
 ): ReactNode {
   const daIris = olha ? styles.iris : undefined
+  const cilios = o.cilios ? ciliosNaBorda(o, branco.rx, branco.ry) : null
   const tipo = o.iris ?? 'normal'
-  if (tipo === 'preto') return <ellipse rx={branco.rx} ry={branco.ry} fill="#1d1916" />
-  if (tipo === 'colorido') return <ellipse rx={branco.rx} ry={branco.ry} fill={clarear(o.cor, 0.12)} />
+  if (tipo === 'preto') return <>{cilios}<ellipse rx={branco.rx} ry={branco.ry} fill="#1d1916" /></>
+  if (tipo === 'colorido') return <>{cilios}<ellipse rx={branco.rx} ry={branco.ry} fill={clarear(o.cor, 0.12)} /></>
   const fenda = (
     <ellipse cx={iris.cx} cy={iris.cy} rx={iris.rx * 0.24} ry={iris.ry * 0.86} fill={FENDA} />
   )
   if (tipo === 'reptil') {
     return (
       <>
+        {cilios}
         <ellipse rx={branco.rx} ry={branco.ry} fill={clarear(o.cor, 0.35)} />
         <g className={daIris}>{fenda}</g>
       </>
@@ -1505,6 +1566,7 @@ function miolo(
   }
   return (
     <>
+      {cilios}
       <ellipse rx={branco.rx} ry={branco.ry} fill={BRANCO_DO_OLHO} />
       <g className={daIris}>
         <ellipse cx={iris.cx} cy={iris.cy} rx={iris.rx} ry={iris.ry} fill={o.cor} />
@@ -1551,9 +1613,11 @@ function comPalpebra(o: DesenhoDeOlho, fora: number, dentro: number): ReactNode 
   const xf = o.lado * 7.5
   const xd = -o.lado * 7.5
   const em = (k: number) => fora + (dentro - fora) * k
+  // com pálpebra, os cílios saem da borda dela, e não do branco (que ela
+  // cobre): por isso o olho de baixo é desenhado sem eles
   return (
     <>
-      {olhoComIris(o, AMENDOA)}
+      {olhoComIris({ ...o, cilios: false }, AMENDOA)}
       <g transform={`translate(${o.x} ${o.y}) scale(${o.t})`}>
         <path d={`M${xf} -6 L${xd} -6 L${xd} ${dentro} L${xf} ${fora} Z`} fill={o.pele} />
         <path
@@ -1563,6 +1627,9 @@ function comPalpebra(o: DesenhoDeOlho, fora: number, dentro: number): ReactNode 
           strokeLinecap="round"
           fill="none"
         />
+        {o.cilios
+          ? fios(o, [0.08, 0.2, 0.32].map((k, i) => ({ x: xf * 0.84 + (xd - xf) * (k - 0.08), y: em(k), ang: 35 + i * 22 })))
+          : null}
       </g>
     </>
   )
@@ -1599,9 +1666,10 @@ export const OLHOS: Record<Olhos, {
     // a pálpebra reta e a íris encostada no canto: olhando de lado
     desenhar: (o) => (
       <g transform={`translate(${o.x} ${o.y}) rotate(${-8 * o.lado}) scale(${o.t})`}>
-        {miolo(o, { rx: 5.8, ry: 4.3 }, { cx: -2.2 * o.lado, cy: 0.9, rx: 2.4, ry: 3.1 }, false)}
+        {miolo({ ...o, cilios: false }, { rx: 5.8, ry: 4.3 }, { cx: -2.2 * o.lado, cy: 0.9, rx: 2.4, ry: 3.1 }, false)}
         <rect x={-6.8} y={-5.8} width={13.6} height={4.5} fill={o.pele} />
         <path d="M-5.5 -1.3 h11" stroke={o.sombra} strokeWidth={1.1} strokeLinecap="round" fill="none" />
+        {o.cilios ? fios(o, [5.4, 4.1, 2.8].map((x, i) => ({ x: o.lado * x, y: -1.3, ang: 35 + i * 22 }))) : null}
       </g>
     ),
   },
@@ -2370,6 +2438,7 @@ export default function Avatar({
                           t: m.olho,
                           cor: ajustes?.cores?.olho ?? TONS_DOS_OLHOS[avatar.corOlhos] ?? TONS_DOS_OLHOS.castanho,
                           iris: avatar.iris,
+                          cilios: avatar.cilios === 'longos',
                           lado: s,
                           pele: p,
                           sombra: ps,

@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import { avatarAleatorio, type Avatar as Receita } from '@/data/avatar'
 import { getCard } from '@/game/catalogo'
 import { COSMETICOS, cosmeticoPorId, type Cosmetico } from '@/game/cosmeticos'
+import { TOKENS_POR_RARIDADE } from '@/game/tokens'
 import { NOMES_DE_RARIDADE } from '@/game/colecao'
 import { ENVELOPES, type FormaDaRecompensa } from '@/game/missoes'
 import type { CardId, Raridade, TipoEnvelope } from '@/game/types'
@@ -13,6 +14,7 @@ import buttons from '@/styles/buttons.module.sass'
 import Avatar from '../Avatar'
 import Card from '../Card'
 import Dialogo from '../Dialogo'
+import { AboboraIcon, TokenIcon } from '../icons'
 import { CosmeticoVirando, IconeDoCosmetico } from '../Maleta'
 import { useSessaoSeHouver } from '../SessaoGuard'
 import { DesenhoDaRecompensa, DURACAO, useAndamento } from '../Recompensa'
@@ -303,6 +305,16 @@ function itensDe(ids: readonly string[] = []): Cosmetico[] {
   return ids.map(cosmeticoPorId).filter((c): c is Cosmetico => !!c)
 }
 
+/** A ficha em cima da carta (ou do item) que virou token, com o valor. */
+function FichaEmCima({ valor }: { valor: number }) {
+  return (
+    <span className={styles.fichaEmCima} aria-label={`Virou ${valor} token${valor > 1 ? 's' : ''}`}>
+      <TokenIcon size={30} />
+      <b>+{valor}</b>
+    </span>
+  )
+}
+
 /** O avatar que veste o item: o de quem abre, ou — se ainda é o manequim,
  *  que não veste nada — um sorteado, só para mostrar a peça no corpo. */
 function useModelo(): Receita {
@@ -315,13 +327,16 @@ function useModelo(): Receita {
 
 const vestindo = (modelo: Receita, item: Cosmetico): Receita => ({ ...modelo, [item.campo]: item.valor }) as Receita
 
-export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, onFechar }: {
+export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, emToken, onFechar }: {
   tipo: TipoEnvelope
   cartas: CardId[]
   /** Os itens (peças do avatar) que vieram junto: sobem depois das cartas. */
   cosmeticos?: string[]
   /** As que a pessoa não tinha nenhuma cópia antes: ganham o selo "nova". */
   novas: CardId[]
+  /** Quais viraram TOKEN (a cópia acima do teto, o item que já tinha), na
+   *  ordem de `cartas` e de `cosmeticos` — veja `abrirEnvelope`. */
+  emToken?: { cartas: boolean[]; cosmeticos: boolean[] }
   onFechar: () => void
 }) {
   const [fase, setFase] = useState<Fase>(semMovimento() ? 'esperando' : 'chegando')
@@ -335,8 +350,21 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, on
   const t = useAndamento(fase === 'abrindo' || fase === 'revelando', DURACAO[env.forma])
   const saida = SAIDA[env.forma]
   // as cartas primeiro, e os itens depois, um por toque, como mais um prêmio
-  const itens = itensDe(cosmeticos)
+  // os itens que existem de verdade, cada um com a sua marca de token (o
+  // índice é o de `cosmeticos`, antes do filtro)
+  const itensComToken = (cosmeticos ?? [])
+    .map((id, i) => ({ item: cosmeticoPorId(id), token: emToken?.cosmeticos[i] ?? false }))
+    .filter((x): x is { item: Cosmetico; token: boolean } => !!x.item)
+  const itens = itensComToken.map((x) => x.item)
   const total = cartas.length + itens.length
+  /** O valor em tokens da posição `i` (carta, e depois item), ou 0 se ela
+   *  entrou na coleção. */
+  const tokenDe = (i: number): number => {
+    if (i < cartas.length) return emToken?.cartas[i] ? TOKENS_POR_RARIDADE[getCard(cartas[i]).raridade ?? 'comum'] : 0
+    const x = itensComToken[i - cartas.length]
+    return x?.token ? TOKENS_POR_RARIDADE[x.item.raridade] : 0
+  }
+  const somaDeTokens = Array.from({ length: total }, (_, i) => tokenDe(i)).reduce((a, b) => a + b, 0)
   const modelo = useModelo()
 
   // o palco é desenhado em 360×560 e ESCALADO para caber: as animações
@@ -422,6 +450,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, on
   const carta = atual < cartas.length ? getCard(cartas[atual]) : null
   const item = atual >= cartas.length ? (itens[atual - cartas.length] ?? null) : null
   const raridade = carta?.raridade ?? item?.raridade ?? 'comum'
+  const tokenAtual = tokenDe(atual)
   const saidas = guardando ? atual + 1 : atual
   const guardadas = cartas.slice(0, Math.min(cartas.length, saidas))
   const itensGuardados = itens.slice(0, Math.max(0, saidas - cartas.length))
@@ -460,7 +489,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, on
               {fase === 'revelando' && (carta || item) ? (
                 <div
                   key={atual}
-                  className={`${styles.cartaSaindo} ${item ? styles.itemSaindo : ''} ${virada ? styles.revelada : ''} ${guardando ? styles.guardando : ''} ${styles[`brilho_${raridade}`]}`}
+                  className={`${styles.cartaSaindo} ${item ? styles.itemSaindo : ''} ${virada ? styles.revelada : ''} ${guardando ? styles.guardando : ''} ${tokenAtual && virada ? styles.virandoToken : ''} ${styles[`brilho_${raridade}`]}`}
                   style={
                     {
                       '--de': `${saida.de}px`,
@@ -478,14 +507,26 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, on
                       <span className={styles.rotuloRaridade} aria-live="polite">
                         {virada ? (
                           <>
-                            {novas.includes(carta.id) ? <b className={styles.nova}>nova</b> : null}
+                            {tokenAtual ? (
+                              <b className={styles.repetida}>acima do limite</b>
+                            ) : novas.includes(carta.id) ? (
+                              <b className={styles.nova}>nova</b>
+                            ) : null}
                             {NOMES_DE_RARIDADE[raridade]}
                           </>
                         ) : null}
                       </span>
                     </>
                   ) : item ? (
-                    <CosmeticoVirando cosmetico={item} avatar={vestindo(modelo, item)} virado={virada} />
+                    <CosmeticoVirando cosmetico={item} avatar={vestindo(modelo, item)} virado={virada} nova={!tokenAtual} />
+                  ) : null}
+                  {/* a repetida acima do limite: desvira como as outras, e
+                      então esmaece e a ficha salta por cima, com o valor */}
+                  {tokenAtual && virada ? (
+                    <span className={styles.fichaGanha} aria-label={`Virou ${tokenAtual} token${tokenAtual > 1 ? 's' : ''}`}>
+                      <TokenIcon size={58} />
+                      <b>+{tokenAtual}</b>
+                    </span>
                   ) : null}
                 </div>
               ) : null}
@@ -493,11 +534,18 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, on
           </div>
           <div className={styles.fileira} aria-label="Cartas que já saíram" style={{ '--sobra': `${sobra}px` } as React.CSSProperties}>
             {guardadas.map((id, i) => (
-              <Card key={i} card={getCard(id)} className={styles.cartaPequena} />
+              <span key={i} className={`${styles.naFileira} ${tokenDe(i) ? styles.emToken : ''}`}>
+                <Card card={getCard(id)} className={styles.cartaPequena} />
+                {tokenDe(i) ? <TokenIcon size={26} className={styles.fichaPequena} /> : null}
+              </span>
             ))}
-            {itensGuardados.map((c) => (
-              <span key={c.id} className={styles.itemPequeno}>
-                <Avatar avatar={vestindo(modelo, c)} tamanho={69} />
+            {itensGuardados.map((c, i) => (
+              <span key={c.id} className={`${styles.naFileira} ${tokenDe(cartas.length + i) ? styles.emToken : ''}`}>
+                <span className={styles.itemPequeno}>
+                  <Avatar avatar={vestindo(modelo, c)} tamanho={69} />
+                  {c.tema === 'halloween' ? <AboboraIcon size={16} className={styles.temaNoItem} /> : null}
+                </span>
+                {tokenDe(cartas.length + i) ? <TokenIcon size={26} className={styles.fichaPequena} /> : null}
               </span>
             ))}
           </div>
@@ -514,32 +562,49 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, on
             <div className={styles.resumoCartas}>
               {cartas.map((id, i) => {
                 const c = getCard(id)
+                const token = tokenDe(i)
                 return (
-                  <div key={i} className={styles.resumoItem} style={{ '--i': i } as React.CSSProperties}>
+                  <div key={i} className={`${styles.resumoItem} ${token ? styles.emToken : ''}`} style={{ '--i': i } as React.CSSProperties}>
                     <Card card={c} className={styles.cartaResumo} />
+                    {token ? <FichaEmCima valor={token} /> : null}
                     <span className={`${styles.rotuloResumo} ${styles[`texto_${c.raridade ?? 'comum'}`]}`}>
-                      {novas.includes(id) && cartas.indexOf(id) === i ? <b className={styles.nova}>nova</b> : null}
+                      {!token && novas.includes(id) && cartas.indexOf(id) === i ? <b className={styles.nova}>nova</b> : null}
                       {NOMES_DE_RARIDADE[c.raridade ?? 'comum']}
                     </span>
                   </div>
                 )
               })}
               {itens.map((c, i) => (
-                <div key={c.id} className={styles.resumoItem} style={{ '--i': cartas.length + i } as React.CSSProperties}>
+                <div
+                  key={c.id}
+                  className={`${styles.resumoItem} ${tokenDe(cartas.length + i) ? styles.emToken : ''}`}
+                  style={{ '--i': cartas.length + i } as React.CSSProperties}
+                >
                   <span className={styles.itemResumo}>
                     <Avatar avatar={vestindo(modelo, c)} tamanho={138} />
+                    {c.tema === 'halloween' ? <AboboraIcon size={24} className={styles.temaNoItem} /> : null}
                   </span>
+                  {tokenDe(cartas.length + i) ? <FichaEmCima valor={tokenDe(cartas.length + i)} /> : null}
                   <span className={styles.nomeDoItem}>
                     <IconeDoCosmetico cosmetico={c} size={15} /> {c.nome}
                   </span>
                   <span className={`${styles.rotuloResumo} ${styles[`texto_${c.raridade}`]}`}>
-                    <b className={styles.nova}>item</b>
+                    {tokenDe(cartas.length + i) ? null : <b className={styles.nova}>item</b>}
                     {NOMES_DE_RARIDADE[c.raridade]}
                   </span>
                 </div>
               ))}
             </div>
           )}
+          {/* a soma das que viraram token, embaixo de tudo */}
+          {somaDeTokens > 0 ? (
+            <p className={styles.somaDeTokens} style={{ '--i': total } as React.CSSProperties}>
+              <TokenIcon size={28} />
+              <span>
+                <b>+{somaDeTokens}</b> token{somaDeTokens > 1 ? 's' : ''} das que passaram do limite
+              </span>
+            </p>
+          ) : null}
           <p className={styles.dicaResumo}>
             {itens.length > 0
               ? 'As cartas já estão na coleção, e o item já aparece no editor do avatar.'

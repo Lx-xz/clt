@@ -58,6 +58,7 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 /** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
 export const EM_ANDAMENTO: string[] = [
   'Rebalancear: hoje quase toda partida acaba em burnout ainda na primeira semana — o jogo está mais duro do que deveria.',
+  'A máquina de vendas: três cartas e três itens por dia, comprados com tokens.',
   'Mais peças para o avatar, e fundos de mesa para escolher onde jogar.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
   'Uma recompensa para quem manda bom feedback.',
@@ -66,6 +67,17 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.29',
+    data: '2026-10-12',
+    titulo: 'Halloween e os tokens',
+    itens: [
+      { tipo: 'novo', texto: 'Coleção de Halloween para o avatar: chapéu de bruxa, cílios longos, olho de gato, de réptil, todo colorido e todo preto, e as cores abóbora e noite. As peças dela levam uma abóbora no canto.' },
+      { tipo: 'novo', texto: 'Tokens: a carta que passa do limite de cópias e o item que você já tem não somem mais — viram tokens na abertura, conforme a raridade, e a soma aparece no fim.' },
+      { tipo: 'melhor', texto: 'As recompensas sorteiam entre todas as cartas, e não só entre as que faltam: completar a coleção ficou mais demorado, e as repetidas viram tokens.' },
+      { tipo: 'melhor', texto: 'No editor, dá para tocar numa peça que ainda não é sua e ver como fica no avatar. Salvar com ela é que não dá.' },
+    ],
+  },
   {
     versao: '0.27',
     data: '2026-10-12',

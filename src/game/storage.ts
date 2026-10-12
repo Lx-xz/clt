@@ -44,8 +44,13 @@ export function loadCollection(): Collection {
   return lerColecao(read<unknown>(COLLECTION_KEY) ?? read<unknown>(COLLECTION_KEY_V1))
 }
 
+/** Avisado a cada coleção gravada: quem mostra algo dela fora da página que
+ *  a mudou (o saldo de tokens na barra lateral) ouve isto em `window`. */
+export const EVENTO_COLECAO = 'clt:colecao'
+
 export function saveCollection(collection: Collection) {
   write(COLLECTION_KEY, collection)
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVENTO_COLECAO))
 }
 
 /** Campos que a mesa lê direto; sem qualquer um deles a run é velha demais. */

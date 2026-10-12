@@ -1,0 +1,381 @@
+// A máquina de lanche do corredor: gabinete vermelho, vitrine de vidro escuro
+// com as molas, painel com visor de cristal líquido e a boca embaixo. As
+// cores são DELA, e não do tema: é um objeto, como a maleta e o cofre, e
+// ficaria igual numa sala clara ou escura.
+.pagina
+  --gabinete: #b5483b
+  --gabinete-escuro: #8c3328
+  --gabinete-claro: #cf6252
+  --vidro: #1d2529
+  --metal: #c9cdd1
+  --lcd: #0f1b0f
+  --lcd-texto: #9fe07a
+  max-width: 820px
+
+.titulo
+  margin: 0 0 4px
+
+.intro
+  margin: 0 0 22px
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.5
+
+.maquina
+  padding: 14px 14px 18px
+  background: var(--gabinete)
+  border-radius: 18px 18px 10px 10px
+  box-shadow: inset 0 -6px 0 var(--gabinete-escuro), inset 0 3px 0 var(--gabinete-claro), 0 14px 30px rgba(0, 0, 0, .25)
+
+// o letreiro aceso no alto
+.letreiro
+  margin-bottom: 12px
+  padding: 8px 12px
+  background: #fff6e4
+  border-radius: 8px
+  box-shadow: 0 0 18px rgba(255, 233, 180, .55), inset 0 -2px 0 rgba(0, 0, 0, .08)
+  color: var(--gabinete-escuro)
+  font-family: var(--mono)
+  font-size: 14px
+  font-weight: 700
+  letter-spacing: .14em
+  text-align: center
+  text-transform: uppercase
+
+  span
+    font-size: 18px
+
+.corpo
+  display: grid
+  grid-template-columns: 1fr 190px
+  gap: 14px
+
+// ------------------------------------------------------------ a vitrine
+.vitrine
+  position: relative
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding: 14px 12px 10px
+  overflow: hidden
+  background: var(--vidro)
+  border: 6px solid var(--gabinete-escuro)
+  border-radius: 10px
+
+// o brilho do vidro, em diagonal, por cima de tudo e sem pegar o toque
+.reflexo
+  position: absolute
+  inset: 0
+  z-index: 3
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .07) 38%, transparent 46%, transparent 62%, rgba(255, 255, 255, .05) 68%, transparent 74%)
+  pointer-events: none
+
+.prateleira
+  position: relative
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  gap: 8px
+  min-height: 190px
+  padding-bottom: 8px
+  // a prateleira de metal embaixo das molas
+  border-bottom: 5px solid #5e676c
+
+.semNada
+  grid-column: 1 / -1
+  align-self: center
+  margin: 0
+  color: #c7cfd3
+  font-size: 13px
+  text-align: center
+
+.vaga
+  position: relative
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: flex-end
+  gap: 2px
+  padding: 6px 2px 0
+  background: none
+  border: 2px solid transparent
+  border-radius: 8px
+  cursor: pointer
+  transition: border-color .12s ease, background .12s ease
+
+  &:hover:not(:disabled)
+    background: rgba(255, 255, 255, .04)
+
+  &:focus-visible
+    outline: 2px solid var(--lcd-texto)
+    outline-offset: 2px
+
+.escolhida
+  background: rgba(159, 224, 122, .08)
+  border-color: var(--lcd-texto)
+
+.vazia
+  cursor: default
+
+.produto
+  position: relative
+  z-index: 1
+  display: grid
+  place-items: end center
+  min-height: 132px
+  line-height: 0
+
+.cartaNaVaga
+  --carta-h: 128px
+  --carta-w: 84px
+  --carta-arte: 48px
+
+.item
+  position: relative
+  line-height: 0
+
+  > span:first-child
+    border: 3px solid #f4efe3
+    border-radius: 12px
+
+.abobora
+  position: absolute
+  top: -8px
+  right: -8px
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5))
+
+// a mola: arame em espiral embaixo do produto
+.mola
+  position: relative
+  z-index: 0
+  width: 92%
+  height: 14px
+  margin-top: -6px
+  color: var(--metal)
+
+.molaGirando
+  animation: mola-gira .9s ease-in-out
+
+.etiqueta
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  margin-top: 4px
+  padding: 2px 8px
+  background: #f4efe3
+  border-left: 4px solid var(--cor-r, #b9b2a3)
+  border-radius: 3px
+  color: #2b2622
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 700
+
+  b
+    margin-right: 2px
+    color: var(--gabinete-escuro)
+
+.r_incomum
+  --cor-r: var(--raridade-incomum)
+
+.r_rara
+  --cor-r: var(--raridade-rara)
+
+.r_epica
+  --cor-r: var(--raridade-epica)
+
+.r_lendaria
+  --cor-r: var(--raridade-lendaria)
+
+// comprado: a mola empurra o produto para a frente, ele tomba e cai até a
+// boca, lá embaixo da vitrine
+.caindo
+  animation: cai 1.3s cubic-bezier(.5, 0, .75, .3) forwards
+
+// --------------------------------------------------------------- o painel
+.painel
+  display: flex
+  flex-direction: column
+  gap: 12px
+  padding: 12px
+  background: var(--gabinete-escuro)
+  border-radius: 10px
+
+.visor
+  display: flex
+  align-items: center
+  min-height: 64px
+  padding: 8px 10px
+  background: var(--lcd)
+  border: 3px solid #2a2a2a
+  border-radius: 6px
+  box-shadow: inset 0 0 12px rgba(159, 224, 122, .18)
+  color: var(--lcd-texto)
+  font-family: var(--mono)
+  font-size: 13px
+  line-height: 1.35
+  text-shadow: 0 0 6px rgba(159, 224, 122, .55)
+  text-transform: uppercase
+  overflow-wrap: anywhere
+
+.visorErro
+  color: #ff9b84
+  text-shadow: 0 0 6px rgba(255, 120, 100, .6)
+  animation: pisca-visor .35s steps(2) 3
+
+.saldo,
+.preco
+  display: flex
+  align-items: center
+  justify-content: space-between
+  color: #f4dcd6
+  font-size: 13px
+
+  b
+    display: inline-flex
+    align-items: center
+    gap: 6px
+    color: #fff
+    font-family: var(--mono)
+    font-size: 20px
+
+.preco b
+  font-size: 16px
+
+.falta
+  color: #ff9b84 !important
+
+// a fenda das fichas: só decoração
+.fenda
+  align-self: center
+  width: 12px
+  height: 40px
+  background: #2a2a2a
+  border: 3px solid var(--metal)
+  border-radius: 6px
+
+.comprar
+  padding: 12px
+  background: #f2c14e
+  border: 0
+  border-radius: 8px
+  box-shadow: inset 0 -4px 0 #b9831f
+  color: #3b2a08
+  font: inherit
+  font-weight: 800
+  letter-spacing: .08em
+  text-transform: uppercase
+  cursor: pointer
+
+  &:active:not(:disabled)
+    box-shadow: inset 0 -1px 0 #b9831f
+    transform: translateY(3px)
+
+  &:disabled
+    opacity: .45
+    cursor: default
+
+// --------------------------------------------------------------- a boca
+.boca
+  display: flex
+  align-items: center
+  justify-content: center
+  width: calc(100% - 204px)
+  min-height: 70px
+  margin-top: 14px
+  padding: 8px
+  background: #1a1a1a
+  border: 0
+  border-top: 8px solid var(--gabinete-escuro)
+  border-radius: 4px 4px 10px 10px
+  box-shadow: inset 0 10px 14px rgba(0, 0, 0, .6)
+  color: #8a8f92
+  font: inherit
+  cursor: default
+
+.bocaCheia
+  cursor: pointer
+
+.empurre
+  font-family: var(--mono)
+  font-size: 12px
+  letter-spacing: .3em
+  text-transform: uppercase
+
+.premio
+  display: flex
+  align-items: center
+  gap: 12px
+  text-align: left
+  animation: na-boca .45s cubic-bezier(.2, 1.4, .4, 1) both
+
+.cartaNaBoca
+  --carta-h: 96px
+  --carta-w: 63px
+  --carta-arte: 36px
+
+.premioTexto
+  display: flex
+  flex-direction: column
+  gap: 2px
+  color: #d9d4c7
+  font-size: 13px
+
+  b
+    color: #fff
+    font-size: 14px
+
+@keyframes cai
+  0%
+    transform: none
+  25%
+    transform: translateY(-4px) rotateX(0) scale(1.03)
+  45%
+    transform: translateY(6px) rotate(-6deg)
+    opacity: 1
+  100%
+    transform: translateY(420px) rotate(14deg)
+    opacity: 0
+
+@keyframes mola-gira
+  0%, 100%
+    transform: none
+  50%
+    transform: scaleX(1.08) translateX(-3px)
+
+@keyframes na-boca
+  from
+    opacity: 0
+    transform: translateY(-24px)
+  to
+    opacity: 1
+    transform: none
+
+@keyframes pisca-visor
+  50%
+    opacity: .3
+
+// ------------------------------------------------------------- celular
+@media (max-width: 640px)
+  .corpo
+    grid-template-columns: 1fr
+
+  .boca
+    width: 100%
+
+  .prateleira
+    gap: 4px
+    min-height: 160px
+
+  .produto
+    min-height: 108px
+
+  .cartaNaVaga
+    --carta-h: 104px
+    --carta-w: 69px
+    --carta-arte: 40px
+
+@media (prefers-reduced-motion: reduce)
+  .caindo,
+  .molaGirando,
+  .premio,
+  .visorErro
+    animation: none

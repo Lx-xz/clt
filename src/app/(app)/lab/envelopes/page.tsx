@@ -9,7 +9,7 @@ import { useSessao } from '@/components/SessaoGuard'
 import { carregarDoBanco, sincronizar } from '@/data/sync'
 import { getCard } from '@/game/catalogo'
 import { NOMES_DE_RARIDADE, colecaoInicial } from '@/game/colecao'
-import { ENVELOPES, abrirEnvelope } from '@/game/missoes'
+import { ENVELOPES, abrirEnvelope, type Abertura } from '@/game/missoes'
 import { loadCollection, loadRun } from '@/game/storage'
 import type { CardId, Collection, GameState, Raridade, TipoEnvelope } from '@/game/types'
 import styles from './envelopes.module.sass'
@@ -38,7 +38,7 @@ export default function LabEnvelopesPage() {
   const sessao = useSessao()
   const [base, setBase] = useState<Base>('inicial')
   const [colecao, setColecao] = useState<Collection | null>(null)
-  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[]; novas: CardId[] } | null>(null)
+  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[]; novas: CardId[]; emToken: Abertura['emToken'] } | null>(null)
   const [abertos, setAbertos] = useState(0)
 
   // a coleção de verdade: o espelho local abre a página, e a do banco a
@@ -70,7 +70,7 @@ export default function LabEnvelopesPage() {
     setColecao(r.colecao)
     sincronizar(sessao.id, loadRun<GameState>(), r.colecao, () => {})
     setAbertos((n) => n + 1)
-    setAbrindo({ tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)) })
+    setAbrindo({ tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)), emToken: r.emToken })
   }
 
   // a amostra é refeita só quando a base muda: mil aberturas de cada tipo
@@ -81,14 +81,16 @@ export default function LabEnvelopesPage() {
       const conta: Record<Raridade, number> = { comum: 0, incomum: 0, rara: 0, epica: 0, lendaria: 0 }
       let total = 0
       let novas = 0
+      let tokens = 0
       for (let i = 0; i < AMOSTRA; i++) {
         const r = abrirEnvelope({ ...inicio, envelopes: [{ tipo }] }, 0)
         if (!r) continue
         total += r.cartas.length
         novas += new Set(r.cartas.filter((id) => !(inicio.tenho[id] > 0))).size
+        tokens += r.tokens
         for (const id of r.cartas) conta[getCard(id).raridade ?? 'comum']++
       }
-      return { tipo, conta, total, novas }
+      return { tipo, conta, total, novas, tokens }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base])
@@ -158,10 +160,11 @@ export default function LabEnvelopesPage() {
                 </th>
               ))}
               <th>Cartas novas</th>
+              <th>Tokens</th>
             </tr>
           </thead>
           <tbody>
-            {amostra.map(({ tipo, conta, total, novas }) => (
+            {amostra.map(({ tipo, conta, total, novas, tokens }) => (
               <tr key={tipo}>
                 <th>{ENVELOPES[tipo].nome}</th>
                 {RARIDADES.map((r) => (
@@ -171,6 +174,7 @@ export default function LabEnvelopesPage() {
                   </td>
                 ))}
                 <td>{(novas / AMOSTRA).toFixed(1)} por abertura</td>
+                <td>{(tokens / AMOSTRA).toFixed(1)} por abertura</td>
               </tr>
             ))}
           </tbody>

@@ -382,6 +382,12 @@ export interface Collection {
    *  dias). `dia` é o último que contou. Opcional: quem gravou antes começa
    *  do zero, sem migração. */
   sequencia?: { dia: string; dias: number }
+  /** O saldo de tokens (v0.29): a sobra das recompensas — a cópia acima do
+   *  teto, o item que já tinha —, que compra na máquina. Veja `tokens.ts`. */
+  tokens?: number
+  /** A vitrine da máquina de HOJE: montada uma vez por dia, com o que já
+   *  foi comprado dela (`vendidos`, `carta:id`/`cosmetico:id`). */
+  maquina?: { dia: string; cartas: CardId[]; cosmeticos: string[]; vendidos: string[] }
 }
 
 /** O pacote de cartas. Envelope, e não baú: o jogo é papelada de escritório,

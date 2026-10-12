@@ -2,7 +2,7 @@
 
 import { Check } from 'lucide-react'
 import { useState } from 'react'
-import { ENVELOPES, MISSOES, SEQUENCIA, abrirEnvelope, feitasHoje, sequenciaDeHoje } from '@/game/missoes'
+import { ENVELOPES, MISSOES, SEQUENCIA, abrirEnvelope, feitasHoje, sequenciaDeHoje, type Abertura } from '@/game/missoes'
 import type { CardId, Collection, TipoEnvelope } from '@/game/types'
 import AberturaDeEnvelope, { ChancesDoEnvelope, ObjetoDaRecompensa } from '../Envelope'
 import styles from './Missoes.module.sass'
@@ -29,7 +29,7 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
   /** No recibo de fim, só a bandeja: as missões já foram mostradas no início. */
   compacto?: boolean
 }) {
-  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[]; novas: CardId[] } | null>(null)
+  const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[]; novas: CardId[]; emToken: Abertura['emToken'] } | null>(null)
   const [chances, setChances] = useState<TipoEnvelope | null>(null)
   const feitas = feitasHoje(colecao)
 
@@ -39,7 +39,7 @@ export default function Missoes({ colecao, onMudar, cumpridasAgora = [], compact
     // a coleção muda ANTES da animação: pular ou fechar no meio não pode
     // perder a carta
     onMudar(r.colecao)
-    setAbrindo({ tipo: r.tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)) })
+    setAbrindo({ tipo: r.tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)), emToken: r.emToken })
   }
 
   // os dias seguidos: com a conta zerada HOJE, o cofre acabou de sair

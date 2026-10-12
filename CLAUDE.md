@@ -49,6 +49,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos` · `?nick=` | Todas as partidas, como recibos resumidos, com filtro por desfecho e ordem. Sem `nick` é a sua (a única que mostra as de "pediu demissão") |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
+| `/maquina` | A máquina de vendas (v0.29): três cartas e três itens por dia, comprados com tokens. **Só admin por enquanto** (o link na barra e o `GuardaAdmin` no layout) |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
 | `/lab` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa com a animação do jogo, e o que sai vai para a conta do admin) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
 
@@ -396,21 +397,42 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   v0.25: o cofre já é forte; `lerColecao` descarta o tipo que não existe. A
   QUANTIDADE é sorteada antes, pelos `pesos` (25/45/30 no envelope,
   30/45/25 nos outros), e a raridade de CADA carta depois, pelas `chances`
-  — pode vir uma carta só, e épica, ou três comuns. As cartas podem vir
-  repetidas; raridade esgotada cai para a de baixo e, só sem nenhuma, para
-  a de cima. Os ids `pardo`/`confidencial` ficaram os antigos porque
+  — pode vir uma carta só, e épica, ou três comuns. **Desde a v0.29 o
+  sorteio é entre TODAS as cartas do jogo**, e não só entre as que ainda
+  cabem: antes ele mirava justamente o que faltava, e a coleção se
+  completava sozinha. A raridade sem carta nenhuma no jogo cai para a de
+  baixo e, só então, para a de cima. Os ids `pardo`/`confidencial` ficaram os antigos porque
   moram na coleção de quem já os ganhou. Simulado com o código de verdade
-  (`missoes.ts` rodando fora do navegador): quem joga 1 partida por dia
-  completa as 152 cópias das 48 cartas em ~20 dias, 2 por dia em ~14, 3
-  por dia em ~11. A coleção, e não a recompensa, é o que limita: carta
-  nova estica isso mais do que qualquer número aqui.
+  (`missoes.ts` e `tokens.ts` rodando fora do navegador): com o sorteio
+  entre todas, quem joga 1 partida por dia completa as 152 cópias das 48
+  cartas em ~56 dias só com recompensa, ~39 comprando na máquina; 2 por
+  dia, ~46 e ~31; 3 por dia, ~30 e ~24 (antes da v0.29 eram ~20, ~14 e
+  ~11). Carta nova estica isso mais do que qualquer número aqui.
+- **A sobra vira TOKEN (v0.29, `src/game/tokens.ts`).** Na abertura
+  (`abrirEnvelope`), a cópia acima do teto e o item que a pessoa já tem
+  valem `TOKENS_POR_RARIDADE` (comum 1 … lendária 5), somados em
+  `Collection.tokens`. A troca não é de um para um de propósito: a
+  máquina cobra `PRECO_NA_MAQUINA` (comum 10 … lendária 70), senão juntar
+  repetidas seria o atalho para completar a coleção. A abertura mostra a
+  repetida desvirando como as outras, e então ela esmaece e a ficha salta
+  por cima (`.virandoToken`, por TRANSIÇÃO de `filter`: trocar a
+  `animation` da carta apagaria a dela); na fileira e no resumo ela fica
+  apagada com a ficha em cima, e a soma vem embaixo. Quem chama a
+  abertura passa `emToken` (o que `abrirEnvelope` devolve).
+- **A máquina de vendas (`/maquina`).** `maquinaDeHoje` monta a vitrine
+  UMA vez por dia e a grava em `Collection.maquina` (`dia`, `cartas`,
+  `cosmeticos`, `vendidos`): recarregar não sorteia outra, e a vaga
+  comprada fica vazia até amanhã. Só entra o que a pessoa ainda pode ter.
+  `comprar` devolve a coleção nova ou o MOTIVO em português, que o visor
+  escreve. O desenho (gabinete, vitrine com molas, visor de cristal
+  líquido, boca) tem cores próprias e não as do tema, como a maleta e o
+  cofre. O saldo aparece ao lado do link na barra lateral, relido a cada
+  `saveCollection` pelo evento `EVENTO_COLECAO` em `window`.
 - **O ITEM (peça do avatar) é sorteado junto com as cartas, ao ganhar**
   (`itens` em `ENVELOPES`: a chance de cada um, independentes;
   `sortearCosmetico` em `cosmeticos.ts`), e mora em
-  `EnvelopeFechado.cosmeticos` até abrir. Só vem peça que a pessoa não
-  tem e que nenhuma outra recompensa fechada já prometeu — repetida não
-  vale nada, e um item que não é item seria o recibo mentindo; sem peça
-  nova no jogo, a recompensa vem só com as cartas. Na abertura ele sobe
+  `EnvelopeFechado.cosmeticos` até abrir. Desde a v0.29 pode vir peça
+  repetida (vira token), mas não duas iguais na mesma recompensa. Na abertura ele sobe
   DEPOIS das cartas, vestido no avatar de quem abre (ou num sorteado, se
   ainda é o manequim, que não veste nada), com o mesmo prêmio que desvira
   da maleta do lab (`CosmeticoVirando`).
@@ -807,7 +829,17 @@ opções. O que ele escolheu, e que deve ser preservado:
   **No editor, peça trancada fica ESCONDIDA** (`Formas`): a entrada para
   vê-las é a ÚLTIMA peça da grade da categoria ("ver não desbloqueados"),
   não um botão em cima, e só existe na categoria que tem alguma. A peça já
-  vestida aparece sempre. O Sortear não dá peça trancada
+  vestida aparece sempre. **Desde a v0.29 tocar numa trancada a VESTE na
+  prévia** (com o cadeado), e o Salvar recusa com a mensagem de quais
+  peças ainda não são da pessoa. A cor trancada (fundo, roupa) fica à
+  vista nas amostras, com o cadeado no meio.
+  **Coleções sazonais (`Cosmetico.tema`)**: a de Halloween (v0.29) é o
+  chapéu de bruxa, os cílios longos, as quatro íris e as cores abóbora
+  (roupa e fundo) e noite (fundo). A peça dela leva a abóbora
+  (`AboboraIcon`, em `components/icons/Selos.tsx`) no canto de cima, no
+  editor, na máquina e na abertura. Os cílios são o campo `cilios`: três
+  fios no canto de fora, saindo do branco (`miolo`) ou, nas expressões com
+  pálpebra, da borda dela. O Sortear não dá peça trancada
   (`avatarAleatorio(tenho)`). `salvar_avatar()` continua sem validar nada:
   quem forçar um cosmético pelo console só enfeita o próprio avatar.
   **A maleta é chapada, de couro liso, e só os FECHOS são de metal**
@@ -902,7 +934,7 @@ opções. O que ele escolheu, e que deve ser preservado:
     porque a animação troca o `transform` e apagaria o `escalar`. O atraso
     sai do `useId` (`--fase`), não de `Math.random()`, para o HTML do build
     bater com o do navegador. O feliz e o X do burnout não piscam.
-  - **A cor dos olhos é livre, o FEITIO é colecionável (v0.27).** Dois
+  - **A cor dos olhos é livre, o FEITIO é colecionável (v0.27; de Halloween desde a v0.29).** Dois
     campos: `corOlhos` (sete tons, `TONS_DOS_OLHOS`) e `iris` (`normal`,
     `gato`, `reptil`, `preto`, `colorido`; as quatro diferentes são
     cosméticos, `aba: 'olhos'`). Quem desenha é `miolo()`, o branco e a íris

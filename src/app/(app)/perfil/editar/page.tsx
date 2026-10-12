@@ -15,7 +15,7 @@ import Avatar, {
 } from '@/components/Avatar'
 import AvatarHero from '@/components/AvatarHero'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
-import { PenteIcon } from '@/components/icons'
+import { AboboraIcon, PenteIcon } from '@/components/icons'
 import { useDefinirSessao, useSessao } from '@/components/SessaoGuard'
 import {
   BarbaIcon,
@@ -38,6 +38,7 @@ import {
   CORES_DO_BRINCO,
   CORES_DOS_OCULOS,
   CORES_DOS_OLHOS,
+  CILIOS,
   IRIS,
   CORTES,
   CRACHAS,
@@ -55,7 +56,7 @@ import {
 } from '@/data/avatar'
 import { trocarAvatar } from '@/data/conta'
 import { carregarDoBanco } from '@/data/sync'
-import { trancado } from '@/game/cosmeticos'
+import { COSMETICOS, cosmeticoPorId, idDoCosmetico, trancado } from '@/game/cosmeticos'
 import { loadCollection } from '@/game/storage'
 import { marcarPendencia } from '@/data/pendencias'
 import buttons from '@/styles/buttons.module.sass'
@@ -155,6 +156,18 @@ export default function EditarAvatarPage() {
   }
 
   function salvar() {
+    // a peça trancada dá para VESTIR na prévia (é como se escolhe o que
+    // querer), mas não para salvar: quem decide é o que a coleção tem
+    const naoTem = COSMETICOS.filter(
+      (c) => (receita as unknown as Record<string, unknown>)[c.campo] === c.valor && !tenho.includes(c.id),
+    )
+    if (naoTem.length) {
+      const nomes = naoTem.map((c) => c.nome).join(', ').replace(/, ([^,]*)$/, ' e $1')
+      setErro(
+        `${nomes} ainda não ${naoTem.length > 1 ? 'são seus' : 'é seu'}: dá para ver como fica, mas não para salvar. Saem das recompensas.`,
+      )
+      return
+    }
     setSalvando(true)
     setErro(null)
     trocarAvatar(sessao, receita)
@@ -272,6 +285,7 @@ export default function EditarAvatarPage() {
                   <Cores titulo="Cor dos olhos" campo="corOlhos" opcoes={CORES_DOS_OLHOS} tons={(v) => TONS_DOS_OLHOS[v]} {...props} />
                 ) : null}
                 <Formas titulo="Íris" campo="iris" opcoes={IRIS} enquadrar="rosto" {...props} />
+                <Formas titulo="Cílios" campo="cilios" opcoes={CILIOS} enquadrar="rosto" {...props} />
                 <p className={styles.nota}>
                   É a cara do seu perfil. Na mesa ela muda com o estresse — e toda run começa tranquila.
                 </p>
@@ -317,7 +331,7 @@ export default function EditarAvatarPage() {
                   <Cores titulo="Cor dos óculos" campo="corOculos" opcoes={CORES_DOS_OCULOS} tons={(v) => TONS_DOS_OCULOS[v]} {...props} />
                 ) : null}
                 <Formas titulo="Óculos" campo="oculos" opcoes={OCULOS} enquadrar="rosto" {...props} />
-                {receita.acessorio === 'bone' || receita.acessorio === 'chapeu' ? (
+                {receita.acessorio === 'bone' || receita.acessorio === 'chapeu' || receita.acessorio === 'bruxa' ? (
                   <Cores
                     titulo={receita.acessorio === 'bone' ? 'Cor do boné' : 'Cor do chapéu'}
                     campo="corChapeu"
@@ -381,9 +395,30 @@ function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMud
   // a peça trancada fica ESCONDIDA, e não apagada no meio das outras: a
   // grade de quem não tem nada continua sendo só do que dá para usar. A que
   // já está vestida aparece sempre, senão a escolha atual sumiria da tela
-  const eTrancada = (o: Opcao<Receita[C]>) => trancado(String(campo), String(o.valor), tenho) && receita[campo] !== o.valor
+  const bloqueada = (o: Opcao<Receita[C]>) => trancado(String(campo), String(o.valor), tenho)
+  const eTrancada = (o: Opcao<Receita[C]>) => bloqueada(o) && receita[campo] !== o.valor
   const livres = opcoes.filter((o) => !eTrancada(o))
   const trancadas = opcoes.filter(eTrancada)
+
+  function opcao(o: Opcao<Receita[C]>) {
+    const ativo = receita[campo] === o.valor
+    const presa = bloqueada(o)
+    return (
+      <button
+        key={String(o.valor)}
+        type="button"
+        className={`${styles.opcao} ${ativo ? styles.opcaoAtiva : ''} ${presa ? styles.opcaoTrancada : ''}`}
+        aria-pressed={ativo}
+        aria-label={presa ? `${o.rotulo}: ainda não é seu, só para ver` : o.rotulo}
+        title={presa ? `${o.rotulo} · ainda não é seu: dá para ver, não para salvar` : o.rotulo}
+        onClick={() => aoMudar(campo, o.valor)}
+      >
+        {miniatura(o)}
+        <SeloDoTema campo={String(campo)} valor={String(o.valor)} />
+        {presa ? <Lock size={16} className={styles.cadeado} aria-hidden /> : null}
+      </button>
+    )
+  }
 
   const miniatura = (o: Opcao<Receita[C]>) => (
     <span className={`${styles.recorte} ${styles[enquadrar]}`}>
@@ -395,39 +430,13 @@ function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMud
     <div className={styles.grupo}>
       <h2 className={styles.grupoTitulo}>{titulo}</h2>
       <div className={styles.opcoes}>
-        {livres.map((o) => {
-          const ativo = receita[campo] === o.valor
-          return (
-            <button
-              key={String(o.valor)}
-              type="button"
-              className={`${styles.opcao} ${ativo ? styles.opcaoAtiva : ''}`}
-              aria-pressed={ativo}
-              aria-label={o.rotulo}
-              title={o.rotulo}
-              onClick={() => aoMudar(campo, o.valor)}
-            >
-              {miniatura(o)}
-            </button>
-          )
-        })}
+        {livres.map(opcao)}
         {/* as trancadas, só desta categoria, e só quando pedidas — e a
             entrada para elas é a ÚLTIMA peça da grade, e não um botão em
-            cima: é mais uma coisa da categoria, não uma ação da página */}
-        {verTrancadas
-          ? trancadas.map((o) => (
-              <span
-                key={String(o.valor)}
-                className={`${styles.opcao} ${styles.opcaoTrancada}`}
-                role="img"
-                aria-label={`${o.rotulo}: ainda não desbloqueado`}
-                title={`${o.rotulo} · sai de maleta`}
-              >
-                {miniatura(o)}
-                <Lock size={16} className={styles.cadeado} aria-hidden />
-              </span>
-            ))
-          : null}
+            cima: é mais uma coisa da categoria, não uma ação da página.
+            Tocar numa delas VESTE na prévia (é como se escolhe o que
+            querer); salvar é que não deixa */}
+        {verTrancadas ? trancadas.map(opcao) : null}
         {trancadas.length > 0 ? (
           <button
             type="button"
@@ -449,7 +458,7 @@ function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMud
 /** Uma fileira de CORES, em amostras quadradas. O nome vai no `title` e no
  *  leitor de tela — escrito embaixo de cada amostra, ele ocuparia mais do que
  *  a cor. */
-function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, conteudo, receita, aoMudar }: {
+function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, conteudo, receita, aoMudar, tenho }: {
   titulo: string
   campo: C
   opcoes: Opcao<Receita[C]>[]
@@ -460,6 +469,7 @@ function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, conteudo,
   conteudo?: (valor: Receita[C]) => ReactNode
   receita: Receita
   aoMudar: (campo: C, valor: Receita[C]) => void
+  tenho: string[]
 }) {
   return (
     <div className={styles.grupo}>
@@ -467,21 +477,36 @@ function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, conteudo,
       <div className={styles.amostras}>
         {opcoes.map((o) => {
           const ativo = receita[campo] === o.valor
+          // a cor trancada fica à vista, com o cadeado: é uma amostra, e
+          // tocar só a veste na prévia — salvar é que não deixa
+          const presa = trancado(String(campo), String(o.valor), tenho)
           return (
             <button
               key={String(o.valor)}
               type="button"
-              className={`${styles.amostra} ${ativo ? styles.amostraAtiva : ''}`}
+              className={`${styles.amostra} ${ativo ? styles.amostraAtiva : ''} ${presa ? styles.amostraTrancada : ''}`}
               aria-pressed={ativo}
-              aria-label={o.rotulo}
-              title={o.rotulo}
+              aria-label={presa ? `${o.rotulo}: ainda não é seu, só para ver` : o.rotulo}
+              title={presa ? `${o.rotulo} · ainda não é seu: dá para ver, não para salvar` : o.rotulo}
               onClick={() => aoMudar(campo, o.valor)}
             >
-              <span style={{ background: tons(o.valor) }}>{conteudo?.(o.valor)}</span>
+              <span style={{ background: tons(o.valor) }}>
+                {conteudo?.(o.valor)}
+                {presa ? <Lock size={14} aria-hidden /> : null}
+              </span>
+              <SeloDoTema campo={String(campo)} valor={String(o.valor)} pequeno />
             </button>
           )
         })}
       </div>
     </div>
   )
+}
+
+/** O símbolo da coleção sazonal no canto de cima da peça (a abóbora, no
+ *  Halloween). Peça fora de coleção nenhuma não leva nada. */
+function SeloDoTema({ campo, valor, pequeno }: { campo: string; valor: string; pequeno?: boolean }) {
+  const tema = cosmeticoPorId(idDoCosmetico(campo, valor))?.tema
+  if (tema !== 'halloween') return null
+  return <AboboraIcon size={pequeno ? 18 : 24} className={`${styles.seloDoTema} ${pequeno ? styles.seloPequeno : ''}`} />
 }

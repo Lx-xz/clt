@@ -500,6 +500,17 @@ button.envelope
 .itemPequeno
   margin-top: 17px
 
+.itemResumo,
+.itemPequeno
+  position: relative
+
+// a abóbora da coleção de Halloween, no canto do item
+.temaNoItem
+  position: absolute
+  top: 5px
+  right: 5px
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .3))
+
 .nomeDoItem
   display: inline-flex
   align-items: center
@@ -705,6 +716,130 @@ button.envelope
 
 .vazio
   margin: 0
+
+// ================================================== o que virou token
+// A cópia acima do limite (ou o item que já tinha) sai como as outras, e
+// desvira; então esmaece, e a ficha salta por cima com o valor. Na fileira
+// e no resumo ela continua lá, apagada, com a ficha em cima — e a soma vem
+// embaixo de tudo.
+.repetida
+  padding: 1px 6px
+  background: #e3b23c
+  border-radius: 3px
+  color: #3b2a08
+  font-family: var(--mono)
+  font-size: 11px
+  font-weight: 700
+  letter-spacing: .06em
+  text-transform: uppercase
+  text-shadow: none
+
+.cartaGrande,
+.cartaSaindo > div
+  transition: filter .5s ease .75s
+
+// por transição, e não por animação: trocar a `animation` da carta (ou do
+// prêmio do item) apagaria a dela, e ela pularia de lugar
+.virandoToken
+  .cartaGrande,
+  > div:not(.fichaGanha)
+    filter: grayscale(.85) brightness(.6)
+
+.fichaGanha
+  position: absolute
+  top: 50%
+  left: 50%
+  z-index: 8
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 2px
+  transform: translate(-50%, -50%)
+  pointer-events: none
+  animation: ficha-salta .6s cubic-bezier(.2, 1.5, .4, 1) .8s both
+
+  svg
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .45))
+    animation: ficha-gira 1.1s ease-out .8s both
+
+  b
+    padding: 1px 10px
+    background: rgba(24, 18, 8, .88)
+    border-radius: 999px
+    color: #ffd76a
+    font-family: var(--mono)
+    font-size: 22px
+
+.naFileira
+  position: relative
+  flex: none
+  line-height: 0
+
+.emToken
+  > :not(.fichaPequena):not(.fichaEmCima):not(.rotuloResumo):not(.nomeDoItem)
+    filter: grayscale(.85) brightness(.75)
+
+.fichaPequena
+  position: absolute
+  top: -8px
+  left: 50%
+  margin-left: -13px
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .4))
+
+.resumoItem
+  position: relative
+
+.fichaEmCima
+  position: absolute
+  top: -16px
+  left: 50%
+  z-index: 1
+  display: flex
+  align-items: center
+  padding: 3px 10px 3px 3px
+  background: rgba(24, 18, 8, .9)
+  border-radius: 999px
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .4)
+  transform: translateX(-50%)
+  gap: 4px
+
+  b
+    color: #ffd76a
+    font-family: var(--mono)
+    font-size: 16px
+    line-height: 1
+
+.somaDeTokens
+  display: inline-flex
+  align-items: center
+  gap: 10px
+  margin: 0
+  padding: 8px 16px
+  background: rgba(227, 178, 60, .16)
+  border: 1px solid rgba(227, 178, 60, .5)
+  border-radius: 999px
+  font-size: 15px
+  animation: sai-do-envelope .45s cubic-bezier(.2, 1.2, .4, 1) both
+  animation-delay: calc(var(--i, 0) * 110ms)
+
+  b
+    color: #ffd76a
+    font-family: var(--mono)
+    font-size: 18px
+
+@keyframes ficha-salta
+  from
+    opacity: 0
+    transform: translate(-50%, -20%) scale(.3)
+  to
+    opacity: 1
+    transform: translate(-50%, -50%) scale(1)
+
+@keyframes ficha-gira
+  from
+    transform: rotateY(-540deg)
+  to
+    transform: rotateY(0)
 
 // ========================================================= as animações
 @keyframes cortina-entra

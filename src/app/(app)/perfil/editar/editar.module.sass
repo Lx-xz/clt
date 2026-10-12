@@ -255,15 +255,40 @@
 // a peça que ainda não saiu de maleta: aparece só quando pedida, escurecida
 // (como a carta que não dá para jogar) e com o cadeado no canto
 .opcaoTrancada
-  position: relative
-  cursor: default
   border-style: dashed
 
-  &:hover
-    border-color: var(--linha)
-
+  // esmaecida, mas não apagada: dá para ver o que é, e tocar veste na prévia
   .recorte
-    filter: brightness(.55) saturate(.4)
+    filter: brightness(.8) saturate(.6)
+
+// o cadeado e a abóbora se posicionam pela peça
+.opcao,
+.amostra
+  position: relative
+
+// o símbolo da coleção sazonal, no canto de cima
+.seloDoTema
+  position: absolute
+  top: 4px
+  right: 4px
+  z-index: 1
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .3))
+
+.seloPequeno
+  top: -6px
+  right: -6px
+
+// a cor trancada: tracejada, com o cadeado no meio da amostra
+.amostraTrancada
+  border-style: dashed
+
+  span
+    place-items: center
+    color: #fff
+    filter: saturate(.7)
+
+    svg
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6))
 
 .cadeado
   position: absolute

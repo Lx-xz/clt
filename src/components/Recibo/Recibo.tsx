@@ -4,7 +4,7 @@ import { Check, Medal, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import type { Avatar as Receita } from '@/data/avatar'
-import { abrirEnvelope, missaoPorId } from '@/game/missoes'
+import { abrirEnvelope, missaoPorId, type Abertura } from '@/game/missoes'
 import type { CardId, Collection, EnvelopeGanho, TipoEnvelope } from '@/game/types'
 import Avatar, { humorDoEstresse } from '../Avatar'
 import Dinheiro from '../Dinheiro'
@@ -135,6 +135,7 @@ export default function Recibo({
     cartas: CardId[]
     cosmeticos: string[]
     novas: CardId[]
+    emToken: Abertura['emToken']
   } | null>(null)
   const fim = FIM[dados.outcome]
   const envelopes = dados.envelopes ?? []
@@ -155,6 +156,7 @@ export default function Recibo({
       cartas: r.cartas,
       cosmeticos: r.cosmeticos,
       novas: r.cartas.filter((c) => !(colecao.tenho[c] > 0)),
+      emToken: r.emToken,
     })
   }
 

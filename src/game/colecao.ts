@@ -65,7 +65,7 @@ export function colecaoInicial(): Collection {
 
 /** Envelopes e missões chegaram depois das coleções: quem gravou antes não
  *  tem os campos, e a leitura os dá vazios — o mesmo padrão do resto. */
-function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes' | 'cosmeticos' | 'sequencia'> {
+function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelopes' | 'missoes' | 'cosmeticos' | 'sequencia' | 'tokens' | 'maquina'> {
   // até a v0.19 a fila era só o tipo (`'pardo'`); desde a v0.20 é o envelope
   // com as cartas já sorteadas. O antigo vira `{ tipo }`, e é sorteado na
   // abertura, como era
@@ -93,7 +93,15 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
   const s = bruta.sequencia as Record<string, unknown> | undefined
   const sequencia =
     s && typeof s === 'object' && typeof s.dia === 'string' && typeof s.dias === 'number' ? { dia: s.dia, dias: Math.max(0, Math.floor(s.dias)) } : undefined
-  return { envelopes, missoes, cosmeticos, ...(sequencia ? { sequencia } : {}) }
+  // os tokens e a máquina chegaram na v0.29: quem gravou antes começa sem
+  const tokens = numero(bruta.tokens)
+  const mq = bruta.maquina as Record<string, unknown> | undefined
+  const textos = (x: unknown) => (Array.isArray(x) ? x.filter((i): i is string => typeof i === 'string') : [])
+  const maquina =
+    mq && typeof mq === 'object' && typeof mq.dia === 'string'
+      ? { dia: mq.dia, cartas: textos(mq.cartas), cosmeticos: textos(mq.cosmeticos), vendidos: textos(mq.vendidos) }
+      : undefined
+  return { envelopes, missoes, cosmeticos, ...(sequencia ? { sequencia } : {}), ...(tokens ? { tokens } : {}), ...(maquina ? { maquina } : {}) }
 }
 
 function numero(x: unknown): number {

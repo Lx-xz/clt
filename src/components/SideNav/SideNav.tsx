@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import Avatar, { TONS_DE_FUNDO, tintaSobre } from '../Avatar'
 import BotaoConfirmar from '../BotaoConfirmar'
+import { MaquinaIcon, TokenIcon } from '../icons'
 import Check from '../Check'
 import Slider from '../Slider'
 import Dialogo, { popupAberto } from '../Dialogo'
@@ -30,7 +31,8 @@ import { gravarTema, lerTema, TEMAS, type Tema } from '@/data/tema'
 import { souAdmin } from '@/data/feedback'
 import { sair } from '@/data/conta'
 import { cancelarSync } from '@/data/sync'
-import { limparLocalDoJogo, loadRun } from '@/game/storage'
+import { EVENTO_COLECAO, limparLocalDoJogo, loadCollection, loadRun } from '@/game/storage'
+import { saldo } from '@/game/tokens'
 import type { GameState } from '@/game/types'
 import { marcarPendencia, pendencia } from '@/data/pendencias'
 import { marcarNotificacoesLidas, minhasNotificacoes, type Notificacao } from '@/data/notificacoes'
@@ -78,6 +80,15 @@ export default function SideNav() {
   // o laboratório do avatar é ferramenta de dono do jogo: quem diz se você é
   // admin é o banco, não o perfil espelhado no navegador
   const [admin, setAdmin] = useState(sessao.admin)
+  // o saldo de tokens, ao lado do link da máquina: lido do espelho local, e
+  // relido a cada coleção gravada (abrir recompensa, comprar)
+  const [tokens, setTokens] = useState(0)
+  useEffect(() => {
+    const ler = () => setTokens(saldo(loadCollection()))
+    ler()
+    window.addEventListener(EVENTO_COLECAO, ler)
+    return () => window.removeEventListener(EVENTO_COLECAO, ler)
+  }, [])
   const [abaAvisos, setAbaAvisos] = useState<'novos' | 'todos'>('novos')
   const [saindo, setSaindo] = useState(false)
   const painelRef = useRef<HTMLDivElement>(null)
@@ -293,6 +304,25 @@ export default function SideNav() {
             ))}
 
             <span className={styles.empurra} />
+
+            {/* a máquina de vendas: por enquanto só para admin, com o saldo
+                de tokens ao lado do nome — é o dinheiro dela */}
+            {admin ? (
+              <Link
+                className={`${styles.link} ${pathname.startsWith('/maquina') ? styles.ativo : ''}`}
+                href="/maquina"
+                onClick={(e) => navegar(e, '/maquina')}
+              >
+                <MaquinaIcon size={22} />
+                <span className={`${styles.rotulo} ${styles.rotuloComSaldo}`}>
+                  Máquina
+                  <span className={styles.saldo} aria-label={`${tokens} tokens`}>
+                    <TokenIcon size={16} />
+                    {tokens}
+                  </span>
+                </span>
+              </Link>
+            ) : null}
 
             {admin ? (
               <Link

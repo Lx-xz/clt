@@ -28,16 +28,24 @@ export interface Cosmetico {
   /** A aba do editor onde a peça mora: é o ÍCONE dela que diz o tipo do
    *  cosmético na abertura da maleta (óculos é da aba de acessórios). */
   aba: 'rosto' | 'olhos' | 'cabelo' | 'barba' | 'roupa' | 'extras' | 'fundo'
+  /** A coleção sazonal a que a peça pertence: leva o símbolo dela no canto
+   *  (a abóbora, no Halloween) onde quer que apareça. */
+  tema?: 'halloween'
 }
 
 export const COSMETICOS: Cosmetico[] = [
   { id: 'oculos:sol', campo: 'oculos', valor: 'sol', nome: 'Óculos de sol', raridade: 'rara', aba: 'extras' },
-  // as íris (v0.27): o feitio do olho por dentro da expressão. A cor continua
-  // livre, e é ela que pinta a íris de gato e o olho de réptil
-  { id: 'iris:gato', campo: 'iris', valor: 'gato', nome: 'Olho de gato', raridade: 'incomum', aba: 'olhos' },
-  { id: 'iris:reptil', campo: 'iris', valor: 'reptil', nome: 'Olho de réptil', raridade: 'rara', aba: 'olhos' },
-  { id: 'iris:colorido', campo: 'iris', valor: 'colorido', nome: 'Olho todo colorido', raridade: 'epica', aba: 'olhos' },
-  { id: 'iris:preto', campo: 'iris', valor: 'preto', nome: 'Olho todo preto', raridade: 'epica', aba: 'olhos' },
+  // a coleção de Halloween (v0.29): as íris, os cílios, o chapéu de bruxa e
+  // as cores de abóbora e de noite. Levam a abóbora no canto (`tema`)
+  { id: 'fundo:abobora', campo: 'fundo', valor: 'abobora', nome: 'Fundo abóbora', raridade: 'comum', aba: 'fundo', tema: 'halloween' },
+  { id: 'roupa:abobora', campo: 'roupa', valor: 'abobora', nome: 'Roupa abóbora', raridade: 'comum', aba: 'roupa', tema: 'halloween' },
+  { id: 'fundo:noite', campo: 'fundo', valor: 'noite', nome: 'Fundo noite', raridade: 'incomum', aba: 'fundo', tema: 'halloween' },
+  { id: 'cilios:longos', campo: 'cilios', valor: 'longos', nome: 'Cílios longos', raridade: 'incomum', aba: 'olhos', tema: 'halloween' },
+  { id: 'iris:gato', campo: 'iris', valor: 'gato', nome: 'Olho de gato', raridade: 'incomum', aba: 'olhos', tema: 'halloween' },
+  { id: 'iris:reptil', campo: 'iris', valor: 'reptil', nome: 'Olho de réptil', raridade: 'rara', aba: 'olhos', tema: 'halloween' },
+  { id: 'acessorio:bruxa', campo: 'acessorio', valor: 'bruxa', nome: 'Chapéu de bruxa', raridade: 'rara', aba: 'extras', tema: 'halloween' },
+  { id: 'iris:colorido', campo: 'iris', valor: 'colorido', nome: 'Olho todo colorido', raridade: 'epica', aba: 'olhos', tema: 'halloween' },
+  { id: 'iris:preto', campo: 'iris', valor: 'preto', nome: 'Olho todo preto', raridade: 'lendaria', aba: 'olhos', tema: 'halloween' },
 ]
 
 export type TipoMaleta = 'bronze' | 'prata' | 'ouro'
@@ -99,15 +107,15 @@ export function abrirMaleta(
 }
 
 /**
- * O item de uma recompensa do JOGO (maleta e cofre, desde a v0.24): uma
- * peça que a pessoa ainda não tem e que nenhuma outra recompensa fechada já
- * prometeu (`indisponiveis`). A raridade sai das `chances` da recompensa,
- * com a mesma queda das cartas: esgotada, a de baixo, e só sem nenhuma a de
- * cima.
+ * O item de uma recompensa do JOGO (maleta e cofre, desde a v0.24). A
+ * raridade sai das `chances` da recompensa, com a mesma queda das cartas:
+ * sem peça na raridade, a de baixo, e só sem nenhuma a de cima.
  *
- * Diferente da maleta do lab, aqui NÃO há repetida: peça repetida não vale
- * nada, e um item que não é item seria o recibo mentindo. Sem peça nova no
- * jogo, `null`, e a recompensa vem só com as cartas.
+ * Desde a v0.29 a peça pode ser REPETIDA: o sorteio é entre todas, e a que
+ * a pessoa já tem vira token na abertura (`tokens.ts`). Antes só vinha peça
+ * nova, e a coleção se completava sozinha — o sorteio mirava justamente o
+ * que faltava. `indisponiveis` são só as que já saíram NESTA recompensa:
+ * duas iguais no mesmo cofre leriam como erro.
  */
 export function sortearCosmetico(
   chances: Record<Raridade, number>,

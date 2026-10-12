@@ -1,6 +1,7 @@
-import { cartasDoJogo } from './catalogo'
-import { copiasMaximas, ganharCopia } from './colecao'
-import { sortearCosmetico } from './cosmeticos'
+import { cartasDoJogo, getCard } from './catalogo'
+import { ganharCopia } from './colecao'
+import { cosmeticoPorId, sortearCosmetico } from './cosmeticos'
+import { TOKENS_POR_RARIDADE, comTokens } from './tokens'
 import type { CardId, Collection, EnvelopeGanho, Raridade, TipoEnvelope } from './types'
 
 /**
@@ -213,15 +214,13 @@ export function cumprirMissoes(
     { tipo: 'comum' },
     ...cumpridas.map((m) => ({ tipo: m.premio, missao: m.id })),
   ]
-  // sorteia contra a coleção MAIS o que já está dentro dos envelopes
-  // fechados: senão dois envelopes podiam prometer a mesma épica que só
-  // cabe uma vez
-  let virtual = comPendentes(c)
+  // desde a v0.29 o sorteio não olha a coleção: repetida acima do teto
+  // vira token na abertura (`abrirEnvelope`), e por isso dois envelopes
+  // podem prometer a mesma épica sem ninguém sair perdendo
   const ganhos: EnvelopeGanho[] = tipos.map(({ tipo, missao }, i) => {
-    const r = sortearCartas(virtual, tipo, sorte)
-    const itens = sortearItens(r.colecao, tipo, sorte)
-    virtual = itens.colecao
-    return { tipo, id: `${runId}:${i}`, cartas: r.cartas, ...(itens.ids.length ? { cosmeticos: itens.ids } : {}), ...(missao ? { missao } : {}) }
+    const cartas = sortearCartas(tipo, sorte)
+    const itens = sortearItens(tipo, sorte)
+    return { tipo, id: `${runId}:${i}`, cartas, ...(itens.length ? { cosmeticos: itens } : {}), ...(missao ? { missao } : {}) }
   })
   return {
     colecao: {
@@ -235,29 +234,19 @@ export function cumprirMissoes(
   }
 }
 
-/** A coleção como se todo envelope fechado já tivesse sido aberto — as
- *  cartas e os itens: dois cofres não podem prometer a mesma peça. */
-function comPendentes(c: Collection): Collection {
-  let v = c
-  for (const e of c.envelopes) for (const id of e.cartas ?? []) v = ganharCopia(v, id)
-  const prometidos = c.envelopes.flatMap((e) => e.cosmeticos ?? [])
-  return prometidos.length ? { ...v, cosmeticos: [...v.cosmeticos, ...prometidos] } : v
-}
-
-/** Os itens de uma recompensa: cada chance de `itens` é um sorteio à parte,
- *  e cada peça sorteada sai da lista das disponíveis para a próxima. */
-function sortearItens(c: Collection, tipo: TipoEnvelope, sorte: () => number): { colecao: Collection; ids: string[] } {
+/** Os itens de uma recompensa: cada chance de `itens` é um sorteio à parte.
+ *  Podem vir peças que a pessoa já tem (viram token), mas não duas iguais
+ *  na mesma recompensa. */
+function sortearItens(tipo: TipoEnvelope, sorte: () => number): string[] {
   const envelope = ENVELOPES[tipo]
   const ids: string[] = []
-  let colecao = c
   for (const chance of envelope.itens ?? []) {
     if (sorte() >= chance) continue
-    const item = sortearCosmetico(envelope.chances, colecao.cosmeticos, sorte)
+    const item = sortearCosmetico(envelope.chances, ids, sorte)
     if (!item) break
     ids.push(item.id)
-    colecao = { ...colecao, cosmeticos: [...colecao.cosmeticos, item.id] }
   }
-  return { colecao, ids }
+  return ids
 }
 
 /** Quantas cartas: pelos `pesos`, se houver, senão por igual. */
@@ -284,36 +273,46 @@ function sortearRaridade(chances: Record<Raridade, number>, sorte: () => number)
 }
 
 /**
- * Uma carta da raridade sorteada que ainda CABE na coleção (abaixo do teto
- * de cópias). Esgotada a raridade, tenta as de baixo e, só então, as de
- * cima — o envelope nunca dá menos do que prometeu por falta de carta. Com
- * a coleção inteira cheia, `null`.
+ * Uma carta da raridade sorteada, entre TODAS as do jogo (v0.29). Até ali
+ * eram só as que ainda cabiam na coleção, e o sorteio mirava justamente o
+ * que faltava: a coleção se completava sozinha em umas três semanas. Hoje a
+ * cópia acima do teto vira token na abertura. A raridade sem carta nenhuma
+ * no jogo cai para a de baixo e, só então, para a de cima.
  */
-function cartaDe(c: Collection, alvo: Raridade, sorte: () => number): CardId | null {
+function cartaDe(alvo: Raridade, sorte: () => number): CardId | null {
   const i = ORDEM.indexOf(alvo)
   const tentativas = [...ORDEM.slice(0, i + 1).reverse(), ...ORDEM.slice(i + 1)]
-  const cabem = cartasDoJogo().filter((carta) => (c.tenho[carta.id] ?? 0) < copiasMaximas(carta))
+  const todas = cartasDoJogo()
   for (const r of tentativas) {
-    const pool = cabem.filter((carta) => (carta.raridade ?? 'comum') === r)
+    const pool = todas.filter((carta) => (carta.raridade ?? 'comum') === r)
     if (pool.length > 0) return pool[Math.floor(sorte() * pool.length)].id
   }
   return null
 }
 
-/** Sorteia as cartas de um envelope UMA A UMA, pondo cada uma na coleção
- *  dada: a segunda cópia da mesma carta conta para o teto da terceira. */
-function sortearCartas(c: Collection, tipo: TipoEnvelope, sorte: () => number): { colecao: Collection; cartas: CardId[] } {
+/** As cartas de um envelope, sorteadas uma a uma (podem vir repetidas). */
+function sortearCartas(tipo: TipoEnvelope, sorte: () => number): CardId[] {
   const envelope = ENVELOPES[tipo]
   const quantas = sortearQuantas(envelope, sorte)
-  let colecao = c
   const cartas: CardId[] = []
   for (let n = 0; n < quantas; n++) {
-    const id = cartaDe(colecao, sortearRaridade(envelope.chances, sorte), sorte)
+    const id = cartaDe(sortearRaridade(envelope.chances, sorte), sorte)
     if (!id) break
     cartas.push(id)
-    colecao = ganharCopia(colecao, id)
   }
-  return { colecao, cartas }
+  return cartas
+}
+
+/** O que uma abertura deu. `cartas` e `cosmeticos` são TUDO o que saiu, na
+ *  ordem; `emToken` diz quais viraram token (a cópia acima do teto, o item
+ *  que já tinha), e `tokens` é a soma. */
+export interface Abertura {
+  colecao: Collection
+  tipo: TipoEnvelope
+  cartas: CardId[]
+  cosmeticos: string[]
+  emToken: { cartas: boolean[]; cosmeticos: boolean[] }
+  tokens: number
 }
 
 /**
@@ -322,37 +321,40 @@ function sortearCartas(c: Collection, tipo: TipoEnvelope, sorte: () => number): 
  * pessoa, no /baralho.
  *
  * O envelope ganho desde a v0.20 já traz as cartas; o de antes é sorteado
- * agora, como era. Carta que deixou de caber entre o sorteio e a abertura
- * (o teto da raridade mudou no /lab) não entra, e não aparece: a abertura
- * não mostra o que não deu.
- *
- * O envelope sai da fila mesmo com a coleção cheia e zero cartas: guardar um
- * envelope que nunca vai ter o que dar só acumularia um aviso eterno.
+ * agora, como era. A carta que não cabe (já no teto, ou que passou do teto
+ * com as outras deste mesmo envelope) e o item que a pessoa já tem viram
+ * TOKEN, no peso da raridade (v0.29). Antes ela não entrava e não aparecia.
  */
-export function abrirEnvelope(
-  c: Collection,
-  indice = 0,
-  sorte: () => number = Math.random,
-): { colecao: Collection; tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[] } | null {
+export function abrirEnvelope(c: Collection, indice = 0, sorte: () => number = Math.random): Abertura | null {
   const envelope = c.envelopes[indice]
   if (!envelope) return null
-  const semEle: Collection = { ...c, envelopes: c.envelopes.filter((_, i) => i !== indice) }
-  if (!envelope.cartas) {
-    const r = sortearCartas(semEle, envelope.tipo, sorte)
-    const itens = sortearItens(comPendentes(r.colecao), envelope.tipo, sorte)
-    const cosmeticos = itens.ids
-    return { colecao: { ...r.colecao, cosmeticos: [...r.colecao.cosmeticos, ...cosmeticos] }, tipo: envelope.tipo, cartas: r.cartas, cosmeticos }
-  }
-  // o item entra na coleção ao abrir, como a carta; o que a pessoa já tiver
-  // (ganhou por outro caminho entre o sorteio e a abertura) não entra de novo
-  const cosmeticos = (envelope.cosmeticos ?? []).filter((id) => !semEle.cosmeticos.includes(id))
-  let colecao: Collection = cosmeticos.length ? { ...semEle, cosmeticos: [...semEle.cosmeticos, ...cosmeticos] } : semEle
-  const cartas: CardId[] = []
-  for (const id of envelope.cartas) {
+  let colecao: Collection = { ...c, envelopes: c.envelopes.filter((_, i) => i !== indice) }
+  const cartas = envelope.cartas ?? sortearCartas(envelope.tipo, sorte)
+  const cosmeticos = envelope.cartas ? (envelope.cosmeticos ?? []) : sortearItens(envelope.tipo, sorte)
+  let tokens = 0
+  const emTokenCartas = cartas.map((id) => {
     const depois = ganharCopia(colecao, id)
-    if (depois === colecao) continue
-    colecao = depois
-    cartas.push(id)
+    if (depois !== colecao) {
+      colecao = depois
+      return false
+    }
+    tokens += TOKENS_POR_RARIDADE[getCard(id).raridade ?? 'comum']
+    return true
+  })
+  const emTokenItens = cosmeticos.map((id) => {
+    if (!colecao.cosmeticos.includes(id)) {
+      colecao = { ...colecao, cosmeticos: [...colecao.cosmeticos, id] }
+      return false
+    }
+    tokens += TOKENS_POR_RARIDADE[cosmeticoPorId(id)?.raridade ?? 'comum']
+    return true
+  })
+  return {
+    colecao: comTokens(colecao, tokens),
+    tipo: envelope.tipo,
+    cartas,
+    cosmeticos,
+    emToken: { cartas: emTokenCartas, cosmeticos: emTokenItens },
+    tokens,
   }
-  return { colecao, tipo: envelope.tipo, cartas, cosmeticos }
 }
