@@ -1966,6 +1966,13 @@ e a um bot diferente — não compare os dois.
   numa entrada só, com os três metais.
 - **Rodar o `schema.sql` da v0.33** (`admin_versoes`). Sem ele as caixas
   de versões do lab mostram o aviso de que a função falta.
+- **O id da carta é código interno, e não muda (v0.35).** Carta e evento
+  NOVOS ganham o próximo número (`proximoId`, de 100 em diante: o banco pede
+  dois caracteres), e o lab mostra o id só para ler (`IdInterno`) — o nome
+  muda à vontade. Os ids antigos (`hora-extra`) ficaram de propósito: estão
+  na coleção e nos baralhos de cada jogador, no retrato de toda partida e no
+  histórico; trocá-los seria migrar o save de todo mundo por uma coisa que
+  jogador nenhum vê.
 - **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
   que não existe, e rodar o `schema.sql` não toca em carta. Com o banco já
   semeado, quem leva o código para lá é a caixa "O código tem cartas que o

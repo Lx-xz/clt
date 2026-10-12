@@ -10,6 +10,8 @@ import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
   BotaoExcluir,
+  IdInterno,
+  proximoId,
   Origem,
   estavel,
   PedirMotivo,
@@ -483,7 +485,8 @@ export default function LabCartasPage() {
   }
 
   function abrirNova() {
-    const c = nova()
+    // o id da nova é o próximo número: não conta o nome, que pode mudar
+    const c = { ...nova(), id: proximoId(cartas.map((x) => x.id)) }
     setEmEdicao(c)
     setCriando(true)
     setEfeitos(c.efeitos)
@@ -608,19 +611,7 @@ export default function LabCartasPage() {
           </div>
 
           <div className={styles.campos}>
-            <label className={comuns.rotulo}>
-              Id
-              <input
-                className={comuns.campo}
-                value={emEdicao.id}
-                disabled={!criando}
-                onChange={(e) => setEmEdicao({ ...emEdicao, id: e.target.value })}
-                placeholder="minusculas-com-hifen"
-              />
-              <span className={comuns.dica}>
-                {criando ? 'É a identidade da carta e não muda depois.' : 'O id não muda: é ele que liga a carta às runs já jogadas.'}
-              </span>
-            </label>
+            <IdInterno id={emEdicao.id} />
 
             <label className={comuns.rotulo}>
               Nome

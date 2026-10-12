@@ -9,6 +9,8 @@ import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
   BotaoExcluir,
+  IdInterno,
+  proximoId,
   Origem,
   PedirMotivo,
   estilosDaBancada as comuns,
@@ -271,7 +273,7 @@ export default function LabEventosPage() {
         <button
           type="button"
           className={`${buttons.button} ${buttons.primary}`}
-          onClick={() => abrir(novo(), true)}
+          onClick={() => abrir({ ...novo(), id: proximoId(eventos.map((x) => x.id)) }, true)}
           disabled={!doBanco}
         >
           <Plus size={15} aria-hidden /> Evento novo
@@ -298,16 +300,7 @@ export default function LabEventosPage() {
           </div>
 
           <div className={styles.campos}>
-            <label className={comuns.rotulo}>
-              Id
-              <input
-                className={comuns.campo}
-                value={emEdicao.id}
-                disabled={!criando}
-                onChange={(e) => setEmEdicao({ ...emEdicao, id: e.target.value })}
-                placeholder="minusculas-com-hifen"
-              />
-            </label>
+            <IdInterno id={emEdicao.id} />
             <label className={comuns.rotulo}>
               Nome
               <input
