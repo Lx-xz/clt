@@ -50,7 +50,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
-| `/lab` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa de mentira, com a animação do jogo) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
+| `/lab` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa com a animação do jogo, e o que sai vai para a conta do admin) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
@@ -784,11 +784,15 @@ opções. O que ele escolheu, e que deve ser preservado:
   mede a altura. No celular vai pelo `navigator.share` com arquivo; onde
   ele não aceita arquivo, baixa o PNG e copia a frase. O link é sempre o
   do jogo no ar (`ENDERECO_DO_JOGO`), mesmo compartilhando do localhost.
-- **`/lab/envelopes` abre envelope de mentira.** A coleção da página é
-  uma CÓPIA em memória (a inicial, ou a sua de agora), e nada ali chama
-  `saveCollection` ou `sincronizar`. Embaixo, mil aberturas de cada tipo
-  com o que saiu DE FATO contra a tabela de chances — a queda para a
-  raridade de baixo só aparece ali.
+- **`/lab/envelopes` abre recompensa NA CONTA do admin (v0.28).** Até
+  ali a coleção da página era uma cópia em memória; a pedido do autor, o
+  que sai agora entra na coleção de verdade (lida do banco, como no
+  início) e sobe por `sincronizar`. A de teste entra na frente da fila e
+  sai na hora: as recompensas fechadas que o admin já tinha continuam lá.
+  Para recomeçar, o "Resetar" da porta do lab. Embaixo, mil aberturas de
+  cada tipo com o que saiu DE FATO contra a tabela de chances — essas,
+  numa cópia, sem gravar nada; a queda para a raridade de baixo só
+  aparece ali.
 - **Cosméticos saem de MALETA (v0.22; no JOGO desde a v0.24, da maleta e
   do cofre da escada — veja acima; as maletas de bronze, prata e ouro
   ficaram só no código, sem bancada desde a v0.25).**
@@ -1080,8 +1084,8 @@ opções. O que ele escolheu, e que deve ser preservado:
   conveniência, não segurança: o código vai no mesmo bundle para todo mundo,
   porque o site é estático. O que protege de verdade é o Postgres recusar as
   ações de admin. Não ponha ali dentro nada que dependa de esconder.
-  Os dois atalhos de teste da porta (**desbloquear tudo**, **resetar**) são a
-  exceção que mexe na conta de quem clica — e são de admin porque uma coleção
+  Os dois atalhos de teste da porta (**desbloquear tudo**, **resetar**) e as
+  aberturas do `/lab/envelopes` são as exceções que mexem na conta de quem clica — e são de admin porque uma coleção
   inteira desbloqueada estraga qualquer leitura de dificuldade que venha
   daquela conta. **Eles moram SÓ aqui.** Estiveram no `/baralho` por um
   tempo, ao alcance de qualquer jogador, que é justamente onde não podiam

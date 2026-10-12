@@ -1,16 +1,17 @@
 'use client'
 
-import { ArrowLeft, RotateCcw } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AberturaDeEnvelope, { ObjetoDaRecompensa } from '@/components/Envelope'
 import Segmentado from '@/components/Segmentado'
+import { useSessao } from '@/components/SessaoGuard'
+import { carregarDoBanco, sincronizar } from '@/data/sync'
 import { getCard } from '@/game/catalogo'
 import { NOMES_DE_RARIDADE, colecaoInicial } from '@/game/colecao'
 import { ENVELOPES, abrirEnvelope } from '@/game/missoes'
-import { loadCollection } from '@/game/storage'
-import type { CardId, Collection, Raridade, TipoEnvelope } from '@/game/types'
-import buttons from '@/styles/buttons.module.sass'
+import { loadCollection, loadRun } from '@/game/storage'
+import type { CardId, Collection, GameState, Raridade, TipoEnvelope } from '@/game/types'
 import styles from './envelopes.module.sass'
 
 const TIPOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico']
@@ -21,14 +22,12 @@ type Base = 'inicial' | 'minha'
 
 /**
  * A bancada das recompensas (que o código chama de envelopes, de quando
- * eram todas envelope): abrir de mentira, com a animação de
- * verdade, sem que nada chegue à coleção de ninguém.
- *
- * A coleção desta página é uma CÓPIA em memória — a inicial, ou a sua como
- * está agora —, e é ela que os envelopes vão enchendo, para dar para ver o
- * teto de cópias apertando abertura após abertura. Nada aqui chama
- * `saveCollection` nem `sincronizar`: fechar a página joga tudo fora, e
- * "Recomeçar" faz o mesmo sem sair.
+ * eram todas envelope): abrir com a animação de verdade, e o que sai
+ * **vai para a conta do admin** (v0.28, pedido do autor). Até ali a
+ * coleção daqui era uma cópia em memória, que sumia ao sair; agora é a
+ * coleção de verdade, lida do banco, e cada abertura sobe por
+ * `sincronizar` como a do início. As recompensas fechadas que o admin já
+ * tem ficam onde estão: a de teste entra na frente da fila e sai na hora.
  *
  * Embaixo, a conta que a animação não mostra: mil envelopes de cada tipo,
  * abertos sempre da mesma coleção de partida, e quantas cartas de cada
@@ -36,28 +35,40 @@ type Base = 'inicial' | 'minha'
  * de baixo, que é onde a tabela de chances deixa de ser a verdade inteira.
  */
 export default function LabEnvelopesPage() {
+  const sessao = useSessao()
   const [base, setBase] = useState<Base>('inicial')
-  const [colecao, setColecao] = useState<Collection>(() => colecaoInicial())
+  const [colecao, setColecao] = useState<Collection | null>(null)
   const [abrindo, setAbrindo] = useState<{ tipo: TipoEnvelope; cartas: CardId[]; cosmeticos: string[]; novas: CardId[] } | null>(null)
   const [abertos, setAbertos] = useState(0)
 
+  // a coleção de verdade: o espelho local abre a página, e a do banco a
+  // substitui quando chegar — senão a primeira abertura subiria uma coleção
+  // velha por cima da de outro aparelho
+  useEffect(() => {
+    setColecao(loadCollection())
+    let vivo = true
+    void carregarDoBanco(sessao.id)
+      .then(({ collection }) => {
+        if (vivo) setColecao(collection)
+      })
+      .catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [sessao.id])
+
   function partida(b: Base): Collection {
-    // a sua coleção é lida do espelho local e copiada: daqui para a frente
-    // ela só existe nesta página
     const c = b === 'minha' ? loadCollection() : colecaoInicial()
     return { ...c, envelopes: [] }
   }
 
-  function trocarBase(b: Base) {
-    setBase(b)
-    setColecao(partida(b))
-    setAbertos(0)
-  }
-
   function abrir(tipo: TipoEnvelope) {
-    const r = abrirEnvelope({ ...colecao, envelopes: [{ tipo }] }, 0)
+    if (!colecao) return
+    // abre ANTES da animação, como no jogo: fechar no meio não perde nada
+    const r = abrirEnvelope({ ...colecao, envelopes: [{ tipo }, ...colecao.envelopes] }, 0)
     if (!r) return
     setColecao(r.colecao)
+    sincronizar(sessao.id, loadRun<GameState>(), r.colecao, () => {})
     setAbertos((n) => n + 1)
     setAbrindo({ tipo, cartas: r.cartas, cosmeticos: r.cosmeticos, novas: r.cartas.filter((id) => !(colecao.tenho[id] > 0)) })
   }
@@ -82,7 +93,7 @@ export default function LabEnvelopesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base])
 
-  const tenho = Object.values(colecao.tenho).reduce((a, b) => a + b, 0)
+  const tenho = colecao ? Object.values(colecao.tenho).reduce((a, b) => a + b, 0) : 0
 
   return (
     <main className="page">
@@ -91,26 +102,15 @@ export default function LabEnvelopesPage() {
       </Link>
       <h1 className={styles.titulo}>Recompensas</h1>
       <p className={styles.intro}>
-        Abra envelope, pacote, maleta e cofre de mentira, com a animação de verdade. <b>Nada vai para a sua coleção</b>: as cartas caem numa
-        cópia que só existe nesta página, e somem ao sair dela.
+        Abra envelope, pacote, maleta e cofre com a animação de verdade. <b>O que sair vai para a sua conta</b>: as cartas e os itens
+        entram na sua coleção e ficam. Para começar do zero, o "Resetar run e coleção" da porta do lab.
       </p>
 
       <div className={styles.barra}>
-        <Segmentado
-          rotulo="Coleção de partida"
-          valor={base}
-          onChange={trocarBase}
-          opcoes={[
-            { valor: 'inicial', rotulo: 'Coleção inicial' },
-            { valor: 'minha', rotulo: 'Cópia da minha' },
-          ]}
-        />
         <span className={styles.estado}>
-          {abertos} aberto{abertos === 1 ? '' : 's'} · {tenho} cópias na coleção de teste
+          {abertos} aberto{abertos === 1 ? '' : 's'} nesta visita · {tenho} cópias na sua coleção
+          {colecao ? ` · ${colecao.cosmeticos.length} ite${colecao.cosmeticos.length === 1 ? 'm' : 'ns'}` : ''}
         </span>
-        <button type="button" className={buttons.button} onClick={() => trocarBase(base)}>
-          <RotateCcw size={15} aria-hidden /> Recomeçar
-        </button>
       </div>
 
       <div className={styles.envelopes}>
@@ -122,7 +122,7 @@ export default function LabEnvelopesPage() {
                 tipo={tipo}
                 largura={84}
                 rotulo={`Abrir ${env.artigo === 'a' ? 'uma' : 'um'} ${env.nome.toLowerCase()} de teste`}
-                onClick={() => abrir(tipo)}
+                onClick={colecao ? () => abrir(tipo) : undefined}
               />
               <b>{env.nome}</b>
               <span>
@@ -134,8 +134,17 @@ export default function LabEnvelopesPage() {
       </div>
 
       <h2 className={styles.secao}>O que sai de verdade · {AMOSTRA} de cada</h2>
+      <Segmentado
+        rotulo="Coleção de partida"
+        valor={base}
+        onChange={setBase}
+        opcoes={[
+          { valor: 'inicial', rotulo: 'Coleção inicial' },
+          { valor: 'minha', rotulo: 'A minha' },
+        ]}
+      />
       <p className={styles.dica}>
-        Abertos sempre da coleção de partida acima. A porcentagem é das cartas que SAÍRAM, e não a da tabela: raridade
+        Abertos sempre da coleção escolhida, numa cópia: esta conta não grava nada. A porcentagem é das cartas que SAÍRAM, e não a da tabela: raridade
         esgotada cai para a de baixo, e é aqui que isso aparece.
       </p>
       <div className={styles.tabelaRolavel}>
