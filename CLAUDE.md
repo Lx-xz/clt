@@ -889,6 +889,15 @@ opções. O que ele escolheu, e que deve ser preservado:
     `lerAvatar()` traduz a receita antiga na leitura (`homem → quadrado` +
     gola V, `mulher → oval` + gola alta, olho novo para todo mundo) — sem
     migração no banco.
+  - **O avatar respira (v0.26, prop `vivo`)**, só onde é grande: a
+    `AvatarHero` e o crachá da mesa. É CSS puro no `Avatar.module.sass`: a
+    cabeça sobe meio ponto, o peito estica 1,5% a partir de baixo (o
+    bastante para o pescoço acompanhar o queixo), o olho pisca achatando em
+    volta do próprio centro, e a íris anda menos de 1 ponto para os lados.
+    Os grupos animados (`.cabeca`, `.peito`) ficam POR FORA dos de sempre,
+    porque a animação troca o `transform` e apagaria o `escalar`. O atraso
+    sai do `useId` (`--fase`), não de `Math.random()`, para o HTML do build
+    bater com o do navegador. O feliz e o X do burnout não piscam.
   - **O avatar sente o estresse.** `humor` é uma camada por cima do rosto, não
     peça da receita: `humorDoEstresse()` escolhe a cara em FRAÇÕES do estresse
     máximo (olheira, suor, lágrima no 9, olhos em X no burnout). A mesa o

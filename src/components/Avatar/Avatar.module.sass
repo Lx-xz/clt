@@ -21,3 +21,73 @@
 // em círculo (barra lateral, ranking), com o enquadramento da cabeça
 .redondo
   border-radius: 50%
+
+// ------------------------------------------------------------------- vivo
+// Respira, pisca e olha para o lado, bem de leve (`vivo`, só onde o avatar é
+// grande). Tudo em unidades do desenho (o viewBox tem 100): em CSS, o `px`
+// de um transform dentro do SVG é a unidade do desenho, não o pixel da tela.
+// A cabeça sobe meio ponto e o peito estica a partir da borda de baixo o
+// bastante para o pescoço subir junto (35 × 1,5% ≈ 0,5) — se os dois
+// números se desencontrarem, o queixo descola do pescoço.
+// `--fase` (de 0 a 1, do componente) desencontra avatares lado a lado.
+$respiro: 4.2s
+
+.vivo
+  .cabeca
+    animation: respirar-cabeca $respiro ease-in-out infinite
+    animation-delay: calc(var(--fase, 0) * -#{$respiro})
+
+  .peito
+    transform-box: view-box
+    transform-origin: 50px 100px
+    animation: respirar-peito $respiro ease-in-out infinite
+    animation-delay: calc(var(--fase, 0) * -#{$respiro})
+
+  // a origem (o centro de cada olho) vem inline
+  .olho
+    transform-box: view-box
+    animation: piscar 5.3s linear infinite
+    animation-delay: calc(var(--fase, 0) * -5.3s)
+
+  .iris
+    animation: olhar 11s ease-in-out infinite
+    animation-delay: calc(var(--fase, 0) * -11s)
+
+@keyframes respirar-cabeca
+  0%, 100%
+    transform: translateY(0)
+  50%
+    transform: translateY(-.5px)
+
+@keyframes respirar-peito
+  0%, 100%
+    transform: scaleY(1)
+  50%
+    transform: scaleY(1.015)
+
+// fechado por um instante só, perto do fim do ciclo
+@keyframes piscar
+  0%, 93%, 100%
+    transform: scaleY(1)
+  // quase zero: com o olho só achatado, sobrava um fio branco que lia
+  // como olho semicerrado, não fechado
+  95.5%
+    transform: scaleY(.02)
+
+// olha para um lado, volta, olha para o outro, volta. Pouco: a íris não
+// pode sair do branco
+@keyframes olhar
+  0%, 22%, 52%, 72%, 100%
+    transform: translateX(0)
+  28%, 46%
+    transform: translateX(.9px)
+  78%, 92%
+    transform: translateX(-.8px)
+
+@media (prefers-reduced-motion: reduce)
+  .vivo
+    .cabeca,
+    .peito,
+    .olho,
+    .iris
+      animation: none

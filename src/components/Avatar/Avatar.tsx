@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, type ReactNode } from 'react'
+import { useId, type CSSProperties, type ReactNode } from 'react'
 import type {
   Acessorio,
   Avatar as Receita,
@@ -1473,7 +1473,7 @@ function olhoComIris(o: DesenhoDeOlho, f: FormaDeOlho): ReactNode {
   return (
     <g transform={`translate(${o.x} ${o.y}) rotate(${giro}) scale(${o.t})`}>
       <ellipse rx={f.rx} ry={f.ry} fill={BRANCO_DO_OLHO} />
-      <ellipse cx={f.ix * -o.lado} cy={f.iy} rx={f.irx} ry={f.iry} fill={o.cor} />
+      <ellipse className={styles.iris} cx={f.ix * -o.lado} cy={f.iy} rx={f.irx} ry={f.iry} fill={o.cor} />
     </g>
   )
 }
@@ -2026,6 +2026,7 @@ export default function Avatar({
   ajustes,
   humor,
   redondo,
+  vivo,
 }: {
   avatar: Receita
   tamanho?: number
@@ -2038,11 +2039,19 @@ export default function Avatar({
   ajustes?: Ajustes
   /** A cara do momento — a mesa passa o do estresse. Sem ele, o de sempre. */
   humor?: Humor
+  /** Respira, pisca e olha para o lado, bem de leve. Só onde ele é GRANDE
+   *  (a capa, o crachá da mesa): numa lista, cinquenta rostos respirando
+   *  juntos é inquietação, e em 32 px nem se vê. */
+  vivo?: boolean
 }) {
   // o degradê precisa de um id de gradiente, e o perfil desenha vários
   // avatares na mesma página: com id repetido, todos seriam pintados com a
   // cor do primeiro. Os dois-pontos do useId não sobrevivem a um `url(#...)`
   const id = `deg-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
+  // cada avatar começa o ciclo num ponto diferente, para dois lado a lado
+  // não piscarem juntos. Sai do id, e não de `Math.random()`, porque o
+  // HTML do build e o navegador precisam escrever o mesmo atraso
+  const fase = [...id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 997, 7) / 997
 
   const manequim = avatar.rosto === 'manequim'
   const peleBase = manequim ? MADEIRA : TONS_DE_PELE[avatar.pele]
@@ -2149,8 +2158,13 @@ export default function Avatar({
 
   return (
     <span
-      className={`${styles.moldura} ${redondo ? styles.redondo : ''} ${className ?? ''}`}
-      style={{ background: fundoDoHumor, width: tamanho, height: tamanho }}
+      className={`${styles.moldura} ${redondo ? styles.redondo : ''} ${vivo ? styles.vivo : ''} ${className ?? ''}`}
+      style={{
+        background: fundoDoHumor,
+        width: tamanho,
+        height: tamanho,
+        ...(vivo ? { '--fase': fase } : {}),
+      } as CSSProperties}
     >
       <svg width={tamanho} height={tamanho} viewBox={caixa} role="img" aria-label="Avatar">
         <defs>
@@ -2173,23 +2187,31 @@ export default function Avatar({
           </clipPath>
         </defs>
 
-        {/* 1. cabelo de trás, atrás de tudo */}
-        <g transform={escalar}>
-          <g clipPath={recorteDoChapeu}>
-            {manequim ? null : ajustes?.pecas?.silhueta ? (
-              <path d={ajustes.pecas.silhueta} fill={c} />
-            ) : (
-              atrasDoCabelo
-            )}
+        {/* 1. cabelo de trás, atrás de tudo. A respiração (`.cabeca`,
+               `.peito`) mora em grupos POR FORA dos de sempre: a animação
+               de CSS troca o `transform` do elemento, e no grupo de dentro
+               ela apagaria o `escalar` */}
+        <g className={styles.cabeca}>
+          <g transform={escalar}>
+            <g clipPath={recorteDoChapeu}>
+              {manequim ? null : ajustes?.pecas?.silhueta ? (
+                <path d={ajustes.pecas.silhueta} fill={c} />
+              ) : (
+                atrasDoCabelo
+              )}
+            </g>
           </g>
         </g>
 
-        {/* 2. pescoço, tronco e gola — os três juntos, porque se recortam */}
-        {tronco.desenhar({ m, roupa, pele: p, sombra: ps, sombraForte: pss, rosto: rostoD, id })}
+        <g className={styles.peito}>
+          {/* 2. pescoço, tronco e gola — os três juntos, porque se recortam */}
+          {tronco.desenhar({ m, roupa, pele: p, sombra: ps, sombraForte: pss, rosto: rostoD, id })}
 
-        {/* 2b. o crachá no cordão, por cima da roupa */}
-        {avatar.cracha && !manequim ? crachaDe(m, tronco === TRONCOS.colado ? 'sem' : tronco === TRONCOS.golaAlta ? 'gola' : 'nu') : null}
+          {/* 2b. o crachá no cordão, por cima da roupa */}
+          {avatar.cracha && !manequim ? crachaDe(m, tronco === TRONCOS.colado ? 'sem' : tronco === TRONCOS.golaAlta ? 'gola' : 'nu') : null}
+        </g>
 
+        <g className={styles.cabeca}>
         <g transform={escalar}>
           {/* 3. orelhas, entre o cabelo de trás e o rosto: metade some
                  debaixo do rosto, então não há encaixe para errar. Corte mais
@@ -2273,15 +2295,22 @@ export default function Avatar({
                         strokeLinecap="round"
                       />
                     ) : (
-                      (cara?.sorriso ? OLHOS.feliz : olhos).desenhar({
-                        x,
-                        y: olhoY,
-                        t: m.olho,
-                        cor: ajustes?.cores?.olho ?? '#4a3524',
-                        lado: s,
-                        pele: p,
-                        sombra: ps,
-                      })
+                      // o piscar fecha o olho em volta do próprio centro. O
+                      // feliz (dois arcos) já é olho fechado, e não pisca
+                      <g
+                        className={cara?.sorriso || olhos === OLHOS.feliz ? undefined : styles.olho}
+                        style={{ transformOrigin: `${x}px ${olhoY}px` }}
+                      >
+                        {(cara?.sorriso ? OLHOS.feliz : olhos).desenhar({
+                          x,
+                          y: olhoY,
+                          t: m.olho,
+                          cor: ajustes?.cores?.olho ?? '#4a3524',
+                          lado: s,
+                          pele: p,
+                          sombra: ps,
+                        })}
+                      </g>
                     )}
                     {cara?.olheira ? (
                       // um degrau mais escura que a sombra da pele: na sombra
@@ -2393,6 +2422,7 @@ export default function Avatar({
           {acessorio === ACESSORIOS.headset
             ? acessorio.desenhar(m, ...(avatar.corHeadset === 'branco' ? ['#ece8df', '#b5ae9f'] : ['#33302b', '#1c1a17']) as [string, string])
             : acessorio.desenhar(m, corAcessorio, sombraDoAcessorio)}
+        </g>
         </g>
       </svg>
     </span>

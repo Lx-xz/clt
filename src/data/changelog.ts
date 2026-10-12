@@ -67,6 +67,14 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.26',
+    data: '2026-10-12',
+    titulo: 'O avatar respira',
+    itens: [
+      { tipo: 'melhor', texto: 'Na capa do início e do perfil, e no crachá da mesa, o avatar respira, pisca de vez em quando e olha para os lados. Bem de leve; quem pede menos movimento no aparelho o vê parado.' },
+    ],
+  },
+  {
     versao: '0.25',
     data: '2026-10-11',
     titulo: 'O início com a sua cara',

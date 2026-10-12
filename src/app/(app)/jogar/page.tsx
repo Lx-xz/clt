@@ -428,7 +428,7 @@ export default function JogarPage() {
             : humorDoEstresse(state.stress, state.modo.estresseMaximo)
           return (
             <div key={humor} className={styles.cracha} aria-label={`Seu avatar: ${humor}`}>
-              <Avatar avatar={sessao.avatar} tamanho={72} className={styles.crachaAvatar} humor={humor} />
+              <Avatar avatar={sessao.avatar} tamanho={72} className={styles.crachaAvatar} humor={humor} vivo />
               <span className={styles.crachaNome}>{sessao.nick}</span>
             </div>
           )
