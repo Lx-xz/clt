@@ -8,9 +8,11 @@ import type {
   CorCabelo,
   CorDoChapeu,
   CorDosOculos,
+  CorDosOlhos,
   CorFundo,
   CorRoupa,
   Corte,
+  Iris,
   LadoDaBarba,
   Oculos,
   Olhos,
@@ -1447,6 +1449,69 @@ export interface DesenhoDeOlho {
   /** Para a pálpebra, que é pele por cima. */
   pele: string
   sombra: string
+  /** O feitio por dentro: a íris de sempre, ou uma das colecionáveis. */
+  iris?: Iris
+}
+
+/** A cor da íris. Escuras o bastante para ler em cima do branco no tamanho
+ *  da lista; o âmbar é o da íris de gato que se espera. */
+export const TONS_DOS_OLHOS: Record<CorDosOlhos, string> = {
+  castanho: '#4a3524',
+  escuro: '#241b14',
+  mel: '#8a5a22',
+  ambar: '#c08a1e',
+  verde: '#4d7a3a',
+  azul: '#3c6c9c',
+  cinza: '#66737a',
+}
+
+/** A pupila das íris de bicho: uma fenda em pé, quase preta. */
+const FENDA = '#17130f'
+
+/**
+ * O olho por dentro: o branco e a íris, no feitio da receita. Toda expressão
+ * com íris passa por aqui (a amêndoa e companhia por `olhoComIris`, o "De
+ * lado" direto), então a íris colecionável vale para todas sem uma linha por
+ * expressão. O que se mexe ao olhar para os lados é o que leva `.iris`; o
+ * olho todo preto e o todo colorido não têm íris, e por isso não olham.
+ *
+ * - gato: a íris de sempre com a fenda em pé no meio.
+ * - réptil: o branco todo na cor da íris, clara, e só a fenda.
+ * - preto e colorido: o olho inteiro de uma cor, sem íris nenhuma.
+ */
+function miolo(
+  o: DesenhoDeOlho,
+  branco: { rx: number; ry: number },
+  iris: { cx: number; cy: number; rx: number; ry: number },
+  /** Se a íris olha para os lados quando o avatar está vivo. O "De lado"
+   *  não: a íris dele já mora encostada no canto, e andar mais a poria
+   *  para fora do branco. */
+  olha = true,
+): ReactNode {
+  const daIris = olha ? styles.iris : undefined
+  const tipo = o.iris ?? 'normal'
+  if (tipo === 'preto') return <ellipse rx={branco.rx} ry={branco.ry} fill="#1d1916" />
+  if (tipo === 'colorido') return <ellipse rx={branco.rx} ry={branco.ry} fill={clarear(o.cor, 0.12)} />
+  const fenda = (
+    <ellipse cx={iris.cx} cy={iris.cy} rx={iris.rx * 0.24} ry={iris.ry * 0.86} fill={FENDA} />
+  )
+  if (tipo === 'reptil') {
+    return (
+      <>
+        <ellipse rx={branco.rx} ry={branco.ry} fill={clarear(o.cor, 0.35)} />
+        <g className={daIris}>{fenda}</g>
+      </>
+    )
+  }
+  return (
+    <>
+      <ellipse rx={branco.rx} ry={branco.ry} fill={BRANCO_DO_OLHO} />
+      <g className={daIris}>
+        <ellipse cx={iris.cx} cy={iris.cy} rx={iris.rx} ry={iris.ry} fill={o.cor} />
+        {tipo === 'gato' ? fenda : null}
+      </g>
+    </>
+  )
 }
 
 const BRANCO_DO_OLHO = '#fbf7ee'
@@ -1472,8 +1537,7 @@ function olhoComIris(o: DesenhoDeOlho, f: FormaDeOlho): ReactNode {
   const giro = (f.giro ?? 0) * -o.lado
   return (
     <g transform={`translate(${o.x} ${o.y}) rotate(${giro}) scale(${o.t})`}>
-      <ellipse rx={f.rx} ry={f.ry} fill={BRANCO_DO_OLHO} />
-      <ellipse className={styles.iris} cx={f.ix * -o.lado} cy={f.iy} rx={f.irx} ry={f.iry} fill={o.cor} />
+      {miolo(o, { rx: f.rx, ry: f.ry }, { cx: f.ix * -o.lado, cy: f.iy, rx: f.irx, ry: f.iry })}
     </g>
   )
 }
@@ -1535,8 +1599,7 @@ export const OLHOS: Record<Olhos, {
     // a pálpebra reta e a íris encostada no canto: olhando de lado
     desenhar: (o) => (
       <g transform={`translate(${o.x} ${o.y}) rotate(${-8 * o.lado}) scale(${o.t})`}>
-        <ellipse rx={5.8} ry={4.3} fill={BRANCO_DO_OLHO} />
-        <ellipse cx={-2.2 * o.lado} cy={0.9} rx={2.4} ry={3.1} fill={o.cor} />
+        {miolo(o, { rx: 5.8, ry: 4.3 }, { cx: -2.2 * o.lado, cy: 0.9, rx: 2.4, ry: 3.1 }, false)}
         <rect x={-6.8} y={-5.8} width={13.6} height={4.5} fill={o.pele} />
         <path d="M-5.5 -1.3 h11" stroke={o.sombra} strokeWidth={1.1} strokeLinecap="round" fill="none" />
       </g>
@@ -2305,7 +2368,8 @@ export default function Avatar({
                           x,
                           y: olhoY,
                           t: m.olho,
-                          cor: ajustes?.cores?.olho ?? '#4a3524',
+                          cor: ajustes?.cores?.olho ?? TONS_DOS_OLHOS[avatar.corOlhos] ?? TONS_DOS_OLHOS.castanho,
+                          iris: avatar.iris,
                           lado: s,
                           pele: p,
                           sombra: ps,

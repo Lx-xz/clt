@@ -79,6 +79,12 @@ export type Olhos =
   | 'chorando'
   | 'burnout'
   | 'vitoria'
+/** A cor da íris. Livre, como a do cabelo. */
+export type CorDosOlhos = 'castanho' | 'escuro' | 'mel' | 'verde' | 'azul' | 'cinza' | 'ambar'
+/** O FEITIO do olho, por dentro da expressão: a íris de sempre, ou uma das
+ *  colecionáveis (de gato, de réptil, todo preto, todo colorido). As
+ *  diferentes são cosméticos — saem de recompensa (`cosmeticos.ts`). */
+export type Iris = 'normal' | 'gato' | 'reptil' | 'preto' | 'colorido'
 export type Barba =
   | 'nenhuma'
   | 'rala'
@@ -128,6 +134,8 @@ export interface Avatar {
   /** A cor do cabelo — e da barba, que é da mesma pessoa. */
   cor: CorCabelo
   olhos: Olhos
+  corOlhos: CorDosOlhos
+  iris: Iris
   barba: Barba
   corBarba: CorDaBarba
   ladoBarba: LadoDaBarba
@@ -158,6 +166,8 @@ export const AVATAR_PADRAO: Avatar = {
   cabelo: 'curto',
   cor: 'castanho',
   olhos: 'amendoa',
+  corOlhos: 'castanho',
+  iris: 'normal',
   barba: 'nenhuma',
   corBarba: 'cabelo',
   ladoBarba: 'conecta',
@@ -333,6 +343,24 @@ export const CORES_DOS_OCULOS: Opcao<CorDosOculos>[] = [
   { valor: 'creme', rotulo: 'Creme' },
 ]
 
+export const CORES_DOS_OLHOS: Opcao<CorDosOlhos>[] = [
+  { valor: 'castanho', rotulo: 'Castanho' },
+  { valor: 'escuro', rotulo: 'Escuro' },
+  { valor: 'mel', rotulo: 'Mel' },
+  { valor: 'ambar', rotulo: 'Âmbar' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'azul', rotulo: 'Azul' },
+  { valor: 'cinza', rotulo: 'Cinza' },
+]
+
+export const IRIS: Opcao<Iris>[] = [
+  { valor: 'normal', rotulo: 'Comum' },
+  { valor: 'gato', rotulo: 'De gato' },
+  { valor: 'reptil', rotulo: 'De réptil' },
+  { valor: 'preto', rotulo: 'Todo preto' },
+  { valor: 'colorido', rotulo: 'Todo colorido' },
+]
+
 export const BRINCOS: Opcao<Brinco>[] = [
   { valor: 'nenhum', rotulo: 'Sem brinco' },
   { valor: 'um', rotulo: 'Numa orelha' },
@@ -409,6 +437,8 @@ export function lerAvatar(bruto: unknown): Avatar {
     cabelo: um(CORTES, a.cabelo, AVATAR_PADRAO.cabelo),
     cor: um(CORES, a.cor, AVATAR_PADRAO.cor),
     olhos: um(OLHOS, a.olhos, AVATAR_PADRAO.olhos),
+    corOlhos: um(CORES_DOS_OLHOS, a.corOlhos, AVATAR_PADRAO.corOlhos),
+    iris: um(IRIS, a.iris, AVATAR_PADRAO.iris),
     barba: um(BARBAS, a.barba, AVATAR_PADRAO.barba),
     corBarba: um(CORES_DA_BARRA, a.corBarba, AVATAR_PADRAO.corBarba),
     // antes desta escolha existir, só a barba cheia tinha costeleta: quem
@@ -455,6 +485,10 @@ export function avatarAleatorio(tenho: readonly string[] = []): Avatar {
     // as caras do estresse não entram no sorteio: ele é para conhecer o
     // editor, e um avatar chorando à toa assusta
     olhos: sorteio(OLHOS.filter((o) => !EXPRESSOES_DE_HUMOR.includes(o.valor))).valor,
+    corOlhos: sorteio(CORES_DOS_OLHOS).valor,
+    // a íris diferente é colecionável: o sorteio só a dá a quem tem (o laço
+    // de baixo tira a trancada), e mesmo assim raramente
+    iris: talvez(IRIS, 'normal', 0.1),
     barba: talvez(BARBAS, 'nenhuma', 0.35),
     // quase sempre a do cabelo; às vezes grisalha, que é o caso comum
     corBarba: Math.random() < 0.15 ? 'grisalho' : 'cabelo',

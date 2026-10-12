@@ -67,6 +67,15 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.27',
+    data: '2026-10-12',
+    titulo: 'A cor dos olhos',
+    itens: [
+      { tipo: 'novo', texto: 'No editor do avatar, na aba da expressão: a cor dos olhos, em sete tons.' },
+      { tipo: 'novo', texto: 'Íris para colecionar: olho de gato, de réptil, todo colorido e todo preto. Saem de recompensa, como os óculos de sol, e valem com qualquer expressão.' },
+    ],
+  },
+  {
     versao: '0.26',
     data: '2026-10-12',
     titulo: 'O avatar respira',

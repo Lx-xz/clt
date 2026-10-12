@@ -10,6 +10,7 @@ import Avatar, {
   TONS_DE_PELE,
   TONS_DE_ROUPA,
   TONS_DOS_OCULOS,
+  TONS_DOS_OLHOS,
   corDoChapeu,
 } from '@/components/Avatar'
 import AvatarHero from '@/components/AvatarHero'
@@ -36,6 +37,8 @@ import {
   BRINCOS,
   CORES_DO_BRINCO,
   CORES_DOS_OCULOS,
+  CORES_DOS_OLHOS,
+  IRIS,
   CORTES,
   CRACHAS,
   FUNDOS,
@@ -265,6 +268,10 @@ export default function EditarAvatarPage() {
             {abaAtual === 'olhos' ? (
               <>
                 <Formas titulo="Expressão" campo="olhos" opcoes={OLHOS} enquadrar="rosto" {...props} />
+                {receita.iris !== 'preto' ? (
+                  <Cores titulo="Cor dos olhos" campo="corOlhos" opcoes={CORES_DOS_OLHOS} tons={(v) => TONS_DOS_OLHOS[v]} {...props} />
+                ) : null}
+                <Formas titulo="Íris" campo="iris" opcoes={IRIS} enquadrar="rosto" {...props} />
                 <p className={styles.nota}>
                   É a cara do seu perfil. Na mesa ela muda com o estresse — e toda run começa tranquila.
                 </p>

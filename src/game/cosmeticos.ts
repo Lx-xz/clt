@@ -32,6 +32,12 @@ export interface Cosmetico {
 
 export const COSMETICOS: Cosmetico[] = [
   { id: 'oculos:sol', campo: 'oculos', valor: 'sol', nome: 'Óculos de sol', raridade: 'rara', aba: 'extras' },
+  // as íris (v0.27): o feitio do olho por dentro da expressão. A cor continua
+  // livre, e é ela que pinta a íris de gato e o olho de réptil
+  { id: 'iris:gato', campo: 'iris', valor: 'gato', nome: 'Olho de gato', raridade: 'incomum', aba: 'olhos' },
+  { id: 'iris:reptil', campo: 'iris', valor: 'reptil', nome: 'Olho de réptil', raridade: 'rara', aba: 'olhos' },
+  { id: 'iris:colorido', campo: 'iris', valor: 'colorido', nome: 'Olho todo colorido', raridade: 'epica', aba: 'olhos' },
+  { id: 'iris:preto', campo: 'iris', valor: 'preto', nome: 'Olho todo preto', raridade: 'epica', aba: 'olhos' },
 ]
 
 export type TipoMaleta = 'bronze' | 'prata' | 'ouro'

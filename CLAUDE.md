@@ -898,6 +898,16 @@ opções. O que ele escolheu, e que deve ser preservado:
     porque a animação troca o `transform` e apagaria o `escalar`. O atraso
     sai do `useId` (`--fase`), não de `Math.random()`, para o HTML do build
     bater com o do navegador. O feliz e o X do burnout não piscam.
+  - **A cor dos olhos é livre, o FEITIO é colecionável (v0.27).** Dois
+    campos: `corOlhos` (sete tons, `TONS_DOS_OLHOS`) e `iris` (`normal`,
+    `gato`, `reptil`, `preto`, `colorido`; as quatro diferentes são
+    cosméticos, `aba: 'olhos'`). Quem desenha é `miolo()`, o branco e a íris
+    no feitio da receita, e toda expressão com íris passa por ela — por
+    isso a íris nova vale para todas sem uma linha por expressão. Gato é a
+    íris com a fenda; réptil é o branco todo na cor clara e só a fenda;
+    preto e colorido são o olho inteiro de uma cor, sem íris, e por isso
+    não olham para os lados. O "De lado" também não olha (`olha = false`):
+    a íris dele já mora no canto, e andar a poria para fora do branco.
   - **O avatar sente o estresse.** `humor` é uma camada por cima do rosto, não
     peça da receita: `humorDoEstresse()` escolhe a cara em FRAÇÕES do estresse
     máximo (olheira, suor, lágrima no 9, olhos em X no burnout). A mesa o
