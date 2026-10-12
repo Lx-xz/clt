@@ -475,6 +475,13 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   `requestAnimationFrame`) desde o primeiro: misturar com
   `performance.now()` dava passo negativo quando o navegador desacelerava
   as animações, e a maleta dava uma cambalhota.
+- **A abóbora (`abobora`, v0.30) é a recompensa da TEMPORADA**: 2 a 4
+  cartas e um item da coleção de Halloween garantido (`Envelope.tema`,
+  repassado a `sortearCosmetico`). Por enquanto só sai no `/lab/envelopes`:
+  nenhuma missão a dá. O desenho é chapado em gomos, a tampa (o topo
+  cortado em zigue-zague, com o cabo) sobe e tomba para o lado, o rosto
+  acende por dentro, e a carta sai do buraco de cima — o buraco mora na
+  camada de trás, o corpo na da frente, recortado na linha da tampa.
 - **O popup das chances é RESUMO (v0.25, `ChancesDoEnvelope`):** de onde
   vem, "De 5 a 7 cartas", "Chance de vir cosmético" (ou "Cosmético
   garantido") e as cinco raridades numa barra só, com a legenda embaixo.
@@ -925,6 +932,28 @@ opções. O que ele escolheu, e que deve ser preservado:
     `lerAvatar()` traduz a receita antiga na leitura (`homem → quadrado` +
     gola V, `mulher → oval` + gola alta, olho novo para todo mundo) — sem
     migração no banco.
+  - **A LATERAL do cabelo é escolha (v0.30, `lateral`: `cabelo`,
+    `degrade`, `nenhuma`)**, como o lado da barba, e vale para todo corte
+    menos o careca (duas faixas sozinhas liam como tufos). Era parte de cada
+    corte; hoje os cortes de capacete desenham só o TOPO (`semLados`) e
+    `lateralDe` desenha as duas faixas, que nascem dentro do topo e descem
+    até a orelha afinando — na cor do cabelo, ou esmaecendo (o fade do
+    antigo degradê, com gradiente próprio, `sufixo` em `esmaecido`). A
+    largura é a `FormaCabelo.lateral` de cada corte, a mesma da costeleta;
+    sem lateral, a costeleta para na orelha. Embaixo do chapéu aparece a
+    lateral escolhida. O antigo `degrade` virou o `curto` (o curto de
+    elipse solta saiu), e `lerAvatar` dá a cada receita antiga a lateral
+    que o corte dela já tinha (`LATERAL_ANTIGA`). Os cortes novos:
+    tigelinha, moicano, rabo (cosméticos, à espera de o autor dizer quais
+    viram de todo mundo — tirar de `COSMETICOS` é o que libera) e, de
+    Halloween, frankenstein e vampiro (o bico na testa).
+  - **Os olhos são desenhados ANTES do cabelo da frente (v0.30)**; a
+    sobrancelha continua por cima de tudo. Depois do cabelo, a pálpebra
+    (que é pele) e os cílios pintavam por cima da lateral nos rostos
+    estreitos.
+  - **O oval tem o tamanho dos outros (v0.30)**: era 20 de largura a
+    partir de 19, e a cabeça inteira lia menor. Hoje o que muda entre os
+    formatos é o canto, não o tamanho.
   - **O avatar respira (v0.26, prop `vivo`)**, só onde é grande: a
     `AvatarHero` e o crachá da mesa. É CSS puro no `Avatar.module.sass`: a
     cabeça sobe meio ponto, o peito estica 1,5% a partir de baixo (o
@@ -933,7 +962,15 @@ opções. O que ele escolheu, e que deve ser preservado:
     Os grupos animados (`.cabeca`, `.peito`) ficam POR FORA dos de sempre,
     porque a animação troca o `transform` e apagaria o `escalar`. O atraso
     sai do `useId` (`--fase`), não de `Math.random()`, para o HTML do build
-    bater com o do navegador. O feliz e o X do burnout não piscam.
+    bater com o do navegador. O feliz e o X do burnout não piscam, e o
+    manequim não respira (é um boneco).
+  - **O olho de gato (v0.30) é a ÍRIS pontuda, na cor dos olhos, sem
+    pupila** — o jogo não tem pupila em olho nenhum. Engoliu o de réptil
+    (`lerAvatar` e `lerColecao` traduzem `reptil` → `gato`). A expressão
+    "Vitória" saiu da lista por ser a Feliz (continua como humor da mesa),
+    e o tronco "sem pescoço" (`colado`) também: a leitura dá a Feliz e a
+    camiseta a quem os tinha. Chapéu e chapéu de bruxa têm aba RETA (de
+    frente, aba é faixa; a elipse lia como chapéu visto de cima).
   - **A cor dos olhos é livre, o FEITIO é colecionável (v0.27; de Halloween desde a v0.29).** Dois
     campos: `corOlhos` (sete tons, `TONS_DOS_OLHOS`) e `iris` (`normal`,
     `gato`, `reptil`, `preto`, `colorido`; as quatro diferentes são

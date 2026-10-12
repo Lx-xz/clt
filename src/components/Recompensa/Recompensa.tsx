@@ -518,16 +518,91 @@ function Cofre({ t }: { t: number }) {
   )
 }
 
+// ----------------------------------------------------------- abóbora
+// a recompensa da temporada de Halloween (v0.30): a abóbora de lanterna,
+// chapada, em gomos. A TAMPA é o topo cortado em zigue-zague, com o cabo: ao
+// abrir ela sobe e tomba para a esquerda, e o rosto acende por dentro. A
+// carta sai do buraco de cima — o buraco (o escuro e a borda de trás) mora na
+// camada de trás, e o corpo na da frente, cortado na linha da tampa
+const GOMOS: { cx: number; rx: number; cor: string }[] = [
+  { cx: 50, rx: 28, cor: '#c9611c' },
+  { cx: 110, rx: 28, cor: '#c9611c' },
+  { cx: 64, rx: 26, cor: '#dc6f22' },
+  { cx: 96, rx: 26, cor: '#dc6f22' },
+  { cx: 80, rx: 22, cor: '#ec8433' },
+]
+
+/** A beirada da frente do corte: a metade de baixo de uma elipse, em dentes. */
+function corteDaTampa(): string {
+  const n = 12
+  let d = 'M48 74'
+  for (let i = 1; i <= n; i += 1) {
+    const a = Math.PI - (Math.PI * i) / n
+    const k = i % 2 ? 0.55 : 1
+    d += ` L${(80 + Math.cos(a) * 32).toFixed(2)} ${(74 + Math.sin(a) * 9 * k).toFixed(2)}`
+  }
+  return d
+}
+
+function Abobora({ t }: { t: number }) {
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '')
+  const e = suave(trecho(t, 0, 0.85))
+  const luz = trecho(t, 0.2, 0.7)
+  const gomos = GOMOS.map((g) => <ellipse key={g.cx} cx={g.cx} cy="104" rx={g.rx} ry="40" fill={g.cor} />)
+  const rosto = (cor: string, opacidade = 1) => (
+    <g fill={cor} opacity={opacidade}>
+      <path d="M58 96 L68 84 L74 98 Z" />
+      <path d="M102 96 L92 84 L86 98 Z" />
+      <path d="M77 104 L80 98 L83 104 Z" />
+      <path d="M56 114 Q80 132 104 114 L99 116 L95 112 L90 118 L85 113 L80 119 L75 113 L70 118 L65 112 L61 116 Z" />
+    </g>
+  )
+  return (
+    <>
+      <defs>
+        {/* o corpo sem a tampa (evenodd: o retângulo menos a tampa), e a
+            tampa sozinha */}
+        <clipPath id={`corpo${id}`}>
+          <path d={`M0 0 H160 V160 H0 Z ${corteDaTampa()} L112 40 L48 40 Z`} clipRule="evenodd" />
+        </clipPath>
+        <clipPath id={`tampa${id}`}>
+          <path d={`${corteDaTampa()} L112 40 L48 40 Z`} />
+        </clipPath>
+      </defs>
+      <Em c="tras">
+        <Chao largura={62} />
+        {/* o buraco: a borda de trás, da cor da casca, e o escuro de dentro */}
+        <ellipse cx="80" cy="73" rx="32" ry="10" fill="#c9611c" />
+        <ellipse cx="80" cy="74" rx="28" ry="7.5" fill="#2a1408" />
+      </Em>
+      <Em c="frente">
+        <g clipPath={`url(#corpo${id})`}>
+          {gomos}
+          {rosto('#3a2410')}
+          {/* acesa: a vela de dentro aparecendo pelos furos */}
+          {rosto('#ffcf4a', luz)}
+        </g>
+        {/* a tampa sobe e tomba para a esquerda, em volta do próprio cabo */}
+        <g transform={`translate(${-44 * e} ${-30 * e}) rotate(${-48 * e} 80 66)`}>
+          <g clipPath={`url(#tampa${id})`}>{gomos}</g>
+          <path d="M78 66 C77 58 79 52 85 49 L88 52 C84 55 83 60 84 66 Z" fill="#5b7a2e" />
+        </g>
+      </Em>
+    </>
+  )
+}
+
 const DESENHOS: Record<Forma, (p: { t: number }) => React.JSX.Element> = {
   envelope: Envelope,
   pacote: Pacote,
   maleta: Maleta,
   cofre: Cofre,
+  abobora: Abobora,
 }
 
 /** Quanto dura a abertura de cada um. O cofre é o mais lento: antes de a
  *  porta abrir, o segredo gira e a manivela vira. */
-export const DURACAO: Record<Forma, number> = { envelope: 750, pacote: 950, maleta: 650, cofre: 1700 }
+export const DURACAO: Record<Forma, number> = { envelope: 750, pacote: 950, maleta: 650, cofre: 1700, abobora: 900 }
 
 /**
  * O desenho de uma recompensa, de 0 (fechado) a 1 (aberto). Sem animação

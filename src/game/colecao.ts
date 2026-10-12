@@ -2,7 +2,7 @@ import { cartasDoJogo, cartasIniciais, getCard } from './catalogo'
 import { regras } from './regras'
 import type { ActionCard, BaralhoMontado, CardId, Collection, EnvelopeFechado, Raridade, TipoEnvelope } from './types'
 
-const TIPOS_DE_ENVELOPE: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico']
+const TIPOS_DE_ENVELOPE: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico', 'abobora']
 
 /**
  * A coleção do jogador: as cópias que ele TEM e os baralhos montados com elas.
@@ -86,8 +86,10 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
       ? { dia: m.dia, feitas: (m.feitas as unknown[]).filter((f): f is string => typeof f === 'string') }
       : { dia: '', feitas: [] }
   // quem gravou antes das maletas não tem a lista: nasce vazia
+  // o olho de réptil virou o de gato (v0.30): quem tinha o réptil fica
+  // com o gato, sem repetir
   const cosmeticos = Array.isArray(bruta.cosmeticos)
-    ? (bruta.cosmeticos as unknown[]).filter((c): c is string => typeof c === 'string')
+    ? [...new Set((bruta.cosmeticos as unknown[]).filter((c): c is string => typeof c === 'string').map((c) => (c === 'iris:reptil' ? 'iris:gato' : c)))]
     : []
   // a sequência dos sete dias chegou na v0.24: quem gravou antes começa do zero
   const s = bruta.sequencia as Record<string, unknown> | undefined

@@ -27,7 +27,14 @@ export type Corte =
   | 'longo'
   | 'quadrado'
   | 'careca'
-  | 'degrade'
+  // v0.30: os novos — moicano, rabo de cavalo e tigelinha (cosméticos, à
+  // espera de o autor dizer quais viram de todo mundo) e os dois de
+  // Halloween, frankenstein e vampiro
+  | 'moicano'
+  | 'rabo'
+  | 'tigelinha'
+  | 'frankenstein'
+  | 'vampiro'
   | 'espetado'
   | 'topete'
   | 'cacheado'
@@ -36,8 +43,25 @@ export type Corte =
   | 'blackPower'
   | 'trancas'
   | 'puff'
+/** A lateral do cabelo (v0.30): da cor dele, esmaecendo (o degradê) ou
+ *  nenhuma. É escolha à parte, como o lado da barba, e vale para todo corte. */
+export type Lateral = 'cabelo' | 'degrade' | 'nenhuma'
 export type Pele = 'clara' | 'areia' | 'mel' | 'media' | 'canela' | 'escura' | 'ebano'
-export type CorCabelo = 'preto' | 'branco' | 'castanho' | 'loiro' | 'ruivo' | 'grisalho' | 'mel'
+export type CorCabelo =
+  | 'preto'
+  | 'branco'
+  | 'castanho'
+  | 'loiro'
+  | 'ruivo'
+  | 'grisalho'
+  | 'mel'
+  // cosméticos (v0.30): as de fantasia, e as de Halloween
+  | 'rosa'
+  | 'azul'
+  | 'verde'
+  | 'lilas'
+  | 'abobora'
+  | 'noite'
 export type CorRoupa =
   | 'azul'
   | 'oliva'
@@ -45,6 +69,9 @@ export type CorRoupa =
   | 'areia'
   | 'grafite'
   | 'abobora'
+  | 'rosa'
+  | 'verde'
+  | 'noite'
   | 'terracota'
   | 'petroleo'
   | 'mostarda'
@@ -84,11 +111,23 @@ export type Olhos =
   | 'burnout'
   | 'vitoria'
 /** A cor da íris. Livre, como a do cabelo. */
-export type CorDosOlhos = 'castanho' | 'escuro' | 'mel' | 'verde' | 'azul' | 'cinza' | 'ambar'
+export type CorDosOlhos =
+  | 'castanho'
+  | 'escuro'
+  | 'mel'
+  | 'verde'
+  | 'azul'
+  | 'cinza'
+  | 'ambar'
+  | 'avela'
+  | 'turquesa'
+  | 'violeta'
+  // de Halloween (cosmético)
+  | 'vermelho'
 /** O FEITIO do olho, por dentro da expressão: a íris de sempre, ou uma das
  *  colecionáveis (de gato, de réptil, todo preto, todo colorido). As
  *  diferentes são cosméticos — saem de recompensa (`cosmeticos.ts`). */
-export type Iris = 'normal' | 'gato' | 'reptil' | 'preto' | 'colorido'
+export type Iris = 'normal' | 'gato' | 'preto' | 'colorido'
 export type Barba =
   | 'nenhuma'
   | 'rala'
@@ -115,7 +154,7 @@ export type Tronco =
 /** Óculos e chapéu são campos SEPARADOS: um é do rosto e o outro da cabeça, e
  *  quem quer os dois não deveria ter que escolher. */
 export type Oculos = 'nenhum' | 'redondo' | 'quadrado' | 'sol'
-export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'bruxa' | 'headset'
+export type Acessorio = 'nenhum' | 'bone' | 'chapeu' | 'gorro' | 'bruxa' | 'chifres' | 'orelhasDeGato' | 'headset'
 /** Os cílios: nenhum (o de sempre, o desenho é chapado) ou longos — o
  *  colecionável, três fios no canto de fora de cada olho. */
 export type Cilios = 'nenhum' | 'longos'
@@ -138,6 +177,7 @@ export interface Avatar {
   rosto: Rosto
   pele: Pele
   cabelo: Corte
+  lateral: Lateral
   /** A cor do cabelo — e da barba, que é da mesma pessoa. */
   cor: CorCabelo
   olhos: Olhos
@@ -172,6 +212,7 @@ export const AVATAR_PADRAO: Avatar = {
   rosto: 'manequim',
   pele: 'media',
   cabelo: 'curto',
+  lateral: 'cabelo',
   cor: 'castanho',
   olhos: 'amendoa',
   corOlhos: 'castanho',
@@ -180,9 +221,9 @@ export const AVATAR_PADRAO: Avatar = {
   barba: 'nenhuma',
   corBarba: 'cabelo',
   ladoBarba: 'conecta',
-  // o tronco sem pescoço é o padrão de quem escolhe agora; quem já tinha
-  // avatar mantém a gola de antes, pela tradução em `lerAvatar`
-  tronco: 'colado',
+  // o "sem pescoço" foi o padrão até sair da lista (v0.30); quem o tinha
+  // abre com a camiseta, pela leitura
+  tronco: 'camiseta',
   roupa: 'azul',
   oculos: 'nenhum',
   corOculos: 'escuro',
@@ -209,7 +250,6 @@ export const ROSTOS: Opcao<Rosto>[] = [
 
 export const CORTES: Opcao<Corte>[] = [
   { valor: 'careca', rotulo: 'Careca' },
-  { valor: 'degrade', rotulo: 'Degradê' },
   { valor: 'quadrado', rotulo: 'Quadrado' },
   { valor: 'espetado', rotulo: 'Espetado' },
   { valor: 'topete', rotulo: 'Topete' },
@@ -217,10 +257,21 @@ export const CORTES: Opcao<Corte>[] = [
   { valor: 'cacheado', rotulo: 'Cacheado' },
   { valor: 'chanel', rotulo: 'Chanel' },
   { valor: 'coque', rotulo: 'Coque' },
+  { valor: 'tigelinha', rotulo: 'Tigelinha' },
+  { valor: 'moicano', rotulo: 'Moicano' },
+  { valor: 'rabo', rotulo: 'Rabo de cavalo' },
+  { valor: 'frankenstein', rotulo: 'Frankenstein' },
+  { valor: 'vampiro', rotulo: 'Vampiro' },
   { valor: 'puff', rotulo: 'Puff' },
   { valor: 'blackPower', rotulo: 'Black power' },
   { valor: 'longo', rotulo: 'Longo' },
   { valor: 'trancas', rotulo: 'Tranças' },
+]
+
+export const LATERAIS: Opcao<Lateral>[] = [
+  { valor: 'cabelo', rotulo: 'Lateral de cabelo' },
+  { valor: 'degrade', rotulo: 'Lateral em degradê' },
+  { valor: 'nenhuma', rotulo: 'Sem lateral' },
 ]
 
 export const PELES: Opcao<Pele>[] = [
@@ -241,6 +292,13 @@ export const CORES: Opcao<CorCabelo>[] = [
   { valor: 'ruivo', rotulo: 'Ruivo' },
   { valor: 'grisalho', rotulo: 'Grisalho' },
   { valor: 'branco', rotulo: 'Branco' },
+  // trancadas: cosméticos
+  { valor: 'rosa', rotulo: 'Rosa' },
+  { valor: 'azul', rotulo: 'Azul' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'lilas', rotulo: 'Lilás' },
+  { valor: 'abobora', rotulo: 'Abóbora' },
+  { valor: 'noite', rotulo: 'Noite' },
 ]
 
 // O campo se chama `olhos` por história, mas a escolha é de EXPRESSÃO: o olho
@@ -260,7 +318,8 @@ export const OLHOS: Opcao<Olhos>[] = [
   { valor: 'suando', rotulo: 'Suando' },
   { valor: 'chorando', rotulo: 'Chorando' },
   { valor: 'burnout', rotulo: 'Burnout' },
-  { valor: 'vitoria', rotulo: 'Vitória' },
+  // a "Vitória" saiu da lista (v0.30): era a mesma cara da Feliz. Ela
+  // continua existindo como humor da mesa, e quem a tinha abre com a Feliz
 ]
 
 /** As expressões que são caras do estresse: o avatar as mostra no perfil, e
@@ -288,7 +347,6 @@ export const LADOS_DA_BARBA: Opcao<LadoDaBarba>[] = [
 ]
 
 export const TRONCOS: Opcao<Tronco>[] = [
-  { valor: 'colado', rotulo: 'Sem pescoço' },
   { valor: 'camiseta', rotulo: 'Camiseta' },
   { valor: 'golaV', rotulo: 'Gola V' },
   { valor: 'decote', rotulo: 'Decote' },
@@ -310,6 +368,9 @@ export const ROUPAS: Opcao<CorRoupa>[] = [
   { valor: 'grafite', rotulo: 'Grafite' },
   // trancada: de Halloween (`src/game/cosmeticos.ts`)
   { valor: 'abobora', rotulo: 'Abóbora' },
+  { valor: 'rosa', rotulo: 'Rosa' },
+  { valor: 'verde', rotulo: 'Verde' },
+  { valor: 'noite', rotulo: 'Noite' },
 ]
 
 export const OCULOS: Opcao<Oculos>[] = [
@@ -325,8 +386,11 @@ export const ACESSORIOS: Opcao<Acessorio>[] = [
   { valor: 'bone', rotulo: 'Boné' },
   { valor: 'chapeu', rotulo: 'Chapéu' },
   { valor: 'headset', rotulo: 'Headset' },
-  // trancado: de Halloween
+  // trancados: o gorro, e os de Halloween
+  { valor: 'gorro', rotulo: 'Gorro' },
   { valor: 'bruxa', rotulo: 'Chapéu de bruxa' },
+  { valor: 'chifres', rotulo: 'Chifres' },
+  { valor: 'orelhasDeGato', rotulo: 'Orelhas de gato' },
 ]
 
 export const CORES_DA_BARRA: Opcao<CorDaBarba>[] = [
@@ -364,12 +428,16 @@ export const CORES_DOS_OLHOS: Opcao<CorDosOlhos>[] = [
   { valor: 'verde', rotulo: 'Verde' },
   { valor: 'azul', rotulo: 'Azul' },
   { valor: 'cinza', rotulo: 'Cinza' },
+  { valor: 'avela', rotulo: 'Avelã' },
+  { valor: 'turquesa', rotulo: 'Turquesa' },
+  { valor: 'violeta', rotulo: 'Violeta' },
+  // trancado: de Halloween
+  { valor: 'vermelho', rotulo: 'Vermelho' },
 ]
 
 export const IRIS: Opcao<Iris>[] = [
   { valor: 'normal', rotulo: 'Comum' },
   { valor: 'gato', rotulo: 'De gato' },
-  { valor: 'reptil', rotulo: 'De réptil' },
   { valor: 'preto', rotulo: 'Todo preto' },
   { valor: 'colorido', rotulo: 'Todo colorido' },
 ]
@@ -437,6 +505,16 @@ const TRONCO_DO_CORPO: Record<string, Tronco> = {
   mulher: 'golaAlta',
 }
 
+/** A lateral que cada corte tinha antes de ela virar escolha. */
+const LATERAL_ANTIGA: Record<string, Lateral> = {
+  degrade: 'degrade',
+  espetado: 'degrade',
+  curto: 'cabelo',
+  topete: 'cabelo',
+  quadrado: 'cabelo',
+  coque: 'cabelo',
+}
+
 /**
  * Toda leitura passa por aqui. O avatar vem de `jsonb` no banco e de
  * localStorage no convidado: nos dois casos pode ser nulo, pode ser lixo, e
@@ -455,11 +533,15 @@ export function lerAvatar(bruto: unknown): Avatar {
   return {
     rosto: um(ROSTOS, a.rosto, ROSTO_DO_CORPO[corpoAntigo] ?? AVATAR_PADRAO.rosto),
     pele: um(PELES, a.pele, AVATAR_PADRAO.pele),
-    cabelo: um(CORTES, a.cabelo, AVATAR_PADRAO.cabelo),
+    // o degradê virou o curto (v0.30), e o fade virou a lateral
+    cabelo: um(CORTES, a.cabelo === 'degrade' ? 'curto' : a.cabelo, AVATAR_PADRAO.cabelo),
+    // quem gravou antes da lateral abre com a que o corte já tinha
+    lateral: um(LATERAIS, a.lateral, LATERAL_ANTIGA[String(a.cabelo)] ?? 'nenhuma'),
     cor: um(CORES, a.cor, AVATAR_PADRAO.cor),
-    olhos: um(OLHOS, a.olhos, AVATAR_PADRAO.olhos),
+    olhos: um(OLHOS, a.olhos === 'vitoria' ? 'feliz' : a.olhos, AVATAR_PADRAO.olhos),
     corOlhos: um(CORES_DOS_OLHOS, a.corOlhos, AVATAR_PADRAO.corOlhos),
-    iris: um(IRIS, a.iris, AVATAR_PADRAO.iris),
+    // o réptil virou o gato (v0.30): eram a mesma íris pontuda
+    iris: um(IRIS, a.iris === 'reptil' ? 'gato' : a.iris, AVATAR_PADRAO.iris),
     cilios: um(CILIOS, a.cilios, AVATAR_PADRAO.cilios),
     barba: um(BARBAS, a.barba, AVATAR_PADRAO.barba),
     corBarba: um(CORES_DA_BARRA, a.corBarba, AVATAR_PADRAO.corBarba),
@@ -503,6 +585,7 @@ export function avatarAleatorio(tenho: readonly string[] = []): Avatar {
     rosto: sorteio(ROSTOS.filter((r) => r.valor !== 'manequim')).valor,
     pele: sorteio(PELES).valor,
     cabelo: sorteio(CORTES).valor,
+    lateral: sorteio(LATERAIS).valor,
     cor: sorteio(CORES).valor,
     // as caras do estresse não entram no sorteio: ele é para conhecer o
     // editor, e um avatar chorando à toa assusta

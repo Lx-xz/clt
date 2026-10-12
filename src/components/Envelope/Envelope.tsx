@@ -32,6 +32,7 @@ export const SELOS: Record<TipoEnvelope, { Icone: LucideIcon; classe: string }> 
   pardo: { Icone: PlayingCard, classe: styles.seloPardo },
   confidencial: { Icone: PlayingCard, classe: styles.seloConfidencial },
   epico: { Icone: PlayingCard, classe: styles.seloEpico },
+  abobora: { Icone: PlayingCard, classe: styles.seloEpico },
 }
 
 /**
@@ -233,7 +234,7 @@ export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFe
             {itens.length > 0 ? (
               <span className={styles.chancesItem}>
                 <Sparkles size={13} aria-hidden />
-                {itens[0] >= 1 ? 'Cosmético garantido' : 'Chance de vir cosmético'}
+                {env.tema === 'halloween' ? 'Item de Halloween garantido' : itens[0] >= 1 ? 'Cosmético garantido' : 'Chance de vir cosmético'}
               </span>
             ) : null}
           </p>
@@ -280,6 +281,8 @@ const SAIDA: Record<FormaDaRecompensa, { de: number; meio: number; s0: number; n
   pacote: { de: 326, meio: 195, s0: 0.45 },
   maleta: { de: 299, meio: 200, s0: 0.5 },
   cofre: { de: 299, meio: 160, s0: 0.45, naFrente: true },
+  // a abóbora abre por CIMA: a carta nasce no buraco da tampa
+  abobora: { de: 350, meio: 205, s0: 0.42 },
 }
 
 function semMovimento(): boolean {

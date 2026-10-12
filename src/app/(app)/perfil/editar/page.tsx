@@ -39,6 +39,7 @@ import {
   CORES_DOS_OCULOS,
   CORES_DOS_OLHOS,
   CILIOS,
+  LATERAIS,
   IRIS,
   CORTES,
   CRACHAS,
@@ -296,6 +297,9 @@ export default function EditarAvatarPage() {
               <>
                 <Cores titulo="Cor do cabelo" campo="cor" opcoes={CORES} tons={(v) => TONS_DE_CABELO[v][0]} {...props} />
                 <Formas titulo="Corte" campo="cabelo" opcoes={CORTES} {...props} />
+                {receita.cabelo !== 'careca' ? (
+                  <Formas titulo="Laterais" campo="lateral" opcoes={LATERAIS} {...props} />
+                ) : null}
               </>
             ) : null}
 
@@ -331,9 +335,9 @@ export default function EditarAvatarPage() {
                   <Cores titulo="Cor dos óculos" campo="corOculos" opcoes={CORES_DOS_OCULOS} tons={(v) => TONS_DOS_OCULOS[v]} {...props} />
                 ) : null}
                 <Formas titulo="Óculos" campo="oculos" opcoes={OCULOS} enquadrar="rosto" {...props} />
-                {receita.acessorio === 'bone' || receita.acessorio === 'chapeu' || receita.acessorio === 'bruxa' ? (
+                {receita.acessorio === 'bone' || receita.acessorio === 'chapeu' || receita.acessorio === 'bruxa' || receita.acessorio === 'gorro' ? (
                   <Cores
-                    titulo={receita.acessorio === 'bone' ? 'Cor do boné' : 'Cor do chapéu'}
+                    titulo={receita.acessorio === 'bone' ? 'Cor do boné' : receita.acessorio === 'gorro' ? 'Cor do gorro' : 'Cor do chapéu'}
                     campo="corChapeu"
                     opcoes={CORES_DO_CHAPEU}
                     tons={(v) => corDoChapeu(v, receita.roupa)}

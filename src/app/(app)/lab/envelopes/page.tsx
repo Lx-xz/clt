@@ -14,7 +14,7 @@ import { loadCollection, loadRun } from '@/game/storage'
 import type { CardId, Collection, GameState, Raridade, TipoEnvelope } from '@/game/types'
 import styles from './envelopes.module.sass'
 
-const TIPOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico']
+const TIPOS: TipoEnvelope[] = ['comum', 'pardo', 'confidencial', 'epico', 'abobora']
 const RARIDADES: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']
 const AMOSTRA = 1000
 

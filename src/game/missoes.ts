@@ -52,7 +52,7 @@ export const MISSOES: Missao[] = [
 ]
 
 /** O desenho da recompensa: a escada de valor, do mais simples ao mais raro. */
-export type FormaDaRecompensa = 'envelope' | 'pacote' | 'maleta' | 'cofre'
+export type FormaDaRecompensa = 'envelope' | 'pacote' | 'maleta' | 'cofre' | 'abobora'
 
 export interface Envelope {
   nome: string
@@ -75,6 +75,8 @@ export interface Envelope {
   /** A chance de CADA carta sair em cada raridade (soma 1). As cartas são
    *  sorteadas uma a uma, então podem vir repetidas. */
   chances: Record<Raridade, number>
+  /** Os itens só da coleção sazonal: é a recompensa da temporada. */
+  tema?: 'halloween'
 }
 
 /**
@@ -132,6 +134,19 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     pesos: [0.3, 0.45, 0.25],
     itens: [1, 0.25],
     chances: { comum: 0.2, incomum: 0.3, rara: 0.28, epica: 0.16, lendaria: 0.06 },
+  },
+  // a da temporada (v0.30): um item de Halloween garantido, e umas cartas.
+  // Por enquanto só sai no /lab — falta a missão (ou o evento) que a dê
+  abobora: {
+    nome: 'Abóbora',
+    forma: 'abobora',
+    artigo: 'a',
+    origem: 'A recompensa da temporada de Halloween. Por enquanto, só no lab.',
+    cartas: [2, 4],
+    pesos: [0.3, 0.45, 0.25],
+    itens: [1],
+    tema: 'halloween',
+    chances: { comum: 0.45, incomum: 0.32, rara: 0.15, epica: 0.06, lendaria: 0.02 },
   },
 }
 
@@ -242,7 +257,7 @@ function sortearItens(tipo: TipoEnvelope, sorte: () => number): string[] {
   const ids: string[] = []
   for (const chance of envelope.itens ?? []) {
     if (sorte() >= chance) continue
-    const item = sortearCosmetico(envelope.chances, ids, sorte)
+    const item = sortearCosmetico(envelope.chances, ids, sorte, envelope.tema)
     if (!item) break
     ids.push(item.id)
   }

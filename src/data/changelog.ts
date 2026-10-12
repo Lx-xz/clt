@@ -59,6 +59,7 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 export const EM_ANDAMENTO: string[] = [
   'Rebalancear: hoje quase toda partida acaba em burnout ainda na primeira semana — o jogo está mais duro do que deveria.',
   'A máquina de vendas: três cartas e três itens por dia, comprados com tokens.',
+  'A abóbora: a recompensa da temporada de Halloween, com um item da coleção garantido.',
   'Mais peças para o avatar, e fundos de mesa para escolher onde jogar.',
   'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
   'Uma recompensa para quem manda bom feedback.',
@@ -67,6 +68,19 @@ export const EM_ANDAMENTO: string[] = [
 ]
 
 export const VERSOES: Versao[] = [
+  {
+    versao: '0.30',
+    data: '2026-10-12',
+    titulo: 'Laterais e cortes novos',
+    itens: [
+      { tipo: 'novo', texto: 'A lateral do cabelo virou escolha, para todo corte: de cabelo, em degradê ou sem lateral. O cacheado, o puff e o black power também ganharam lateral.' },
+      { tipo: 'novo', texto: 'Cortes novos — tigelinha, moicano e rabo de cavalo — e os de Halloween, Frankenstein e vampiro. Cores novas de cabelo, de roupa e de olho, e mais peças para colecionar: gorro, chifres, orelhas de gato e olhos vermelhos.' },
+      { tipo: 'melhor', texto: 'O degradê virou o cabelo curto, e o curto antigo saiu. O topete foi redesenhado, os chapéus ganharam aba reta e o rosto oval ficou do tamanho dos outros.' },
+      { tipo: 'melhor', texto: 'O olho de gato agora é a íris pontuda, na cor dos olhos. O de réptil virou o mesmo — quem o tinha fica com o de gato.' },
+      { tipo: 'melhor', texto: 'Saíram a roupa "sem pescoço" e a expressão Vitória, que era igual à Feliz. Quem as usava abre com a camiseta e com a Feliz.' },
+      { tipo: 'correcao', texto: 'O olho não pinta mais por cima do cabelo, e o manequim não respira.' },
+    ],
+  },
   {
     versao: '0.29',
     data: '2026-10-12',

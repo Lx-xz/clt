@@ -35,15 +35,34 @@ export interface Cosmetico {
 
 export const COSMETICOS: Cosmetico[] = [
   { id: 'oculos:sol', campo: 'oculos', valor: 'sol', nome: 'Óculos de sol', raridade: 'rara', aba: 'extras' },
-  // a coleção de Halloween (v0.29): as íris, os cílios, o chapéu de bruxa e
-  // as cores de abóbora e de noite. Levam a abóbora no canto (`tema`)
+  // os normais da v0.30, trancados até o autor dizer quais viram de todo
+  // mundo (tirar daqui é o que os libera)
+  { id: 'cabelo:tigelinha', campo: 'cabelo', valor: 'tigelinha', nome: 'Cabelo tigelinha', raridade: 'comum', aba: 'cabelo' },
+  { id: 'cabelo:rabo', campo: 'cabelo', valor: 'rabo', nome: 'Rabo de cavalo', raridade: 'comum', aba: 'cabelo' },
+  { id: 'cabelo:moicano', campo: 'cabelo', valor: 'moicano', nome: 'Moicano', raridade: 'incomum', aba: 'cabelo' },
+  { id: 'cor:rosa', campo: 'cor', valor: 'rosa', nome: 'Cabelo rosa', raridade: 'incomum', aba: 'cabelo' },
+  { id: 'cor:azul', campo: 'cor', valor: 'azul', nome: 'Cabelo azul', raridade: 'incomum', aba: 'cabelo' },
+  { id: 'cor:verde', campo: 'cor', valor: 'verde', nome: 'Cabelo verde', raridade: 'incomum', aba: 'cabelo' },
+  { id: 'cor:lilas', campo: 'cor', valor: 'lilas', nome: 'Cabelo lilás', raridade: 'rara', aba: 'cabelo' },
+  { id: 'roupa:rosa', campo: 'roupa', valor: 'rosa', nome: 'Roupa rosa', raridade: 'comum', aba: 'roupa' },
+  { id: 'roupa:verde', campo: 'roupa', valor: 'verde', nome: 'Roupa verde', raridade: 'comum', aba: 'roupa' },
+  { id: 'acessorio:gorro', campo: 'acessorio', valor: 'gorro', nome: 'Gorro', raridade: 'incomum', aba: 'extras' },
+  // a coleção de Halloween (v0.29, e mais na v0.30). Levam a abóbora no
+  // canto (`tema`)
   { id: 'fundo:abobora', campo: 'fundo', valor: 'abobora', nome: 'Fundo abóbora', raridade: 'comum', aba: 'fundo', tema: 'halloween' },
   { id: 'roupa:abobora', campo: 'roupa', valor: 'abobora', nome: 'Roupa abóbora', raridade: 'comum', aba: 'roupa', tema: 'halloween' },
+  { id: 'roupa:noite', campo: 'roupa', valor: 'noite', nome: 'Roupa noite', raridade: 'comum', aba: 'roupa', tema: 'halloween' },
   { id: 'fundo:noite', campo: 'fundo', valor: 'noite', nome: 'Fundo noite', raridade: 'incomum', aba: 'fundo', tema: 'halloween' },
+  { id: 'cor:abobora', campo: 'cor', valor: 'abobora', nome: 'Cabelo abóbora', raridade: 'incomum', aba: 'cabelo', tema: 'halloween' },
+  { id: 'cor:noite', campo: 'cor', valor: 'noite', nome: 'Cabelo noite', raridade: 'incomum', aba: 'cabelo', tema: 'halloween' },
   { id: 'cilios:longos', campo: 'cilios', valor: 'longos', nome: 'Cílios longos', raridade: 'incomum', aba: 'olhos', tema: 'halloween' },
   { id: 'iris:gato', campo: 'iris', valor: 'gato', nome: 'Olho de gato', raridade: 'incomum', aba: 'olhos', tema: 'halloween' },
-  { id: 'iris:reptil', campo: 'iris', valor: 'reptil', nome: 'Olho de réptil', raridade: 'rara', aba: 'olhos', tema: 'halloween' },
+  { id: 'corOlhos:vermelho', campo: 'corOlhos', valor: 'vermelho', nome: 'Olhos vermelhos', raridade: 'rara', aba: 'olhos', tema: 'halloween' },
+  { id: 'cabelo:vampiro', campo: 'cabelo', valor: 'vampiro', nome: 'Cabelo de vampiro', raridade: 'incomum', aba: 'cabelo', tema: 'halloween' },
+  { id: 'acessorio:orelhasDeGato', campo: 'acessorio', valor: 'orelhasDeGato', nome: 'Orelhas de gato', raridade: 'incomum', aba: 'extras', tema: 'halloween' },
   { id: 'acessorio:bruxa', campo: 'acessorio', valor: 'bruxa', nome: 'Chapéu de bruxa', raridade: 'rara', aba: 'extras', tema: 'halloween' },
+  { id: 'acessorio:chifres', campo: 'acessorio', valor: 'chifres', nome: 'Chifres', raridade: 'rara', aba: 'extras', tema: 'halloween' },
+  { id: 'cabelo:frankenstein', campo: 'cabelo', valor: 'frankenstein', nome: 'Cabelo de Frankenstein', raridade: 'rara', aba: 'cabelo', tema: 'halloween' },
   { id: 'iris:colorido', campo: 'iris', valor: 'colorido', nome: 'Olho todo colorido', raridade: 'epica', aba: 'olhos', tema: 'halloween' },
   { id: 'iris:preto', campo: 'iris', valor: 'preto', nome: 'Olho todo preto', raridade: 'lendaria', aba: 'olhos', tema: 'halloween' },
 ]
@@ -121,8 +140,10 @@ export function sortearCosmetico(
   chances: Record<Raridade, number>,
   indisponiveis: readonly string[],
   sorte: () => number = Math.random,
+  /** Só desta coleção sazonal (a abóbora dá só de Halloween). */
+  tema?: Cosmetico['tema'],
 ): Cosmetico | null {
-  const novas = COSMETICOS.filter((c) => !indisponiveis.includes(c.id))
+  const novas = COSMETICOS.filter((c) => !indisponiveis.includes(c.id) && (!tema || c.tema === tema))
   if (novas.length === 0) return null
   let resto = sorte()
   let alvo: Raridade = 'comum'
