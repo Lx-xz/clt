@@ -717,6 +717,71 @@ button.envelope
 .vazio
   margin: 0
 
+// ================================================== a abertura rápida
+// segurando: o objeto treme, e uma barra embaixo dele enche no tempo de
+// segurar (`--segurar`)
+.segurando
+  animation: tremer .12s linear infinite
+
+.barraDeSegurar
+  position: absolute
+  bottom: -14px
+  left: 80px
+  z-index: 8
+  width: 200px
+  height: 6px
+  overflow: hidden
+  background: rgba(244, 239, 227, .2)
+  border-radius: 999px
+
+  &::after
+    content: ''
+    display: block
+    height: 100%
+    background: #e3b23c
+    border-radius: inherit
+    transform-origin: left
+    animation: enche var(--segurar, 2s) linear forwards
+
+// no resumo da rápida: nada entra animado, nada brilha. Só a ficha salta
+.resumoRapido
+  .resumoItem,
+  .somaDeTokens
+    animation: none
+
+  .fichaEmCima
+    animation: ficha-pula .3s cubic-bezier(.2, 1.6, .4, 1) both
+
+.itemDeCostas
+  display: grid
+  place-items: center
+  width: 138px
+  height: 138px
+  background: #3a3833
+  color: #bdb6a6
+
+@keyframes tremer
+  0%, 100%
+    transform: translateX(0)
+  25%
+    transform: translateX(-2px) rotate(-.6deg)
+  75%
+    transform: translateX(2px) rotate(.6deg)
+
+@keyframes enche
+  from
+    transform: scaleX(0)
+  to
+    transform: scaleX(1)
+
+@keyframes ficha-pula
+  from
+    opacity: 0
+    transform: translateX(-50%) scale(.3)
+  to
+    opacity: 1
+    transform: translateX(-50%) scale(1)
+
 // ================================================== o que virou token
 // A cópia acima do limite (ou o item que já tinha) sai como as outras, e
 // desvira; então esmaece, e a ficha salta por cima com o valor. Na fileira

@@ -39,6 +39,9 @@ export const COSMETICOS: Cosmetico[] = [
   // mundo (tirar daqui é o que os libera)
   { id: 'cabelo:tigelinha', campo: 'cabelo', valor: 'tigelinha', nome: 'Cabelo tigelinha', raridade: 'comum', aba: 'cabelo' },
   { id: 'cabelo:rabo', campo: 'cabelo', valor: 'rabo', nome: 'Rabo de cavalo', raridade: 'comum', aba: 'cabelo' },
+  { id: 'cabelo:repartidoCurto', campo: 'cabelo', valor: 'repartidoCurto', nome: 'Repartido curto', raridade: 'comum', aba: 'cabelo' },
+  { id: 'cabelo:repartidoMedio', campo: 'cabelo', valor: 'repartidoMedio', nome: 'Repartido médio', raridade: 'comum', aba: 'cabelo' },
+  { id: 'cabelo:repartidoLongo', campo: 'cabelo', valor: 'repartidoLongo', nome: 'Repartido longo', raridade: 'incomum', aba: 'cabelo' },
   { id: 'cabelo:moicano', campo: 'cabelo', valor: 'moicano', nome: 'Moicano', raridade: 'incomum', aba: 'cabelo' },
   { id: 'cor:rosa', campo: 'cor', valor: 'rosa', nome: 'Cabelo rosa', raridade: 'incomum', aba: 'cabelo' },
   { id: 'cor:azul', campo: 'cor', valor: 'azul', nome: 'Cabelo azul', raridade: 'incomum', aba: 'cabelo' },
@@ -53,6 +56,8 @@ export const COSMETICOS: Cosmetico[] = [
   { id: 'roupa:abobora', campo: 'roupa', valor: 'abobora', nome: 'Roupa abóbora', raridade: 'comum', aba: 'roupa', tema: 'halloween' },
   { id: 'roupa:noite', campo: 'roupa', valor: 'noite', nome: 'Roupa noite', raridade: 'comum', aba: 'roupa', tema: 'halloween' },
   { id: 'fundo:noite', campo: 'fundo', valor: 'noite', nome: 'Fundo noite', raridade: 'incomum', aba: 'fundo', tema: 'halloween' },
+  { id: 'corChapeu:abobora', campo: 'corChapeu', valor: 'abobora', nome: 'Chapéu abóbora', raridade: 'comum', aba: 'extras', tema: 'halloween' },
+  { id: 'corChapeu:noite', campo: 'corChapeu', valor: 'noite', nome: 'Chapéu noite', raridade: 'comum', aba: 'extras', tema: 'halloween' },
   { id: 'cor:abobora', campo: 'cor', valor: 'abobora', nome: 'Cabelo abóbora', raridade: 'incomum', aba: 'cabelo', tema: 'halloween' },
   { id: 'cor:noite', campo: 'cor', valor: 'noite', nome: 'Cabelo noite', raridade: 'incomum', aba: 'cabelo', tema: 'halloween' },
   { id: 'cilios:longos', campo: 'cilios', valor: 'longos', nome: 'Cílios longos', raridade: 'incomum', aba: 'olhos', tema: 'halloween' },
@@ -82,14 +87,28 @@ export const MALETAS: Record<TipoMaleta, Maleta> = {
   ouro: { nome: 'Maleta de ouro', chances: { comum: 0.15, incomum: 0.3, rara: 0.3, epica: 0.17, lendaria: 0.08 } },
 }
 
+/**
+ * Campos que usam o cosmético de OUTRO campo (v0.31): a cor da barba é uma
+ * cor de cabelo, e a das orelhas de gato uma de chapéu. Sem isto, a barba
+ * abóbora era de graça para quem não tinha o cabelo abóbora, e a amostra
+ * dela não levava a abóbora do Halloween.
+ */
+const CAMPO_DO_COSMETICO: Record<string, string> = { corBarba: 'cor', corOrelhas: 'corChapeu' }
+
 export function idDoCosmetico(campo: string, valor: string): string {
-  return `${campo}:${valor}`
+  return `${CAMPO_DO_COSMETICO[campo] ?? campo}:${valor}`
+}
+
+/** O cosmético por trás de uma peça da receita, se ela for um. */
+export function cosmeticoDaPeca(campo: string, valor: string): Cosmetico | undefined {
+  const id = idDoCosmetico(campo, valor)
+  return COSMETICOS.find((c) => c.id === id)
 }
 
 /** A peça é trancada e a pessoa não a tem. Peça fora da tabela nunca é. */
 export function trancado(campo: string, valor: string, tenho: readonly string[]): boolean {
-  const id = idDoCosmetico(campo, valor)
-  return COSMETICOS.some((c) => c.id === id) && !tenho.includes(id)
+  const c = cosmeticoDaPeca(campo, valor)
+  return !!c && !tenho.includes(c.id)
 }
 
 const ORDEM: Raridade[] = ['comum', 'incomum', 'rara', 'epica', 'lendaria']

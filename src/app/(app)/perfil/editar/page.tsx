@@ -11,6 +11,8 @@ import Avatar, {
   TONS_DE_ROUPA,
   TONS_DOS_OCULOS,
   TONS_DOS_OLHOS,
+  TONS_DE_CHAPEU,
+  CABELOS_FORMA,
   corDoChapeu,
 } from '@/components/Avatar'
 import AvatarHero from '@/components/AvatarHero'
@@ -33,6 +35,7 @@ import {
   CORES,
   CORES_DA_BARRA,
   CORES_DO_CHAPEU,
+  CORES_DAS_ORELHAS,
   CORES_DO_HEADSET,
   BRINCOS,
   CORES_DO_BRINCO,
@@ -57,7 +60,7 @@ import {
 } from '@/data/avatar'
 import { trocarAvatar } from '@/data/conta'
 import { carregarDoBanco } from '@/data/sync'
-import { COSMETICOS, cosmeticoPorId, idDoCosmetico, trancado } from '@/game/cosmeticos'
+import { cosmeticoDaPeca, trancado } from '@/game/cosmeticos'
 import { loadCollection } from '@/game/storage'
 import { marcarPendencia } from '@/data/pendencias'
 import buttons from '@/styles/buttons.module.sass'
@@ -159,9 +162,16 @@ export default function EditarAvatarPage() {
   function salvar() {
     // a peça trancada dá para VESTIR na prévia (é como se escolhe o que
     // querer), mas não para salvar: quem decide é o que a coleção tem
-    const naoTem = COSMETICOS.filter(
-      (c) => (receita as unknown as Record<string, unknown>)[c.campo] === c.valor && !tenho.includes(c.id),
-    )
+    // peça a peça da receita, e não cosmético a cosmético: a cor da barba
+    // usa o cosmético da cor de cabelo (`cosmeticoDaPeca`)
+    const naoTem = [
+      ...new Map(
+        Object.entries(receita)
+          .map(([campo, valor]) => cosmeticoDaPeca(campo, String(valor)))
+          .filter((c): c is NonNullable<typeof c> => !!c && !tenho.includes(c.id))
+          .map((c) => [c.id, c]),
+      ).values(),
+    ]
     if (naoTem.length) {
       const nomes = naoTem.map((c) => c.nome).join(', ').replace(/, ([^,]*)$/, ' e $1')
       setErro(
@@ -297,7 +307,9 @@ export default function EditarAvatarPage() {
               <>
                 <Cores titulo="Cor do cabelo" campo="cor" opcoes={CORES} tons={(v) => TONS_DE_CABELO[v][0]} {...props} />
                 <Formas titulo="Corte" campo="cabelo" opcoes={CORTES} {...props} />
-                {receita.cabelo !== 'careca' ? (
+                {/* os compridos e o careca não oferecem a escolha: o
+                    comprimento (ou a falta dele) é a lateral */}
+                {!CABELOS_FORMA[receita.cabelo]?.semEscolhaDeLateral ? (
                   <Formas titulo="Laterais" campo="lateral" opcoes={LATERAIS} {...props} />
                 ) : null}
               </>
@@ -341,6 +353,9 @@ export default function EditarAvatarPage() {
                     campo="corChapeu"
                     opcoes={CORES_DO_CHAPEU}
                     tons={(v) => corDoChapeu(v, receita.roupa)}
+                    // "a da roupa" não é mais uma cor: é a mesma da roupa, e
+                    // leva o ícone dela, como o pente no "igual ao cabelo"
+                    conteudo={(v) => (v === 'roupa' ? <RoupaIcon size={20} className={styles.pente} /> : null)}
                     {...props}
                   />
                 ) : null}
@@ -350,6 +365,16 @@ export default function EditarAvatarPage() {
                     campo="corHeadset"
                     opcoes={CORES_DO_HEADSET}
                     tons={(v) => (v === 'branco' ? '#ece8df' : '#33302b')}
+                    {...props}
+                  />
+                ) : null}
+                {receita.acessorio === 'orelhasDeGato' ? (
+                  <Cores
+                    titulo="Cor das orelhas"
+                    campo="corOrelhas"
+                    opcoes={CORES_DAS_ORELHAS}
+                    tons={(v) => (v === 'cabelo' ? TONS_DE_CABELO[receita.cor][0] : TONS_DE_CHAPEU[v])}
+                    conteudo={(v) => (v === 'cabelo' ? <PenteIcon size={20} className={styles.pente} /> : null)}
                     {...props}
                   />
                 ) : null}
@@ -399,10 +424,14 @@ function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMud
   // a peça trancada fica ESCONDIDA, e não apagada no meio das outras: a
   // grade de quem não tem nada continua sendo só do que dá para usar. A que
   // já está vestida aparece sempre, senão a escolha atual sumiria da tela
+  // a trancada fica SEMPRE no fim, na ordem dela, mesmo vestida na prévia:
+  // ela já pulou para o meio das livres quando tocada, e a grade mudava de
+  // lugar debaixo do dedo
   const bloqueada = (o: Opcao<Receita[C]>) => trancado(String(campo), String(o.valor), tenho)
-  const eTrancada = (o: Opcao<Receita[C]>) => bloqueada(o) && receita[campo] !== o.valor
-  const livres = opcoes.filter((o) => !eTrancada(o))
-  const trancadas = opcoes.filter(eTrancada)
+  const livres = opcoes.filter((o) => !bloqueada(o))
+  const trancadas = opcoes.filter(bloqueada)
+  const vestindoTrancada = trancadas.some((o) => receita[campo] === o.valor)
+  const aVista = verTrancadas || vestindoTrancada
 
   function opcao(o: Opcao<Receita[C]>) {
     const ativo = receita[campo] === o.valor
@@ -440,8 +469,10 @@ function Formas<C extends keyof Receita>({ titulo, campo, opcoes, receita, aoMud
             cima: é mais uma coisa da categoria, não uma ação da página.
             Tocar numa delas VESTE na prévia (é como se escolhe o que
             querer); salvar é que não deixa */}
-        {verTrancadas ? trancadas.map(opcao) : null}
-        {trancadas.length > 0 ? (
+        {aVista ? trancadas.map(opcao) : null}
+        {/* vestindo uma trancada, elas ficam à vista (e o botão de
+            esconder some): esconder a peça vestida a tiraria da tela */}
+        {trancadas.length > 0 && !vestindoTrancada ? (
           <button
             type="button"
             className={`${styles.opcao} ${styles.verTrancadas}`}
@@ -510,7 +541,7 @@ function Cores<C extends keyof Receita>({ titulo, campo, opcoes, tons, conteudo,
 /** O símbolo da coleção sazonal no canto de cima da peça (a abóbora, no
  *  Halloween). Peça fora de coleção nenhuma não leva nada. */
 function SeloDoTema({ campo, valor, pequeno }: { campo: string; valor: string; pequeno?: boolean }) {
-  const tema = cosmeticoPorId(idDoCosmetico(campo, valor))?.tema
+  const tema = cosmeticoDaPeca(campo, valor)?.tema
   if (tema !== 'halloween') return null
   return <AboboraIcon size={pequeno ? 18 : 24} className={`${styles.seloDoTema} ${pequeno ? styles.seloPequeno : ''}`} />
 }

@@ -69,6 +69,18 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.31',
+    data: '2026-10-12',
+    titulo: 'Abrir tudo de uma vez',
+    itens: [
+      { tipo: 'novo', texto: 'Segure a recompensa por dois segundos para abrir tudo de uma vez: as cartas e os itens aparecem de costas e desviram um por um, rapidinho.' },
+      { tipo: 'novo', texto: 'Cabelos repartidos no meio — curto, médio e longo — e parafusos no pescoço do Frankenstein.' },
+      { tipo: 'melhor', texto: 'As laterais em degradê e de cabelo encaixam direito em todo corte. Nos compridos a escolha saiu: o comprimento já é a lateral.' },
+      { tipo: 'melhor', texto: 'Moicano, rabo de cavalo, tigelinha e chapéu de bruxa redesenhados. Chifres e orelhas de gato ficam por cima do cabelo, e as orelhas têm cor (a do cabelo, ou outra).' },
+      { tipo: 'melhor', texto: 'No editor, a peça que ainda não é sua continua no fim da lista quando você a experimenta, e as cores de Halloween levam a abóbora também na barba e no chapéu.' },
+    ],
+  },
+  {
     versao: '0.30',
     data: '2026-10-12',
     titulo: 'Laterais e cortes novos',

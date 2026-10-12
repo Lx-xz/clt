@@ -5,7 +5,7 @@ import Avatar from '@/components/Avatar'
 import Card from '@/components/Card'
 import { AboboraIcon, TokenIcon } from '@/components/icons'
 import { useSessao } from '@/components/SessaoGuard'
-import { avatarAleatorio, type Avatar as Receita } from '@/data/avatar'
+import { avatarAleatorio, vestirParaMostrar, type Avatar as Receita } from '@/data/avatar'
 import { carregarDoBanco, sincronizar } from '@/data/sync'
 import { getCard } from '@/game/catalogo'
 import { NOMES_DE_RARIDADE } from '@/game/colecao'
@@ -232,7 +232,7 @@ function nomeDaVaga(v: Vaga): string {
 function ItemNaVitrine({ cosmetico, modelo, tamanho }: { cosmetico: Cosmetico; modelo: Receita; tamanho: number }) {
   return (
     <span className={styles.item}>
-      <Avatar avatar={{ ...modelo, [cosmetico.campo]: cosmetico.valor } as Receita} tamanho={tamanho} />
+      <Avatar avatar={vestirParaMostrar(modelo, cosmetico.campo, cosmetico.valor)} tamanho={tamanho} />
       {cosmetico.tema === 'halloween' ? <AboboraIcon size={22} className={styles.abobora} /> : null}
     </span>
   )

@@ -475,12 +475,19 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   `requestAnimationFrame`) desde o primeiro: misturar com
   `performance.now()` dava passo negativo quando o navegador desacelerava
   as animações, e a maleta dava uma cambalhota.
-- **A abóbora (`abobora`, v0.30) é a recompensa da TEMPORADA**: 2 a 4
-  cartas e um item da coleção de Halloween garantido (`Envelope.tema`,
+- **A abertura RÁPIDA (v0.31):** segurar o objeto por 2 s (`SEGURAR_MS`,
+  com a barra enchendo) vai direto para o resumo com tudo de costas, e
+  desvira um por um a cada 160 ms, sem brilho nem entrada — só a ficha do
+  token salta. O toque que termina o "segurar" não abre de novo
+  (`segurou`), e o Esc no meio mostra tudo.
+- **A abóbora (`abobora`, v0.30) é a recompensa da TEMPORADA**: nenhuma
+  carta (desde a v0.31) e um item da coleção de Halloween garantido (`Envelope.tema`,
   repassado a `sortearCosmetico`). Por enquanto só sai no `/lab/envelopes`:
   nenhuma missão a dá. O desenho é chapado em gomos, a tampa (o topo
   cortado em zigue-zague, com o cabo) sobe e tomba para o lado, o rosto
-  acende por dentro, e a carta sai do buraco de cima — o buraco mora na
+  acende por dentro, e a carta sai do buraco de cima (com a polpa e a
+  parede de dentro desenhadas, e a tampa caindo no chão do lado, para não
+  bater na carta) — o buraco mora na
   camada de trás, o corpo na da frente, recortado na linha da tampa.
 - **O popup das chances é RESUMO (v0.25, `ChancesDoEnvelope`):** de onde
   vem, "De 5 a 7 cartas", "Chance de vir cosmético" (ou "Cosmético
@@ -840,6 +847,14 @@ opções. O que ele escolheu, e que deve ser preservado:
   prévia** (com o cadeado), e o Salvar recusa com a mensagem de quais
   peças ainda não são da pessoa. A cor trancada (fundo, roupa) fica à
   vista nas amostras, com o cadeado no meio.
+  **Peça que veste o cosmético de outro campo (v0.31):** a cor da barba é
+  uma cor de cabelo e a das orelhas de gato uma de chapéu
+  (`CAMPO_DO_COSMETICO`, `cosmeticoDaPeca`): sem isso a barba abóbora era
+  de graça e sem a abóbora na amostra. O Salvar confere peça a peça da
+  receita. A trancada fica SEMPRE no fim da grade, mesmo vestida (ela
+  pulava para o meio das livres ao ser tocada). Para MOSTRAR um cosmético
+  (abertura, máquina), `vestirParaMostrar` veste também o que ele precisa
+  — a cor de chapéu num avatar sem chapéu não aparecia.
   **Coleções sazonais (`Cosmetico.tema`)**: a de Halloween (v0.29) é o
   chapéu de bruxa, os cílios longos, as quatro íris e as cores abóbora
   (roupa e fundo) e noite (fundo). A peça dela leva a abóbora
@@ -933,20 +948,28 @@ opções. O que ele escolheu, e que deve ser preservado:
     gola V, `mulher → oval` + gola alta, olho novo para todo mundo) — sem
     migração no banco.
   - **A LATERAL do cabelo é escolha (v0.30, `lateral`: `cabelo`,
-    `degrade`, `nenhuma`)**, como o lado da barba, e vale para todo corte
-    menos o careca (duas faixas sozinhas liam como tufos). Era parte de cada
-    corte; hoje os cortes de capacete desenham só o TOPO (`semLados`) e
-    `lateralDe` desenha as duas faixas, que nascem dentro do topo e descem
-    até a orelha afinando — na cor do cabelo, ou esmaecendo (o fade do
-    antigo degradê, com gradiente próprio, `sufixo` em `esmaecido`). A
-    largura é a `FormaCabelo.lateral` de cada corte, a mesma da costeleta;
-    sem lateral, a costeleta para na orelha. Embaixo do chapéu aparece a
-    lateral escolhida. O antigo `degrade` virou o `curto` (o curto de
+    `degrade`, `nenhuma`)**, como o lado da barba. Na v0.30 ela era uma
+    peça à parte (duas faixas iguais por cima de todo corte), e não
+    encaixava: o canto quadrado da faixa saía do canto redondo do topo, e
+    no degradê o topo acabava num degrau antes de o fade começar. **Desde a
+    v0.31 cada corte desenha as PRÓPRIAS laterais**, como sempre fez, e a
+    escolha só muda a tinta (`DesenhoDeCabelo.lateral`): `capacete()` usa o
+    mesmo desenho cheio, em fade (gradiente vertical sem recorte, então o
+    volume acima da cabeça fica inteiro) ou sem os lados (`semLados`);
+    `rente()` faz o mesmo para os recortados pelo rosto (o curto, o
+    espetado); `faixas()` dá as laterais de quem não é capacete (os crespos,
+    o moicano), nascendo embaixo da franja. Os compridos, o careca, a
+    tigelinha e os repartidos não oferecem a escolha
+    (`semEscolhaDeLateral`). Sem lateral, a costeleta para na orelha. O antigo `degrade` virou o `curto` (o curto de
     elipse solta saiu), e `lerAvatar` dá a cada receita antiga a lateral
     que o corte dela já tinha (`LATERAL_ANTIGA`). Os cortes novos:
-    tigelinha, moicano, rabo (cosméticos, à espera de o autor dizer quais
-    viram de todo mundo — tirar de `COSMETICOS` é o que libera) e, de
-    Halloween, frankenstein e vampiro (o bico na testa).
+    tigelinha, moicano (uma crista lisa), rabo (sai do alto da cabeça e cai
+    pelo lado), os repartidos curto, médio e longo (v0.31) — cosméticos, à
+    espera de o autor dizer quais viram de todo mundo; tirar de
+    `COSMETICOS` é o que libera — e, de Halloween, frankenstein (com os
+    parafusos no pescoço) e vampiro (o bico na testa). `FormaCabelo.alto`
+    é quanto o cabelo sobe acima da cabeça: chifres e orelhas de gato
+    pousam ali, POR CIMA dele (no flat-top eles afundavam).
   - **Os olhos são desenhados ANTES do cabelo da frente (v0.30)**; a
     sobrancelha continua por cima de tudo. Depois do cabelo, a pálpebra
     (que é pele) e os cílios pintavam por cima da lateral nos rostos

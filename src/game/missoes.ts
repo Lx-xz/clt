@@ -135,15 +135,15 @@ export const ENVELOPES: Record<TipoEnvelope, Envelope> = {
     itens: [1, 0.25],
     chances: { comum: 0.2, incomum: 0.3, rara: 0.28, epica: 0.16, lendaria: 0.06 },
   },
-  // a da temporada (v0.30): um item de Halloween garantido, e umas cartas.
-  // Por enquanto só sai no /lab — falta a missão (ou o evento) que a dê
+  // a da temporada (v0.30): SÓ um item de Halloween, garantido, e carta
+  // nenhuma (v0.31). Por enquanto só sai no /lab — falta a missão (ou o
+  // evento) que a dê
   abobora: {
     nome: 'Abóbora',
     forma: 'abobora',
     artigo: 'a',
     origem: 'A recompensa da temporada de Halloween. Por enquanto, só no lab.',
-    cartas: [2, 4],
-    pesos: [0.3, 0.45, 0.25],
+    cartas: [0, 0],
     itens: [1],
     tema: 'halloween',
     chances: { comum: 0.45, incomum: 0.32, rara: 0.15, epica: 0.06, lendaria: 0.02 },

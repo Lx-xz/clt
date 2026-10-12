@@ -3,7 +3,7 @@
 import { PlayingCard, Sparkles, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { avatarAleatorio, type Avatar as Receita } from '@/data/avatar'
+import { avatarAleatorio, vestirParaMostrar, type Avatar as Receita } from '@/data/avatar'
 import { getCard } from '@/game/catalogo'
 import { COSMETICOS, cosmeticoPorId, type Cosmetico } from '@/game/cosmeticos'
 import { TOKENS_POR_RARIDADE } from '@/game/tokens'
@@ -230,7 +230,7 @@ export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFe
         <div>
           <p>{env.origem}</p>
           <p className={styles.chancesQuanto}>
-            <b>{min === max ? `${min} cartas` : `De ${min} a ${max} cartas`}</b>
+            {max === 0 ? null : <b>{min === max ? `${min} cartas` : `De ${min} a ${max} cartas`}</b>}
             {itens.length > 0 ? (
               <span className={styles.chancesItem}>
                 <Sparkles size={13} aria-hidden />
@@ -240,7 +240,7 @@ export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFe
           </p>
         </div>
       </div>
-      <p className={styles.chancesDica}>A raridade de cada carta:</p>
+      <p className={styles.chancesDica}>{max === 0 ? 'A raridade do item:' : 'A raridade de cada carta:'}</p>
       {/* uma barra só, com as cinco raridades lado a lado: o tamanho de cada
           pedaço já é a chance, e a legenda embaixo dá o número */}
       <div className={styles.barraUnica} role="img" aria-label={raridades.map((r) => `${NOMES_DE_RARIDADE[r]} ${porcento(env.chances[r])}`).join(', ')}>
@@ -262,6 +262,11 @@ export function ChancesDoEnvelope({ tipo, onFechar }: { tipo: TipoEnvelope; onFe
 }
 
 type Fase = 'chegando' | 'esperando' | 'abrindo' | 'revelando' | 'resumo'
+
+/** Quanto segurar o objeto para a abertura rápida, e o passo entre uma
+ *  carta e a outra desvirando nela. */
+const SEGURAR_MS = 2000
+const DESVIRAR_MS = 160
 
 /** Os tempos da abertura. Cada um bate com uma animação do sass; o de abrir
  *  é o de cada objeto (`DURACAO`): o cofre gira o segredo antes da porta. */
@@ -328,7 +333,7 @@ function useModelo(): Receita {
   return modelo
 }
 
-const vestindo = (modelo: Receita, item: Cosmetico): Receita => ({ ...modelo, [item.campo]: item.valor }) as Receita
+const vestindo = (modelo: Receita, item: Cosmetico): Receita => vestirParaMostrar(modelo, item.campo, item.valor)
 
 export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, emToken, onFechar }: {
   tipo: TipoEnvelope
@@ -348,6 +353,14 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
   const [guardando, setGuardando] = useState(false)
   const [escala, setEscala] = useState(1)
   const ocupado = useRef(false)
+  // a abertura RÁPIDA (v0.31): segurar o objeto por `SEGURAR_MS` vai direto
+  // para o resumo, com tudo de costas, e desvira um por um, depressa e sem
+  // brilho — só a ficha do token salta. `viradas` é quantas já desviraram
+  // (null: a abertura de sempre)
+  const [viradas, setViradas] = useState<number | null>(null)
+  const [segurando, setSegurando] = useState(false)
+  const timerDeSegurar = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const segurou = useRef(false)
   const env = ENVELOPES[tipo]
   const abrir = Math.round(DURACAO[env.forma] * 0.9)
   const t = useAndamento(fase === 'abrindo' || fase === 'revelando', DURACAO[env.forma])
@@ -406,7 +419,41 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
     return () => clearTimeout(t)
   }, [fase, atual, guardando])
 
+  function comecarASegurar() {
+    if (fase !== 'esperando') return
+    segurou.current = false
+    setSegurando(true)
+    timerDeSegurar.current = setTimeout(() => {
+      segurou.current = true
+      setSegurando(false)
+      setViradas(0)
+      setFase('resumo')
+    }, SEGURAR_MS)
+  }
+
+  function soltar() {
+    if (timerDeSegurar.current) clearTimeout(timerDeSegurar.current)
+    timerDeSegurar.current = null
+    setSegurando(false)
+  }
+
+  useEffect(() => () => soltar(), [])
+
+  // desvira um por um, depressa
+  useEffect(() => {
+    if (viradas === null || viradas >= total) return
+    const t = setTimeout(() => setViradas((v) => (v ?? 0) + 1), viradas === 0 ? 350 : DESVIRAR_MS)
+    return () => clearTimeout(t)
+  }, [viradas, total])
+  /** A posição `i` do resumo já está à mostra. */
+  const aMostra = (i: number) => viradas === null || i < viradas
+
   function avancar() {
+    // o toque que termina um "segurar" não abre de novo
+    if (segurou.current) {
+      segurou.current = false
+      return
+    }
     if (ocupado.current) return
     if (fase === 'esperando') {
       ocupado.current = true
@@ -436,7 +483,9 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
     const tecla = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') e.stopPropagation()
       if (e.key === 'Escape') {
-        if (fase === 'resumo') onFechar()
+        // no meio da rápida, o Esc mostra tudo de uma vez; de novo, fecha
+        if (fase === 'resumo' && viradas !== null && viradas < total) setViradas(total)
+        else if (fase === 'resumo') onFechar()
         else setFase('resumo')
       } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
@@ -465,7 +514,9 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
 
   const dica =
     fase === 'esperando'
-      ? `Toque ${env.artigo === 'a' ? 'na' : 'no'} ${env.nome.toLowerCase()} para abrir`
+      ? segurando
+        ? 'Segure… abrindo tudo de uma vez'
+        : `Toque ${env.artigo === 'a' ? 'na' : 'no'} ${env.nome.toLowerCase()} para abrir · segure para abrir tudo`
       : fase === 'revelando' && virada
         ? atual < total - 1
           ? `Toque para a próxima · ${atual + 1} de ${total}`
@@ -482,13 +533,24 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
           <div className={styles.titulo}>{env.nome}</div>
           {/* o palco inteiro é o alvo do toque: abrir e passar carta é o
               mesmo gesto, onde quer que o dedo caia */}
-          <div className={styles.areaToque} onClick={avancar} style={{ '--escala': escala } as React.CSSProperties}>
+          <div
+            className={styles.areaToque}
+            onClick={avancar}
+            onPointerDown={comecarASegurar}
+            onPointerUp={soltar}
+            onPointerLeave={soltar}
+            onPointerCancel={soltar}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ '--escala': escala, '--segurar': `${SEGURAR_MS}ms` } as React.CSSProperties}
+          >
             <div className={styles.palco}>
-              {/* o objeto em duas camadas, e a carta passa entre elas */}
-              <div className={`${styles.objetoNoPalco} ${styles[`fase_${fase}`]}`}>
+              {/* o objeto em duas camadas, e a carta passa entre elas. Sendo
+                  segurado, ele treme e a barra embaixo enche */}
+              <div className={`${styles.objetoNoPalco} ${styles[`fase_${fase}`]} ${segurando ? styles.segurando : ''}`}>
                 <DesenhoDaRecompensa forma={env.forma} t={t} camada="tras" className={styles.camadaTras} />
                 <DesenhoDaRecompensa forma={env.forma} t={t} camada="frente" className={styles.camadaFrente} />
               </div>
+              {segurando ? <span className={styles.barraDeSegurar} aria-hidden /> : null}
               {fase === 'revelando' && (carta || item) ? (
                 <div
                   key={atual}
@@ -555,7 +617,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
           <p className={styles.dica}>{dica}</p>
         </>
       ) : (
-        <div className={styles.resumo}>
+        <div className={`${styles.resumo} ${viradas !== null ? styles.resumoRapido : ''}`}>
           <h2 className={styles.resumoTitulo}>
             O que veio {env.artigo === 'a' ? 'na' : 'no'} {env.nome.toLowerCase()}
           </h2>
@@ -565,42 +627,68 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
             <div className={styles.resumoCartas}>
               {cartas.map((id, i) => {
                 const c = getCard(id)
-                const token = tokenDe(i)
+                const visto = aMostra(i)
+                const token = visto ? tokenDe(i) : 0
                 return (
                   <div key={i} className={`${styles.resumoItem} ${token ? styles.emToken : ''}`} style={{ '--i': i } as React.CSSProperties}>
-                    <Card card={c} className={styles.cartaResumo} />
+                    <Card card={c} faceDown={!visto} className={styles.cartaResumo} />
                     {token ? <FichaEmCima valor={token} /> : null}
                     <span className={`${styles.rotuloResumo} ${styles[`texto_${c.raridade ?? 'comum'}`]}`}>
-                      {!token && novas.includes(id) && cartas.indexOf(id) === i ? <b className={styles.nova}>nova</b> : null}
-                      {NOMES_DE_RARIDADE[c.raridade ?? 'comum']}
+                      {visto ? (
+                        <>
+                          {!token && novas.includes(id) && cartas.indexOf(id) === i ? <b className={styles.nova}>nova</b> : null}
+                          {NOMES_DE_RARIDADE[c.raridade ?? 'comum']}
+                        </>
+                      ) : (
+                        ' '
+                      )}
                     </span>
                   </div>
                 )
               })}
-              {itens.map((c, i) => (
-                <div
-                  key={c.id}
-                  className={`${styles.resumoItem} ${tokenDe(cartas.length + i) ? styles.emToken : ''}`}
-                  style={{ '--i': cartas.length + i } as React.CSSProperties}
-                >
-                  <span className={styles.itemResumo}>
-                    <Avatar avatar={vestindo(modelo, c)} tamanho={138} />
-                    {c.tema === 'halloween' ? <AboboraIcon size={24} className={styles.temaNoItem} /> : null}
-                  </span>
-                  {tokenDe(cartas.length + i) ? <FichaEmCima valor={tokenDe(cartas.length + i)} /> : null}
-                  <span className={styles.nomeDoItem}>
-                    <IconeDoCosmetico cosmetico={c} size={15} /> {c.nome}
-                  </span>
-                  <span className={`${styles.rotuloResumo} ${styles[`texto_${c.raridade}`]}`}>
-                    {tokenDe(cartas.length + i) ? null : <b className={styles.nova}>item</b>}
-                    {NOMES_DE_RARIDADE[c.raridade]}
-                  </span>
-                </div>
-              ))}
+              {itens.map((c, i) => {
+                const visto = aMostra(cartas.length + i)
+                const token = visto ? tokenDe(cartas.length + i) : 0
+                return (
+                  <div key={c.id} className={`${styles.resumoItem} ${token ? styles.emToken : ''}`} style={{ '--i': cartas.length + i } as React.CSSProperties}>
+                    {visto ? (
+                      <span className={styles.itemResumo}>
+                        <Avatar avatar={vestindo(modelo, c)} tamanho={138} />
+                        {c.tema === 'halloween' ? <AboboraIcon size={24} className={styles.temaNoItem} /> : null}
+                      </span>
+                    ) : (
+                      // de costas: o verso da carta, do tamanho do item
+                      <span className={`${styles.itemResumo} ${styles.itemDeCostas}`} aria-label="Item ainda virado">
+                        <PlayingCard size={34} aria-hidden />
+                      </span>
+                    )}
+                    {token ? <FichaEmCima valor={token} /> : null}
+                    <span className={styles.nomeDoItem}>
+                      {visto ? (
+                        <>
+                          <IconeDoCosmetico cosmetico={c} size={15} /> {c.nome}
+                        </>
+                      ) : (
+                        ' '
+                      )}
+                    </span>
+                    <span className={`${styles.rotuloResumo} ${styles[`texto_${c.raridade}`]}`}>
+                      {visto ? (
+                        <>
+                          {token ? null : <b className={styles.nova}>item</b>}
+                          {NOMES_DE_RARIDADE[c.raridade]}
+                        </>
+                      ) : (
+                        ' '
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           )}
           {/* a soma das que viraram token, embaixo de tudo */}
-          {somaDeTokens > 0 ? (
+          {somaDeTokens > 0 && (viradas === null || viradas >= total) ? (
             <p className={styles.somaDeTokens} style={{ '--i': total } as React.CSSProperties}>
               <TokenIcon size={28} />
               <span>

@@ -33,6 +33,10 @@ export type Corte =
   | 'moicano'
   | 'rabo'
   | 'tigelinha'
+  // v0.31: os divididos no meio
+  | 'repartidoCurto'
+  | 'repartidoMedio'
+  | 'repartidoLongo'
   | 'frankenstein'
   | 'vampiro'
   | 'espetado'
@@ -164,7 +168,10 @@ export type CorDaBarba = 'cabelo' | CorCabelo
 /** A cor do boné e do chapéu: a da roupa (o padrão, e o que valia antes de a
  *  escolha existir), ou uma das cores de boné — mais vivas que as de roupa,
  *  porque boné roxo é boné e camisa roxa é fantasia. */
-export type CorDoChapeu = 'roupa' | 'roxo' | 'vermelho' | 'azul' | 'verde' | 'amarelo' | 'preto' | 'branco'
+export type CorDoChapeu = 'roupa' | 'roxo' | 'vermelho' | 'azul' | 'verde' | 'amarelo' | 'preto' | 'branco' | 'abobora' | 'noite'
+/** A cor das orelhas de gato (v0.31): a do cabelo (o padrão), ou uma das
+ *  cores de chapéu. */
+export type CorDasOrelhas = 'cabelo' | Exclude<CorDoChapeu, 'roupa'>
 /** A armação dos óculos: escura (o padrão de sempre) ou uma cor. */
 export type CorDosOculos = 'escuro' | 'roxo' | 'azul' | 'verde' | 'laranja' | 'vermelho' | 'rosa' | 'creme'
 /** O headset é equipamento: preto ou branco, e só. */
@@ -193,6 +200,7 @@ export interface Avatar {
   corOculos: CorDosOculos
   acessorio: Acessorio
   corChapeu: CorDoChapeu
+  corOrelhas: CorDasOrelhas
   corHeadset: CorDoHeadset
   brinco: Brinco
   corBrinco: CorDoBrinco
@@ -229,6 +237,7 @@ export const AVATAR_PADRAO: Avatar = {
   corOculos: 'escuro',
   acessorio: 'nenhum',
   corChapeu: 'roupa',
+  corOrelhas: 'cabelo',
   corHeadset: 'preto',
   brinco: 'nenhum',
   corBrinco: 'dourado',
@@ -260,6 +269,9 @@ export const CORTES: Opcao<Corte>[] = [
   { valor: 'tigelinha', rotulo: 'Tigelinha' },
   { valor: 'moicano', rotulo: 'Moicano' },
   { valor: 'rabo', rotulo: 'Rabo de cavalo' },
+  { valor: 'repartidoCurto', rotulo: 'Repartido curto' },
+  { valor: 'repartidoMedio', rotulo: 'Repartido médio' },
+  { valor: 'repartidoLongo', rotulo: 'Repartido longo' },
   { valor: 'frankenstein', rotulo: 'Frankenstein' },
   { valor: 'vampiro', rotulo: 'Vampiro' },
   { valor: 'puff', rotulo: 'Puff' },
@@ -407,6 +419,14 @@ export const CORES_DO_CHAPEU: Opcao<CorDoChapeu>[] = [
   { valor: 'amarelo', rotulo: 'Amarelo' },
   { valor: 'preto', rotulo: 'Preto' },
   { valor: 'branco', rotulo: 'Branco' },
+  // trancadas: de Halloween
+  { valor: 'abobora', rotulo: 'Abóbora' },
+  { valor: 'noite', rotulo: 'Noite' },
+]
+
+export const CORES_DAS_ORELHAS: Opcao<CorDasOrelhas>[] = [
+  { valor: 'cabelo', rotulo: 'A do cabelo' },
+  ...CORES_DO_CHAPEU.filter((o): o is Opcao<Exclude<CorDoChapeu, 'roupa'>> => o.valor !== 'roupa'),
 ]
 
 export const CORES_DOS_OCULOS: Opcao<CorDosOculos>[] = [
@@ -554,6 +574,7 @@ export function lerAvatar(bruto: unknown): Avatar {
     corOculos: um(CORES_DOS_OCULOS, a.corOculos, AVATAR_PADRAO.corOculos),
     acessorio: um(ACESSORIOS, a.acessorio, AVATAR_PADRAO.acessorio),
     corChapeu: um(CORES_DO_CHAPEU, a.corChapeu, AVATAR_PADRAO.corChapeu),
+    corOrelhas: um(CORES_DAS_ORELHAS, a.corOrelhas, AVATAR_PADRAO.corOrelhas),
     corHeadset: um(CORES_DO_HEADSET, a.corHeadset, AVATAR_PADRAO.corHeadset),
     brinco: um(BRINCOS, a.brinco, AVATAR_PADRAO.brinco),
     corBrinco: um(CORES_DO_BRINCO, a.corBrinco, AVATAR_PADRAO.corBrinco),
@@ -605,6 +626,7 @@ export function avatarAleatorio(tenho: readonly string[] = []): Avatar {
     corOculos: Math.random() < 0.6 ? 'escuro' : sorteio(CORES_DOS_OCULOS).valor,
     acessorio: talvez(ACESSORIOS, 'nenhum', 0.15),
     corChapeu: sorteio(CORES_DO_CHAPEU).valor,
+    corOrelhas: 'cabelo',
     corHeadset: sorteio(CORES_DO_HEADSET).valor,
     brinco: talvez(BRINCOS, 'nenhum', 0.2),
     corBrinco: sorteio(CORES_DO_BRINCO).valor,
@@ -620,6 +642,23 @@ export function avatarAleatorio(tenho: readonly string[] = []): Avatar {
     }
   }
   return sorteado
+}
+
+/**
+ * O avatar vestindo UM cosmético para mostrar (na abertura, na máquina): a
+ * peça, e o que ela precisa para aparecer. A cor do chapéu num avatar sem
+ * chapéu não aparece nada — o "Chapéu noite" saía da abóbora num avatar de
+ * cabeça descoberta.
+ */
+export function vestirParaMostrar(a: Avatar, campo: string, valor: string): Avatar {
+  const v = { ...a, [campo]: valor } as Avatar
+  if (campo === 'corChapeu' && !['bone', 'chapeu', 'bruxa', 'gorro'].includes(v.acessorio)) v.acessorio = 'bone'
+  if (campo === 'corOrelhas') v.acessorio = 'orelhasDeGato'
+  if (campo === 'corOculos' && v.oculos === 'nenhum') v.oculos = 'redondo'
+  if (campo === 'corBarba' && v.barba === 'nenhuma') v.barba = 'cheia'
+  if (campo === 'corBrinco' && v.brinco === 'nenhum') v.brinco = 'dois'
+  if (campo === 'corHeadset') v.acessorio = 'headset'
+  return v
 }
 
 /** Grava no banco. O convidado não tem conta, então não chega aqui. */

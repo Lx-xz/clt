@@ -571,20 +571,31 @@ function Abobora({ t }: { t: number }) {
       </defs>
       <Em c="tras">
         <Chao largura={62} />
-        {/* o buraco: a borda de trás, da cor da casca, e o escuro de dentro */}
-        <ellipse cx="80" cy="73" rx="32" ry="10" fill="#c9611c" />
-        <ellipse cx="80" cy="74" rx="28" ry="7.5" fill="#2a1408" />
+        {/* o buraco, de fora para dentro: a casca da borda de trás, a POLPA
+            do corte (a faixa clara), a parede de dentro, alaranjada e funda,
+            e o escuro do fundo. A carta sai dali, entre esta camada e a da
+            frente, então a borda da frente a cobre na hora de sair */}
+        <ellipse cx="80" cy="73" rx="33" ry="10.5" fill="#c9611c" />
+        <ellipse cx="80" cy="73.6" rx="31" ry="9.2" fill="#f6c477" />
+        <ellipse cx="80" cy="74.6" rx="28.6" ry="7.8" fill="#b4541a" />
+        <ellipse cx="80" cy="76.4" rx="24" ry="5.4" fill="#4a210b" />
+        <ellipse cx="80" cy="77.4" rx="17" ry="3.4" fill="#2a1206" />
       </Em>
       <Em c="frente">
         <g clipPath={`url(#corpo${id})`}>
           {gomos}
+          {/* a polpa na beirada do corte, por dentro da casca */}
+          <path d={corteDaTampa()} fill="none" stroke="#f6c477" strokeWidth="2.6" strokeLinejoin="round" transform="translate(0 1.2)" />
           {rosto('#3a2410')}
           {/* acesa: a vela de dentro aparecendo pelos furos */}
           {rosto('#ffcf4a', luz)}
         </g>
-        {/* a tampa sobe e tomba para a esquerda, em volta do próprio cabo */}
-        <g transform={`translate(${-44 * e} ${-30 * e}) rotate(${-48 * e} 80 66)`}>
+        {/* a tampa sobe um pouco, tomba para a esquerda e CAI no chão, do
+            lado da abóbora (v0.31): parada no alto, ela batia na carta que
+            sai. O salto é um arco: sobe primeiro, desce depois */}
+        <g transform={`translate(${-64 * e} ${62 * e - 30 * Math.sin(Math.PI * e)}) rotate(${-78 * e} 80 66)`}>
           <g clipPath={`url(#tampa${id})`}>{gomos}</g>
+          <path d={corteDaTampa()} fill="none" stroke="#f6c477" strokeWidth="2" strokeLinejoin="round" />
           <path d="M78 66 C77 58 79 52 85 49 L88 52 C84 55 83 60 84 66 Z" fill="#5b7a2e" />
         </g>
       </Em>
