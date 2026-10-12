@@ -970,6 +970,12 @@ opções. O que ele escolheu, e que deve ser preservado:
     parafusos no pescoço) e vampiro (o bico na testa). `FormaCabelo.alto`
     é quanto o cabelo sobe acima da cabeça: chifres e orelhas de gato
     pousam ali, POR CIMA dele (no flat-top eles afundavam).
+  - **A capa tem céu (v0.32, `comCeu`)**: o quadro do avatar se afasta
+    (`viewBox '-9 -18 118 118'`) e a faixa ficou mais alta, para o que passa
+    do alto da cabeça (chapéu de bruxa, orelhas, chifres, topete) caber
+    inteiro. A figura era 108% da faixa, cortando o alto de propósito.
+    Orelhas de gato na cor do cabelo são um tom abaixo dele: iguais, viravam
+    mais um calombo do cabelo.
   - **Os olhos são desenhados ANTES do cabelo da frente (v0.30)**; a
     sobrancelha continua por cima de tudo. Depois do cabelo, a pálpebra
     (que é pele) e os cílios pintavam por cima da lateral nos rostos
@@ -1964,6 +1970,15 @@ e a um bot diferente — não compare os dois.
     nenhuma delas apareceria só lendo o código.
   - **Fluxo novo inteiro** (uma rota nova, uma regra nova do motor): um
     teste de ponta a ponta no fim, não um a cada passo.
+- **Cosmético novo se testa em TODOS os cortes, e nos três rostos.** O que
+  vai na cabeça encontra cada corte de um jeito: o chifre afundava no
+  flat-top, a orelha sumia nas pontas do espetado, o chapéu de bruxa
+  mostrava o canto do rosto quadrado. Alguns cortes pedem o item desenhado
+  de forma INDIVIDUAL (`FormaCabelo.alto` é o primeiro desses ajustes; o
+  que não couber num número vira um caso do próprio corte). O teste é uma
+  grade com todos os `CORTES` × os rostos, no tamanho da capa e com
+  `comCeu`, numa página temporária do `/lab` que não vai para o
+  repositório — e o item novo só entra depois dela.
 - **Mensagem de commit conta o porquê**, incluindo a causa raiz quando o commit
   conserta um bug. O histórico é curto e vale ler.
 - **"Pergunta" ou "constatação" no começo da mensagem = não mexa em nada.** O

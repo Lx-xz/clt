@@ -69,6 +69,16 @@ export const EM_ANDAMENTO: string[] = [
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.32',
+    data: '2026-10-12',
+    titulo: 'Espaço em cima da cabeça',
+    itens: [
+      { tipo: 'melhor', texto: 'A capa do avatar, no início e no perfil, ficou mais alta e deixa espaço acima da cabeça: o chapéu de bruxa, as orelhas e os chifres aparecem inteiros.' },
+      { tipo: 'melhor', texto: 'O chapéu de bruxa ganhou aba larga e grossa, e a copa cobre a cabeça em todo formato de rosto.' },
+      { tipo: 'melhor', texto: 'As orelhas de gato na cor do cabelo ficam um tom abaixo dele, para não sumirem no meio do cabelo, e se ajeitam em cima de cada corte.' },
+    ],
+  },
+  {
     versao: '0.31',
     data: '2026-10-12',
     titulo: 'Abrir tudo de uma vez',

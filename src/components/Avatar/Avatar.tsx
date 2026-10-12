@@ -900,7 +900,8 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   espetado: {
     rotulo: 'Espetado',
     lateral: 3.6,
-    alto: 6.5,
+    // as pontas sobem 6,8: o que pousa em cima tem de passar delas
+    alto: 7.5,
     // dentro do rosto ele é o rente com a testa em dentes; as pontas ficam
     // por fora, por cima do contorno da cabeça
     atras: () => null,
@@ -1328,28 +1329,27 @@ export const ACESSORIOS: Record<Acessorio, {
   },
   bruxa: {
     rotulo: 'Chapéu de bruxa',
-    // a aba do chapéu de cima, na mesma altura (pelo mesmo motivo da
-    // sobrancelha), e um cone que entorta na ponta. Do tamanho da cabeça
-    // (v0.31): a aba passava 14 dos lados e tomava a capa inteira. A ponta
-    // pode sair do quadro — o tamanho é que tem de estar certo
+    // v0.32: a COPA desce reta, da largura da cabeça, até o alto dela, e só
+    // então afina no cone que entorta na ponta. Afinando desde a aba, os
+    // cantos do rosto quadrado apareciam dos lados do cone. A aba é larga e
+    // grossa, como de chapéu de bruxa, na altura da do chapéu (pelo mesmo
+    // motivo da sobrancelha); a ponta pode sair do quadro
     aba: (m) => m.topo + altura(m) * 0.22,
     desenhar: (m, cor, sombra) => {
-      const L = m.larg + 0.6
       const a = altura(m)
-      const y = m.topo + a * 0.22
-      // a base do cone é da largura da cabeça: mais estreita, o alto da
-      // cabeça aparecia dos lados dele, acima da aba
-      const base = L + 0.4
-      const ponta = m.topo - a * 0.5
+      const T = m.topo
+      const y = T + a * 0.22
+      const B = m.larg + 0.8
+      const ponta = T - a * 0.48
       return (
         <>
-          <rect x={50 - L - 6.5} y={y - 1.4} width={(L + 6.5) * 2} height={3.2} rx={1.6} fill={cor} />
           <path
-            d={`M${50 - base} ${y} C${50 - base * 0.7} ${y - a * 0.3} ${50 - 2} ${ponta + a * 0.2} ${50 + 7} ${ponta} C${50 + 4} ${ponta + a * 0.22} ${50 + base * 0.6} ${y - a * 0.3} ${50 + base} ${y} Z`}
+            d={`M${50 - B} ${y} L${50 - B} ${T + 2} Q${50 - B} ${T - 2.5} ${50 - B * 0.68} ${T - 3.5} C${50 - B * 0.34} ${T - a * 0.2} ${46} ${ponta + a * 0.18} ${58} ${ponta} C${53} ${ponta + a * 0.2} ${50 + B * 0.38} ${T - a * 0.2} ${50 + B * 0.68} ${T - 3.5} Q${50 + B} ${T - 2.5} ${50 + B} ${T + 2} L${50 + B} ${y} Z`}
             fill={cor}
           />
-          <path d={`M${50 - base} ${y} L${50 + base} ${y} L${50 + base * 0.9} ${y - 3.2} L${50 - base * 0.9} ${y - 3.2} Z`} fill={sombra} />
-          <rect x={47.8} y={y - 3.4} width={4.4} height={3.6} rx={0.6} fill="none" stroke="#d8a93c" strokeWidth={0.9} />
+          <rect x={50 - B} y={y - 4.6} width={B * 2} height={4.6} fill={sombra} />
+          <rect x={47.2} y={y - 4.9} width={5.6} height={5.2} rx={0.8} fill="none" stroke="#d8a93c" strokeWidth={1.1} />
+          <rect x={50 - m.larg - 12} y={y - 1.4} width={(m.larg + 12) * 2} height={5} rx={2.5} fill={cor} />
         </>
       )
     },
@@ -1398,7 +1398,7 @@ export const ACESSORIOS: Record<Acessorio, {
     // triângulo de lados curvos inclinado para fora, com o miolo mais claro.
     // A cor é escolha (`corOrelhas`), e uma das opções é a do cabelo
     desenhar: (m, cor, _sombra, alto) => {
-      const T = m.topo - alto + 2.5
+      const T = m.topo - alto + 1.5
       return (
         <>
           {[-1, 1].map((s) => {
@@ -2509,6 +2509,7 @@ export default function Avatar({
   humor,
   redondo,
   vivo,
+  comCeu,
 }: {
   avatar: Receita
   tamanho?: number
@@ -2517,6 +2518,10 @@ export default function Avatar({
    *  aperta um pouco, com cabeça e ombros. Com o quadro de sempre a cabeça
    *  ficava no alto do círculo; só com a cabeça, o corpo sumia. */
   redondo?: boolean
+  /** Folga EM CIMA da cabeça (a capa do perfil e do início): o quadro se
+   *  afasta, e o que passa do alto — o chapéu de bruxa, as orelhas de gato,
+   *  os chifres, o topete — cabe inteiro. Sem ela, a ponta saía do quadro. */
+  comCeu?: boolean
   /** Dev-only: usado pelo `/lab/avatar` para experimentar. */
   ajustes?: Ajustes
   /** A cara do momento — a mesa passa o do estresse. Sem ele, o de sempre. */
@@ -2553,7 +2558,9 @@ export default function Avatar({
     ajustes?.cores?.acessorio ??
     (avatar.acessorio === 'orelhasDeGato'
       ? !avatar.corOrelhas || avatar.corOrelhas === 'cabelo'
-        ? c
+        ? // na cor do cabelo, um tom abaixo: igual, a orelha virava mais um
+          // calombo do cabelo, e não dava para ver onde ela começava
+          escurecer(c, 0.86)
         : TONS_DE_CHAPEU[avatar.corOrelhas]
       : avatar.corChapeu && avatar.corChapeu !== 'roupa'
         ? TONS_DE_CHAPEU[avatar.corChapeu]
@@ -2627,7 +2634,7 @@ export default function Avatar({
 
   // em 32px ou menos a figura ocupava metade do quadrado, e o resto era
   // fundo e ombro. Ali o desenho se aproxima da cabeça
-  const caixa = redondo ? '6 4 88 88' : tamanho <= 32 ? '8 0 84 84' : '0 0 100 100'
+  const caixa = redondo ? '6 4 88 88' : comCeu ? '-9 -18 118 118' : tamanho <= 32 ? '8 0 84 84' : '0 0 100 100'
   // o fundo esquenta com o estresse só na mesa: no perfil, uma cara de
   // estresse escolhida não troca o fundo que a pessoa escolheu
   const fundoDoHumor = (humor ? cara?.fundo : undefined) ?? fundo

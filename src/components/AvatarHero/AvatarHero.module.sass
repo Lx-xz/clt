@@ -3,19 +3,22 @@
   display: flex
   justify-content: center
   align-items: flex-end
-  height: clamp(200px, 30vw, 280px)
+  // mais alta desde a v0.32: o avatar ganhou céu (`comCeu`) para o que passa
+  // do alto da cabeça, e a figura encolheu na mesma conta
+  height: clamp(236px, 35vw, 330px)
   overflow: hidden
   border-radius: 16px
 
-// a figura ocupa a altura inteira da faixa e passa um pouco por cima: o topo
-// do quadrado do avatar é fundo, e cortá-lo põe a cabeça mais perto da borda.
+// a figura ocupa a altura inteira da faixa. Ela já passava um pouco por cima
+// (108%), cortando o alto do quadro; com o céu da v0.32 o que fica lá em
+// cima é chapéu e orelha, e cortar não vale mais.
 // O tamanho e o fundo do Avatar vêm inline; aqui eles são trocados pelos da
 // faixa (por isso o !important). Borda e canto vão com `.hero .figura`: só
 // `.figura` empatava com a `.moldura` do Avatar, que vencia por vir depois
 // na folha, e a moldura de 1px com canto de 16% aparecia DENTRO da capa
 .figura
   width: auto !important
-  height: 108% !important
+  height: 100% !important
   aspect-ratio: 1
   background: transparent !important
 

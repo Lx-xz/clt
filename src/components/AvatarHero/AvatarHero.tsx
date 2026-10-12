@@ -34,7 +34,7 @@ export default function AvatarHero({
 }) {
   return (
     <div className={`${styles.hero} ${className ?? ''}`} style={{ background: TONS_DE_FUNDO[avatar.fundo] }}>
-      <Avatar avatar={avatar} tamanho={320} humor={humor} vivo className={`${styles.figura} ${classeDaFigura ?? ''}`} />
+      <Avatar avatar={avatar} tamanho={320} humor={humor} vivo comCeu className={`${styles.figura} ${classeDaFigura ?? ''}`} />
       {children}
     </div>
   )
