@@ -105,16 +105,14 @@ export default function MaquinaPage() {
       : 'Escolha uma vaga'
 
   return (
-    <main className={`page ${styles.pagina}`}>
-      <h1 className={styles.titulo}>Máquina de vendas</h1>
-      <p className={styles.intro}>
-        Três cartas e três itens por dia, trocados à meia-noite. A carta que passa do limite e o item repetido viram
-        tokens quando você abre uma recompensa — e os tokens compram aqui o que a sorte não deu.
-      </p>
+    // sem título nem explicação, a pedido do autor: a máquina se explica, e
+    // sem texto ela cabe inteira na tela do celular, sem rolar
+    <main className={styles.pagina}>
+      <h1 className="sr-only">Máquina de vendas</h1>
 
       <div className={styles.maquina}>
         <div className={styles.letreiro} aria-hidden>
-          <span>CLT</span> · lanches e cartas
+          CLT
         </div>
 
         <div className={styles.corpo}>
@@ -204,7 +202,6 @@ export default function MaquinaPage() {
               ) : null}
               <span className={styles.premioTexto}>
                 <b>{nomeDaVaga(naBoca)}</b>
-                {naBoca.tipo === 'carta' ? 'Já está na coleção: ponha no baralho.' : 'Já está no editor do avatar.'}
               </span>
             </span>
           ) : (

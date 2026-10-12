@@ -1,63 +1,328 @@
-.top
+// O baralho (v0.33): o painel do baralho equipado em cima, as ferramentas, e
+// as cartas em colunas (desktop) ou abas (celular). Cada carta tem o seu
+// contador embaixo.
+
+.pagina
   display: flex
-  flex-wrap: wrap
-  align-items: baseline
-  justify-content: space-between
-  gap: 12px
-  margin-bottom: 4px
+  flex-direction: column
+  gap: 18px
 
-.tituloLinha
+// ------------------------------------------------------------- cabeçalho
+.cabeca
   display: flex
   align-items: baseline
-  gap: 8px
+  gap: 10px
 
-.title
-  font-size: 26px
+.titulo
+  font-size: clamp(26px, 4vw, 32px)
 
-// a versão do baralho fica à vista porque é ela que dá sentido ao histórico:
-// "v1" e "nada mudou ainda" contam a mesma história
+// a versão do baralho fica à vista porque é ela que dá sentido ao histórico
 .versao
   color: var(--tinta-fraca)
   font-family: var(--mono)
   font-size: 13px
 
-.hint
-  margin: 0 0 24px
+.sync
+  display: inline-flex
+  align-items: center
+  gap: 5px
+  margin-left: auto
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.girando
+  animation: gira 1s linear infinite
+
+@keyframes gira
+  to
+    transform: rotate(360deg)
+
+// ----------------------------------------------------------------- painel
+.painel
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 12px
+  box-shadow: var(--sombra)
+  overflow: hidden
+
+// os baralhos montados como abas de pasta, encostadas no topo do painel
+.abasBaralhos
+  display: flex
+  gap: 2px
+  padding: 8px 8px 0
+  overflow-x: auto
+  background: var(--papel-baixo)
+  border-bottom: 1px solid var(--linha)
+
+.abaBaralho,
+.abaNova
+  display: inline-flex
+  flex: none
+  align-items: center
+  gap: 6px
+  padding: 9px 14px
+  background: none
+  border: 1px solid transparent
+  border-bottom: 0
+  border-radius: 8px 8px 0 0
+  color: var(--tinta-fraca)
+  font: inherit
+  font-size: 14px
+  font-weight: 600
+  cursor: pointer
+
+  &:hover
+    color: var(--tinta)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: -2px
+
+// a aba ativa é do papel do painel, e cobre a linha de baixo: a pasta aberta
+.abaAtiva
+  margin-bottom: -1px
+  background: var(--papel-alto)
+  border-color: var(--linha)
+  color: var(--tinta)
+
+.abaNova
+  padding: 9px 10px
+
+.painelCorpo
+  display: flex
+  flex-direction: column
+  gap: 14px
+  padding: 16px 18px 18px
+
+.nomeLinha
+  display: flex
+  align-items: center
+  gap: 6px
+  min-width: 0
+
+.nome
+  overflow: hidden
+  font-size: 20px
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.icone
+  display: inline-grid
+  flex: none
+  place-items: center
+  min-width: 32px
+  height: 32px
+  padding: 0 6px
+  background: none
+  border: 1px solid transparent
+  border-radius: var(--raio)
+  color: var(--tinta-fraca)
+  font: inherit
+  font-size: 13px
+  font-weight: 700
+  cursor: pointer
+
+  &:hover
+    background: var(--papel)
+    color: var(--tinta)
+
+.equipado
+  display: inline-flex
+  flex: none
+  align-items: center
+  gap: 4px
+  margin-left: auto
+  padding: 3px 9px
+  background: color-mix(in srgb, var(--produtividade) 14%, transparent)
+  border-radius: 999px
+  color: var(--produtividade)
+  font-size: 12px
+  font-weight: 700
+
+.renomear
+  display: flex
+  flex: 1
+  min-width: 0
+
+// 16 px: campo menor que isso dá zoom no iPhone, e o zoom não desfaz
+.campo
+  width: min(100%, 260px)
+  padding: 6px 10px
+  background: var(--papel)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta)
+  font: inherit
+  font-size: 16px
+
+// a conta e a barra
+.medidor
+  display: flex
+  flex-direction: column
+  gap: 8px
+
+.total
+  display: flex
+  align-items: baseline
+  gap: 8px
   color: var(--tinta-fraca)
   font-size: 13px
 
-// buscar, filtrar e ordenar as três colunas. Os campos em 16px: abaixo
-// disso o iPhone dá zoom ao focar, e não desfaz
-.filtros
+  b
+    color: var(--tinta)
+    font-family: var(--mono)
+    font-size: 30px
+    line-height: 1
+
+.barra
+  position: relative
+  height: 10px
+  background: var(--papel-baixo)
+  border-radius: 999px
+
+.enchimento
+  position: absolute
+  inset: 0 auto 0 0
+  background: var(--produtividade)
+  border-radius: 999px
+  transition: width .25s ease
+
+.enchimentoRuim
+  background: var(--estresse)
+
+// o mínimo: uma marca na barra
+.marca
+  position: absolute
+  top: -3px
+  bottom: -3px
+  width: 2px
+  margin-left: -1px
+  background: var(--tinta-fraca)
+  border-radius: 1px
+
+// os naipes como selos
+.naipes
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+.naipe
+  display: flex
+  align-items: center
+  gap: 8px
+  padding: 8px 10px
+  background: var(--papel)
+  border: 1px solid var(--linha)
+  border-radius: 8px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+  b
+    margin-left: auto
+    color: var(--tinta)
+    font-family: var(--mono)
+    font-size: 16px
+
+.naipeNome
+  text-transform: capitalize
+
+.ruim
+  color: var(--estresse)
+
+  b
+    color: var(--estresse)
+
+.naipe.ruim
+  border-color: color-mix(in srgb, var(--estresse) 45%, var(--linha))
+
+.problemas
+  margin: 0
+  padding: 10px 14px 10px 30px
+  background: color-mix(in srgb, var(--estresse) 8%, var(--papel))
+  border-radius: 8px
+  color: var(--tinta)
+  font-size: 13px
+  line-height: 1.5
+
+// ----------------------------------------------------------- ferramentas
+.ferramentas
   display: flex
   flex-wrap: wrap
   align-items: center
-  gap: 8px 14px
-  margin-bottom: 20px
+  gap: 8px
 
-  label
-    display: flex
-    align-items: center
-    gap: 6px
-    color: var(--tinta-fraca)
-    font-size: 13px
+.busca
+  display: flex
+  flex: 1 1 200px
+  align-items: center
+  gap: 8px
+  min-width: 0
+  padding: 0 12px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta-fraca)
 
-  select,
-  .busca
-    padding: 6px 8px
-    background: var(--papel-alto)
-    border: 1px solid var(--linha)
-    border-radius: var(--raio)
+  input
+    flex: 1
+    min-width: 0
+    padding: 8px 0
+    background: none
+    border: 0
+    outline: 0
     color: var(--tinta)
     font: inherit
     font-size: 16px
 
-.busca
-  flex: 1 1 180px
-  min-width: 0
+  &:focus-within
+    border-color: var(--tinta-fraca)
+
+.chipsNaipe
+  display: flex
+  gap: 4px
+  padding: 3px
+  background: var(--papel-baixo)
+  border-radius: 999px
+
+.chip
+  display: inline-grid
+  place-items: center
+  min-width: 34px
+  height: 32px
+  padding: 0 10px
+  background: none
+  border: 0
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font: inherit
+  font-size: 13px
+  font-weight: 600
+  cursor: pointer
+
+  &:hover
+    color: var(--tinta)
+
+.chipAtivo
+  background: var(--tinta)
+  color: var(--papel-alto)
+
+  &:hover
+    color: var(--papel-alto)
+
+.select
+  padding: 7px 10px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  color: var(--tinta)
+  font: inherit
+  font-size: 16px
 
 .limpar
-  padding: 0
+  padding: 0 4px
   background: none
   border: none
   color: var(--destaque)
@@ -66,123 +331,121 @@
   font-weight: 700
   cursor: pointer
 
-.section
-  margin-bottom: 32px
+// ----------------------------------------------------------------- listas
+// no desktop as abas não aparecem: as colunas estão todas à vista
+.abasListas
+  display: none
 
-.head
-  display: flex
-  align-items: baseline
-  gap: 10px
-  margin-bottom: 12px
-  padding-bottom: 6px
-  border-bottom: 1px solid var(--linha)
-
-.count
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-  font-size: 13px
-
-.grid
-  display: flex
-  flex-wrap: wrap
-  gap: 12px
-  --carta-h: 190px
-
-.empty
-  margin: 0
-  color: var(--tinta-fraca)
-  font-size: 13px
-  font-style: italic
-
-// ------------------------------------------------------------ os baralhos
-.baralhos
-  display: flex
-  flex-wrap: wrap
-  align-items: center
-  gap: 10px
-  margin-bottom: 16px
-
-.acoesBaralho
-  display: flex
-  flex-wrap: wrap
-  gap: 8px
-
-  button
-    display: inline-flex
-    align-items: center
-    gap: 6px
-
-  // no celular os botões de sempre empilhavam um por linha: aqui são
-  // ferramenta secundária, e cabem lado a lado num tamanho menor
-  @media (max-width: 760px)
-    button
-      padding: 6px 10px
-      font-size: 13px
-
-.renomear
-  display: flex
-
-// 16 px: campo menor que isso dá zoom no iPhone, e o zoom não desfaz
-.campo
-  width: 200px
-  padding: 8px 10px
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: var(--raio)
-  color: var(--tinta)
-  font: inherit
-  font-size: 16px
-
-// --------------------------------------------------------------- a conta
-.conta
-  display: flex
-  flex-wrap: wrap
-  gap: 6px 14px
-  margin-bottom: 12px
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-  font-size: 13px
-
-  b
-    color: var(--tinta)
-
-.total b
-  font-size: 16px
-
-.ruim,
-.ruim b
-  color: var(--estresse)
-
-.problemas
-  margin-bottom: 20px
-  padding: 10px 14px
-  background: color-mix(in srgb, var(--estresse) 8%, var(--papel-alto))
-  border-left: 3px solid var(--estresse)
-  border-radius: 0 var(--raio) var(--raio) 0
-  font-size: 13px
-
-  ul
-    margin: 4px 0 0
-    padding-left: 18px
-
-// --------------------------------------------------------------- colunas
-// lado a lado no desktop: é entre elas que se arrasta
 .colunas
   display: grid
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
-  gap: 20px
+  gap: 16px
 
-  .section
-    min-width: 0
-    padding: 10px
-    border: 2px dashed transparent
-    border-radius: 10px
-    transition: border-color .12s ease, background .12s ease
+.coluna
+  min-width: 0
+  padding: 12px
+  background: color-mix(in srgb, var(--papel-alto) 55%, transparent)
+  border: 2px dashed transparent
+  border-radius: 12px
+  transition: border-color .12s ease, background .12s ease
+
+// as que faltam ocupam a largura toda, embaixo
+.colunaBloqueadas
+  grid-column: 1 / -1
+  background: none
+
+.colunaCabeca
+  display: flex
+  align-items: center
+  gap: 8px
+  margin-bottom: 12px
+
+  h2
+    display: inline-flex
+    align-items: center
+    gap: 6px
+    font-size: 15px
+
+.qtd
+  padding: 1px 8px
+  background: var(--papel-baixo)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px
 
 // a coluna em que a carta arrastada vai cair
 .alvo
-  border-color: var(--destaque) !important
+  border-color: var(--destaque)
   background: color-mix(in srgb, var(--destaque) 8%, transparent)
+
+.grade
+  --carta-h: 176px
+  --carta-w: 116px
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(var(--carta-w), 1fr))
+  justify-items: center
+  gap: 14px 10px
+
+.gradeBloqueadas
+  --carta-h: 150px
+  --carta-w: 99px
+  opacity: .8
+
+.celula
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 6px
+
+// o contador da carta: − n/total +
+.contador
+  display: flex
+  align-items: center
+  width: var(--carta-w)
+  height: 30px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+
+  button
+    display: grid
+    flex: none
+    place-items: center
+    width: 30px
+    height: 100%
+    padding: 0
+    background: none
+    border: 0
+    border-radius: 999px
+    color: var(--tinta)
+    cursor: pointer
+
+    &:hover:not(:disabled)
+      background: var(--papel-baixo)
+
+    &:disabled
+      color: var(--linha)
+      cursor: default
+
+.contadorNumero
+  flex: 1
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px
+  text-align: center
+
+  b
+    color: var(--tinta)
+    font-size: 15px
+
+.vazio
+  margin: 0
+  padding: 18px 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  font-style: italic
+  text-align: center
 
 // ------------------------------------------------ cópias, dentro do detalhe
 .copias
@@ -222,10 +485,43 @@
   color: var(--tinta-fraca)
   font-size: 12.5px
 
+// ---------------------------------------------------------------- celular
+// as listas viram abas: três colunas empilhadas eram rolagem sem fim, e no
+// celular não se arrasta de uma para a outra
 @media (max-width: 760px)
+  .pagina
+    gap: 14px
+
+  .painelCorpo
+    padding: 14px
+
+  .naipes
+    grid-template-columns: repeat(2, minmax(0, 1fr))
+
+  .abasListas
+    display: block
+    overflow-x: auto
+
   .colunas
     grid-template-columns: minmax(0, 1fr)
-    gap: 8px
 
-  .grid
-    --carta-h: 150px
+  .coluna
+    padding: 0
+    background: none
+    border: 0
+
+  .colunaCabeca
+    display: none
+
+  .colunas[data-aba="dentro"] .coluna:not(.colunaDentro),
+  .colunas[data-aba="fora"] .coluna:not(.colunaFora),
+  .colunas[data-aba="bloqueadas"] .coluna:not(.colunaBloqueadas)
+    display: none
+
+  // três por linha numa tela de 390
+  .grade,
+  .gradeBloqueadas
+    --carta-w: calc((100vw - 40px - 20px) / 3)
+    --carta-h: calc(var(--carta-w) * 1.52)
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+    gap: 12px 10px

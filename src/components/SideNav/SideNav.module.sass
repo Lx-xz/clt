@@ -82,7 +82,8 @@ $painel-largo: 256px
   align-items: center
   gap: 14px
   flex: none
-  padding: 13px
+  // sem respiro à esquerda: quem dá a margem é o ícone (abaixo)
+  padding: 13px 13px 13px 0
   border: none
   border-radius: var(--raio)
   background: none
@@ -98,6 +99,12 @@ $painel-largo: 256px
 
   svg
     flex: none
+
+  // todo ícone ocupa uma faixa de 48 px, a largura do avatar do Perfil: com
+  // o ícone de 22 numa faixa e o avatar de 48 noutra, o "Perfil" começava
+  // 13 px depois do resto, e a coluna de texto ficava torta
+  > :first-child
+    margin-inline: 13px
 
   &:hover
     background: var(--papel)
@@ -149,6 +156,9 @@ $painel-largo: 256px
 // altura inteira do item, e por isso já encosta na borda de baixo
 .linkPerfil
   padding: 0
+
+  > :first-child
+    margin-inline: 0
   // a roupa chega na borda de baixo: sem o recorte, ela passava dos cantos
   // arredondados do item
   overflow: hidden

@@ -23,8 +23,9 @@ import styles from './inicio.module.sass'
  * última partida, as conquistas e os amigos; o ranking e a comunidade têm
  * a sua entrada) e "como jogar" mora na mesa, onde a dúvida aparece.
  *
- * O botão grande diz ONDE se para: "Continuar — semana 2, quarta" é um
- * convite; "Jogar" não diz se há uma partida esperando.
+ * O botão é um só, e diz se há partida esperando: "Continuar" ou "Jogar".
+ * Já houve um cartão com "Bom dia, nick" e o dia da run salva; o autor o
+ * tirou — com a capa em cima, era a terceira coisa dizendo quem você é.
  */
 export default function InicioPage() {
   const sessao = useSessao()
@@ -75,20 +76,17 @@ export default function InicioPage() {
       />
 
       <div className={styles.coluna}>
-        <section className={styles.cartao}>
-          <div className={styles.quem}>
-            <span className={styles.ola}>Bom dia,</span>
-            <h1 className={styles.nick}>{sessao.nick}</h1>
-          </div>
-
-          <Link className={`${buttons.button} ${buttons.primary} ${styles.jogar}`} href="/jogar">
-            {run ? <RotateCcw size={20} aria-hidden /> : <Play size={20} aria-hidden />}
-            <span className={styles.jogarTexto}>
-              <b>{run ? 'Continuar' : 'Começar o mês'}</b>
-              <span>{run ? dayLabel(run) : 'Quatro semanas, sem surtar'}</span>
-            </span>
-          </Link>
-        </section>
+        {/* só o botão, montado na borda de baixo da capa: o "Bom dia" e o
+            nick saíram (pedido do autor) — o rosto em cima já diz quem é */}
+        <h1 className="sr-only">Início</h1>
+        <Link
+          className={`${buttons.button} ${buttons.primary} ${styles.jogar}`}
+          href="/jogar"
+          aria-label={run ? `Continuar: ${dayLabel(run)}` : 'Jogar'}
+        >
+          {run ? <RotateCcw size={22} aria-hidden /> : <Play size={22} aria-hidden />}
+          {run ? 'Continuar' : 'Jogar'}
+        </Link>
 
         {sessao.convidado ? (
           <p className={styles.aviso}>

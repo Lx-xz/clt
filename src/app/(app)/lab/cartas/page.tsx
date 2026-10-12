@@ -17,10 +17,17 @@ import {
 } from '../_catalogo/Bancada'
 import { EditorDeEfeitos, EscapeJson } from '../_catalogo/EditorDeAcoes'
 import {
+  CopiarParaOCodigo,
+  DesfeitasPeloCodigo,
+  VersoesDaCarta,
+  editadaNoLab,
+} from '../_catalogo/Versoes'
+import {
   cartaParaBanco,
   excluirDoCatalogo,
   salvarCarta,
   semearCatalogo,
+  versoesDasCartas,
 } from '@/data/cartas'
 import { CARTAS_BASE, MOTIVOS_DO_CODIGO } from '@/game/cards'
 import { EVENTOS_BASE } from '@/game/events'
@@ -337,6 +344,12 @@ interface Pendencia {
   carta: ActionCard
   oQue: string
   porque: string
+  /** A versão no ar foi feita à mão aqui: trazer a do código a desfaria. */
+  doLab: boolean
+}
+
+function mesmaCarta(a: ActionCard, b: ActionCard): boolean {
+  return estavel(cartaParaBanco(a)) === estavel(cartaParaBanco(b))
 }
 
 /**
@@ -350,11 +363,12 @@ function pendenciasDoCodigo(doBanco: ActionCard[]): Pendencia[] {
   for (const carta of CARTAS_BASE) {
     const antes = banco.get(carta.id)
     if (antes?.ativa === false) continue
-    if (antes && estavel(cartaParaBanco(antes)) === estavel(cartaParaBanco(carta))) continue
+    if (antes && mesmaCarta(antes, carta)) continue
     lista.push({
       carta,
       oQue: resumoDaMudanca(antes, carta),
       porque: MOTIVOS_DO_CODIGO[carta.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Carta nova do baralho de referência do código.'),
+      doLab: Boolean(antes) && editadaNoLab(carta.id, 'acao'),
     })
   }
   return lista
@@ -374,7 +388,9 @@ function pendenciasDoCodigo(doBanco: ActionCard[]): Pendencia[] {
  */
 function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTerminar: (recado: string) => void }) {
   const pendencias = pendenciasDoCodigo(cartas)
-  const [fora, setFora] = useState<string[]>([])
+  // a carta que foi balanceada aqui começa DESMARCADA: foi a caixa vir com
+  // tudo marcado que desfez o balanceamento do autor uma vez
+  const [fora, setFora] = useState<string[]>(() => pendencias.filter((p) => p.doLab).map((p) => p.carta.id))
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   if (pendencias.length === 0) return null
@@ -402,8 +418,8 @@ function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermin
       <h2 className={styles.subtitulo}>O código tem cartas que o banco não tem ({pendencias.length})</h2>
       <p className={styles.dicaSecao}>
         Semear não sobrescreve nada, e rodar o <code>schema.sql</code> não mexe em carta: por isso
-        o que mudou em <code>cards.ts</code> não chega sozinho. Desmarque o que você editou aqui de
-        propósito — trazer a versão do código desfaria a sua.
+        o que mudou em <code>cards.ts</code> não chega sozinho. As cartas marcadas “balanceada no
+        lab” já vêm desmarcadas: trazer a versão do código desfaria a sua.
       </p>
       <ul className={styles.listaTrazer}>
         {pendencias.map((p) => (
@@ -413,6 +429,7 @@ function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermin
               onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.carta.id) : [...f, p.carta.id]))}
             >
               <b>{p.carta.name}</b> · {p.oQue}
+              {p.doLab ? <span className={styles.seloLab}>balanceada no lab</span> : null}
             </Check>
           </li>
         ))}
@@ -440,6 +457,9 @@ export default function LabCartasPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
   const [recado, setRecado] = useState<string | null>(null)
+  // o editor de custos guarda as linhas no próprio estado: carregar uma
+  // versão antiga precisa remontá-lo
+  const [geracao, setGeracao] = useState(0)
 
   function recarregar() {
     setCartas(todasAsCartas())
@@ -531,6 +551,25 @@ export default function LabCartasPage() {
       ) : null}
 
       {doBanco ? (
+        <DesfeitasPeloCodigo
+          familia="cartas"
+          carregar={versoesDasCartas}
+          atuais={cartas.filter((c) => c.ativa !== false)}
+          igual={mesmaCarta}
+          resumo={resumoDaMudanca}
+          salvar={salvarCarta}
+          aoTerminar={(r) => {
+            recarregar()
+            setRecado(r)
+          }}
+        />
+      ) : null}
+
+      {doBanco ? (
+        <CopiarParaOCodigo atuais={cartas.filter((c) => c.ativa !== false)} familia="acao" paraTexto={cartaParaBanco} />
+      ) : null}
+
+      {doBanco ? (
         <TrazerDoCodigo
           cartas={cartas}
           aoTerminar={(r) => {
@@ -595,7 +634,7 @@ export default function LabCartasPage() {
           </div>
 
           <EditorDeCustos
-            key={criando ? 'nova' : emEdicao.id}
+            key={criando ? 'nova' : `${emEdicao.id}:${geracao}`}
             carta={emEdicao}
             onChange={(cost, custos) => setEmEdicao((c) => (c ? { ...c, cost, custos } : c))}
           />
@@ -724,6 +763,19 @@ export default function LabCartasPage() {
               </label>
             ) : null}
           </div>
+
+          {!criando ? (
+            <VersoesDaCarta
+              id={emEdicao.id}
+              carregar={versoesDasCartas}
+              descrever={(c) => `${c.cost} de energia · ${c.text}`}
+              aoUsar={(c) => {
+                setEmEdicao({ ...c, ativa: emEdicao.ativa, versao: emEdicao.versao })
+                setEfeitos(c.efeitos)
+                setGeracao((g) => g + 1)
+              }}
+            />
+          ) : null}
 
           <div className={comuns.acoesDialogo}>
             {!criando && emEdicao.ativa !== false ? (

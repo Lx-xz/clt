@@ -11,8 +11,12 @@
  * Sair na barra lateral) sai da lista em vez de ficar contando uma coisa que
  * não existe mais.
  *
- * Ao entregar coisa nova, acrescente a versão no TOPO e mova para cá o que
- * saiu de `EM_ANDAMENTO`. Quando a mudança é de cara, ponha a foto de antes
+ * **E só o que IMPORTA para quem joga** (v0.33, pedido do autor): retrabalho
+ * de desenho (o chapéu que ficou maior, a orelha que subiu) não vira item —
+ * estamos refazendo, não lançando. Lista comprida é ruído, e ninguém lê. A
+ * lista do "fazendo agora" saiu pelo mesmo motivo.
+ *
+ * Ao entregar coisa nova, acrescente a versão no TOPO. Quando a mudança é de cara, ponha a foto de antes
  * e a de agora em `imagens` (os arquivos moram em `novidades/` aqui do lado,
  * em WebP, e são importados: assim o endereço já sai com o `/clt` do
  * GitHub Pages, que o `src` escrito à mão não ganharia).
@@ -55,27 +59,14 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
   correcao: 'Corrigido',
 }
 
-/** O que está sendo feito agora, ou logo depois. Sem data, de propósito. */
-export const EM_ANDAMENTO: string[] = [
-  'Rebalancear: hoje quase toda partida acaba em burnout ainda na primeira semana — o jogo está mais duro do que deveria.',
-  'A máquina de vendas: três cartas e três itens por dia, comprados com tokens.',
-  'A abóbora: a recompensa da temporada de Halloween, com um item da coleção garantido.',
-  'Mais peças para o avatar, e fundos de mesa para escolher onde jogar.',
-  'Efeitos sonoros: um som por carta jogada, cota batida, advertência, vitória e derrota.',
-  'Uma recompensa para quem manda bom feedback.',
-  'Um aviso fora do site (e-mail ou no celular) quando o seu relato mudar de estado.',
-  'As cartas voando do baralho para a mão.',
-]
-
 export const VERSOES: Versao[] = [
   {
-    versao: '0.32',
+    versao: '0.33',
     data: '2026-10-12',
-    titulo: 'Espaço em cima da cabeça',
+    titulo: 'O baralho refeito',
     itens: [
-      { tipo: 'melhor', texto: 'A capa do avatar, no início e no perfil, ficou mais alta e deixa espaço acima da cabeça: o chapéu de bruxa, as orelhas e os chifres aparecem inteiros.' },
-      { tipo: 'melhor', texto: 'O chapéu de bruxa ganhou aba larga e grossa, e a copa cobre a cabeça em todo formato de rosto.' },
-      { tipo: 'melhor', texto: 'As orelhas de gato na cor do cabelo ficam um tom abaixo dele, para não sumirem no meio do cabelo, e se ajeitam em cima de cada corte.' },
+      { tipo: 'melhor', texto: 'A página do baralho foi refeita: a conta numa barra, os naipes à vista e um contador em cada carta para pôr e tirar cópias.' },
+      { tipo: 'novo', texto: 'Cortes novos: trança, pompadour e mullet. Os repartidos no meio foram refeitos.' },
     ],
   },
   {
@@ -83,24 +74,8 @@ export const VERSOES: Versao[] = [
     data: '2026-10-12',
     titulo: 'Abrir tudo de uma vez',
     itens: [
-      { tipo: 'novo', texto: 'Segure a recompensa por dois segundos para abrir tudo de uma vez: as cartas e os itens aparecem de costas e desviram um por um, rapidinho.' },
-      { tipo: 'novo', texto: 'Cabelos repartidos no meio — curto, médio e longo — e parafusos no pescoço do Frankenstein.' },
-      { tipo: 'melhor', texto: 'As laterais em degradê e de cabelo encaixam direito em todo corte. Nos compridos a escolha saiu: o comprimento já é a lateral.' },
-      { tipo: 'melhor', texto: 'Moicano, rabo de cavalo, tigelinha e chapéu de bruxa redesenhados. Chifres e orelhas de gato ficam por cima do cabelo, e as orelhas têm cor (a do cabelo, ou outra).' },
-      { tipo: 'melhor', texto: 'No editor, a peça que ainda não é sua continua no fim da lista quando você a experimenta, e as cores de Halloween levam a abóbora também na barba e no chapéu.' },
-    ],
-  },
-  {
-    versao: '0.30',
-    data: '2026-10-12',
-    titulo: 'Laterais e cortes novos',
-    itens: [
-      { tipo: 'novo', texto: 'A lateral do cabelo virou escolha, para todo corte: de cabelo, em degradê ou sem lateral. O cacheado, o puff e o black power também ganharam lateral.' },
-      { tipo: 'novo', texto: 'Cortes novos — tigelinha, moicano e rabo de cavalo — e os de Halloween, Frankenstein e vampiro. Cores novas de cabelo, de roupa e de olho, e mais peças para colecionar: gorro, chifres, orelhas de gato e olhos vermelhos.' },
-      { tipo: 'melhor', texto: 'O degradê virou o cabelo curto, e o curto antigo saiu. O topete foi redesenhado, os chapéus ganharam aba reta e o rosto oval ficou do tamanho dos outros.' },
-      { tipo: 'melhor', texto: 'O olho de gato agora é a íris pontuda, na cor dos olhos. O de réptil virou o mesmo — quem o tinha fica com o de gato.' },
-      { tipo: 'melhor', texto: 'Saíram a roupa "sem pescoço" e a expressão Vitória, que era igual à Feliz. Quem as usava abre com a camiseta e com a Feliz.' },
-      { tipo: 'correcao', texto: 'O olho não pinta mais por cima do cabelo, e o manequim não respira.' },
+      { tipo: 'novo', texto: 'Segure a recompensa por dois segundos para abrir tudo de uma vez.' },
+      { tipo: 'novo', texto: 'Cortes de cabelo novos, e a lateral do cabelo virou escolha: de cabelo, em degradê ou sem.' },
     ],
   },
   {
@@ -108,10 +83,9 @@ export const VERSOES: Versao[] = [
     data: '2026-10-12',
     titulo: 'Halloween e os tokens',
     itens: [
-      { tipo: 'novo', texto: 'Coleção de Halloween para o avatar: chapéu de bruxa, cílios longos, olho de gato, de réptil, todo colorido e todo preto, e as cores abóbora e noite. As peças dela levam uma abóbora no canto.' },
-      { tipo: 'novo', texto: 'Tokens: a carta que passa do limite de cópias e o item que você já tem não somem mais — viram tokens na abertura, conforme a raridade, e a soma aparece no fim.' },
-      { tipo: 'melhor', texto: 'As recompensas sorteiam entre todas as cartas, e não só entre as que faltam: completar a coleção ficou mais demorado, e as repetidas viram tokens.' },
-      { tipo: 'melhor', texto: 'No editor, dá para tocar numa peça que ainda não é sua e ver como fica no avatar. Salvar com ela é que não dá.' },
+      { tipo: 'novo', texto: 'Coleção de Halloween para o avatar: as peças dela levam uma abóbora no canto.' },
+      { tipo: 'novo', texto: 'A carta que passa do limite de cópias e o item que você já tem viram tokens na abertura.' },
+      { tipo: 'melhor', texto: 'No editor, dá para experimentar uma peça que ainda não é sua. Salvar com ela é que não dá.' },
     ],
   },
   {

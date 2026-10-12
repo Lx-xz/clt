@@ -309,3 +309,57 @@ export function salvarModo(modo: Regras, oQue: string, porque: string) {
 }
 
 export type { Acao }
+
+// --------------------------------------------------------------- versões
+
+/**
+ * Uma versão que saiu de cena: a carta INTEIRA como era, e a mudança que a
+ * tirou dali (`oQue`/`porque`). Atenção à leitura: o motivo da linha é o da
+ * mudança SEGUINTE, não o desta versão — a linha nasce quando a versão é
+ * arquivada, e quem arquiva é a edição que a substitui.
+ */
+export interface VersaoAntiga<T> {
+  id: number
+  carta: CardId
+  versao: number
+  tipo: 'criada' | 'ajustada' | 'removida'
+  oQue: string
+  porque: string
+  data: string
+  dados: T
+}
+
+interface LinhaVersao {
+  id: number
+  carta: string
+  versao: number
+  tipo: VersaoAntiga<unknown>['tipo']
+  oQue: string
+  porque: string
+  data: string
+  dados: unknown
+}
+
+async function versoes(familia: 'acao' | 'evento'): Promise<LinhaVersao[] | string> {
+  if (!supabase) return 'Banco não configurado.'
+  const { data, error } = await supabase.rpc('admin_versoes', { p_familia: familia })
+  if (error) {
+    return /admin_versoes/.test(error.message)
+      ? 'O banco ainda não tem a função admin_versoes: rode o supabase/schema.sql.'
+      : error.message
+  }
+  return (data ?? []) as LinhaVersao[]
+}
+
+/** Todas as versões antigas das cartas de ação, da mais nova para a mais velha. */
+export async function versoesDasCartas(): Promise<VersaoAntiga<ActionCard>[] | string> {
+  const r = await versoes('acao')
+  if (typeof r === 'string') return r
+  return r.map((l) => ({ ...l, dados: paraCarta(l.dados as LinhaCarta) }))
+}
+
+export async function versoesDosEventos(): Promise<VersaoAntiga<EventCard>[] | string> {
+  const r = await versoes('evento')
+  if (typeof r === 'string') return r
+  return r.map((l) => ({ ...l, dados: paraEvento(l.dados as LinhaEvento) }))
+}

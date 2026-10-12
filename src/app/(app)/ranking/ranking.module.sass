@@ -56,6 +56,10 @@
   color: var(--tinta)
   text-decoration: none
   transition: background .12s ease
+  // a fita da medalha mora atrás do círculo (`z-index: -1`); sem um contexto
+  // de empilhamento aqui, ela ia para trás da LINHA, e o fundo do hover a
+  // apagava. Isolada, ela fica entre o fundo da linha e o círculo
+  isolation: isolate
 
   &:hover
     background: var(--papel-alto)

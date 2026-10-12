@@ -558,6 +558,7 @@ drop function if exists public.admin_excluir_carta(text, text, text);
 drop function if exists public.admin_semear_catalogo(jsonb, jsonb);
 drop function if exists public.admin_semear_catalogo(jsonb, jsonb, jsonb);
 drop function if exists public.admin_salvar_modo(jsonb, text, text);
+drop function if exists public.admin_versoes(text);
 drop function if exists public.minhas_notificacoes();
 drop function if exists public.marcar_notificacoes_lidas();
 drop function if exists public.jogo_publico(bigint);
@@ -1870,6 +1871,35 @@ grant execute on function public.admin_salvar_evento(jsonb, text, text)  to auth
 grant execute on function public.admin_excluir_carta(text, text, text)   to authenticated;
 grant execute on function public.admin_salvar_modo(jsonb, text, text)    to authenticated;
 grant execute on function public.admin_semear_catalogo(jsonb, jsonb, jsonb) to authenticated;
+
+-- Todas as versões antigas de uma família, COM o `dados` que o `catalogo()`
+-- deixa de fora. É o que deixa o /lab devolver uma carta ao formato que ela
+-- tinha — o balanceamento feito à mão que um "Trazer do código" desfez mora
+-- aqui, no `dados` da linha que o desfez. Só admin: não é segredo, mas é
+-- grande e só a bancada usa.
+create function public.admin_versoes(p_familia text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not public.sou_admin() then
+    raise exception 'Só admin mexe no catálogo.';
+  end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', a.id, 'carta', a.carta_id, 'versao', a.versao, 'tipo', a.tipo,
+      'oQue', a.o_que, 'porque', a.porque, 'dados', a.dados,
+      'data', to_char(a.criada_em, 'YYYY-MM-DD')
+    ) order by a.id desc)
+    from public.cartas_antigas a
+    where a.familia = p_familia
+  ), '[]'::jsonb);
+end;
+$$;
+
+grant execute on function public.admin_versoes(text) to authenticated;
 
 -- ---------------------------------------------------- replay de outra pessoa
 -- O replay de uma partida de qualquer jogador, pelo id. Ela já aparecia na

@@ -38,7 +38,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | Rota | O que é |
 |---|---|
 | `/auth` | A porta: entrar, criar conta (e-mail/senha ou Google), ou jogar como convidado. Fora de `(app)`; quem já tem sessão é mandado para `/` |
-| `/` | O início, dentro de `(app)`, LIMPO de propósito (v0.19): a capa do avatar de ponta a ponta (v0.25, a mesma `AvatarHero` do perfil, sem canto nem margem, com a cara do estresse da run salva), "Continuar — semana 2, quarta" (ou "Começar o mês") e as missões do dia com os envelopes por abrir. Última partida, amigos e conquistas moram no perfil |
+| `/` | O início, dentro de `(app)`, LIMPO de propósito (v0.19): a capa do avatar de ponta a ponta (v0.25, a mesma `AvatarHero` do perfil, sem canto nem margem, com a cara do estresse da run salva), UM botão, "Jogar" ou "Continuar", montado na borda de baixo da capa (v0.33: o cartão do "Bom dia, nick" saiu), e as missões do dia com os envelopes por abrir. Última partida, amigos e conquistas moram no perfil |
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
@@ -49,7 +49,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/meus-jogos` · `?nick=` | Todas as partidas, como recibos resumidos, com filtro por desfecho e ordem. Sem `nick` é a sua (a única que mostra as de "pediu demissão") |
 | `/meus-jogos/detalhe?id=` | Replay dia a dia de uma run, com as cartas desenhadas — a sua (`jogo_detalhe`) ou, se não for sua, a de outra pessoa (`jogo_publico`) |
 | `/comunidade` | Novidades, Feedbacks e Análise, em abas. É a única das três no menu |
-| `/maquina` | A máquina de vendas (v0.29): três cartas e três itens por dia, comprados com tokens. **Só admin por enquanto** (o link na barra e o `GuardaAdmin` no layout) |
+| `/maquina` | A máquina de vendas (v0.29): três cartas e três itens por dia, comprados com tokens, SEM texto nenhum na página (v0.33: só a máquina, que cabe inteira no celular sem rolar). **Só admin por enquanto** (o link na barra e o `GuardaAdmin` no layout) |
 | `/nova-senha` | Onde o link de "esqueci a senha" cai. Fora de `(app)` |
 | `/lab` · `/lab/cartas` · `/lab/eventos` · `/lab/regras` · `/lab/envelopes` (abrir recompensa com a animação do jogo, e o que sai vai para a conta do admin) · `/lab/museu` (as versões de antes: o envelope de CSS, a maleta de couro e a escada em 3D de CSS; a primeira proposta, `/lab/propostas`, fica fora da lista e é linkada de lá) | A oficina. **Só admin**, pelo layout de `/lab` |
 
@@ -547,10 +547,19 @@ como melhorar o baralho no meio do mês, e a vitória dele foi de 0,4% para 0%
 (burnout 100%, dia mediano 5). O jogo já estava duro demais; isto deixa a
 conta do rebalanceamento mais clara, não mais difícil de fazer.
 
-**A página do baralho move UMA cópia:** clique duplo ou arrastar para a outra
-coluna ("No baralho" ↔ "Fora", o mesmo `onPlay` + `dropRef` da mesa). O clique
-simples abre o detalhe, que nesta página leva o seletor de cópias (− n +) e o
-histórico da carta (`MudancasDaCarta`), pelos `children` do `CardDetail`.
+**A página do baralho (refeita na v0.33)** tem em cima o PAINEL do baralho
+equipado — os baralhos montados como abas de pasta, o nome com lápis e
+lixeira, a conta numa barra até o máximo (o mínimo é uma marca nela) e os
+naipes como selos com ícone, vermelhos abaixo do mínimo —, depois as
+ferramentas (busca, naipe em chips de ícone, raridade, ordem) e as cartas.
+No desktop, "No baralho" e "Coleção" são colunas lado a lado (é entre elas
+que se arrasta) e "Faltam" vem embaixo; no celular as três viram ABAS
+(`data-aba` nas colunas, e o CSS esconde as outras). Cada carta tem um
+CONTADOR embaixo (− n/total +), que move uma cópia sem gesto nenhum; o
+clique duplo e o arraste continuam movendo uma, e o clique simples abre o
+detalhe com o seletor de cópias e o histórico (`MudancasDaCarta`). Com o
+baralho no máximo, pôr mais uma é recusado. O "×2" da carta saiu daqui: o
+contador já diz.
 
 ### Os custos além da energia (v0.15, lista desde a v0.17)
 
@@ -723,6 +732,10 @@ opções. O que ele escolheu, e que deve ser preservado:
   Recolhida ela tem 76 px e aberta 256 (v0.25: eram 62 e 216), com ícone
   de 22 e texto de 16; a largura recolhida também mora em `.daMesa` do
   `Dialogo`, e o avatar do Perfil é a largura da coluna (76 − 2 × 14).
+  **Todo ícone ocupa uma faixa de 48 px** (o link não tem respiro à
+  esquerda, e o primeiro filho leva 13 de cada lado), a largura do avatar
+  do Perfil: com o ícone de 22 e o avatar de 48, o "Perfil" começava 13 px
+  depois dos outros textos.
   Muda de página fecha o gaveteiro sozinho. Os links vêm em dois grupos
   separados por um fio — o JOGO (Início, Jogar, Baralho) e a GENTE (Ranking,
   Comunidade) —, o "Jogar" ganha um ponto quando há run em andamento, e o
@@ -1034,6 +1047,23 @@ opções. O que ele escolheu, e que deve ser preservado:
     rosto. É o avatar de todo mundo que chega — convidado, Google ou e-mail —,
     e ele diz "ainda não escolhi" sem fingir ser ninguém. Ele não veste óculos,
     barba nem chapéu: seria fingir uma pessoa.
+  - **Chapéu de bruxa e orelhas de gato (v0.33).** O chapéu é um CONE
+    saindo direto da aba larga (a parte reta embaixo lia como cartola), e
+    corta a cabeça na aba (`ACESSORIOS.cortaCabeca`): o cone é mais
+    estreito que o rosto quadrado no alto, e os cantos apareciam. As
+    orelhas de gato são desenhadas ATRÁS de tudo (`atras: true`, camada 0),
+    com um pé que desce até dentro da cabeça: só a ponta passa do cabelo, e
+    o pé fica escondido em qualquer corte. Pousadas por cima, cada corte as
+    deixava num lugar. A altura em que saem é a do cabelo naquele ponto:
+    `FormaCabelo.alto`, ou `noLado` ([esquerda, direita]) quando o corte não
+    é simétrico ou o alto não está nas têmporas (topete, pompadour, rabo).
+  - **Os repartidos (v0.33) seguem a referência do autor:** o alto em dois
+    gomos com vinco no meio, a testa num arco pontudo saindo da risca e as
+    cortinas cobrindo os cantos dela até os olhos (`topoDividido`,
+    `cortinaDe`, `costasDoRepartido`, `longoDividido`). O médio bate no
+    ombro com a ponta virada para fora. Vieram junto, da mesma leva, a
+    trança (uma só, caindo de trás da orelha por cima do ombro), o
+    pompadour e o mullet — cosméticos, como os outros novos.
   - **O cabelo custou três tentativas** e está comentado no componente:
     silhueta fechada ATRÁS do rosto (o miolo some debaixo dele, então não há
     encaixe para errar), franja por cima com a borda de fora sendo um arco da
@@ -1894,6 +1924,30 @@ e a um bot diferente — não compare os dois.
 - **Rodar o `schema.sql` da v0.17** (coluna `cartas.custos`). Sem ele o
   custo em R$ segue funcionando pelo `custo_dinheiro`, mas custo de estresse
   ou produtividade salvo no `/lab` não é gravado.
+- **O BALANCEAMENTO DO AUTOR MORA NO BANCO, e o código não pode passar por
+  cima (v0.33).** Já aconteceu: o autor balanceou cartas no `/lab` e um
+  "Trazer do código" (que vinha com tudo marcado) levou o `cards.ts` por
+  cima. Pelo que ele lembra, as versões dele eram: Proatividade custando 0,
+  Hora Extra dando 50 de dinheiro e 0 de estresse, Automatizar só +1 por
+  dia (até o fim de semana, ou uma vez por run), o evento Sexta de Folga
+  sendo só "Feriado", e Reorganizar a Mesa pedindo uma carta só. Nada se
+  perdeu — a versão substituída fica inteira em `cartas_antigas.dados` —,
+  e o `/lab/cartas` e o `/lab/eventos` agora têm (`_catalogo/Versoes.tsx`):
+  a caixa "O código desfez o seu balanceamento", que acha essas versões e
+  as grava de novo com o motivo que o autor tinha escrito; "Versões
+  anteriores" dentro da edição de cada carta ("Usar esta" carrega no
+  editor); o selo "balanceada no lab" no "Trazer do código", que já vem
+  DESMARCADO para essas; e "Copiar para levar ao código", que copia as
+  cartas cuja versão no ar é do lab, para colar numa conversa. Quem lê o
+  `dados` é a RPC `admin_versoes` (só admin). Quem diz se uma mudança veio
+  do código é o motivo dela: os de `MOTIVOS_DO_CODIGO`/`MOTIVOS_DOS_EVENTOS`
+  e os antigos em `MOTIVOS_ANTIGOS` (`Versoes.tsx`) — **ao reescrever uma
+  frase de motivo, a de antes vai para lá.** **Antes de mudar qualquer carta
+  ou evento no código, peça ao autor o texto do "Copiar para levar ao
+  código"** e traga o `cards.ts`/`events.ts` até o banco: o número que vale
+  é o dele.
+- **Rodar o `schema.sql` da v0.33** (`admin_versoes`). Sem ele as caixas
+  de versões do lab mostram o aviso de que a função falta.
 - **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
   que não existe, e rodar o `schema.sql` não toca em carta. Com o banco já
   semeado, quem leva o código para lá é a caixa "O código tem cartas que o
@@ -1931,7 +1985,10 @@ e a um bot diferente — não compare os dois.
   lateral já lê e marca como lida. Falta o aviso sair do site: e-mail, ou push.
   Foi feito assim de propósito — quando isso chegar, o histórico já existe.
 - **O changelog é escrito à mão** (`src/data/changelog.ts`). Ao entregar coisa
-  nova, acrescente a versão no topo e tire o item de `EM_ANDAMENTO`. **Ele é
+  nova, acrescente a versão no topo. **Só o que IMPORTA para quem joga
+  (v0.33, pedido do autor):** retrabalho de desenho (o chapéu que cresceu, a
+  orelha que subiu) não vira item, poucas linhas por versão, frases curtas —
+  lista comprida é ruído e ninguém lê. A lista "Fazendo agora" saiu. **Ele é
   para quem JOGA (v0.23):** nada de banco, lab, editor de cartas ou forma de
   guardar dado; o que foi desfeito depois sai da lista. Quando a cara de
   alguma coisa muda, a versão leva `imagens` (antes e agora), em WebP em

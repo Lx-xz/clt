@@ -37,6 +37,10 @@ export type Corte =
   | 'repartidoCurto'
   | 'repartidoMedio'
   | 'repartidoLongo'
+  // v0.33: da segunda leva de referências
+  | 'tranca'
+  | 'pompadour'
+  | 'mullet'
   | 'frankenstein'
   | 'vampiro'
   | 'espetado'
@@ -272,6 +276,9 @@ export const CORTES: Opcao<Corte>[] = [
   { valor: 'repartidoCurto', rotulo: 'Repartido curto' },
   { valor: 'repartidoMedio', rotulo: 'Repartido médio' },
   { valor: 'repartidoLongo', rotulo: 'Repartido longo' },
+  { valor: 'tranca', rotulo: 'Trança' },
+  { valor: 'pompadour', rotulo: 'Pompadour' },
+  { valor: 'mullet', rotulo: 'Mullet' },
   { valor: 'frankenstein', rotulo: 'Frankenstein' },
   { valor: 'vampiro', rotulo: 'Vampiro' },
   { valor: 'puff', rotulo: 'Puff' },

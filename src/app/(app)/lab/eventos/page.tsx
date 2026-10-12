@@ -15,7 +15,19 @@ import {
   estavel,
 } from '../_catalogo/Bancada'
 import { EditorDeEfeitos, EditorDeEscolhas, EscapeJson } from '../_catalogo/EditorDeAcoes'
-import { eventoParaBanco, excluirDoCatalogo, salvarEvento, semearCatalogo } from '@/data/cartas'
+import {
+  CopiarParaOCodigo,
+  DesfeitasPeloCodigo,
+  VersoesDaCarta,
+  editadaNoLab,
+} from '../_catalogo/Versoes'
+import {
+  eventoParaBanco,
+  excluirDoCatalogo,
+  salvarEvento,
+  semearCatalogo,
+  versoesDosEventos,
+} from '@/data/cartas'
 import { CARTAS_BASE } from '@/game/cards'
 import { EVENTOS_BASE, MOTIVOS_DOS_EVENTOS } from '@/game/events'
 import { MODO_NORMAL } from '@/game/regras'
@@ -67,6 +79,10 @@ function resumoDaMudanca(antes: EventCard | undefined, depois: EventCard): strin
   return partes.join(' · ') || 'Salvo sem mudança de número'
 }
 
+function mesmoEvento(a: EventCard, b: EventCard): boolean {
+  return estavel(eventoParaBanco(a)) === estavel(eventoParaBanco(b))
+}
+
 /**
  * O mesmo "trazer do código" das cartas, para os eventos: semear só escreve
  * o que não existe, então evento novo ou mudado em `events.ts` nunca chega
@@ -79,14 +95,16 @@ function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; 
   const pendencias = EVENTOS_BASE.flatMap((e) => {
     const antes = banco.get(e.id)
     if (antes?.ativa === false) return []
-    if (antes && estavel(eventoParaBanco(antes)) === estavel(eventoParaBanco(e))) return []
+    if (antes && mesmoEvento(antes, e)) return []
     return [{
       evento: e,
+      doLab: Boolean(antes) && editadaNoLab(e.id, 'evento'),
       oQue: antes ? 'Ajuste vindo do código' : 'Evento novo',
       porque: MOTIVOS_DOS_EVENTOS[e.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Evento novo do baralho de referência do código.'),
     }]
   })
-  const [fora, setFora] = useState<string[]>([])
+  // o evento balanceado aqui começa DESMARCADO, como a carta
+  const [fora, setFora] = useState<string[]>(() => pendencias.filter((p) => p.doLab).map((p) => p.evento.id))
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   if (pendencias.length === 0) return null
@@ -113,7 +131,7 @@ function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; 
     <section className={styles.trazer}>
       <h2 className={styles.subtitulo}>O código tem eventos que o banco não tem ({pendencias.length})</h2>
       <p className={styles.dicaSecao}>
-        Desmarque o que você editou aqui de propósito — trazer a versão do código desfaria a sua.
+        Os marcados “balanceado no lab” já vêm desmarcados: trazer a versão do código desfaria a sua.
       </p>
       <ul className={styles.listaTrazer}>
         {pendencias.map((p) => (
@@ -123,6 +141,7 @@ function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; 
               onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.evento.id) : [...f, p.evento.id]))}
             >
               <b>{p.evento.name}</b> · {p.oQue}
+              {p.doLab ? <span className={styles.seloLab}>balanceado no lab</span> : null}
             </Check>
           </li>
         ))}
@@ -215,6 +234,25 @@ export default function LabEventosPage() {
       </p>
 
       <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
+
+      {doBanco ? (
+        <DesfeitasPeloCodigo
+          familia="eventos"
+          carregar={versoesDosEventos}
+          atuais={eventos.filter((e) => e.ativa !== false)}
+          igual={mesmoEvento}
+          resumo={resumoDaMudanca}
+          salvar={salvarEvento}
+          aoTerminar={(r) => {
+            recarregar()
+            setRecado(r)
+          }}
+        />
+      ) : null}
+
+      {doBanco ? (
+        <CopiarParaOCodigo atuais={eventos.filter((e) => e.ativa !== false)} familia="evento" paraTexto={eventoParaBanco} />
+      ) : null}
 
       {doBanco ? (
         <TrazerEventosDoCodigo
@@ -339,6 +377,19 @@ export default function LabEventosPage() {
               }
             }}
           />
+
+          {!criando ? (
+            <VersoesDaCarta
+              id={emEdicao.id}
+              carregar={versoesDosEventos}
+              descrever={(e) => e.text}
+              aoUsar={(e) => {
+                setEmEdicao({ ...e, ativa: emEdicao.ativa, versao: emEdicao.versao })
+                setEfeitos(e.efeitos ?? [])
+                setEscolhas(e.choices ?? null)
+              }}
+            />
+          ) : null}
 
           <div className={comuns.acoesDialogo}>
             {!criando && emEdicao.ativa !== false ? (

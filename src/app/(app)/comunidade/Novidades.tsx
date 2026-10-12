@@ -1,6 +1,6 @@
 'use client'
 
-import { EM_ANDAMENTO, ROTULO_TIPO, VERSOES, type AntesEDepois } from '@/data/changelog'
+import { ROTULO_TIPO, VERSOES, type AntesEDepois } from '@/data/changelog'
 import styles from './changelog.module.sass'
 import { TextoComIcones } from '@/components/Dinheiro'
 
@@ -33,19 +33,11 @@ export default function Novidades() {
   return (
     <>
       <p className={styles.intro}>
-        O que mudou no jogo, versão por versão, e o que está sendo feito agora. Onde a cara mudou, tem a foto de antes e
+        O que mudou no jogo, versão por versão. Onde a cara mudou, tem a foto de antes e
         a de agora. Sentiu falta de alguma coisa? A aba de <b>Feedbacks</b> é o caminho — o que entra aqui costuma ter
         começado lá.
       </p>
 
-      <section className={styles.andamento}>
-        <h2 className={styles.andamentoTitulo}>Fazendo agora</h2>
-        <ul className={styles.lista}>
-          {EM_ANDAMENTO.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
 
       {VERSOES.map((v) => (
         <section key={v.versao} className={styles.versao}>
