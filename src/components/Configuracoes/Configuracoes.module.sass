@@ -262,3 +262,44 @@
 
   .temaNome
     font-size: 13px
+
+// ------------------------------------------------------------------ senha
+.senhaCabeca
+  display: flex
+  align-items: center
+  gap: 12px
+  padding: 12px 0
+
+.senhaTexto
+  display: flex
+  flex: 1
+  flex-direction: column
+  gap: 2px
+  min-width: 0
+  font-size: 15px
+
+.senhaForma
+  display: flex
+  flex-direction: column
+  gap: 8px
+  padding: 12px 0
+
+// 16px: abaixo disso o iPhone dá zoom no campo e não desfaz
+.campo
+  width: 100%
+  padding: 10px 12px
+  background: var(--papel)
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  color: var(--tinta)
+  font: inherit
+  font-size: 16px
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 1px
+
+.senhaAcoes
+  display: flex
+  justify-content: flex-end
+  gap: 8px

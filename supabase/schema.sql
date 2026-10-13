@@ -26,6 +26,8 @@ create extension if not exists pg_trgm;
 -- carta, o número da run) viram uuid na v0.35, a mesma conta que o site faz
 create schema if not exists extensions;
 create extension if not exists "uuid-ossp" with schema extensions;
+-- o crypt() que confere a senha de quem entra pelo nick (`email_para_entrar`)
+create extension if not exists pgcrypto with schema extensions;
 
 -- ---------------------------------------------------------------- tabelas
 
@@ -732,6 +734,7 @@ drop function if exists public.ao_criar_usuario();
 drop function if exists public.meu_perfil();
 drop function if exists public.nick_livre(text);
 drop function if exists public.completar_perfil(text, text, boolean);
+drop function if exists public.email_para_entrar(text, text);
 drop function if exists public.salvar_avatar(jsonb);
 drop function if exists public.criar_convidado(text);
 -- entrada por nick, sem senha: não existe mais
@@ -912,6 +915,59 @@ end;
 $$;
 
 grant execute on function public.completar_perfil(text, text, boolean) to authenticated;
+
+-- Entrar pelo NICK (v0.38). O Auth só entende e-mail, então o site pede o
+-- e-mail do nick — e devolver o e-mail de qualquer nick seria entregar o
+-- e-mail de todo mundo a quem souber um nick, que é justamente o que a
+-- seção de segurança proíbe. Por isso a função CONFERE A SENHA antes
+-- (contra o hash do próprio Auth) e só devolve o e-mail a quem já poderia
+-- entrar com ele. Errado ou inexistente devolve nulo, e as duas coisas são
+-- iguais de fora: ninguém descobre quem tem conta aqui testando nicks.
+--
+-- Chamar esta função é tentar uma senha FORA do limite de tentativas do
+-- Auth: daí o limite próprio, 10 por nick a cada 15 minutos.
+create table if not exists public.tentativas_de_entrada (
+  nick   text not null,
+  quando timestamptz not null default now()
+);
+create index if not exists tentativas_de_entrada_nick_idx on public.tentativas_de_entrada (nick, quando);
+-- sem política nem grant: só a função mexe nela
+alter table public.tentativas_de_entrada enable row level security;
+
+create function public.email_para_entrar(p_nick text, p_senha text)
+returns text
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare
+  v_nick  text := lower(trim(coalesce(p_nick, '')));
+  v_email text;
+  v_hash  text;
+begin
+  delete from public.tentativas_de_entrada where quando < now() - interval '15 minutes';
+  if (select count(*) from public.tentativas_de_entrada where nick = v_nick) >= 10 then
+    raise exception 'Muitas tentativas com esse nick. Espere uns minutos ou entre pelo e-mail.'
+      using errcode = '54000';
+  end if;
+  insert into public.tentativas_de_entrada (nick) values (v_nick);
+
+  select u.email, u.encrypted_password into v_email, v_hash
+  from public.players p
+  join auth.users u on u.id = p.id
+  where p.nick = v_nick and not p.convidado;
+
+  if v_email is null or coalesce(v_hash, '') = '' then
+    return null;
+  end if;
+  if extensions.crypt(coalesce(p_senha, ''), v_hash) <> v_hash then
+    return null;
+  end if;
+  return v_email;
+end;
+$$;
+
+grant execute on function public.email_para_entrar(text, text) to anon, authenticated;
 
 -- Guarda o avatar de quem está logado. O conteúdo não é validado aqui de
 -- propósito: quem valida é `lerAvatar()` no site, na LEITURA, e peça

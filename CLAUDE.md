@@ -1701,6 +1701,26 @@ dele são gravadas com `runs.convidado = true` — mas não relata bug (não há
 como responder a ninguém) e perde o progresso ao sair, o que a tela avisa
 antes, no perfil, e na página de feedbacks.
 
+**Entrar pelo nick (v0.38).** O campo de entrar aceita e-mail OU nick: sem
+arroba, `entrar()` pede ao banco o e-mail daquele nick por
+`email_para_entrar(nick, senha)`, que **confere a senha antes** (contra o
+hash do próprio Auth, com o `crypt` do pgcrypto) e só então devolve o
+e-mail — devolver o e-mail de qualquer nick entregaria o e-mail de todo
+mundo, o que a seção de segurança proíbe. Nick inexistente, senha errada e
+conta sem senha devolvem o mesmo nulo. Como é tentar senha fora do limite
+do Auth, ela tem o próprio: 10 por nick a cada 15 minutos
+(`tentativas_de_entrada`, sem política nem grant). **Errar não leva mais ao
+cadastro:** antes, "e-mail ou senha não conferem" abria a aba Criar conta,
+e quem tinha conta e só errou a senha ia tentar criar outra. Hoje fica em
+Entrar, com o recado de que a criação é na outra aba.
+
+**Trocar (ou criar) a senha mora em Configurações › Conta** (v0.38,
+`TrocarSenha`). Para quem entra pelo Google ela é "Criar senha": com ela a
+conta passa a entrar também por e-mail ou nick, e quem perder o Google não
+perde a conta. O palpite de "tem senha" vem dos provedores do Auth
+(`contaTemSenha`); a ação é a mesma (`updateUser`). Se o projeto exigir
+login recente para trocar senha, o erro diz para sair e entrar de novo.
+
 **Admin se dá no SQL Editor**, com o e-mail na mão
 (`update public.players set admin = true where email = '...'`), depois de a
 conta existir. Não há tela para promover ninguém, de propósito.
@@ -2088,6 +2108,9 @@ e a um bot diferente — não compare os dois.
   run (`run_id` não existe mais). A run que
   falhar não se perde — entra na fila (`clt:runs-pendentes:v1`, que lê o
   `run_id` de antes como `id`) e sobe na próxima abertura da mesa.
+- **Rodar o `schema.sql` da v0.38** (o pgcrypto, `email_para_entrar` e
+  `tentativas_de_entrada`). Sem ele, entrar pelo nick diz "ainda não está
+  ligado, use o e-mail"; o e-mail continua funcionando.
 - **Desde a v0.38 o "Trazer do código" só oferece carta e evento NOVOS.**
   Os que o banco já tem não aparecem, nem diferentes: o balanceamento mora
   no banco (o autor o faz no `/lab`), e o código anda atrás dele. A caixa

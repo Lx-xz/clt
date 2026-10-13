@@ -67,6 +67,8 @@ export const VERSOES: Versao[] = [
     itens: [
       { tipo: 'melhor', texto: 'As configurações agora têm abas (aparência, som e conta), interruptores no lugar das caixinhas e uma prévia de cada tema. O botão de sair fica sempre à mão, embaixo.' },
       { tipo: 'novo', texto: 'No celular, o aparelho treme junto com as jogadas e as recompensas, no iPhone também. Dá para desligar em Configurações › Som.' },
+      { tipo: 'novo', texto: 'Dá para entrar com o nick no lugar do e-mail, e trocar a senha nas Configurações. Quem entra pelo Google pode criar uma senha.' },
+      { tipo: 'correcao', texto: 'Errar a senha não leva mais para a criação de conta.' },
       { tipo: 'melhor', texto: 'O "Como jogar" foi refeito em páginas curtas, e agora conta das recompensas, dos tokens e da montagem do baralho.' },
     ],
   },

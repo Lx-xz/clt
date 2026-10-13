@@ -1,7 +1,8 @@
 'use client'
 
-import { LogOut, Monitor, Moon, Music, Sparkles, Sun, Vibrate, Volume2, VolumeX } from 'lucide-react'
-import { useState } from 'react'
+import { KeyRound, LogOut, Monitor, Moon, Music, Sparkles, Sun, Vibrate, Volume2, VolumeX } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { contaTemSenha, definirNovaSenha } from '@/data/conta'
 import { tocar } from '@/data/efeitos'
 import type { Volumes } from '@/data/som'
 import { podeVibrar, vibrar } from '@/data/vibrar'
@@ -225,6 +226,8 @@ export default function Configuracoes({
             )}
           </dl>
 
+          {sessao.convidado ? null : <TrocarSenha />}
+
           {/* só o convidado tem o que perder ao sair; quem tem conta não
               precisa ler sobre onde a partida fica guardada */}
           {sessao.convidado ? (
@@ -270,6 +273,111 @@ function Volume({
         onChange={(v) => onChange(v / 100)}
         onSoltar={onSoltar}
       />
+    </div>
+  )
+}
+
+/**
+ * Trocar a senha (v0.38) — ou CRIAR uma, para quem só entrava pelo Google:
+ * com ela, a conta passa a entrar também por e-mail ou nick. Vale a pena
+ * oferecer: sem senha, quem perde o acesso ao Google perde a conta junto.
+ * Não pede a senha atual porque o Auth não pede (a sessão já é a prova); se
+ * o projeto exigir login recente, o erro diz para sair e entrar de novo.
+ */
+function TrocarSenha() {
+  const [temSenha, setTemSenha] = useState<boolean | null>(null)
+  const [aberto, setAberto] = useState(false)
+  const [nova, setNova] = useState('')
+  const [repetida, setRepetida] = useState('')
+  const [ocupado, setOcupado] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [feito, setFeito] = useState(false)
+
+  useEffect(() => {
+    let vivo = true
+    void contaTemSenha().then((t) => vivo && setTemSenha(t))
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  const criar = temSenha === false
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault()
+    setErro(null)
+    if (nova.length < 6) return setErro('A senha precisa de pelo menos 6 letras.')
+    if (nova !== repetida) return setErro('As duas senhas não são iguais.')
+    setOcupado(true)
+    try {
+      await definirNovaSenha(nova)
+      setFeito(true)
+      setAberto(false)
+      setNova('')
+      setRepetida('')
+      setTemSenha(true)
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : 'Não deu certo.')
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  return (
+    <div className={styles.cartao}>
+      <div className={styles.senhaCabeca}>
+        <span className={styles.volumeIcone} aria-hidden>
+          <KeyRound size={18} />
+        </span>
+        <span className={styles.senhaTexto}>
+          <b>{criar ? 'Criar senha' : 'Senha'}</b>
+          <span className={styles.dica}>
+            {feito
+              ? 'Pronto: a senha nova já vale.'
+              : criar
+                ? 'Você entra pelo Google. Com uma senha, entra também pelo e-mail ou pelo nick.'
+                : 'Para entrar pelo e-mail ou pelo nick.'}
+          </span>
+        </span>
+        {aberto ? null : (
+          <button type="button" className={buttons.button} onClick={() => (setAberto(true), setFeito(false))}>
+            {criar ? 'Criar' : 'Trocar'}
+          </button>
+        )}
+      </div>
+      {aberto ? (
+        <form className={styles.senhaForma} onSubmit={salvar}>
+          <input
+            className={styles.campo}
+            type="password"
+            value={nova}
+            onChange={(e) => setNova(e.target.value)}
+            placeholder="senha nova"
+            autoComplete="new-password"
+            aria-label="Senha nova"
+            disabled={ocupado}
+            autoFocus
+          />
+          <input
+            className={styles.campo}
+            type="password"
+            value={repetida}
+            onChange={(e) => setRepetida(e.target.value)}
+            placeholder="repita a senha nova"
+            autoComplete="new-password"
+            aria-label="Repita a senha nova"
+            disabled={ocupado}
+          />
+          {erro ? <p className={`${styles.dica} ${styles.aviso}`}>{erro}</p> : null}
+          <div className={styles.senhaAcoes}>
+            <button type="button" className={`${buttons.button} ${buttons.ghost}`} onClick={() => (setAberto(false), setErro(null))} disabled={ocupado}>
+              Cancelar
+            </button>
+            <button type="submit" className={`${buttons.button} ${buttons.primary}`} disabled={ocupado}>
+              {ocupado ? 'Salvando…' : 'Salvar senha'}
+            </button>
+          </div>
+        </form>
+      ) : null}
     </div>
   )
 }

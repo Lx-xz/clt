@@ -99,21 +99,12 @@ export default function Entrada() {
       entrar(email, senha)
         .then(recarregar)
         .catch((falha: unknown) => {
-          const motivo = falha instanceof Error ? falha.message : 'Não deu certo.'
-          // O Supabase responde a mesma coisa para "não existe conta" e para
-          // "senha errada" — de propósito, para ninguém descobrir quem tem
-          // conta aqui testando e-mails. Então não dá para saber qual dos
-          // dois foi: o que dá é abrir o cadastro já preenchido e dizer as
-          // duas possibilidades, deixando a volta a um clique.
-          if (motivo.includes('não conferem')) {
-            setAba('criar')
-            setRecado(
-              'Não encontramos uma conta com esse e-mail e essa senha. Se você é novo por aqui, ' +
-                'termine o cadastro abaixo; se só errou a senha, volte em "Entrar".',
-            )
-          } else {
-            setErro(motivo)
-          }
+          // errou, fica em "Entrar": era o caso comum (a senha), e mandar
+          // para o cadastro cada errinho de digitação levava gente que já
+          // tinha conta a tentar criar outra. O Supabase não diz se a conta
+          // não existe ou se a senha está errada — de propósito —, então o
+          // recado diz as duas, e a criação fica a um toque
+          setErro(falha instanceof Error ? falha.message : 'Não deu certo.')
         })
         .finally(() => setOcupado(false))
       return
@@ -326,15 +317,18 @@ export default function Entrada() {
                 />
               </>
             ) : null}
+            {/* para entrar vale o e-mail OU o nick (`entrar` em conta.ts);
+                para criar a conta, só o e-mail */}
             <input
               className={styles.campo}
-              type="email"
+              type={aba === 'criar' ? 'email' : 'text'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e-mail"
-              autoComplete="email"
+              placeholder={aba === 'criar' ? 'e-mail' : 'e-mail ou nick'}
+              autoComplete={aba === 'criar' ? 'email' : 'username'}
               autoCapitalize="none"
-              aria-label="E-mail"
+              spellCheck={false}
+              aria-label={aba === 'criar' ? 'E-mail' : 'E-mail ou nick'}
               disabled={ocupado}
             />
             <input
@@ -390,6 +384,8 @@ export default function Entrada() {
                 disabled={ocupado || !email}
                 onClick={() =>
                   void tentar(async () => {
+                    // o link vai por e-mail: com o nick no campo não há para onde mandar
+                    if (!email.includes('@')) throw new Error('Para receber o link de nova senha, escreva o e-mail.')
                     await recuperarSenha(email)
                     setRecado('Se existe conta com esse e-mail, o link de nova senha já foi.')
                   })

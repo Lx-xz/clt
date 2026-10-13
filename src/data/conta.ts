@@ -128,9 +128,28 @@ export async function cadastrar(d: DadosCadastro): Promise<{ precisaConfirmar: b
   return { precisaConfirmar: !data.session }
 }
 
-export async function entrar(email: string, senha: string) {
+/**
+ * Entra com e-mail OU nick (v0.38). Sem arroba é nick: o Auth só entende
+ * e-mail, então o banco devolve o e-mail daquele nick — mas só depois de
+ * conferir a senha (`email_para_entrar`), para o e-mail de ninguém vazar a
+ * quem só sabe o nick. Nick inexistente e senha errada dão o mesmo recado.
+ */
+export async function entrar(identificador: string, senha: string) {
   const sb = exigirBanco()
-  const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: senha })
+  let email = identificador.trim()
+  if (!email.includes('@')) {
+    const { data, error } = await sb.rpc('email_para_entrar', { p_nick: email, p_senha: senha })
+    if (error) {
+      // banco sem a função (o schema.sql da v0.38 ainda não rodou)
+      if (error.code === 'PGRST202' || error.message.includes('email_para_entrar')) {
+        throw new Error('Entrar pelo nick ainda não está ligado. Use o e-mail.')
+      }
+      throw new Error(error.message)
+    }
+    if (typeof data !== 'string' || !data) throw new Error('Nick ou senha não conferem. Ainda não tem conta? É em “Criar conta”.')
+    email = data
+  }
+  const { error } = await sb.auth.signInWithPassword({ email, password: senha })
   if (error) throw new Error(traduzir(error.message))
 }
 
@@ -161,6 +180,20 @@ export async function temSessao(): Promise<boolean> {
   if (!supabase) return false
   const { data } = await supabase.auth.getSession()
   return Boolean(data.session)
+}
+
+/**
+ * Se a conta já tem senha: quem entrou só pelo Google não tem, e para ela
+ * o botão é "Criar senha". Quem diz é a lista de provedores do Auth — e o
+ * `email` entra nela no cadastro com senha. Quem criou a senha depois, pelo
+ * Google, pode continuar aparecendo só com o Google ali: por isso o botão
+ * diz "criar" só como palpite, e a ação é a mesma.
+ */
+export async function contaTemSenha(): Promise<boolean> {
+  if (!supabase) return false
+  const { data } = await supabase.auth.getUser()
+  const provedores = (data.user?.app_metadata?.providers as string[] | undefined) ?? []
+  return provedores.includes('email')
 }
 
 export async function definirNovaSenha(senha: string) {
@@ -265,12 +298,16 @@ function enderecoDeVolta(rota = 'auth'): string {
 /** As mensagens do Auth chegam em inglês; as comuns viram português aqui. */
 function traduzir(mensagem: string): string {
   const m = mensagem.toLowerCase()
-  if (m.includes('invalid login credentials')) return 'E-mail ou senha não conferem.'
+  if (m.includes('invalid login credentials')) return 'E-mail ou senha não conferem. Ainda não tem conta? É em “Criar conta”.'
   if (m.includes('email not confirmed')) return 'Confirme o e-mail antes de entrar.'
   if (m.includes('user already registered')) return 'Já existe uma conta com este e-mail.'
   if (m.includes('password should be at least')) return 'A senha precisa de pelo menos 6 letras.'
   if (m.includes('unable to validate email')) return 'Esse e-mail não parece válido.'
   if (m.includes('for security purposes')) return 'Espere alguns segundos antes de tentar de novo.'
+  if (m.includes('should be different from the old')) return 'A senha nova é igual à de agora.'
+  if (m.includes('reauthentication') || m.includes('reauthenticate')) {
+    return 'Por segurança, saia e entre de novo antes de trocar a senha.'
+  }
   if (m.includes('provider is not enabled')) {
     return 'O login pelo Google ainda não está ligado neste projeto do Supabase.'
   }
