@@ -18,9 +18,7 @@ import {
 import { EditorDeEfeitos, EditorDeEscolhas, EscapeJson } from '../_catalogo/EditorDeAcoes'
 import {
   CopiarParaOCodigo,
-  DesfeitasPeloCodigo,
   VersoesDaCarta,
-  editadaNoLab,
 } from '../_catalogo/Versoes'
 import {
   eventoParaBanco,
@@ -96,17 +94,16 @@ function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; 
   const banco = new Map(eventos.map((e) => [e.id, e]))
   const pendencias = EVENTOS_BASE.flatMap((e) => {
     const antes = banco.get(e.id)
-    if (antes?.ativa === false) return []
-    if (antes && mesmoEvento(antes, e)) return []
+    // como nas cartas: evento que o banco já tem não vem do código, nem
+    // diferente — o balanceamento mora no banco. Só o evento NOVO
+    if (antes) return []
     return [{
       evento: e,
-      doLab: Boolean(antes) && editadaNoLab(e.id, 'evento'),
       oQue: antes ? 'Ajuste vindo do código' : 'Evento novo',
       porque: MOTIVOS_DOS_EVENTOS[e.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Evento novo do baralho de referência do código.'),
     }]
   })
-  // o evento balanceado aqui começa DESMARCADO, como a carta
-  const [fora, setFora] = useState<string[]>(() => pendencias.filter((p) => p.doLab).map((p) => p.evento.id))
+  const [fora, setFora] = useState<string[]>([])
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   if (pendencias.length === 0) return null
@@ -131,9 +128,10 @@ function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; 
   const marcados = pendencias.length - fora.length
   return (
     <section className={styles.trazer}>
-      <h2 className={styles.subtitulo}>O código tem eventos que o banco não tem ({pendencias.length})</h2>
+      <h2 className={styles.subtitulo}>Eventos novos no código ({pendencias.length})</h2>
       <p className={styles.dicaSecao}>
-        Os marcados “balanceado no lab” já vêm desmarcados: trazer a versão do código desfaria a sua.
+        Eventos que o <code>events.ts</code> tem e o banco ainda não. Os que já existem aqui não aparecem: a versão
+        do banco é a que vale.
       </p>
       <ul className={styles.listaTrazer}>
         {pendencias.map((p) => (
@@ -143,7 +141,6 @@ function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; 
               onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.evento.id) : [...f, p.evento.id]))}
             >
               <b>{p.evento.name}</b> · {p.oQue}
-              {p.doLab ? <span className={styles.seloLab}>balanceado no lab</span> : null}
             </Check>
           </li>
         ))}
@@ -247,20 +244,6 @@ export default function LabEventosPage() {
         </p>
       ) : null}
 
-      {doBanco ? (
-        <DesfeitasPeloCodigo
-          familia="eventos"
-          carregar={versoesDosEventos}
-          atuais={eventos.filter((e) => e.ativa !== false)}
-          igual={mesmoEvento}
-          resumo={resumoDaMudanca}
-          salvar={salvarEvento}
-          aoTerminar={(r) => {
-            recarregar()
-            setRecado(r)
-          }}
-        />
-      ) : null}
 
       {doBanco ? (
         <CopiarParaOCodigo atuais={eventos.filter((e) => e.ativa !== false)} familia="evento" paraTexto={eventoParaBanco} />

@@ -4,6 +4,8 @@
 // Quanto a carta sobe ao passar o mouse — e continua subida durante o arraste.
 $levantada: 18px
 .palco
+  // `display` explícito: a carta jogável é um <label>, que nasce inline
+  display: block
   position: relative
   flex: none
   width: var(--carta-w, 132px)

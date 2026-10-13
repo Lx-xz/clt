@@ -28,6 +28,7 @@ import {
 import type { Collection, GameState } from '@/game/types'
 import styles from './maquina.module.sass'
 import { tocar } from '@/data/efeitos'
+import BotaoQueTreme from '@/components/BotaoQueTreme'
 
 /** Quanto dura a queda da vaga até a boca (bate com `.caindo` no sass). */
 const QUEDA_MS = 1300
@@ -218,9 +219,9 @@ export default function MaquinaPage() {
               </div>
             ) : null}
             <span className={styles.fenda} aria-hidden />
-            <button type="button" className={styles.comprar} disabled={!escolhida || !!caindo} onClick={comprarEscolhida}>
+            <BotaoQueTreme className={styles.comprar} disabled={!escolhida || !!caindo} onClick={comprarEscolhida}>
               Comprar
-            </button>
+            </BotaoQueTreme>
           </div>
         </div>
 

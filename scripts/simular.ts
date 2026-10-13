@@ -30,14 +30,21 @@
  *   npm run simular -- --tudo          baralho inicial + 1 cópia de cada
  *                                      desbloqueável: é como as cartas novas
  *                                      entram na medição
+ *   npm run simular -- --de jogo.json  o jogo COMO ESTÁ NO AR: as cartas,
+ *                                      os eventos e as regras do banco, e o
+ *                                      baralho equipado de quem exportou
+ *                                      (Lab › Simulador). Com `--inicial`,
+ *                                      o baralho inicial em vez do equipado
  */
 
-import { cartasDoJogo, catalogoVeioDoBanco } from '../src/game/catalogo'
+import { readFileSync } from 'node:fs'
+import { carregarCatalogo, cartasDoJogo, catalogoVeioDoBanco, eventosDoJogo, getEvent } from '../src/game/catalogo'
+import { idAtual } from '../src/game/ids'
 import { custosDe } from '../src/game/custos'
 import * as engine from '../src/game/engine'
 import { baralhoAtivo, cartasDoBaralho, colecaoInicial } from '../src/game/colecao'
-import { regras, totalDeDias } from '../src/game/regras'
-import type { GameState } from '../src/game/types'
+import { carregarModos, regras, totalDeDias, type Regras } from '../src/game/regras'
+import type { ActionCard, CardId, EventCard, GameState } from '../src/game/types'
 
 // o LCG entra antes de tudo: `engine.ts` guarda referências a `Math.random`
 // dentro de funções, mas quem chama é sempre `Math.random` na hora — ainda
@@ -56,10 +63,36 @@ const QUANTAS = arg('runs', 500)
 const SEMENTE = arg('semente', 1)
 const SO_HASH = args.includes('--hash')
 const TUDO = args.includes('--tudo')
-
+const INICIAL = args.includes('--inicial')
+const ARQUIVO = (() => {
+  const i = args.indexOf('--de')
+  return i >= 0 ? args[i + 1] : null
+})()
 
 if (catalogoVeioDoBanco()) {
   throw new Error('O catálogo veio do banco: a medição não seria reproduzível.')
+}
+
+/** O que o Lab › Simulador exporta. */
+interface Exportado {
+  geradoEm: string
+  versao: number
+  modo: Regras
+  baralho: { nome: string; cartas: CardId[] }
+  cartas: ActionCard[]
+  eventos: EventCard[]
+}
+
+// o jogo do arquivo entra no lugar da semente: o motor lê o catálogo e as
+// regras pelas mesmas portas que o navegador usa
+let BARALHO_DO_ARQUIVO: CardId[] | null = null
+let DE_ONDE = 'o código (cards.ts / events.ts)'
+if (ARQUIVO) {
+  const dados = JSON.parse(readFileSync(ARQUIVO, 'utf8')) as Exportado
+  carregarCatalogo({ cartas: dados.cartas, eventos: dados.eventos, versao: dados.versao, mudancas: [], removidas: [] })
+  carregarModos([dados.modo])
+  if (!INICIAL) BARALHO_DO_ARQUIVO = dados.baralho.cartas.map((id) => idAtual(id))
+  DE_ONDE = `${ARQUIVO} (exportado em ${dados.geradoEm.slice(0, 10)}${BARALHO_DO_ARQUIVO ? `, baralho "${dados.baralho.nome}"` : ''})`
 }
 
 // ---------------------------------------------------------------------- bot
@@ -125,6 +158,9 @@ interface Relatorio {
   diasJogados: number
   estresseFinal: number
   cartas: string[]
+  eventos: string[]
+  /** O evento do último dia, quando a run acabou mal. */
+  eventoFatal: string | null
   recorrentes: number
   escolhas: number
   descartesReagidos: number
@@ -132,7 +168,7 @@ interface Relatorio {
 
 function jogarUmaRun(semente: number): Relatorio {
   Math.random = lcg(semente)
-  const inicial = cartasDoBaralho(baralhoAtivo(colecaoInicial()))
+  const inicial = BARALHO_DO_ARQUIVO ?? cartasDoBaralho(baralhoAtivo(colecaoInicial()))
   const extras = TUDO ? cartasDoJogo().filter((c) => !c.starter).map((c) => c.id) : []
   let state = engine.createRun([...inicial, ...extras])
   let escolhas = 0
@@ -183,6 +219,8 @@ function jogarUmaRun(semente: number): Relatorio {
     diasJogados: state.history.length,
     estresseFinal: state.stress,
     cartas: state.history.flatMap((d) => d.cardsPlayed),
+    eventos: state.history.map((d) => d.eventId).filter((e): e is string => Boolean(e)),
+    eventoFatal: state.outcome !== 'vitoria' ? state.history[state.history.length - 1]?.eventId ?? null : null,
     recorrentes: state.recorrentes?.length ?? 0,
     escolhas,
     descartesReagidos: 0,
@@ -216,6 +254,7 @@ function mediana(ns: number[]): number {
 
 const m = regras()
 console.log(`\nCLT — ${QUANTAS} runs, semente ${SEMENTE}, modo "${m.nome}"`)
+console.log(`Jogo: ${DE_ONDE}`)
 console.log(`Aluguel ${m.contasSemanais} · energia base ${m.energiaBase} · ${totalDeDias(m)} dias · mão de ${m.cartasNaMao}\n`)
 
 console.log('DESFECHOS')
@@ -241,10 +280,37 @@ console.log(`  dias por run: ${(diasTotais / QUANTAS).toFixed(1)}`)
 
 const usos = new Map<string, number>()
 for (const r of relatorios) for (const id of r.cartas) usos.set(id, (usos.get(id) ?? 0) + 1)
-console.log(`\nCARTAS (vezes jogadas por run)`)
+const vitoriaGeral = relatorios.filter((r) => r.outcome === 'vitoria').length / QUANTAS
+/** A vitória nas runs em que a carta foi jogada, contra a geral: a carta que
+ *  puxa muito para cima é a candidata a ficar mais cara. É correlação, não
+ *  causa — carta boa aparece em run boa também porque a run durou mais. */
+function vitoriaCom(eh: (r: Relatorio) => boolean): string {
+  const com = relatorios.filter(eh)
+  if (com.length === 0) return '   —'
+  const v = com.filter((r) => r.outcome === 'vitoria').length / com.length
+  const d = (v - vitoriaGeral) * 100
+  return `${(v * 100).toFixed(0).padStart(3)}% (${d >= 0 ? '+' : ''}${d.toFixed(0)})`
+}
+console.log(`\nCARTAS (vezes jogadas por run · vitória nas runs em que foi jogada)`)
 for (const [id, n] of [...usos].sort((a, b) => b[1] - a[1])) {
   // pelo NOME: o id virou uuid (v0.35), e uuid não diz qual carta é
-  console.log(`  ${(cartasDoJogo().find((c) => c.id === id)?.name ?? id).padEnd(26)} ${(n / QUANTAS).toFixed(2)}`)
+  const nome = cartasDoJogo().find((c) => c.id === id)?.name ?? id
+  console.log(`  ${nome.padEnd(30)} ${(n / QUANTAS).toFixed(2).padStart(5)}  ${vitoriaCom((r) => r.cartas.includes(id))}`)
+}
+
+// o evento é sorteado entre todos, então quem decide se ele pesa é o
+// estrago: quantas runs ACABARAM no dia em que ele saiu
+const vezes = new Map<string, number>()
+const fatais = new Map<string, number>()
+for (const r of relatorios) {
+  for (const id of r.eventos) vezes.set(id, (vezes.get(id) ?? 0) + 1)
+  if (r.eventoFatal) fatais.set(r.eventoFatal, (fatais.get(r.eventoFatal) ?? 0) + 1)
+}
+console.log(`\nEVENTOS (saídas · runs que acabaram mal no dia dele)`)
+for (const e of [...eventosDoJogo()].sort((a, b) => (fatais.get(b.id) ?? 0) / (vezes.get(b.id) ?? 1) - (fatais.get(a.id) ?? 0) / (vezes.get(a.id) ?? 1))) {
+  const n = vezes.get(e.id) ?? 0
+  const f = fatais.get(e.id) ?? 0
+  console.log(`  ${getEvent(e.id).name.padEnd(30)} ${String(n).padStart(5)}  ${n ? ((f / n) * 100).toFixed(1).padStart(5) : '    —'}%`)
 }
 
 // o vocabulário novo tem que EXECUTAR, e não só compilar: zero aqui quer

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, BookOpen, Check, CloudOff, DoorOpen, House, Loader, ScrollText } from 'lucide-react'
 import Avatar, { humorDoEstresse } from '@/components/Avatar'
 import Card from '@/components/Card'
+import BotaoQueTreme from '@/components/BotaoQueTreme'
 import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import Dialogo from '@/components/Dialogo'
@@ -631,22 +632,22 @@ export default function JogarPage() {
 
         <div className={styles.acoes}>
           {state.fridayStep === 'salario' ? (
-            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => {
+            <BotaoQueTreme className={`${buttons.button} ${buttons.primary}`} onClick={() => {
               tocar('salario')
               update(paySalary(state))
             }}>
               Bater o ponto
-            </button>
+            </BotaoQueTreme>
           ) : null}
           {state.fridayStep === 'contas' ? (
-            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => {
+            <BotaoQueTreme className={`${buttons.button} ${buttons.primary}`} onClick={() => {
               const depois = payBills(state)
               // sem dinheiro para as contas é o despejo: o cartão recusado
               tocar(depois.outcome === 'despejo' ? 'semDinheiro' : 'contas')
               update(depois)
             }}>
               Pagar as contas
-            </button>
+            </BotaoQueTreme>
           ) : null}
           {state.fridayStep === 'descanso' ? (
             <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(restWeekend(state))}>

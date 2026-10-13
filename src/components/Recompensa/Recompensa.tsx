@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useId, useRef, useState } from 'r
 import type { FormaDaRecompensa } from '@/game/missoes'
 
 /**
- * As recompensas do jogo, CHAPADAS no jeito dos baús do Duolingo: envelope,
+ * As recompensas do jogo, CHAPADAS: envelope,
  * pacote, maleta e cofre — cor lisa, dois ou três tons por peça, nada de
  * gradiente de luz. Nasceram numa bancada do lab (v0.23); as versões de antes
  * (o envelope de CSS, a escada em 3D) estão no /lab/museu.

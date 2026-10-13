@@ -1,6 +1,7 @@
 'use client'
 
 import { Check, X } from 'lucide-react'
+import BotaoQueTreme from '../BotaoQueTreme'
 import styles from './Interruptor.module.sass'
 
 /**
@@ -30,8 +31,8 @@ export default function Interruptor({
   desabilitado?: boolean
 }) {
   return (
-    <button
-      type="button"
+    // no iPhone com a vibração ligada, alternar treme (`BotaoQueTreme`)
+    <BotaoQueTreme
       role="switch"
       aria-checked={ligado}
       disabled={desabilitado}
@@ -50,6 +51,6 @@ export default function Interruptor({
           {ligado ? <Check size={15} strokeWidth={3} /> : <X size={14} strokeWidth={3} />}
         </span>
       </span>
-    </button>
+    </BotaoQueTreme>
   )
 }

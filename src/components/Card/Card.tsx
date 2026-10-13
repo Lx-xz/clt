@@ -7,6 +7,7 @@ import type { ActionCard, Custo, EventCard } from '@/game/types'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import { ArrowDown, ArrowUp } from 'lucide-react'
+import { apontarParaTremer } from '@/data/vibrar'
 import styles from './Card.module.sass'
 
 /** Distância em px que separa um clique de um arraste. */
@@ -67,6 +68,7 @@ export default function Card({
   className,
 }: CardProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const palco = useRef<HTMLLabelElement & HTMLDivElement>(null)
   const arraste = useRef<{ x: number; y: number; moveu: boolean } | null>(null)
   const cliqueSimples = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ignorarClique = useRef(false)
@@ -108,6 +110,10 @@ export default function Card({
   }
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // no iPhone, o segundo toque do toque duplo (o primeiro deixou o
+    // `cliqueSimples` esperando) aponta o rótulo da carta para o interruptor
+    // que treme; qualquer outro toque desaponta (`vibrar.ts`)
+    apontarParaTremer(palco.current, !!onPlay && !disabled && !locked && !faceDown && !!cliqueSimples.current)
     if (!onPlay || disabled || locked || faceDown || e.button !== 0) return
     ignorarClique.current = false
     arraste.current = { x: e.clientX, y: e.clientY, moveu: false }
@@ -193,8 +199,12 @@ export default function Card({
           : 'não custa nada'
       }. Clique para ver o detalhe, clique duplo para jogar.`
 
+  const Palco = onPlay ? 'label' : 'div'
+
   return (
-    <div className={`${styles.palco} ${className ?? ''}`} style={style}>
+    // a carta jogável mora num RÓTULO: é ele que, no iPhone, alterna o
+    // interruptor que treme no toque duplo. Sem `for` ele não faz nada
+    <Palco ref={palco} className={`${styles.palco} ${className ?? ''}`} style={style}>
       <div
         ref={ref}
         // só a carta que ARRASTA se marca: é a marca que a barra lateral lê
@@ -279,7 +289,7 @@ export default function Card({
           </div>
         </div>
       </div>
-    </div>
+    </Palco>
   )
 }
 

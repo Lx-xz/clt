@@ -7,7 +7,7 @@ import styles from './AvatarHero.module.sass'
 
 /**
  * O avatar em destaque: uma faixa na cor do fundo escolhido, com a figura
- * grande saindo pela borda de baixo — como o perfil do Duolingo. O retrato de
+ * grande saindo pela borda de baixo. O retrato de
  * 112 px numa moldura era um selo ao lado do nick; aqui o avatar é a página.
  *
  * O tamanho é do CSS (a altura da faixa), não da prop: a figura ocupa a

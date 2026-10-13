@@ -15,7 +15,7 @@ import { supabase } from './supabase'
  * cadastro já tinha parado de perguntar gênero na v0.8, por ser dado pessoal,
  * e o editor continuava perguntando. Hoje o primeiro campo é o FORMATO do
  * rosto, e o que lê como masculino ou feminino vem do cabelo e da barba,
- * escolhidos livremente — como no Duolingo.
+ * escolhidos livremente.
  *
  * **Acrescentar uma peça não exige banco:** `salvar_avatar()` não valida o
  * conteúdo, e `lerAvatar()` valida na leitura — é ela que traduz a receita

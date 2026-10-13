@@ -80,7 +80,7 @@ export default function RankingPage() {
       ) : null}
 
       {estado.tipo === 'pronto' && estado.linhas.length > 0 ? (
-        // uma lista de linhas, como o placar do Duolingo: medalha, rosto,
+        // uma lista de linhas: medalha, rosto,
         // nick e o placar à direita. A linha inteira leva ao perfil — o
         // "abrir para ver mais" que existia antes mostrava partidas, melhor
         // saldo e data, e isso agora mora no perfil de cada um

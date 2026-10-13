@@ -80,13 +80,7 @@
   font-size: 15px
   font-weight: 600
 
-  svg:first-of-type
-    color: var(--energia)
-
-  svg:last-of-type
-    color: var(--estresse)
-
-  span
+  span:not(.conta)
     flex: 100%
     color: var(--tinta-fraca)
     font-family: var(--fonte)
@@ -120,25 +114,32 @@
 
   li
     display: flex
-    align-items: center
-    flex-wrap: wrap
-    gap: 6px
+    align-items: flex-start
+    gap: 10px
 
   b
     color: var(--tinta)
 
-// o mesmo carimbo de custo que a carta usa, em miniatura
-.marcaCusto
-  display: grid
-  place-items: center
-  width: 20px
-  height: 20px
-  background: var(--estresse)
-  border-radius: 3px
-  color: #fff
+// os cantos da carta em miniatura, ao lado de cada linha da legenda
+.carimbo
+  display: inline-flex
+  flex: none
+  align-items: center
+  justify-content: center
+  gap: 2px
+  min-width: 26px
+  height: 22px
+  padding: 0 5px
+  background: var(--papel-baixo)
+  border-radius: 4px
+  color: var(--tinta)
   font-family: var(--mono)
   font-size: 12px
   font-weight: 700
+
+.carimboEnergia
+  background: var(--energia)
+  color: #fff
 
 // ------------------------------------------------------------- passo a passo
 .passos
@@ -216,6 +217,127 @@
   .classes
     grid-template-columns: 1fr
 
+  // as três cartas numa fileira só, mesmo na tela estreita
+  .cartas
+    flex-wrap: nowrap
+    gap: 8px
+
   .exemplo
-    --carta-w: 104px
-    --carta-h: 158px
+    --carta-w: 94px
+    --carta-h: 142px
+
+// ------------------------------------------------------------------ páginas
+// o índice: um traço por página, o de agora mais longo, os lidos cheios
+.indice
+  display: flex
+  gap: 6px
+
+.marcador
+  flex: 1
+  height: 5px
+  padding: 0
+  background: var(--papel-baixo)
+  border: 0
+  border-radius: 999px
+  cursor: pointer
+  transition: background .2s ease
+
+  // o alvo do toque é maior que o traço
+  position: relative
+
+  &::before
+    content: ''
+    position: absolute
+    inset: -10px 0
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 3px
+
+.marcadorLido
+  background: color-mix(in srgb, var(--tinta) 45%, var(--papel-baixo))
+
+.marcadorAtual
+  background: var(--tinta)
+
+// altura mínima: trocar de página não faz a janela pular de tamanho
+.pagina
+  display: flex
+  flex-direction: column
+  gap: 14px
+  // o popup centraliza o texto no celular; aqui é leitura, à esquerda
+  text-align: left
+  min-height: 380px
+  animation: entraPagina .22s ease
+
+.tituloDaPagina
+  margin: 0
+  font-size: 22px
+  line-height: 1.2
+
+@keyframes entraPagina
+  from
+    opacity: 0
+    transform: translateX(10px)
+
+.conta
+  display: inline-flex
+  flex-wrap: wrap
+  align-items: center
+  gap: 6px
+
+.nota
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+
+  b
+    color: var(--tinta)
+
+  // o ícone no meio do texto, na linha dele
+  svg
+    vertical-align: -2px
+
+.recompensas
+  display: flex
+  flex-direction: column
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+  li
+    display: flex
+    align-items: center
+    gap: 12px
+    padding: 6px 10px
+    background: var(--papel)
+    border-radius: var(--raio)
+    font-size: 14px
+
+  small
+    display: block
+    color: var(--tinta-fraca)
+    font-size: 12px
+    line-height: 1.4
+
+.rodape
+  display: flex
+  flex: 1
+  align-items: center
+  justify-content: space-between
+  gap: 10px
+
+.contador
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 13px
+
+@media (max-width: 520px)
+  .pagina
+    min-height: 0
+
+@media (prefers-reduced-motion: reduce)
+  .pagina
+    animation: none

@@ -8,6 +8,7 @@ import Check from '@/components/Check'
 import ComoJogar from '@/components/ComoJogar'
 import Segmentado from '@/components/Segmentado'
 import Dialogo from '@/components/Dialogo'
+import { GoogleIcon } from '@/components/icons'
 import Termos from '@/components/Termos'
 import { validarNick } from '@/data/nick'
 import {
@@ -370,6 +371,7 @@ export default function Entrada() {
               disabled={ocupado}
               onClick={() => void tentar(entrarComGoogle)}
             >
+              <GoogleIcon size={18} />
               Entrar com o Google
             </button>
             <button

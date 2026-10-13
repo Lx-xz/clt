@@ -67,7 +67,7 @@ import buttons from '@/styles/buttons.module.sass'
 import styles from './editar.module.sass'
 
 /**
- * O editor do avatar, em abas — como o do Duolingo.
+ * O editor do avatar, em abas.
  *
  * No computador a figura fica GRANDE à esquerda, parada, e as opções à
  * direita: mexer num botão sem ver o desenho é escolher no escuro, e a
@@ -83,7 +83,7 @@ import styles from './editar.module.sass'
 
 type Aba = 'rosto' | 'olhos' | 'cabelo' | 'barba' | 'roupa' | 'extras' | 'fundo'
 
-// as abas são ÍCONES, como no Duolingo: com sete nomes escritos a fileira
+// as abas são ÍCONES: com sete nomes escritos a fileira
 // não cabia e rolava de lado. O nome continua no `title` e no leitor de tela
 const ABAS: { id: Aba; rotulo: string; Icone: (p: { size?: number }) => ReactNode }[] = [
   { id: 'rosto', rotulo: 'Rosto', Icone: RostoIcon },

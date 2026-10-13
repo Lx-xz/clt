@@ -20,6 +20,7 @@ import { useSessaoSeHouver } from '../SessaoGuard'
 import { DesenhoDaRecompensa, DURACAO, useAndamento } from '../Recompensa'
 import styles from './Envelope.module.sass'
 import { tocar } from '@/data/efeitos'
+import { apontarParaTremer } from '@/data/vibrar'
 
 /**
  * O selo do envelope ANTIGO (v0.16–v0.22), que hoje só aparece no museu do
@@ -354,6 +355,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
   const [guardando, setGuardando] = useState(false)
   const [escala, setEscala] = useState(1)
   const ocupado = useRef(false)
+  const areaToque = useRef<HTMLLabelElement>(null)
   // a abertura RÁPIDA (v0.31): segurar o objeto por `SEGURAR_MS` vai direto
   // para o resumo, com tudo de costas, e desvira um por um, depressa e sem
   // brilho — só a ficha do token salta. `viradas` é quantas já desviraram
@@ -543,10 +545,16 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
           <div className={styles.titulo}>{env.nome}</div>
           {/* o palco inteiro é o alvo do toque: abrir e passar carta é o
               mesmo gesto, onde quer que o dedo caia */}
-          <div
+          // um RÓTULO, e não uma div: no iPhone é ele que alterna o
+          // interruptor que treme no toque (`vibrar.ts`)
+          <label
+            ref={areaToque}
             className={styles.areaToque}
             onClick={avancar}
-            onPointerDown={comecarASegurar}
+            onPointerDown={() => {
+              apontarParaTremer(areaToque.current, fase === 'esperando' || fase === 'revelando')
+              comecarASegurar()
+            }}
             onPointerUp={soltar}
             onPointerLeave={soltar}
             onPointerCancel={soltar}
@@ -606,7 +614,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
                 </div>
               ) : null}
             </div>
-          </div>
+          </label>
           <div className={styles.fileira} aria-label="Cartas que já saíram" style={{ '--sobra': `${sobra}px` } as React.CSSProperties}>
             {guardadas.map((id, i) => (
               <span key={i} className={`${styles.naFileira} ${tokenDe(i) ? styles.emToken : ''}`}>

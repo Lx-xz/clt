@@ -383,7 +383,7 @@ function fimDoLado(m: Medidas): number {
 }
 
 /**
- * O cabelo curto inteiro numa peça só, como no Duolingo: a capa por cima da
+ * O cabelo curto inteiro numa peça só: a capa por cima da
  * cabeça, as LATERAIS descendo rente ao rosto até a orelha — afinando numa
  * ponta, e não cortadas retas —, e a linha do cabelo na testa, que é o que
  * mais muda de um corte para outro. Não há peça de trás: o que ficaria atrás
@@ -639,7 +639,7 @@ function contornoDeCima(m: Medidas): (u: number) => PontoDaBorda {
 /**
  * As pontas do espetado. As tentativas anteriores foram ondas (liam como
  * chama), pontas de alturas parecidas sobre uma elipse (coroa de rei) e tufos
- * tombando para fora (penacho). O espetado de desenho — o do Duolingo — é uma
+ * tombando para fora (penacho). O espetado de desenho é uma
  * fileira de pontas curtas e quase iguais em volta da CABEÇA, todas
  * penteadas para o mesmo lado, e a testa recortada em dentes. Quem lê
  * "espetado" é a repetição, não a altura.

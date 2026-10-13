@@ -19,9 +19,7 @@ import {
 import { EditorDeEfeitos, EscapeJson } from '../_catalogo/EditorDeAcoes'
 import {
   CopiarParaOCodigo,
-  DesfeitasPeloCodigo,
   VersoesDaCarta,
-  editadaNoLab,
 } from '../_catalogo/Versoes'
 import {
   cartaParaBanco,
@@ -346,8 +344,6 @@ interface Pendencia {
   carta: ActionCard
   oQue: string
   porque: string
-  /** A versão no ar foi feita à mão aqui: trazer a do código a desfaria. */
-  doLab: boolean
 }
 
 function mesmaCarta(a: ActionCard, b: ActionCard): boolean {
@@ -364,13 +360,16 @@ function pendenciasDoCodigo(doBanco: ActionCard[]): Pendencia[] {
   const lista: Pendencia[] = []
   for (const carta of CARTAS_BASE) {
     const antes = banco.get(carta.id)
-    if (antes?.ativa === false) continue
-    if (antes && mesmaCarta(antes, carta)) continue
+    // carta que o banco JÁ tem não vem mais do código, nem diferente: o
+    // balanceamento mora no banco (é o autor que o faz, aqui no lab), e é o
+    // código que anda atrás dele. A caixa oferecendo a versão do código por
+    // cima já desfez o balanceamento do autor uma vez (v0.33). Só a carta
+    // NOVA, que o banco ainda não tem, chega por aqui
+    if (antes) continue
     lista.push({
       carta,
       oQue: resumoDaMudanca(antes, carta),
       porque: MOTIVOS_DO_CODIGO[carta.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Carta nova do baralho de referência do código.'),
-      doLab: Boolean(antes) && editadaNoLab(carta.id, 'acao'),
     })
   }
   return lista
@@ -390,9 +389,7 @@ function pendenciasDoCodigo(doBanco: ActionCard[]): Pendencia[] {
  */
 function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTerminar: (recado: string) => void }) {
   const pendencias = pendenciasDoCodigo(cartas)
-  // a carta que foi balanceada aqui começa DESMARCADA: foi a caixa vir com
-  // tudo marcado que desfez o balanceamento do autor uma vez
-  const [fora, setFora] = useState<string[]>(() => pendencias.filter((p) => p.doLab).map((p) => p.carta.id))
+  const [fora, setFora] = useState<string[]>([])
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   if (pendencias.length === 0) return null
@@ -417,11 +414,10 @@ function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermin
   const marcadas = pendencias.length - fora.length
   return (
     <section className={styles.trazer}>
-      <h2 className={styles.subtitulo}>O código tem cartas que o banco não tem ({pendencias.length})</h2>
+      <h2 className={styles.subtitulo}>Cartas novas no código ({pendencias.length})</h2>
       <p className={styles.dicaSecao}>
-        Semear não sobrescreve nada, e rodar o <code>schema.sql</code> não mexe em carta: por isso
-        o que mudou em <code>cards.ts</code> não chega sozinho. As cartas marcadas “balanceada no
-        lab” já vêm desmarcadas: trazer a versão do código desfaria a sua.
+        Cartas que o <code>cards.ts</code> tem e o banco ainda não. As que já existem aqui não aparecem: a versão
+        do banco é a que vale.
       </p>
       <ul className={styles.listaTrazer}>
         {pendencias.map((p) => (
@@ -431,7 +427,6 @@ function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermin
               onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.carta.id) : [...f, p.carta.id]))}
             >
               <b>{p.carta.name}</b> · {p.oQue}
-              {p.doLab ? <span className={styles.seloLab}>balanceada no lab</span> : null}
             </Check>
           </li>
         ))}
@@ -563,20 +558,6 @@ export default function LabCartasPage() {
         />
       ) : null}
 
-      {doBanco ? (
-        <DesfeitasPeloCodigo
-          familia="cartas"
-          carregar={versoesDasCartas}
-          atuais={cartas.filter((c) => c.ativa !== false)}
-          igual={mesmaCarta}
-          resumo={resumoDaMudanca}
-          salvar={salvarCarta}
-          aoTerminar={(r) => {
-            recarregar()
-            setRecado(r)
-          }}
-        />
-      ) : null}
 
       {doBanco ? (
         <CopiarParaOCodigo atuais={cartas.filter((c) => c.ativa !== false)} familia="acao" paraTexto={cartaParaBanco} />

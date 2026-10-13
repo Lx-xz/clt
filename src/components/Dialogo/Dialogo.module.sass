@@ -170,6 +170,10 @@
   color: var(--tinta)
   font-size: 14px
 
+  // a barra de rolagem do celular passa POR CIMA do conteúdo: folga à direita
+  @media (hover: none) and (pointer: coarse)
+    padding-right: 10px
+
 .acoes
   display: flex
   flex-wrap: wrap

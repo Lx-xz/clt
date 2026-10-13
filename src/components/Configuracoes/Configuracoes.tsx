@@ -225,11 +225,14 @@ export default function Configuracoes({
             )}
           </dl>
 
-          <p className={`${styles.dica} ${sessao.convidado ? styles.aviso : ''}`}>
-            {sessao.convidado
-              ? 'Você está sem conta: ao sair, a partida em andamento e as cartas ganhas ficam para trás, e não há como recuperá-las.'
-              : 'Sua partida está salva no banco e volta quando você entrar de novo. Ao sair, só este navegador fica limpo.'}
-          </p>
+          {/* só o convidado tem o que perder ao sair; quem tem conta não
+              precisa ler sobre onde a partida fica guardada */}
+          {sessao.convidado ? (
+            <p className={`${styles.dica} ${styles.aviso}`}>
+              Você está sem conta: ao sair, a partida em andamento e as cartas ganhas ficam para trás, e não há como
+              recuperá-las.
+            </p>
+          ) : null}
         </section>
       ) : null}
     </Dialogo>

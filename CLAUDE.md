@@ -42,7 +42,7 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 | `/termos` | Termos de uso. Fora de `(app)`: dá para ler sem estar logado |
 | `/jogar` | A mesa. Ocupa a janela inteira, sem rolagem |
 | `/baralho` | Cartas equipadas, não equipadas e bloqueadas |
-| `/ranking` | Placar público, no jeito do Duolingo: medalha nas três primeiras, avatar redondo, nick e V/D à direita. A linha inteira leva ao perfil; não há mais "abrir para ver mais" |
+| `/ranking` | Placar público: medalha nas três primeiras, avatar redondo, nick e V/D à direita. A linha inteira leva ao perfil; não há mais "abrir para ver mais" |
 | `/perfil` | O seu. Desde a v0.34 o seu e o dos outros são o MESMO componente (`components/Perfil`): capa, nick, "desde", o placar (posição, vitórias, derrotas, melhor saldo) e as abas Resumo (última partida, selos das conquistas, amigos), Conquistas (era popup), Baralhos e Cartas. Nome, e-mail, pontos e Sair NÃO moram aqui: moram em Configurações |
 | `/perfil/editar` | O editor do avatar |
 | `/jogador?nick=` | O perfil de outra pessoa, o mesmo componente do seu, com o botão de amizade. Quem NÃO é amigo vê só o resumo; o AMIGO vê também os baralhos e as cartas, e pode copiar um baralho dele para o seu (por cima do equipado, ou num baralho novo; só entra o que a pessoa tem, `copiarBaralho`). Quem decide é o banco (`colecao_de_amigo` confere a amizade e só devolve carta: nada de saldo, recompensa fechada ou máquina). **Sem nome, e-mail ou pontos** |
@@ -466,7 +466,7 @@ rápido do que jogar o mês —, e fazia do recibo de uma derrota uma vitrine.
   (`confidencial`) e cofre (`epico`). É a `forma` em `ENVELOPES`, com o `artigo` para as
   frases ("toque NA maleta"); os ids e o nome `envelope` no código ficaram
   os de antes, porque moram na coleção de quem já os ganhou. O desenho é
-  `components/Recompensa`: SVG chapado, no jeito dos baús do Duolingo,
+  `components/Recompensa`: SVG chapado,
   montado em FACES planas projetadas por uma matriz oblíqua — a tampa abre
   girando de verdade em volta da dobradiça (`useAndamento`, um laço de
   quadros), e qual lado dela aparece é para onde a face aponta. Cada
@@ -772,6 +772,12 @@ opções. O que ele escolheu, e que deve ser preservado:
   no meio da partida é atravessar o jogo inteiro.
   Enquanto houver popup aberto o arraste do menu é ignorado — veja `Dialogo`
   abaixo.
+- **O tutorial é em PÁGINAS (v0.38)**: seis passos curtos (objetivo, a
+  carta, um dia, embalo, sexta, depois da partida) com Voltar/Próximo
+  embaixo, um traço por página em cima para pular, e as setas do teclado.
+  Era um popup comprido, e no celular a sexta e as derrotas ficavam lá
+  embaixo, onde ninguém chegava. A última página fala das recompensas, dos
+  tokens e da montagem do baralho, com os números das tabelas.
 - **O tutorial (`ComoJogar.tsx`) monta as cartas de verdade.** Ele renderiza o
   componente `Card` com cartas tiradas de `cards.ts`, e os números (energia
   base, contas, estresse máximo) saem das constantes — rebalancear o jogo não
@@ -1860,6 +1866,16 @@ mesma semente dá exatamente a mesma partida. É isso que permite comparar duas
 versões do motor jogada por jogada: foi assim que a mudança de vocabulário da
 v0.12 foi conferida (300 runs, **zero diferenças**).
 
+**`--de arquivo.json` mede o jogo COMO ESTÁ NO AR** (v0.38): o Lab ›
+Simulador copia ou baixa um arquivo com as cartas e os eventos do banco, as
+regras do modo e o baralho equipado de quem exportou, e o simulador o
+carrega pelas mesmas portas do navegador (`carregarCatalogo`,
+`carregarModos`). Sem isso ele mede o `cards.ts`, que anda atrás do
+balanceamento feito no lab. Com `--inicial`, o baralho inicial no lugar do
+equipado. O relatório mostra, por carta, a vitória nas runs em que ela foi
+jogada contra a geral (correlação, não causa), e por evento quantas runs
+acabaram mal no dia dele.
+
 Ele não existia antes: as medições eram feitas por um script escrito na conversa
 e jogado fora, e por isso envelheceram sem ninguém conseguir refazê-las.
 
@@ -1970,7 +1986,7 @@ e a um bot diferente — não compare os dois.
   sendo só "Feriado", e Reorganizar a Mesa pedindo uma carta só. Nada se
   perdeu — a versão substituída fica inteira em `cartas_antigas.dados` —,
   e o `/lab/cartas` e o `/lab/eventos` agora têm (`_catalogo/Versoes.tsx`):
-  a caixa "O código desfez o seu balanceamento", que acha essas versões e
+  a caixa "O código desfez o seu balanceamento" (saiu na v0.38, veja abaixo), que achava essas versões e
   as grava de novo com o motivo que o autor tinha escrito; "Versões
   anteriores" dentro da edição de cada carta ("Usar esta" carrega no
   editor); o selo "balanceada no lab" no "Trazer do código", que já vem
@@ -2055,6 +2071,12 @@ e a um bot diferente — não compare os dois.
   run (`run_id` não existe mais). A run que
   falhar não se perde — entra na fila (`clt:runs-pendentes:v1`, que lê o
   `run_id` de antes como `id`) e sobe na próxima abertura da mesa.
+- **Desde a v0.38 o "Trazer do código" só oferece carta e evento NOVOS.**
+  Os que o banco já tem não aparecem, nem diferentes: o balanceamento mora
+  no banco (o autor o faz no `/lab`), e o código anda atrás dele. A caixa
+  "O código desfez o seu balanceamento" saiu junto — sem a caixa oferecendo
+  a versão do código por cima, não há mais como o código desfazer nada. O
+  autor decidiu manter Automatizar, Terapia e Plantão como ficaram.
 - **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
   que não existe, e rodar o `schema.sql` não toca no que a carta faz (só
   troca o id antigo pelo uuid, uma vez). Com o banco já
@@ -2089,15 +2111,25 @@ e a um bot diferente — não compare os dois.
   `som.ts`, que não baixa fora da mesa). Faltam, da tabela combinada:
   comprar a mão, virar o evento, advertência, cota batida, burnout e
   vitória, o recibo saindo, o token e a máquina vendendo.
-  **A vibração vai junto (v0.38, `src/data/vibrar.ts`)**: `tocar()` chama
-  `vibrar()` antes de tudo, então todo efeito novo já treme (o ritmo é uma
-  linha de `RITMOS`). Ela tem interruptor próprio (`Volumes.vibrar`) e vale
-  com o mudo ligado. Só em aparelho de toque (`pointer: coarse`): o Chrome
-  do computador TEM `navigator.vibrate` e não faz nada. **O iPhone não tem
-  `navigator.vibrate`**: lá a batida é o háptico do `<input type="checkbox"
-  switch>` do iOS 18, alternado por `click()` num rótulo montado e
-  desmontado no `<head>` — uma batida só, sem ritmo, e só dentro de um
-  gesto (a carta desvirando, que sai de `setTimeout`, não treme lá).
+  **A vibração vai junto (v0.38, `src/data/vibrar.ts`)**: no Android,
+  `tocar()` chama `navigator.vibrate` com um ritmo por efeito (`RITMOS`), e
+  todo efeito novo já treme. Interruptor próprio (`Volumes.vibrar`), vale
+  com o mudo ligado, e só aparece em aparelho de toque (`pointer: coarse`:
+  o Chrome do computador TEM `navigator.vibrate` e não faz nada).
+  **No iPhone é outra coisa, medida no aparelho do autor:** o Safari não
+  tem `navigator.vibrate`, e o háptico do interruptor nativo (`<input
+  type="checkbox" switch>`, iOS 18+) NÃO dispara por `click()` de código
+  (no `<head>`, no `<body>`, no `pointerdown`, no `touchend` — nada). Ele só
+  treme quando o DEDO alterna o interruptor, mesmo invisível. Então lá a
+  vibração mora no ALVO do toque: `BotaoQueTreme` (um rótulo com o
+  interruptor transparente esticado por cima; a ação sai do `change`) nos
+  botões da sexta, no Comprar da máquina e no `Interruptor`; e a carta e o
+  palco da recompensa são `<label>` que só apontam (`for`) para um
+  interruptor fora da tela no toque que deve tremer (`apontarParaTremer`)
+  — o segundo do toque duplo, na carta. Interruptor por cima da carta não
+  serve: ela captura o ponteiro para o arraste, e o clique vai para ela. Um
+  `<button>` também não serve de casca: tocar num botão não ativa o rótulo
+  em volta. O que acontece sem toque (a carta desvirando) não treme lá.
 - **Cosméticos desbloqueáveis.** `conquistas.premio` já existe, nulo: é
   onde o acessório que a conquista destrava (crachá, caneca, óculos da
   firma) vai morar. Junto com os pontos de feedback, resolve a pendência "o

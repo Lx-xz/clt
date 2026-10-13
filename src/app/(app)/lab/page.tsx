@@ -1,12 +1,13 @@
 'use client'
 
-import { Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock, Vibrate } from 'lucide-react'
+import { ClipboardCopy, Download, Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
 import { useSessao } from '@/components/SessaoGuard'
-import { cartasDoJogo } from '@/game/catalogo'
-import { copiasMaximas } from '@/game/colecao'
+import { cartasDoJogo, todasAsCartas, todosOsEventos, versaoDoBaralho } from '@/game/catalogo'
+import { baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
+import { regras } from '@/game/regras'
 import { clearRun, defaultCollection, loadCollection, saveCollection } from '@/game/storage'
 import { sincronizar } from '@/data/sync'
 import buttons from '@/styles/buttons.module.sass'
@@ -36,12 +37,6 @@ const BANCADAS = [
     titulo: 'Recompensas',
     texto: 'Abrir envelope, pacote, maleta e cofre de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
     Icon: Mail,
-  },
-  {
-    href: '/lab/vibracao',
-    titulo: 'Vibração',
-    texto: 'Os jeitos de tremer o celular, um por botão, para descobrir no iPhone qual funciona.',
-    Icon: Vibrate,
   },
   // a proposta anterior (/lab/propostas) mora no museu, guardada de
   // recordação, a pedido do autor
@@ -88,12 +83,53 @@ export default function LabPage() {
     setRecado('Run e coleção zeradas. As partidas já terminadas continuam no histórico.')
   }
 
+  /**
+   * O jogo como ele está NO AR, num arquivo: as cartas e os eventos do
+   * banco, as regras do modo e o baralho equipado desta conta. É o que o
+   * `npm run simular -- --de arquivo.json` lê — sem isso, o simulador mede o
+   * `cards.ts`, que anda atrás do balanceamento feito aqui.
+   */
+  function dadosParaOSimulador(): string {
+    const colecao = loadCollection()
+    const ativo = baralhoAtivo(colecao)
+    return JSON.stringify(
+      {
+        geradoEm: new Date().toISOString(),
+        versao: versaoDoBaralho(),
+        modo: regras(),
+        baralho: { nome: ativo.nome, cartas: cartasDoBaralho(ativo) },
+        cartas: todasAsCartas(),
+        eventos: todosOsEventos(),
+      },
+      null,
+      1,
+    )
+  }
+
+  async function copiarParaOSimulador() {
+    try {
+      await navigator.clipboard.writeText(dadosParaOSimulador())
+      setRecado('Copiado: cartas, eventos, regras e o seu baralho equipado. Cole na conversa.')
+    } catch {
+      setRecado('O navegador não deixou copiar. Use o “Baixar arquivo”.')
+    }
+  }
+
+  function baixarParaOSimulador() {
+    const url = URL.createObjectURL(new Blob([dadosParaOSimulador()], { type: 'application/json' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `clt-simulador-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
   return (
     <main className="page">
       <h1 className={styles.titulo}>Lab</h1>
       <p className={styles.intro}>
-        A oficina. As bancadas não salvam nada no banco — elas devolvem código para colar no
-        repositório, que continua sendo a fonte da verdade do jogo.
+        A oficina. Cartas, eventos e regras se editam aqui, direto no banco: é ele que vale no jogo, e o
+        código anda atrás.
       </p>
 
       <div className={styles.bancadas}>
@@ -104,6 +140,22 @@ export default function LabPage() {
             <span>{texto}</span>
           </Link>
         ))}
+      </div>
+
+      <h2 className={styles.secao}>Simulador</h2>
+      <p className={styles.aviso}>
+        O jogo como está no ar — cartas, eventos, regras e o seu baralho equipado — num arquivo, para medir o
+        balanceamento com milhares de partidas fora do navegador.
+      </p>
+      <div className={styles.acoes}>
+        <button type="button" className={buttons.button} onClick={() => void copiarParaOSimulador()}>
+          <ClipboardCopy size={15} aria-hidden />
+          Copiar para o simulador
+        </button>
+        <button type="button" className={buttons.button} onClick={baixarParaOSimulador}>
+          <Download size={15} aria-hidden />
+          Baixar arquivo
+        </button>
       </div>
 
       <h2 className={styles.secao}>Atalhos de teste</h2>
@@ -152,7 +204,7 @@ export default function LabPage() {
         >
           <p className={styles.dialogoTexto}>
             {confirmando === 'desbloquear'
-              ? 'As 20 cartas entram na sua coleção, fora do baralho. Serve para testar carta nova sem jogar quatro semanas — e estraga qualquer leitura de dificuldade que venha da sua conta.'
+              ? 'Todas as cartas entram na sua coleção, no teto de cópias, fora do baralho. Serve para testar carta nova sem jogar quatro semanas — e estraga qualquer leitura de dificuldade que venha da sua conta.'
               : 'A run em andamento é descartada e a coleção volta às cartas iniciais. As partidas já terminadas continuam no histórico: elas são append-only de propósito, e apagá-las seria mentir sobre o balanceamento.'}
           </p>
         </Dialogo>

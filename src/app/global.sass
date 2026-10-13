@@ -43,6 +43,12 @@ button
   padding-left: 20px
   padding-right: 20px
 
+  // no celular a barra de rolagem é desenhada POR CIMA do conteúdo (no
+  // iPhone, sempre): a folga da direita é maior para ela não passar em cima
+  // das cartas e dos botões da borda
+  @media (hover: none) and (pointer: coarse)
+    padding-right: 30px
+
 .mono
   font-family: var(--mono)
   font-variant-numeric: tabular-nums
