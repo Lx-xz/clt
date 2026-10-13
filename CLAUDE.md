@@ -1426,9 +1426,9 @@ URL". O código normaliza, mas o valor certo é a URL do projeto pura.
 
 **Página de detalhe com "id" não pode ser rota dinâmica.** O site é export
 estático (`output: 'export'`), e `/meus-jogos/[id]` exigiria listar todo
-`run_id` possível em build time — inviável para IDs criados em produção. A
+id de run possível em build time — inviável para IDs criados em produção. A
 saída é uma rota estática com o id por query string
-(`/meus-jogos/detalhe?id=123`), lida no cliente com `useSearchParams()`. Isso
+(`/meus-jogos/detalhe?id=<uuid da run>`), lida no cliente com `useSearchParams()`. Isso
 só funciona dentro de um `<Suspense>` — sem ele o build estático falha. Use
 esse padrão para qualquer página futura de "ver um item específico" que
 precise de export estático.
@@ -1679,22 +1679,20 @@ relato de `novo` para `triado` quando quem comenta é admin: responder já é te
 lido, e deixar o relato dizendo "ainda não foi lido com calma" depois de uma
 resposta é mentira na cara do autor.
 
-`runs` tem uma coluna `run_id` (uuid, gerado com `crypto.randomUUID()` na
-criação da run, em `createRun()`) com índice único, e uma coluna `details`
-(`jsonb`) com o dia-a-dia da partida (`GameState.history`, ver
-`src/game/types.ts` — `DayLog`). `enviarRun()` (`src/data/saves.ts`) grava com um
-`insert` cru e trata `23505` (unique_violation) como sucesso: se a mesma run
-for enviada duas vezes (duas abas, uma retentativa depois de a resposta se
-perder), a segunda esbarra no índice único e isso é exatamente o resultado
-desejado. **Não troque por `upsert`** — foi o que estava aqui e quebrou em
-produção: o upsert vira `on conflict do nothing`, e o Postgres cobra SELECT
-na tabela por causa da cláusula `on conflict`, então toda gravação voltava
-com `permission denied for table runs · GRANT SELECT ON public.runs TO anon
-· 42501`. Seguir a dica da mensagem daria leitura da telemetria de todo
-mundo para o `anon`, que é justamente o que a seção de segurança abaixo
-proíbe. `run_id` é nulo nas linhas
-gravadas antes desta mudança — nulo nunca colide com nulo num índice único do
-Postgres, então convivem sem problema.
+O `id` de `runs` é o uuid gerado com `crypto.randomUUID()` na criação da
+run, em `createRun()` (até a v0.34 era um número do banco, e esse uuid
+morava ao lado, em `run_id`), e `details` (`jsonb`) guarda o dia-a-dia da
+partida (`GameState.history`, ver `src/game/types.ts` — `DayLog`).
+`enviarRun()` (`src/data/saves.ts`) grava com um `insert` cru e trata `23505`
+(unique_violation) como sucesso: se a mesma run for enviada duas vezes (duas
+abas, uma retentativa depois de a resposta se perder), a segunda esbarra na
+chave primária e isso é exatamente o resultado desejado. **Não troque por
+`upsert`** — foi o que estava aqui e quebrou em produção: o upsert vira
+`on conflict do nothing`, e o Postgres cobra SELECT na tabela por causa da
+cláusula `on conflict`, então toda gravação voltava com `permission denied
+for table runs · GRANT SELECT ON public.runs TO anon · 42501`. Seguir a dica
+da mensagem daria leitura da telemetria de todo mundo para o `anon`, que é
+justamente o que a seção de segurança abaixo proíbe.
 
 `runs` tem ainda `started_at`, `max_combo`, `cards_played`, `warnings` (o que
 o histórico não deduz sozinho) e `visivel`. **`visivel = false` é a run largada
@@ -1966,6 +1964,23 @@ e a um bot diferente — não compare os dois.
   numa entrada só, com os três metais.
 - **Rodar o `schema.sql` da v0.33** (`admin_versoes`). Sem ele as caixas
   de versões do lab mostram o aviso de que a função falta.
+- **TODO id é UUID (v0.35).** Carta, evento, modo de jogo e conquista
+  tinham o NOME como id (`hora-extra`, `normal`, `mes-fechado`), e run,
+  relato, comentário, notificação e linha do histórico de carta tinham um
+  número sequencial. Os números viraram um uuid sorteado na migração (a run
+  usa o que o site já sorteava), com as chaves estrangeiras refeitas por
+  ele; e onde a ordem vinha do número, hoje vem da data (o histórico da
+  carta é `criada_em`, e `versao` dentro do mesmo dia). Nenhum deles mora
+  fora do banco, a não ser o link do replay, e o de número diz "essa
+  partida não existe". Os nomes viraram o uuid v5 do nome, como abaixo:
+  a conquista e o modo com um prefixo (`conquista:`, `modo:`; `idDaConquista`
+  e `idDoModo` em `ids.ts`), porque `conquistasPagas` e o `modo` de cada run
+  gravada continuam com o nome, e quem os traduz é a leitura (`lerColecao`,
+  `migrarRun`). No `schema.sql` o id das conquistas está escrito por
+  extenso, com o nome antigo num comentário ao lado. As tabelas de catálogo
+  (cartas, eventos, modos, conquistas) guardam o uuid numa coluna `text`, e
+  as outras, numa `uuid`: trocar o tipo das de catálogo obrigaria a mudar
+  toda RPC de admin, por nada que o jogo veja.
 - **O id da carta e do evento é UUID (v0.35), e o nome muda à vontade.**
   Era o nome em hífens (`hora-extra`), o que não fazia sentido nenhum:
   renomear a carta deixava o id contando o nome velho. Carta e evento novos
@@ -1992,8 +2007,14 @@ e a um bot diferente — não compare os dois.
 - **Rodar o `schema.sql` da v0.35 antes de salvar qualquer carta no lab.**
   Enquanto o catálogo do banco ainda tiver id antigo, o jogo funciona (a
   leitura traduz), mas salvar criaria uma SEGUNDA carta com o uuid ao lado
-  da antiga: por isso o lab mostra o aviso vermelho e `escrever()` recusa
-  tudo menos as regras (`catalogoComIdsAntigos`).
+  da antiga (e o modo `normal` ganharia um irmão): por isso o lab mostra o
+  aviso vermelho e `escrever()` recusa tudo (`catalogoComIdsAntigos`).
+  **O site e o `schema.sql` da v0.35 precisam subir juntos:** o site novo
+  num banco velho não abre replay (o link é de número) nem grava run (o
+  `id` da run ainda é do banco), e o velho num banco novo também não grava
+  run (`run_id` não existe mais). A run que
+  falhar não se perde — entra na fila (`clt:runs-pendentes:v1`, que lê o
+  `run_id` de antes como `id`) e sobe na próxima abertura da mesa.
 - **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
   que não existe, e rodar o `schema.sql` não toca no que a carta faz (só
   troca o id antigo pelo uuid, uma vez). Com o banco já

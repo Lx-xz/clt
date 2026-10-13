@@ -22,6 +22,10 @@ set search_path = public, extensions;
 -- no schema `extensions`, e não em `public` — por isso a função que usa
 -- `similarity()` leva os dois no search_path.
 create extension if not exists pg_trgm;
+-- uuid-ossp dá o `uuid_generate_v5`: é com ele que os ids antigos (o nome da
+-- carta, o número da run) viram uuid na v0.35, a mesma conta que o site faz
+create schema if not exists extensions;
+create extension if not exists "uuid-ossp" with schema extensions;
 
 -- ---------------------------------------------------------------- tabelas
 
@@ -69,7 +73,11 @@ create table if not exists public.saves (
 -- registro append-only de runs terminadas, para balanceamento e para as
 -- páginas de ranking/análise/meus-jogos
 create table if not exists public.runs (
-  id           bigint generated always as identity primary key,
+  -- o id é sorteado pelo SITE (`crypto.randomUUID()` em `createRun`), e é
+  -- ele que impede a mesma run de ser gravada duas vezes (duas abas, uma
+  -- retentativa de rede): a segunda esbarra na chave primária. Até a v0.34
+  -- era um número do banco, e o uuid do site morava ao lado, em `run_id`
+  id           uuid primary key default gen_random_uuid(),
   player_id    uuid references public.players (id) on delete set null,
   ended_at     timestamptz not null default now(),
   outcome      text not null check (outcome in ('vitoria', 'burnout', 'demissao', 'despejo')),
@@ -78,11 +86,9 @@ create table if not exists public.runs (
   week_reached smallint not null check (week_reached between 1 and 4)
 );
 
--- migração para bancos que já tinham a tabela antes destas duas colunas:
--- run_id evita registrar a mesma run duas vezes (duas abas, uma retentativa
--- de rede); details guarda o dia-a-dia da run, para "meus jogos" reabrir a
--- partida jogada por jogada.
-alter table public.runs add column if not exists run_id uuid;
+-- migração para bancos que já tinham a tabela antes desta coluna: details
+-- guarda o dia-a-dia da run, para "meus jogos" reabrir a partida jogada por
+-- jogada.
 alter table public.runs add column if not exists details jsonb;
 
 -- estatísticas que o histórico não deduz sozinho, e a marca de visibilidade
@@ -108,7 +114,9 @@ alter table public.runs add column if not exists convidado boolean not null defa
 alter table public.runs add column if not exists versao_baralho smallint not null default 0;
 -- em que modo de jogo a run foi jogada. Sem isto, comparar no mesmo gráfico
 -- uma run de aluguel 300 com uma de 380 mentiria sobre as duas.
-alter table public.runs add column if not exists modo text not null default 'normal';
+-- (o id do modo é um uuid desde a v0.35: este é o do `normal`)
+alter table public.runs add column if not exists modo text not null default '2759c081-3c2b-5337-8363-13d0ba85a73e';
+alter table public.runs alter column modo set default '2759c081-3c2b-5337-8363-13d0ba85a73e';
 
 -- 'abandono' é o quinto desfecho: a run que o jogador reiniciou no meio. Não é
 -- derrota (ninguém foi demitido), mas é o dado que diz o que faz desistir.
@@ -116,9 +124,6 @@ alter table public.runs drop constraint if exists runs_outcome_check;
 alter table public.runs add constraint runs_outcome_check
   check (outcome in ('vitoria', 'burnout', 'demissao', 'despejo', 'abandono'));
 
--- nulo nunca colide com nulo num índice único do Postgres, então linhas
--- antigas (sem run_id) convivem em paz com as novas
-create unique index if not exists runs_run_id_idx on public.runs (run_id);
 
 -- ------------------------------------------------------------- feedbacks
 --
@@ -127,7 +132,7 @@ create unique index if not exists runs_run_id_idx on public.runs (run_id);
 -- jogador escreve e acompanha; o admin triava, comenta, muda status,
 -- urgência e dá uma nota.
 create table if not exists public.feedbacks (
-  id       bigint generated always as identity primary key,
+  id       uuid primary key default gen_random_uuid(),
   autor_id uuid references public.players (id) on delete set null,
   tipo     text not null check (tipo in ('bug', 'sugestao', 'duvida', 'outro')),
   titulo   text not null check (char_length(titulo) between 5 and 120),
@@ -151,8 +156,8 @@ create index if not exists feedbacks_status_idx on public.feedbacks (status);
 create index if not exists feedbacks_titulo_trgm on public.feedbacks using gin (titulo gin_trgm_ops);
 
 create table if not exists public.feedback_comentarios (
-  id          bigint generated always as identity primary key,
-  feedback_id bigint not null references public.feedbacks (id) on delete cascade,
+  id          uuid primary key default gen_random_uuid(),
+  feedback_id uuid not null references public.feedbacks (id) on delete cascade,
   autor_id    uuid references public.players (id) on delete set null,
   corpo       text not null check (char_length(corpo) between 1 and 2000),
   -- guardado na linha, e não deduzido do autor na hora de ler: se alguém
@@ -168,12 +173,12 @@ create index if not exists comentarios_feedback_idx on public.feedback_comentari
 -- aqui. É a "mudancinha de hoje" que evita ter que reconstruir o histórico
 -- quando as notificações de verdade chegarem.
 create table if not exists public.notificacoes (
-  id              bigint generated always as identity primary key,
+  id              uuid primary key default gen_random_uuid(),
   destinatario_id uuid not null references public.players (id) on delete cascade,
   tipo            text not null,
   titulo          text not null,
   corpo           text,
-  feedback_id     bigint references public.feedbacks (id) on delete cascade,
+  feedback_id     uuid references public.feedbacks (id) on delete cascade,
   lida_em         timestamptz,
   criado_em       timestamptz not null default now()
 );
@@ -219,7 +224,7 @@ create table if not exists public.conquistas (
 create table if not exists public.conquistas_do_jogador (
   player_id   uuid not null references public.players (id) on delete cascade,
   conquista   text not null references public.conquistas (id) on delete cascade,
-  run_id      bigint references public.runs (id) on delete set null,
+  run_id      uuid references public.runs (id) on delete set null,
   ganha_em    timestamptz not null default now(),
   primary key (player_id, conquista)
 );
@@ -233,29 +238,114 @@ alter table public.conquistas add column if not exists tokens smallint not null 
 alter table public.conquistas add column if not exists grupo  text;
 alter table public.conquistas add column if not exists nivel  smallint;
 
+-- v0.35: TODO id vira uuid. O que era número (runs, feedbacks, comentários,
+-- notificações) ganha um uuid sorteado, e as chaves estrangeiras são
+-- refeitas por ele; a run usa o uuid que o site já sorteava (`run_id`). O que
+-- era nome (as conquistas) vira o uuid v5 do nome, com o prefixo
+-- `conquista:` — a mesma conta de `src/game/ids.ts`, e é por ela que o site
+-- traduz o id antigo guardado em `conquistasPagas`.
+--
+-- Roda quantas vezes for preciso: cada parte confere se ainda há o que
+-- fazer (a coluna ainda é bigint, o id ainda não é uuid).
+do $$
+declare
+  ns constant uuid := '3336ec3e-fbe1-4dfb-9b02-794d74311adc';
+  re constant text := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+  t  text;
+begin
+  -- a run: o id passa a ser o uuid que o site sorteou
+  if (select data_type from information_schema.columns
+      where table_schema = 'public' and table_name = 'runs' and column_name = 'id') = 'bigint' then
+    alter table public.runs add column if not exists run_id uuid;
+    update public.runs set run_id = gen_random_uuid() where run_id is null;
+    alter table public.conquistas_do_jogador add column run_novo uuid;
+    update public.conquistas_do_jogador j set run_novo = r.run_id
+      from public.runs r where r.id = j.run_id;
+    alter table public.conquistas_do_jogador drop column run_id;
+    alter table public.conquistas_do_jogador rename column run_novo to run_id;
+    drop index if exists public.runs_run_id_idx;
+    alter table public.runs drop column id;
+    alter table public.runs rename column run_id to id;
+    alter table public.runs alter column id set default gen_random_uuid();
+    alter table public.runs add primary key (id);
+    alter table public.conquistas_do_jogador add constraint conquistas_do_jogador_run_id_fkey
+      foreign key (run_id) references public.runs (id) on delete set null;
+  end if;
+
+  -- o relato: o uuid novo desce para os comentários e as notificações
+  if (select data_type from information_schema.columns
+      where table_schema = 'public' and table_name = 'feedbacks' and column_name = 'id') = 'bigint' then
+    alter table public.feedbacks add column id_novo uuid not null default gen_random_uuid();
+    alter table public.feedback_comentarios add column feedback_novo uuid;
+    update public.feedback_comentarios c set feedback_novo = f.id_novo
+      from public.feedbacks f where f.id = c.feedback_id;
+    alter table public.notificacoes add column feedback_novo uuid;
+    update public.notificacoes n set feedback_novo = f.id_novo
+      from public.feedbacks f where f.id = n.feedback_id;
+    alter table public.feedback_comentarios drop column feedback_id;
+    alter table public.notificacoes drop column feedback_id;
+    alter table public.feedback_comentarios rename column feedback_novo to feedback_id;
+    alter table public.notificacoes rename column feedback_novo to feedback_id;
+    alter table public.feedbacks drop column id;
+    alter table public.feedbacks rename column id_novo to id;
+    alter table public.feedbacks add primary key (id);
+    alter table public.feedback_comentarios alter column feedback_id set not null;
+    alter table public.feedback_comentarios add constraint feedback_comentarios_feedback_id_fkey
+      foreign key (feedback_id) references public.feedbacks (id) on delete cascade;
+    alter table public.notificacoes add constraint notificacoes_feedback_id_fkey
+      foreign key (feedback_id) references public.feedbacks (id) on delete cascade;
+    create index if not exists comentarios_feedback_idx on public.feedback_comentarios (feedback_id);
+  end if;
+
+  -- as que ninguém aponta: só trocar
+  foreach t in array array['feedback_comentarios', 'notificacoes'] loop
+    if (select data_type from information_schema.columns
+        where table_schema = 'public' and table_name = t and column_name = 'id') = 'bigint' then
+      execute format('alter table public.%I add column id_novo uuid not null default gen_random_uuid()', t);
+      execute format('alter table public.%I drop column id', t);
+      execute format('alter table public.%I rename column id_novo to id', t);
+      execute format('alter table public.%I add primary key (id)', t);
+    end if;
+  end loop;
+
+  -- a conquista: o nome vira o uuid do nome. A chave estrangeira sai e volta
+  -- porque a tabela de quem ganhou e a lista mudam juntas
+  alter table public.conquistas_do_jogador drop constraint if exists conquistas_do_jogador_conquista_fkey;
+  update public.conquistas_do_jogador
+    set conquista = extensions.uuid_generate_v5(ns, 'conquista:' || conquista)::text
+    where conquista !~ re;
+  update public.conquistas
+    set id = extensions.uuid_generate_v5(ns, 'conquista:' || id)::text
+    where id !~ re;
+  alter table public.conquistas_do_jogador add constraint conquistas_do_jogador_conquista_fkey
+    foreign key (conquista) references public.conquistas (id) on delete cascade;
+end;
+$$;
+
 -- a lista em si: rodar o arquivo de novo atualiza o texto sem perder quem
--- já ganhou. O `colecionador` antigo virou o bronze do grupo: quem já o
+-- já ganhou. O id é o uuid do nome antigo (`conquista:<nome>`), que fica no
+-- comentário de cada linha. O `colecionador` antigo virou o bronze do grupo: quem já o
 -- tinha continua com ele
 insert into public.conquistas (id, nome, descricao, icone, ordem, oculta, tokens, grupo, nivel) values
-  ('primeira-semana',    'Sobreviveu à primeira semana', 'Chegar à semana 2 de algum mês.', 'calendar', 1, false, 10, null, null),
-  ('mes-fechado',        'Mês fechado',                  'Chegar ao fim das quatro semanas empregado e com as contas pagas.', 'trophy', 2, false, 20, null, null),
-  ('ficha-limpa',        'Ficha limpa',                  'Fechar um mês sem nenhuma advertência.', 'shield', 3, false, 25, null, null),
-  ('zen',                'Zen',                          'Fechar um mês com o estresse em 3 ou menos.', 'leaf', 4, false, 25, null, null),
-  ('embalo',             'No embalo',                    'Jogar 4 cartas seguidas da mesma classe num dia.', 'flame', 5, false, 15, null, null),
-  ('rico',               'Pé-de-meia',                   'Terminar uma partida com R$ 1.000 ou mais.', 'piggy', 6, false, 20, null, null),
-  ('colecionador',       'Colecionador',                 'Ter 12 cartas diferentes na coleção.', 'layers', 10, false, 10, 'colecionador', 1),
-  ('colecionador-prata', 'Colecionador',                 'Ter 24 cartas diferentes na coleção.', 'layers', 11, false, 25, 'colecionador', 2),
-  ('colecionador-ouro',  'Colecionador',                 'Ter 40 cartas diferentes na coleção.', 'layers', 12, false, 50, 'colecionador', 3),
-  ('veterano',           'Veterano',                     'Terminar 10 partidas.', 'calendar', 13, false, 10, 'veterano', 1),
-  ('veterano-prata',     'Veterano',                     'Terminar 50 partidas.', 'calendar', 14, false, 25, 'veterano', 2),
-  ('veterano-ouro',      'Veterano',                     'Terminar 150 partidas.', 'calendar', 15, false, 50, 'veterano', 3),
-  ('funcionario',        'Funcionário do mês',           'Fechar 3 meses.', 'trophy', 16, false, 10, 'funcionario', 1),
-  ('funcionario-prata',  'Funcionário do mês',           'Fechar 10 meses.', 'trophy', 17, false, 25, 'funcionario', 2),
-  ('funcionario-ouro',   'Funcionário do mês',           'Fechar 25 meses.', 'trophy', 18, false, 50, 'funcionario', 3),
-  ('segunda-feira',      'Nem chegou a terça',           'Ter um burnout logo no primeiro dia.', 'skull', 30, true, 20, null, null),
-  ('despejado',          'Despejado',                    'Não conseguir pagar as contas de sexta.', 'piggy', 31, true, 20, null, null),
-  ('justa-causa',        'Justa causa',                  'Ser demitido com três advertências.', 'skull', 32, true, 20, null, null),
-  ('por-um-fio',         'Por um fio',                   'Fechar um mês com o estresse em 9.', 'flame', 33, true, 30, null, null)
+  ('87fda2d8-dd38-5831-8d40-8e3603c10b81', /* primeira-semana */ 'Sobreviveu à primeira semana', 'Chegar à semana 2 de algum mês.', 'calendar', 1, false, 10, null, null),
+  ('5c3894eb-657e-55a6-b947-b239cbb45244', /* mes-fechado */ 'Mês fechado',                  'Chegar ao fim das quatro semanas empregado e com as contas pagas.', 'trophy', 2, false, 20, null, null),
+  ('6616e645-61d3-535c-8173-3e3a579c2e91', /* ficha-limpa */ 'Ficha limpa',                  'Fechar um mês sem nenhuma advertência.', 'shield', 3, false, 25, null, null),
+  ('c3d0035f-1c26-56f8-9290-7d65096d6552', /* zen */ 'Zen',                          'Fechar um mês com o estresse em 3 ou menos.', 'leaf', 4, false, 25, null, null),
+  ('c22fd9f3-3e96-5262-b386-ae57a8157a4b', /* embalo */ 'No embalo',                    'Jogar 4 cartas seguidas da mesma classe num dia.', 'flame', 5, false, 15, null, null),
+  ('d474304c-310f-5ecd-bb91-ca9542212dc0', /* rico */ 'Pé-de-meia',                   'Terminar uma partida com R$ 1.000 ou mais.', 'piggy', 6, false, 20, null, null),
+  ('2736b724-e383-574e-8099-3f2a5600326a', /* colecionador */ 'Colecionador',                 'Ter 12 cartas diferentes na coleção.', 'layers', 10, false, 10, 'colecionador', 1),
+  ('871d6dbb-7839-5353-9f39-65db5f5e03b2', /* colecionador-prata */ 'Colecionador',                 'Ter 24 cartas diferentes na coleção.', 'layers', 11, false, 25, 'colecionador', 2),
+  ('56b1b525-d1c5-59d5-9a39-0820250457d2', /* colecionador-ouro */ 'Colecionador',                 'Ter 40 cartas diferentes na coleção.', 'layers', 12, false, 50, 'colecionador', 3),
+  ('cf8cbc2c-447b-5e1f-8483-e4ba42eec8e1', /* veterano */ 'Veterano',                     'Terminar 10 partidas.', 'calendar', 13, false, 10, 'veterano', 1),
+  ('c54ee3e8-d73d-539c-94ec-d1dfd71282e8', /* veterano-prata */ 'Veterano',                     'Terminar 50 partidas.', 'calendar', 14, false, 25, 'veterano', 2),
+  ('645ffe11-2bce-59f2-8fbb-9318e409681d', /* veterano-ouro */ 'Veterano',                     'Terminar 150 partidas.', 'calendar', 15, false, 50, 'veterano', 3),
+  ('93dcac53-a809-552c-9969-b1c4c96d9c2f', /* funcionario */ 'Funcionário do mês',           'Fechar 3 meses.', 'trophy', 16, false, 10, 'funcionario', 1),
+  ('1e465b87-72e7-5457-8ac1-367e774e9755', /* funcionario-prata */ 'Funcionário do mês',           'Fechar 10 meses.', 'trophy', 17, false, 25, 'funcionario', 2),
+  ('91e42b9e-8a3d-540c-94e2-e613bfba09ad', /* funcionario-ouro */ 'Funcionário do mês',           'Fechar 25 meses.', 'trophy', 18, false, 50, 'funcionario', 3),
+  ('c14565ac-b92b-517c-823a-4c21e67f6325', /* segunda-feira */ 'Nem chegou a terça',           'Ter um burnout logo no primeiro dia.', 'skull', 30, true, 20, null, null),
+  ('85672f2a-90fe-5024-bccd-f0700a610028', /* despejado */ 'Despejado',                    'Não conseguir pagar as contas de sexta.', 'piggy', 31, true, 20, null, null),
+  ('371c2c6d-4adb-5025-a0b0-6856dd15290b', /* justa-causa */ 'Justa causa',                  'Ser demitido com três advertências.', 'skull', 32, true, 20, null, null),
+  ('18877d78-e990-5859-840d-ac0516800243', /* por-um-fio */ 'Por um fio',                   'Fechar um mês com o estresse em 9.', 'flame', 33, true, 30, null, null)
 on conflict (id) do update
   set nome = excluded.nome, descricao = excluded.descricao, icone = excluded.icone, ordem = excluded.ordem,
       oculta = excluded.oculta, tokens = excluded.tokens, grupo = excluded.grupo, nivel = excluded.nivel;
@@ -366,7 +456,7 @@ create table if not exists public.cartas_evento (
 -- "porque Freela → Hora Extra fechava a semana 1 sozinha", e é essa metade
 -- que vira Novidades e histórico da carta.
 create table if not exists public.cartas_antigas (
-  id        bigint generated always as identity primary key,
+  id        uuid primary key default gen_random_uuid(),
   carta_id  text not null,
   familia   text not null,
   versao    smallint not null,
@@ -380,7 +470,6 @@ create table if not exists public.cartas_antigas (
   constraint antigas_tipo_ok    check (tipo in ('criada', 'ajustada', 'removida'))
 );
 
-create index if not exists antigas_carta_idx on public.cartas_antigas (carta_id, id desc);
 
 -- v0.35: o id da carta e do evento virou UUID. Era o nome em hífens
 -- (`hora-extra`), e renomear a carta deixava o id contando o nome velho.
@@ -395,8 +484,6 @@ create index if not exists antigas_carta_idx on public.cartas_antigas (carta_id,
 --
 -- Roda quantas vezes for preciso: só toca no que ainda não é uuid. E NÃO
 -- mude o espaço de nomes: com outro, o mesmo id antigo daria outro uuid.
-create schema if not exists extensions;
-create extension if not exists "uuid-ossp" with schema extensions;
 alter table public.cartas        add column if not exists id_antigo text;
 alter table public.cartas_evento add column if not exists id_antigo text;
 
@@ -423,8 +510,20 @@ begin
   update public.cartas_evento
     set id_antigo = id, id = extensions.uuid_generate_v5(ns, id)::text
     where id !~ re;
+
+  -- e o número da linha do histórico também vira uuid. A ordem do histórico
+  -- era a desse número; hoje é a data, e a versão dentro do mesmo dia
+  if (select data_type from information_schema.columns
+      where table_schema = 'public' and table_name = 'cartas_antigas' and column_name = 'id') = 'bigint' then
+    alter table public.cartas_antigas add column id_novo uuid not null default gen_random_uuid();
+    alter table public.cartas_antigas drop column id;
+    alter table public.cartas_antigas rename column id_novo to id;
+    alter table public.cartas_antigas add primary key (id);
+  end if;
 end;
 $$;
+
+create index if not exists antigas_carta_idx on public.cartas_antigas (carta_id, criada_em desc, versao desc);
 
 -- Uma linha só, para sempre. A versão do baralho é global: ela diz em que
 -- balanceamento uma run foi jogada, e é isso que a torna comparável entre
@@ -463,6 +562,29 @@ create table if not exists public.modos (
   atualizado_em timestamptz not null default now(),
   constraint modos_id_ok check (id ~ '^[a-z0-9-]{2,40}$')
 );
+
+-- v0.35: o id do modo é o uuid v5 de `modo:<nome antigo>` — o `normal` é
+-- `2759c081-3c2b-5337-8363-13d0ba85a73e`. A run guarda o id do modo na coluna `modo`, e a linha do
+-- histórico, em `carta_id`; o `details.modo` de cada run continua com o
+-- nome, e quem traduz é o site, na leitura
+do $$
+declare
+  ns constant uuid := '3336ec3e-fbe1-4dfb-9b02-794d74311adc';
+  re constant text := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+begin
+  update public.cartas_antigas
+    set carta_id = extensions.uuid_generate_v5(ns, 'modo:' || carta_id)::text
+    where familia = 'modo' and carta_id !~ re;
+  update public.cartas_antigas
+    set dados = jsonb_set(dados, '{id}', to_jsonb(extensions.uuid_generate_v5(ns, 'modo:' || (dados ->> 'id'))::text))
+    where familia = 'modo'
+      and jsonb_typeof(dados) = 'object'
+      and dados ->> 'id' is not null
+      and dados ->> 'id' !~ re;
+  update public.modos set id = extensions.uuid_generate_v5(ns, 'modo:' || id)::text where id !~ re;
+  update public.runs  set modo = extensions.uuid_generate_v5(ns, 'modo:' || modo)::text where modo !~ re;
+end;
+$$;
 
 -- ------------------------------------------------------------ quem é quem
 --
@@ -608,14 +730,20 @@ drop function if exists public.meus_jogos(uuid);
 drop function if exists public.perfil_publico(text);
 drop function if exists public.jogos_do_jogador(text);
 drop function if exists public.jogo_detalhe(bigint, uuid);
+drop function if exists public.jogo_detalhe(uuid, uuid);
 drop function if exists public.listar_feedbacks(text, text);
 drop function if exists public.comentarios_do_feedback(bigint);
+drop function if exists public.comentarios_do_feedback(uuid);
 drop function if exists public.feedbacks_parecidos(text, text);
 drop function if exists public.criar_feedback(text, text, text, text);
 drop function if exists public.editar_feedback(bigint, text, text, text);
+drop function if exists public.editar_feedback(uuid, text, text, text);
 drop function if exists public.excluir_feedback(bigint);
+drop function if exists public.excluir_feedback(uuid);
 drop function if exists public.comentar_feedback(bigint, text);
+drop function if exists public.comentar_feedback(uuid, text);
 drop function if exists public.admin_atualizar_feedback(bigint, text, text, smallint);
+drop function if exists public.admin_atualizar_feedback(uuid, text, text, smallint);
 drop function if exists public.catalogo();
 drop function if exists public.arquivar_carta(text, text, text, text, text);
 drop function if exists public.admin_salvar_carta(jsonb, text, text);
@@ -628,6 +756,7 @@ drop function if exists public.admin_versoes(text);
 drop function if exists public.minhas_notificacoes();
 drop function if exists public.marcar_notificacoes_lidas();
 drop function if exists public.jogo_publico(bigint);
+drop function if exists public.jogo_publico(uuid);
 drop function if exists public.pedir_amizade(text);
 drop function if exists public.responder_amizade(text, boolean);
 drop function if exists public.desfazer_amizade(text);
@@ -638,6 +767,7 @@ drop function if exists public.conferir_conquistas(uuid);
 drop function if exists public.minhas_conquistas(uuid);
 drop function if exists public.conquistas_publicas(text);
 drop function if exists public.conquistas_da_run(bigint);
+drop function if exists public.conquistas_da_run(uuid);
 drop function if exists public.colecao_de_amigo(text);
 
 -- O perfil nasce junto com a conta. Fazer isso por gatilho, e não pelo
@@ -1075,7 +1205,7 @@ grant execute on function public.ranking() to anon, authenticated;
 -- `details` aqui, para a lista não baixar o dia a dia de cada partida
 create or replace function public.meus_jogos(p_player_id uuid)
 returns table (
-  id           bigint,
+  id           uuid,
   ended_at     timestamptz,
   outcome      text,
   day          smallint,
@@ -1144,7 +1274,7 @@ grant execute on function public.perfil_publico(text) to anon, authenticated;
 -- desde a v0.14 a lista abre o replay, e `jogo_publico()` não abre abandono
 create function public.jogos_do_jogador(p_nick text)
 returns table (
-  id           bigint,
+  id           uuid,
   ended_at     timestamptz,
   outcome      text,
   day          smallint,
@@ -1172,9 +1302,9 @@ grant execute on function public.jogos_do_jogador(text) to anon, authenticated;
 
 -- o replay de uma run específica, incluindo o dia-a-dia (details). Confere
 -- o dono: pedir o run_id de outra pessoa devolve zero linhas
-create or replace function public.jogo_detalhe(p_run_id bigint, p_player_id uuid)
+create or replace function public.jogo_detalhe(p_run_id uuid, p_player_id uuid)
 returns table (
-  id           bigint,
+  id           uuid,
   ended_at     timestamptz,
   outcome      text,
   day          smallint,
@@ -1191,7 +1321,7 @@ as $$
   where r.id = p_run_id and r.player_id = p_player_id and r.visivel;
 $$;
 
-grant execute on function public.jogo_detalhe(bigint, uuid) to anon, authenticated;
+grant execute on function public.jogo_detalhe(uuid, uuid) to anon, authenticated;
 
 
 -- ------------------------------------------------------------- feedbacks
@@ -1213,7 +1343,7 @@ grant execute on function public.jogo_detalhe(bigint, uuid) to anon, authenticat
 -- a lista, com filtro opcional por status e por tipo
 create function public.listar_feedbacks(p_status text default null, p_tipo text default null)
 returns table (
-  id            bigint,
+  id            uuid,
   tipo          text,
   titulo        text,
   corpo         text,
@@ -1256,9 +1386,9 @@ $$;
 
 grant execute on function public.listar_feedbacks(text, text) to anon, authenticated;
 
-create function public.comentarios_do_feedback(p_id bigint)
+create function public.comentarios_do_feedback(p_id uuid)
 returns table (
-  id         bigint,
+  id         uuid,
   corpo      text,
   de_admin   boolean,
   criado_em  timestamptz,
@@ -1282,7 +1412,7 @@ as $$
   order by c.criado_em;
 $$;
 
-grant execute on function public.comentarios_do_feedback(bigint) to anon, authenticated;
+grant execute on function public.comentarios_do_feedback(uuid) to anon, authenticated;
 
 -- O que evita a enxurrada de relatos repetidos: antes de gravar, a tela
 -- pergunta ao banco se já existe coisa parecida e mostra o que achou. A
@@ -1290,7 +1420,7 @@ grant execute on function public.comentarios_do_feedback(bigint) to anon, authen
 -- e sinônimo parcial ainda casam, que é o ponto.
 create function public.feedbacks_parecidos(p_titulo text, p_corpo text)
 returns table (
-  id         bigint,
+  id         uuid,
   tipo       text,
   titulo     text,
   status     text,
@@ -1325,13 +1455,13 @@ $$;
 grant execute on function public.feedbacks_parecidos(text, text) to anon, authenticated;
 
 create function public.criar_feedback(p_tipo text, p_titulo text, p_corpo text, p_pagina text)
-returns bigint
+returns uuid
 language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
 declare
-  v_id bigint;
+  v_id uuid;
 begin
   -- o convidado não tem auth.uid(): relatar é o que só a conta dá
   if auth.uid() is null then
@@ -1355,7 +1485,7 @@ $$;
 
 grant execute on function public.criar_feedback(text, text, text, text) to authenticated;
 
-create function public.editar_feedback(p_id bigint, p_tipo text, p_titulo text, p_corpo text)
+create function public.editar_feedback(p_id uuid, p_tipo text, p_titulo text, p_corpo text)
 returns void
 language plpgsql
 security definer
@@ -1375,9 +1505,9 @@ begin
 end;
 $$;
 
-grant execute on function public.editar_feedback(bigint, text, text, text) to authenticated;
+grant execute on function public.editar_feedback(uuid, text, text, text) to authenticated;
 
-create function public.excluir_feedback(p_id bigint)
+create function public.excluir_feedback(p_id uuid)
 returns void
 language plpgsql
 security definer
@@ -1394,10 +1524,10 @@ begin
 end;
 $$;
 
-grant execute on function public.excluir_feedback(bigint) to authenticated;
+grant execute on function public.excluir_feedback(uuid) to authenticated;
 
-create function public.comentar_feedback(p_id bigint, p_corpo text)
-returns bigint
+create function public.comentar_feedback(p_id uuid, p_corpo text)
+returns uuid
 language plpgsql
 security definer
 set search_path = public, pg_temp
@@ -1406,7 +1536,7 @@ declare
   v_admin  boolean := public.sou_admin();
   v_autor  uuid;
   v_titulo text;
-  v_id     bigint;
+  v_id     uuid;
 begin
   if auth.uid() is null then
     raise exception 'Crie uma conta para comentar.' using errcode = '42501';
@@ -1444,12 +1574,12 @@ begin
 end;
 $$;
 
-grant execute on function public.comentar_feedback(bigint, text) to authenticated;
+grant execute on function public.comentar_feedback(uuid, text) to authenticated;
 
 -- Status, urgência e nota são do admin e de mais ninguém. Passar nulo em
 -- qualquer um deles quer dizer "não mexa neste campo".
 create function public.admin_atualizar_feedback(
-  p_id bigint, p_status text, p_urgencia text, p_nota smallint
+  p_id uuid, p_status text, p_urgencia text, p_nota smallint
 )
 returns void
 language plpgsql
@@ -1501,17 +1631,17 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_atualizar_feedback(bigint, text, text, smallint) to authenticated;
+grant execute on function public.admin_atualizar_feedback(uuid, text, text, smallint) to authenticated;
 
 -- --------------------------------------------------------- notificações
 
 create function public.minhas_notificacoes()
 returns table (
-  id          bigint,
+  id          uuid,
   tipo        text,
   titulo      text,
   corpo       text,
-  feedback_id bigint,
+  feedback_id uuid,
   lida_em     timestamptz,
   criado_em   timestamptz
 )
@@ -1583,7 +1713,7 @@ as $$
         'carta', a.carta_id, 'familia', a.familia, 'versao', a.versao,
         'tipo', a.tipo, 'oQue', a.o_que, 'porque', a.porque,
         'data', to_char(a.criada_em, 'YYYY-MM-DD')
-      ) order by a.id desc)
+      ) order by a.criada_em desc, a.versao desc)
       from public.cartas_antigas a
     ), '[]'::jsonb),
     -- só o último formato de cada carta removida, que é o que o replay usa
@@ -1961,7 +2091,7 @@ begin
       'id', a.id, 'carta', a.carta_id, 'versao', a.versao, 'tipo', a.tipo,
       'oQue', a.o_que, 'porque', a.porque, 'dados', a.dados,
       'data', to_char(a.criada_em, 'YYYY-MM-DD')
-    ) order by a.id desc)
+    ) order by a.criada_em desc, a.versao desc)
     from public.cartas_antigas a
     where a.familia = p_familia
   ), '[]'::jsonb);
@@ -1975,9 +2105,9 @@ grant execute on function public.admin_versoes(text) to authenticated;
 -- lista de `jogos_do_jogador()` — o que se abre aqui é o dia-a-dia dela, as
 -- cartas jogadas. O que NÃO sai: o player_id, o nome, o e-mail. Run largada
 -- no meio (abandono) e run que o jogador pediu para não guardar não abrem.
-create function public.jogo_publico(p_run_id bigint)
+create function public.jogo_publico(p_run_id uuid)
 returns table (
-  id           bigint,
+  id           uuid,
   ended_at     timestamptz,
   outcome      text,
   day          smallint,
@@ -1998,7 +2128,7 @@ as $$
   where r.id = p_run_id and r.visivel and r.outcome <> 'abandono' and p.nick is not null;
 $$;
 
-grant execute on function public.jogo_publico(bigint) to anon, authenticated;
+grant execute on function public.jogo_publico(uuid) to anon, authenticated;
 
 -- ------------------------------------------------------------- amizades
 -- Tudo por função, com `auth.uid()` conferido por dentro. Quem pede precisa
@@ -2134,7 +2264,7 @@ create function public.meus_amigos()
 returns table (
   nick           text,
   avatar         jsonb,
-  ultima_id      bigint,
+  ultima_id      uuid,
   ultima_outcome text,
   ultima_money   integer,
   ultima_em      timestamptz
@@ -2190,40 +2320,40 @@ as $$
 begin
   return query
   with candidatas as (
-    select 'primeira-semana' as c, (select r.id from public.runs r where r.player_id = p_player_id and r.week_reached >= 2 order by r.ended_at limit 1) as run
+    select '87fda2d8-dd38-5831-8d40-8e3603c10b81' /* primeira-semana */ as c, (select r.id from public.runs r where r.player_id = p_player_id and r.week_reached >= 2 order by r.ended_at limit 1) as run
     union all
-    select 'mes-fechado', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at limit 1)
+    select '5c3894eb-657e-55a6-b947-b239cbb45244' /* mes-fechado */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at limit 1)
     union all
-    select 'ficha-limpa', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' and coalesce(r.warnings, 1) = 0 order by r.ended_at limit 1)
+    select '6616e645-61d3-535c-8173-3e3a579c2e91' /* ficha-limpa */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' and coalesce(r.warnings, 1) = 0 order by r.ended_at limit 1)
     union all
-    select 'zen', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria'
+    select 'c3d0035f-1c26-56f8-9290-7d65096d6552' /* zen */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria'
                    and (r.details -> 'history' -> -1 ->> 'stress')::int <= 3 order by r.ended_at limit 1)
     union all
-    select 'embalo', (select r.id from public.runs r where r.player_id = p_player_id and r.max_combo >= 4 order by r.ended_at limit 1)
+    select 'c22fd9f3-3e96-5262-b386-ae57a8157a4b' /* embalo */, (select r.id from public.runs r where r.player_id = p_player_id and r.max_combo >= 4 order by r.ended_at limit 1)
     union all
-    select 'rico', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' and r.money >= 1000 order by r.ended_at limit 1)
+    select 'd474304c-310f-5ecd-bb91-ca9542212dc0' /* rico */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' and r.money >= 1000 order by r.ended_at limit 1)
     union all
-    select 'segunda-feira', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'burnout' and r.day = 1 order by r.ended_at limit 1)
+    select 'c14565ac-b92b-517c-823a-4c21e67f6325' /* segunda-feira */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'burnout' and r.day = 1 order by r.ended_at limit 1)
     union all
     -- as que contam partidas: a run que fechou a conta é a de número N
-    select 'veterano', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 9 limit 1)
+    select 'cf8cbc2c-447b-5e1f-8483-e4ba42eec8e1' /* veterano */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 9 limit 1)
     union all
-    select 'veterano-prata', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 49 limit 1)
+    select 'c54ee3e8-d73d-539c-94ec-d1dfd71282e8' /* veterano-prata */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 49 limit 1)
     union all
-    select 'veterano-ouro', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 149 limit 1)
+    select '645ffe11-2bce-59f2-8fbb-9318e409681d' /* veterano-ouro */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome <> 'abandono' order by r.ended_at offset 149 limit 1)
     union all
-    select 'funcionario', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 2 limit 1)
+    select '93dcac53-a809-552c-9969-b1c4c96d9c2f' /* funcionario */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 2 limit 1)
     union all
-    select 'funcionario-prata', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 9 limit 1)
+    select '1e465b87-72e7-5457-8ac1-367e774e9755' /* funcionario-prata */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 9 limit 1)
     union all
-    select 'funcionario-ouro', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 24 limit 1)
+    select '91e42b9e-8a3d-540c-94e2-e613bfba09ad' /* funcionario-ouro */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at offset 24 limit 1)
     union all
     -- as ocultas
-    select 'despejado', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'despejo' order by r.ended_at limit 1)
+    select '85672f2a-90fe-5024-bccd-f0700a610028' /* despejado */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'despejo' order by r.ended_at limit 1)
     union all
-    select 'justa-causa', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'demissao' order by r.ended_at limit 1)
+    select '371c2c6d-4adb-5025-a0b0-6856dd15290b' /* justa-causa */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'demissao' order by r.ended_at limit 1)
     union all
-    select 'por-um-fio', (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria'
+    select '18877d78-e990-5859-840d-ac0516800243' /* por-um-fio */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria'
                           and (r.details -> 'history' -> -1 ->> 'stress')::int >= 9 order by r.ended_at limit 1)
     union all
     -- da coleção, não de uma run: o run_id fica nulo. Lê os dois formatos:
@@ -2237,11 +2367,11 @@ begin
           select jsonb_object_keys(case when jsonb_typeof(s.collection -> 'tenho') = 'object' then s.collection -> 'tenho' else '{}'::jsonb end)
         ) as t(x)
       where s.player_id = p_player_id
-    ) >= n.meta then 0::bigint end
-    from (values ('colecionador', 12), ('colecionador-prata', 24), ('colecionador-ouro', 40)) as n(c, meta)
+    ) >= n.meta then '00000000-0000-0000-0000-000000000000'::uuid end
+    from (values ('2736b724-e383-574e-8099-3f2a5600326a' /* colecionador */, 12), ('871d6dbb-7839-5353-9f39-65db5f5e03b2' /* colecionador-prata */, 24), ('56b1b525-d1c5-59d5-9a39-0820250457d2' /* colecionador-ouro */, 40)) as n(c, meta)
   )
   insert into public.conquistas_do_jogador (player_id, conquista, run_id)
-  select p_player_id, c.c, nullif(c.run, 0)
+  select p_player_id, c.c, nullif(c.run, '00000000-0000-0000-0000-000000000000'::uuid)
   from candidatas c
   where c.run is not null and exists (select 1 from public.players where id = p_player_id)
   on conflict do nothing
@@ -2298,7 +2428,7 @@ grant execute on function public.conquistas_publicas(text) to anon, authenticate
 -- existia (`conquistas_do_jogador.run_id`, a run que cumpriu a conquista);
 -- o que esta função acrescenta é ler por ela. Abre o mesmo que o replay
 -- público abre: run guardada, e a do abandono só não tem conquista nenhuma
-create function public.conquistas_da_run(p_run_id bigint)
+create function public.conquistas_da_run(p_run_id uuid)
 returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz,
                oculta boolean, tokens smallint, grupo text, nivel smallint)
 language sql
@@ -2314,7 +2444,7 @@ as $$
   order by c.ordem;
 $$;
 
-grant execute on function public.conquistas_da_run(bigint) to anon, authenticated;
+grant execute on function public.conquistas_da_run(uuid) to anon, authenticated;
 
 -- ------------------------------------------------------ a coleção do amigo
 -- O perfil de um AMIGO mostra os baralhos e as cartas dele (v0.34), e quem

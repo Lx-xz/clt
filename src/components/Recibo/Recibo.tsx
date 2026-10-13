@@ -260,7 +260,7 @@ export default function Recibo({
  * jogos. Leva ao replay, onde está o recibo inteiro. É o "bilhete" que o
  * início mostrava antes de ficar limpo.
  */
-export function ReciboResumido({ id, dados, className }: { id: number; dados: DadosDoRecibo; className?: string }) {
+export function ReciboResumido({ id, dados, className }: { id: string; dados: DadosDoRecibo; className?: string }) {
   const fim = FIM[dados.outcome]
   return (
     // a sombra mora no invólucro: a máscara da serrilha cortaria o

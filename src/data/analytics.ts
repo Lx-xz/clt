@@ -48,7 +48,7 @@ export async function buscarRanking(): Promise<LinhaRanking[]> {
 }
 
 export interface LinhaMeuJogo {
-  id: number
+  id: string
   ended_at: string
   outcome: 'vitoria' | 'burnout' | 'demissao' | 'despejo' | 'abandono'
   day: number
@@ -89,7 +89,7 @@ export interface DetalheDoJogo extends LinhaMeuJogo {
 }
 
 /** Devolve null quando a run não existe ou não é deste jogador. */
-export async function buscarDetalheDoJogo(runId: number, playerId: string): Promise<DetalheDoJogo | null> {
+export async function buscarDetalheDoJogo(runId: string, playerId: string): Promise<DetalheDoJogo | null> {
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase
     .rpc('jogo_detalhe', { p_run_id: runId, p_player_id: playerId })
@@ -105,7 +105,7 @@ export interface JogoPublico extends DetalheDoJogo {
   avatar: unknown
 }
 
-export async function buscarJogoPublico(runId: number): Promise<JogoPublico | null> {
+export async function buscarJogoPublico(runId: string): Promise<JogoPublico | null> {
   if (!supabase) throw new Error('Banco não configurado.')
   const { data, error } = await supabase.rpc('jogo_publico', { p_run_id: runId }).maybeSingle()
   if (error) {

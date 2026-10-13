@@ -10,11 +10,11 @@ import { supabase } from './supabase'
  * avisar no aparelho sem precisar reconstruir histórico nenhum.
  */
 export interface Notificacao {
-  id: number
+  id: string
   tipo: string
   titulo: string
   corpo: string | null
-  feedback_id: number | null
+  feedback_id: string | null
   lida_em: string | null
   criado_em: string
 }

@@ -1,4 +1,4 @@
-import { idAtual, traduzirIds } from './ids'
+import { idAtual, idDaConquista, traduzirIds } from './ids'
 import { cartasDoJogo, cartasIniciais, getCard } from './catalogo'
 import { regras } from './regras'
 import type { ActionCard, BaralhoMontado, CardId, Collection, EnvelopeFechado, Raridade, TipoEnvelope } from './types'
@@ -113,7 +113,8 @@ function lerEnvelopes(bruta: Record<string, unknown>): Pick<Collection, 'envelop
       : undefined
   // v0.34: a abóbora grátis da máquina (uma vez) e as conquistas que já
   // pagaram os seus tokens
-  const pagas = textos(bruta.conquistasPagas)
+  // o id da conquista era o nome (`mes-fechado`) até a v0.35
+  const pagas = [...new Set(textos(bruta.conquistasPagas).map(idDaConquista))]
   return {
     envelopes,
     missoes,

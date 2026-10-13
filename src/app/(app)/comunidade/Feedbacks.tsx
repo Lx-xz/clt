@@ -36,7 +36,7 @@ import styles from './feedback.module.sass'
 
 /** O formulário do relato, enquanto ele ainda não foi enviado. */
 interface Rascunho {
-  id: number | null
+  id: string | null
   tipo: TipoFeedback
   titulo: string
   corpo: string
@@ -54,8 +54,8 @@ export default function Feedbacks() {
   const [erro, setErro] = useState<string | null>(null)
   const [filtro, setFiltro] = useState<StatusFeedback | ''>('')
   const [soMeus, setSoMeus] = useState(false)
-  const [aberto, setAberto] = useState<number | null>(null)
-  const [comentarios, setComentarios] = useState<Record<number, Comentario[]>>({})
+  const [aberto, setAberto] = useState<string | null>(null)
+  const [comentarios, setComentarios] = useState<Record<string, Comentario[]>>({})
   const [comentando, setComentando] = useState('')
   const [ocupado, setOcupado] = useState(false)
   const [comoFunciona, setComoFunciona] = useState(false)
@@ -94,7 +94,7 @@ export default function Feedbacks() {
     }
   }
 
-  function abrir(id: number) {
+  function abrir(id: string) {
     if (aberto === id) {
       setAberto(null)
       return
@@ -108,7 +108,7 @@ export default function Feedbacks() {
     }
   }
 
-  function recarregarComentarios(id: number) {
+  function recarregarComentarios(id: string) {
     return comentariosDoFeedback(id).then((c) => setComentarios((atual) => ({ ...atual, [id]: c })))
   }
 

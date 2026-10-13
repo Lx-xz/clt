@@ -93,7 +93,8 @@ export type TipoDeMudanca = 'criada' | 'ajustada' | 'removida'
  */
 export interface MudancaDeCarta {
   carta: CardId
-  familia: 'acao' | 'evento'
+  // o modo de jogo também vira linha do histórico (o aluguel que mudou)
+  familia: 'acao' | 'evento' | 'modo'
   versao: number
   /** AAAA-MM-DD. */
   data: string

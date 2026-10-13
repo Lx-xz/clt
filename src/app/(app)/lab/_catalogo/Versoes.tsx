@@ -87,7 +87,9 @@ export function desfeitasPeloCodigo<T extends { id: string; name: string }>(
   for (const v of versoes) porCarta.set(v.carta, [...(porCarta.get(v.carta) ?? []), v])
   const lista: Desfeita<T>[] = []
   for (const atual of atuais) {
-    const linhas = (porCarta.get(atual.id) ?? []).sort((a, b) => b.id - a.id)
+    // a mais nova primeiro: a versão cresce a cada mudança da mesma carta (o id
+    // era um número em ordem, e desde a v0.35 é um uuid, que não tem ordem)
+    const linhas = (porCarta.get(atual.id) ?? []).sort((a, b) => b.versao - a.versao)
     let i = 0
     while (i < linhas.length && veioDoCodigo(linhas[i].porque)) i += 1
     if (i === 0) continue

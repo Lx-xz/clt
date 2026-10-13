@@ -22,7 +22,7 @@ export type EstadoDaAmizade = 'nenhuma' | 'enviado' | 'recebido' | 'amigos' | 'e
 export interface Amigo {
   nick: string
   avatar: Avatar
-  ultima_id: number | null
+  ultima_id: string | null
   ultima_outcome: string | null
   ultima_money: number | null
   ultima_em: string | null

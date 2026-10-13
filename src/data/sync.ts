@@ -93,7 +93,13 @@ function lerFila(): RunRegistravel[] {
   try {
     const bruto = window.localStorage.getItem(FILA_KEY)
     const lista: unknown = bruto ? JSON.parse(bruto) : []
-    return Array.isArray(lista) ? (lista as RunRegistravel[]) : []
+    // a linha enfileirada antes da v0.35 chama o id de `run_id`
+    return Array.isArray(lista)
+      ? lista.map((l) => {
+          const { run_id, ...resto } = l as RunRegistravel & { run_id?: string }
+          return run_id && !resto.id ? { ...resto, id: run_id } : resto
+        })
+      : []
   } catch {
     return []
   }
@@ -109,7 +115,7 @@ function escreverFila(lista: RunRegistravel[]) {
 }
 
 function enfileirar(linha: RunRegistravel) {
-  const fila = lerFila().filter((l) => l.run_id !== linha.run_id)
+  const fila = lerFila().filter((l) => l.id !== linha.id)
   fila.push(linha)
   escreverFila(fila)
 }

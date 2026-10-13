@@ -67,7 +67,7 @@ export function rotuloDe<T extends string>(lista: { valor: T; rotulo: string }[]
 }
 
 export interface Feedback {
-  id: number
+  id: string
   tipo: TipoFeedback
   titulo: string
   corpo: string
@@ -85,7 +85,7 @@ export interface Feedback {
 }
 
 export interface Comentario {
-  id: number
+  id: string
   corpo: string
   de_admin: boolean
   criado_em: string
@@ -95,7 +95,7 @@ export interface Comentario {
 }
 
 export interface Parecido {
-  id: number
+  id: string
   tipo: TipoFeedback
   titulo: string
   status: StatusFeedback
@@ -135,31 +135,31 @@ export async function souAdmin(): Promise<boolean> {
 export const listarFeedbacks = (status?: StatusFeedback, tipo?: TipoFeedback) =>
   chamar<Feedback[]>('listar_feedbacks', { p_status: status ?? null, p_tipo: tipo ?? null })
 
-export const comentariosDoFeedback = (id: number) =>
+export const comentariosDoFeedback = (id: string) =>
   chamar<Comentario[]>('comentarios_do_feedback', { p_id: id })
 
 export const feedbacksParecidos = (titulo: string, corpo: string) =>
   chamar<Parecido[]>('feedbacks_parecidos', { p_titulo: titulo, p_corpo: corpo })
 
 export const criarFeedback = (tipo: TipoFeedback, titulo: string, corpo: string, pagina?: string) =>
-  chamar<number>('criar_feedback', {
+  chamar<string>('criar_feedback', {
     p_tipo: tipo,
     p_titulo: titulo,
     p_corpo: corpo,
     p_pagina: pagina ?? null,
   })
 
-export const editarFeedback = (id: number, tipo: TipoFeedback, titulo: string, corpo: string) =>
+export const editarFeedback = (id: string, tipo: TipoFeedback, titulo: string, corpo: string) =>
   chamar<void>('editar_feedback', { p_id: id, p_tipo: tipo, p_titulo: titulo, p_corpo: corpo })
 
-export const excluirFeedback = (id: number) => chamar<void>('excluir_feedback', { p_id: id })
+export const excluirFeedback = (id: string) => chamar<void>('excluir_feedback', { p_id: id })
 
-export const comentarFeedback = (id: number, corpo: string) =>
-  chamar<number>('comentar_feedback', { p_id: id, p_corpo: corpo })
+export const comentarFeedback = (id: string, corpo: string) =>
+  chamar<string>('comentar_feedback', { p_id: id, p_corpo: corpo })
 
 /** Passar `null` num campo quer dizer "não mexa nele". Só o admin consegue. */
 export const adminAtualizarFeedback = (
-  id: number,
+  id: string,
   mudanca: { status?: StatusFeedback; urgencia?: Urgencia; nota?: number },
 ) =>
   chamar<void>('admin_atualizar_feedback', {

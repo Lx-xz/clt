@@ -141,3 +141,28 @@ export function traduzirIds<T>(valor: T): T {
   }
   return andar(valor) as T
 }
+
+/**
+ * As outras tabelas de nome (v0.35): a conquista e o modo de jogo também
+ * tinham o nome como id (`mes-fechado`, `normal`). Mesma conta, com um
+ * prefixo — o nome da conquista não pode dar o mesmo uuid que uma carta de
+ * mesmo nome daria. O banco faz igual no `schema.sql`.
+ */
+function comPrefixo(prefixo: string) {
+  const memoria = new Map<string, string>()
+  return (id: string): string => {
+    if (!id || ehUuid(id)) return id
+    let novo = memoria.get(id)
+    if (!novo) {
+      novo = uuidV5(prefixo + id)
+      memoria.set(id, novo)
+    }
+    return novo
+  }
+}
+
+/** O id de hoje de uma conquista (`conquistasPagas` guarda o nome antigo). */
+export const idDaConquista = comPrefixo('conquista:')
+
+/** O id de hoje de um modo de jogo (a run gravada guarda `normal`). */
+export const idDoModo = comPrefixo('modo:')

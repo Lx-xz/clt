@@ -46,7 +46,9 @@ export interface Regras {
 
 /** O modo de referência: o jogo como ele é hoje. */
 export const MODO_NORMAL: Regras = {
-  id: 'normal',
+  // o uuid de `modo:normal` (`idDoModo`): o modo se chamava `normal` até a
+  // v0.35, e é pela conta que a run gravada antes chega até aqui
+  id: '2759c081-3c2b-5337-8363-13d0ba85a73e',
   nome: 'Normal',
   descricao: 'Um mês de trabalho formal. Quatro semanas, vinte dias úteis.',
   diasPorSemana: 5,

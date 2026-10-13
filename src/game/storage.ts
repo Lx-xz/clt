@@ -1,5 +1,5 @@
 import { colecaoInicial, ganharCopia, lerColecao } from './colecao'
-import { traduzirIds } from './ids'
+import { idDoModo, traduzirIds } from './ids'
 import type { CardId, Collection } from './types'
 
 // v2: a coleção passou a ter CÓPIAS e vários baralhos. A v1 continua sendo
@@ -123,7 +123,11 @@ export function migrarRun<T>(bruta: unknown): T | null {
   r.jogadasNaSemana ??= []
 
   // v0.35: os ids de carta e de evento viraram uuid. A run gravada antes
-  // ainda fala `hora-extra` na mão, no baralho, no retrato e no histórico
+  // ainda fala `hora-extra` na mão, no baralho, no retrato e no histórico —
+  // e `normal` no modo, que é traduzido à parte: `normal` é palavra comum
+  // demais para `traduzirIds` trocar onde quer que apareça
+  const modo = r.modo as { id?: string } | undefined
+  if (modo?.id) r.modo = { ...modo, id: idDoModo(modo.id) }
   return traduzirIds(r) as T
 }
 

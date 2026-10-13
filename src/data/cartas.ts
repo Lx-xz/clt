@@ -15,7 +15,7 @@ import type {
 import { migrarAcoes, migrarEfeitos } from '@/game/acoes'
 import { lerCustos } from '@/game/custos'
 import type { Acao, Efeito, Restricao } from '@/game/acoes'
-import { ehUuid, idAtual, registrarIdsAntigos } from '@/game/ids'
+import { ehUuid, idAtual, idDoModo, registrarIdsAntigos } from '@/game/ids'
 import { supabase } from './supabase'
 
 /**
@@ -212,13 +212,14 @@ function paraRegras(bruto: Partial<Regras> & { id?: string }): Regras {
   return {
     ...MODO_NORMAL,
     ...bruto,
-    id: bruto.id ?? MODO_NORMAL.id,
+    id: idDoModo(bruto.id ?? MODO_NORMAL.id),
     semanas: bruto.semanas?.length ? bruto.semanas : MODO_NORMAL.semanas,
   }
 }
 
 function traduzir(bruto: RespostaCatalogo): CatalogoCarregado {
-  idsAntigosNoBanco = false
+  // o modo também: `normal` no banco é o modo de antes da migração
+  idsAntigosNoBanco = (bruto.modos ?? []).some((m) => !!m.id && !ehUuid(m.id))
   // os ids antigos que só o banco conhece (carta criada no lab antes do
   // uuid): sem eles, um save velho com essa carta não seria traduzido
   registrarIdsAntigos([...(bruto.cartas ?? []), ...(bruto.eventos ?? [])].flatMap((l) => (l.id_antigo ? [l.id_antigo] : [])))
@@ -227,7 +228,7 @@ function traduzir(bruto: RespostaCatalogo): CatalogoCarregado {
     versao: bruto.versao ?? 1,
     cartas: (bruto.cartas ?? []).map(paraCarta),
     eventos: (bruto.eventos ?? []).map(paraEvento),
-    mudancas: (bruto.mudancas ?? []).map((m) => ({ ...m, carta: idAtual(m.carta) })),
+    mudancas: (bruto.mudancas ?? []).map((m) => ({ ...m, carta: m.familia === 'modo' ? idDoModo(m.carta) : idAtual(m.carta) })),
     // a removida chega como a linha inteira que ela era; o replay só precisa
     // do retrato
     removidas: (bruto.removidas ?? []).map((l): CartaSnapshot => {
@@ -284,7 +285,7 @@ async function escrever(
   // com o banco ainda nos ids antigos, toda escrita duplicaria a carta (ela
   // sobe com o uuid, e a linha antiga continua lá): a regra mora aqui, e não
   // só no botão, porque são várias as caixas do lab que gravam
-  if (idsAntigosNoBanco && fn !== 'admin_salvar_modo') {
+  if (idsAntigosNoBanco) {
     return { ok: false, erro: 'O banco ainda usa os ids antigos: rode o supabase/schema.sql (a migração para uuid) antes.' }
   }
   const { data, error } = await supabase.rpc(fn, args)
@@ -351,7 +352,7 @@ export type { Acao }
  * arquivada, e quem arquiva é a edição que a substitui.
  */
 export interface VersaoAntiga<T> {
-  id: number
+  id: string
   carta: CardId
   versao: number
   tipo: 'criada' | 'ajustada' | 'removida'
@@ -362,7 +363,7 @@ export interface VersaoAntiga<T> {
 }
 
 interface LinhaVersao {
-  id: number
+  id: string
   carta: string
   versao: number
   tipo: VersaoAntiga<unknown>['tipo']

@@ -25,7 +25,7 @@ export interface PerfilPublico {
 }
 
 export interface JogoResumo {
-  id: number
+  id: string
   ended_at: string
   outcome: string
   day: number

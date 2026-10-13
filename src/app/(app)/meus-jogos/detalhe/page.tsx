@@ -1,5 +1,6 @@
 'use client'
 
+import { ehUuid } from '@/game/ids'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
@@ -44,8 +45,10 @@ function Detalhe() {
   const sessao = useSessao()
 
   function carregar() {
-    const id = Number(idBruto)
-    if (!idBruto || !Number.isFinite(id)) {
+    // o id é o uuid da run desde a v0.35; o link antigo, de número, não abre
+    // mais nada (e mandá-lo ao banco seria um erro de tipo, não um "não achei")
+    const id = idBruto ?? ''
+    if (!ehUuid(id)) {
       setEstado({ tipo: 'nao-encontrado' })
       return
     }

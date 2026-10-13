@@ -1,5 +1,6 @@
 import type { Collection, GameState } from '@/game/types'
 import { supabase } from './supabase'
+import { MODO_NORMAL } from '@/game/regras'
 
 export interface SaveRemoto {
   run: GameState | null
@@ -31,7 +32,9 @@ export type DesfechoRegistrado = Exclude<GameState['outcome'], 'jogando'> | 'aba
 
 /** A linha de `runs` já montada, pronta para subir (ou esperar na fila). */
 export interface RunRegistravel {
-  run_id: string
+  /** O uuid que `createRun` sorteou. Desde a v0.35 é o `id` da linha (era
+   *  `run_id`, ao lado de um número do banco). */
+  id: string
   player_id: string
   outcome: DesfechoRegistrado
   day: number
@@ -75,7 +78,7 @@ export function montarRun(
   convidado: boolean,
 ): RunRegistravel {
   return {
-    run_id: run.runId,
+    id: run.runId,
     player_id: playerId,
     outcome,
     day: Math.min(20, Math.max(1, run.day)),
@@ -87,7 +90,7 @@ export function montarRun(
     warnings: run.warnings,
     max_dias_sem_descanso: run.maxDaysNoRest,
     versao_baralho: run.baralho?.versao ?? 0,
-    modo: run.modo?.id ?? 'normal',
+    modo: run.modo?.id ?? MODO_NORMAL.id,
     visivel,
     convidado,
     details: { history: run.history, baralho: run.baralho, modo: run.modo, log: run.log, envelopes: run.envelopesGanhos },
@@ -105,7 +108,7 @@ export function montarRun(
  * escrita pelo site (veja CLAUDE.md, seção Banco), então o caminho é inserir
  * direto e tratar o conflito quando ele vier.
  *
- * O índice único em run_id é quem impede a duplicata: se a mesma run for
+ * A chave primária (o uuid da run) é quem impede a duplicata: se a mesma run for
  * enviada duas vezes (duas abas, uma retentativa depois de a resposta se
  * perder), a segunda volta com 23505 — unique_violation — e isso aqui é
  * sucesso, não erro. A run já está gravada, que é tudo que importa.
