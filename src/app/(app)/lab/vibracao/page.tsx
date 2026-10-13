@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './vibracao.module.sass'
 
@@ -84,6 +84,11 @@ export default function VibracaoPage() {
         J — interruptor fora da tela, só o rótulo à vista
       </label>
 
+      <h2 className={styles.titulo}>Rodada 2: do jeito que o jogo usaria</h2>
+      <p className={styles.dica}>Em cada um: treme? E o número sobe UMA vez por toque?</p>
+      <BotaoK />
+      <CartaM />
+
       <h2 className={styles.titulo}>Por código (não tremeram)</h2>
       <div className={styles.lista}>
         {JEITOS.map((j) => (
@@ -101,5 +106,59 @@ export default function VibracaoPage() {
       </div>
       {ultimo ? <p className={styles.dica}>Último tocado: {ultimo}</p> : null}
     </main>
+  )
+}
+
+/** K: o botão É um rótulo com o interruptor transparente esticado por
+ *  cima; a ação vem do `change` do interruptor, que acontece uma vez por
+ *  toque. É como ficariam "Receber salário", "Pagar contas" e abrir a
+ *  recompensa. */
+function BotaoK() {
+  const [n, setN] = useState(0)
+  return (
+    <label className={`${styles.nativo} ${styles.comEscondido}`} role="button">
+      <input type="checkbox" className={styles.cobrindo} {...{ switch: '' }} onChange={() => setN((x) => x + 1)} />
+      K — botão que treme · tocado {n}×
+    </label>
+  )
+}
+
+/** M: a carta. Ela captura o ponteiro (por causa do arraste), então o
+ *  toque não chega num interruptor por cima dela. O que sobra: um rótulo
+ *  EM VOLTA dela que só aponta para o interruptor (fora da tela) no
+ *  segundo toque do toque duplo — o primeiro abre o detalhe e não deve
+ *  tremer. */
+function CartaM() {
+  const id = useId()
+  const rotulo = useRef<HTMLLabelElement>(null)
+  const ultimo = useRef(0)
+  const [jogadas, setJogadas] = useState(0)
+  const [toques, setToques] = useState(0)
+  return (
+    <>
+      <input id={id} type="checkbox" className={styles.foraDaTela} {...{ switch: '' }} tabIndex={-1} aria-hidden />
+      <label ref={rotulo} className={styles.envolta}>
+        <div
+          className={styles.cartaM}
+          role="button"
+          tabIndex={0}
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId)
+            // o segundo toque perto do primeiro é o duplo: só ele aponta o
+            // rótulo para o interruptor
+            const agora = performance.now()
+            if (agora - ultimo.current < 350) rotulo.current?.setAttribute('for', id)
+            else rotulo.current?.removeAttribute('for')
+            ultimo.current = agora
+          }}
+          onClick={() => setToques((x) => x + 1)}
+          onDoubleClick={() => setJogadas((x) => x + 1)}
+        >
+          M — carta: toque duplo para jogar
+          <br />
+          toques {toques} · jogadas {jogadas}
+        </div>
+      </label>
+    </>
   )
 }
