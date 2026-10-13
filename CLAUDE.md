@@ -1977,10 +1977,15 @@ e a um bot diferente — não compare os dois.
   e `idDoModo` em `ids.ts`), porque `conquistasPagas` e o `modo` de cada run
   gravada continuam com o nome, e quem os traduz é a leitura (`lerColecao`,
   `migrarRun`). No `schema.sql` o id das conquistas está escrito por
-  extenso, com o nome antigo num comentário ao lado. As tabelas de catálogo
-  (cartas, eventos, modos, conquistas) guardam o uuid numa coluna `text`, e
-  as outras, numa `uuid`: trocar o tipo das de catálogo obrigaria a mudar
-  toda RPC de admin, por nada que o jogo veja.
+  extenso, com o nome antigo num comentário ao lado. **E toda coluna de id
+  é do TIPO `uuid`**, as de catálogo inclusive: o fim do bloco dos modos
+  troca o tipo depois de os valores já serem uuid. Por isso as RPCs de admin
+  recebem o id como texto (`v_texto`), conferem o formato e só então o
+  convertem — o erro para quem manda o nome antigo é "o id da carta é um
+  uuid", e não um erro de conversão do Postgres. Nos blocos de migração,
+  toda comparação é `coluna::text !~ re`, porque eles rodam com a coluna
+  em `text` na primeira vez e em `uuid` nas seguintes. Só o `id_antigo` é
+  texto: ele guarda justamente o nome.
 - **O id da carta e do evento é UUID (v0.35), e o nome muda à vontade.**
   Era o nome em hífens (`hora-extra`), o que não fazia sentido nenhum:
   renomear a carta deixava o id contando o nome velho. Carta e evento novos

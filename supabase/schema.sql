@@ -115,7 +115,7 @@ alter table public.runs add column if not exists versao_baralho smallint not nul
 -- em que modo de jogo a run foi jogada. Sem isto, comparar no mesmo gráfico
 -- uma run de aluguel 300 com uma de 380 mentiria sobre as duas.
 -- (o id do modo é um uuid desde a v0.35: este é o do `normal`)
-alter table public.runs add column if not exists modo text not null default '2759c081-3c2b-5337-8363-13d0ba85a73e';
+alter table public.runs add column if not exists modo uuid not null default '2759c081-3c2b-5337-8363-13d0ba85a73e';
 alter table public.runs alter column modo set default '2759c081-3c2b-5337-8363-13d0ba85a73e';
 
 -- 'abandono' é o quinto desfecho: a run que o jogador reiniciou no meio. Não é
@@ -213,7 +213,7 @@ create index if not exists amizades_para_idx on public.amizades (para, estado);
 -- novo no motor. `premio` fica nulo por enquanto: é onde o cosmético que a
 -- conquista destrava (um crachá, uma caneca) vai morar, sem migração nova.
 create table if not exists public.conquistas (
-  id        text primary key,
+  id        uuid primary key,
   nome      text not null,
   descricao text not null,
   icone     text not null,
@@ -223,7 +223,7 @@ create table if not exists public.conquistas (
 
 create table if not exists public.conquistas_do_jogador (
   player_id   uuid not null references public.players (id) on delete cascade,
-  conquista   text not null references public.conquistas (id) on delete cascade,
+  conquista   uuid not null references public.conquistas (id) on delete cascade,
   run_id      uuid references public.runs (id) on delete set null,
   ganha_em    timestamptz not null default now(),
   primary key (player_id, conquista)
@@ -312,11 +312,11 @@ begin
   -- porque a tabela de quem ganhou e a lista mudam juntas
   alter table public.conquistas_do_jogador drop constraint if exists conquistas_do_jogador_conquista_fkey;
   update public.conquistas_do_jogador
-    set conquista = extensions.uuid_generate_v5(ns, 'conquista:' || conquista)::text
-    where conquista !~ re;
+    set conquista = extensions.uuid_generate_v5(ns, 'conquista:' || conquista)
+    where conquista::text !~ re;
   update public.conquistas
-    set id = extensions.uuid_generate_v5(ns, 'conquista:' || id)::text
-    where id !~ re;
+    set id = extensions.uuid_generate_v5(ns, 'conquista:' || id)
+    where id::text !~ re;
   alter table public.conquistas_do_jogador add constraint conquistas_do_jogador_conquista_fkey
     foreign key (conquista) references public.conquistas (id) on delete cascade;
 end;
@@ -361,7 +361,7 @@ on conflict (id) do update
 -- de si mesma em `runs.details.baralho`. Estas tabelas dizem o que a carta é
 -- HOJE; o retrato diz o que ela era naquele dia, e é ele que manda no replay.
 create table if not exists public.cartas (
-  id            text primary key,
+  id            uuid primary key,
   nome          text not null,
   custo         smallint not null default 0,
   -- null é carta NEUTRA, sem classe: não entra em embalo e nenhum evento de
@@ -399,9 +399,9 @@ begin
   ) then
     alter table public.cartas add column raridade text not null default 'comum';
     update public.cartas set raridade = 'incomum'
-      where id in ('terapia', 'home-office', 'foco-total', 'freela-grande');
+      where id::text in ('terapia', 'home-office', 'foco-total', 'freela-grande');
     update public.cartas set raridade = 'rara'
-      where id in ('cafe-duplo', 'puxar-o-saco', 'automatizar', 'pedir-aumento');
+      where id::text in ('cafe-duplo', 'puxar-o-saco', 'automatizar', 'pedir-aumento');
   end if;
 end;
 $$;
@@ -433,7 +433,7 @@ end;
 $$;
 
 create table if not exists public.cartas_evento (
-  id            text primary key,
+  id            uuid primary key,
   nome          text not null,
   tom           text not null,
   texto         text not null default '',
@@ -457,7 +457,7 @@ create table if not exists public.cartas_evento (
 -- que vira Novidades e histórico da carta.
 create table if not exists public.cartas_antigas (
   id        uuid primary key default gen_random_uuid(),
-  carta_id  text not null,
+  carta_id  uuid not null,
   familia   text not null,
   versao    smallint not null,
   -- a carta INTEIRA como ela era, para a excluída ainda ter o que mostrar
@@ -495,8 +495,8 @@ begin
   -- o histórico: a chave e a carta guardada inteira (é ela que "Usar esta"
   -- devolve ao editor). O modo não é carta, e fica como está
   update public.cartas_antigas
-    set carta_id = extensions.uuid_generate_v5(ns, carta_id)::text
-    where familia in ('acao', 'evento') and carta_id !~ re;
+    set carta_id = extensions.uuid_generate_v5(ns, carta_id::text)
+    where familia in ('acao', 'evento') and carta_id::text !~ re;
   update public.cartas_antigas
     set dados = jsonb_set(dados, '{id}', to_jsonb(extensions.uuid_generate_v5(ns, dados ->> 'id')::text))
     where familia in ('acao', 'evento')
@@ -505,11 +505,11 @@ begin
       and dados ->> 'id' !~ re;
 
   update public.cartas
-    set id_antigo = id, id = extensions.uuid_generate_v5(ns, id)::text
-    where id !~ re;
+    set id_antigo = id, id = extensions.uuid_generate_v5(ns, id::text)
+    where id::text !~ re;
   update public.cartas_evento
-    set id_antigo = id, id = extensions.uuid_generate_v5(ns, id)::text
-    where id !~ re;
+    set id_antigo = id, id = extensions.uuid_generate_v5(ns, id::text)
+    where id::text !~ re;
 
   -- e o número da linha do histórico também vira uuid. A ordem do histórico
   -- era a desse número; hoje é a data, e a versão dentro do mesmo dia
@@ -550,7 +550,7 @@ on conflict (unica) do nothing;
 -- "difícil" ou um "sem dinheiro"; é por isso que ela nasce como tabela e não
 -- como uma segunda linha da `baralho`.
 create table if not exists public.modos (
-  id            text primary key,
+  id            uuid primary key,
   nome          text not null,
   descricao     text not null default '',
   regras        jsonb not null,
@@ -559,8 +559,7 @@ create table if not exists public.modos (
   padrao        boolean not null default false,
   versao        smallint not null default 1,
   criado_em     timestamptz not null default now(),
-  atualizado_em timestamptz not null default now(),
-  constraint modos_id_ok check (id ~ '^[a-z0-9-]{2,40}$')
+  atualizado_em timestamptz not null default now()
 );
 
 -- v0.35: o id do modo é o uuid v5 de `modo:<nome antigo>` — o `normal` é
@@ -573,16 +572,36 @@ declare
   re constant text := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 begin
   update public.cartas_antigas
-    set carta_id = extensions.uuid_generate_v5(ns, 'modo:' || carta_id)::text
-    where familia = 'modo' and carta_id !~ re;
+    set carta_id = extensions.uuid_generate_v5(ns, 'modo:' || carta_id)
+    where familia = 'modo' and carta_id::text !~ re;
   update public.cartas_antigas
     set dados = jsonb_set(dados, '{id}', to_jsonb(extensions.uuid_generate_v5(ns, 'modo:' || (dados ->> 'id'))::text))
     where familia = 'modo'
       and jsonb_typeof(dados) = 'object'
       and dados ->> 'id' is not null
       and dados ->> 'id' !~ re;
-  update public.modos set id = extensions.uuid_generate_v5(ns, 'modo:' || id)::text where id !~ re;
-  update public.runs  set modo = extensions.uuid_generate_v5(ns, 'modo:' || modo)::text where modo !~ re;
+  update public.modos set id = extensions.uuid_generate_v5(ns, 'modo:' || id) where id::text !~ re;
+  update public.runs  set modo = extensions.uuid_generate_v5(ns, 'modo:' || modo) where modo::text !~ re;
+
+  -- e, com todo valor já em uuid, o TIPO da coluna vira uuid também: o que
+  -- era nome não precisa mais caber num `text`. A conquista sai e volta da
+  -- chave estrangeira porque as duas pontas mudam juntas
+  alter table public.modos drop constraint if exists modos_id_ok;
+  if (select data_type from information_schema.columns
+      where table_schema = 'public' and table_name = 'cartas' and column_name = 'id') = 'text' then
+    alter table public.cartas         alter column id       type uuid using id::uuid;
+    alter table public.cartas_evento  alter column id       type uuid using id::uuid;
+    alter table public.modos          alter column id       type uuid using id::uuid;
+    alter table public.cartas_antigas alter column carta_id type uuid using carta_id::uuid;
+    alter table public.runs alter column modo drop default;
+    alter table public.runs alter column modo type uuid using modo::uuid;
+    alter table public.runs alter column modo set default '2759c081-3c2b-5337-8363-13d0ba85a73e';
+    alter table public.conquistas_do_jogador drop constraint if exists conquistas_do_jogador_conquista_fkey;
+    alter table public.conquistas            alter column id        type uuid using id::uuid;
+    alter table public.conquistas_do_jogador alter column conquista type uuid using conquista::uuid;
+    alter table public.conquistas_do_jogador add constraint conquistas_do_jogador_conquista_fkey
+      foreign key (conquista) references public.conquistas (id) on delete cascade;
+  end if;
 end;
 $$;
 
@@ -746,9 +765,11 @@ drop function if exists public.admin_atualizar_feedback(bigint, text, text, smal
 drop function if exists public.admin_atualizar_feedback(uuid, text, text, smallint);
 drop function if exists public.catalogo();
 drop function if exists public.arquivar_carta(text, text, text, text, text);
+drop function if exists public.arquivar_carta(uuid, text, text, text, text);
 drop function if exists public.admin_salvar_carta(jsonb, text, text);
 drop function if exists public.admin_salvar_evento(jsonb, text, text);
 drop function if exists public.admin_excluir_carta(text, text, text);
+drop function if exists public.admin_excluir_carta(uuid, text, text);
 drop function if exists public.admin_semear_catalogo(jsonb, jsonb);
 drop function if exists public.admin_semear_catalogo(jsonb, jsonb, jsonb);
 drop function if exists public.admin_salvar_modo(jsonb, text, text);
@@ -1731,7 +1752,7 @@ grant execute on function public.catalogo() to anon, authenticated;
 -- caminho que muda carta passa por aqui — é o que garante que nenhuma versão
 -- some sem deixar registro.
 create function public.arquivar_carta(
-  p_id      text,
+  p_id      uuid,
   p_familia text,
   p_tipo    text,
   p_o_que   text,
@@ -1779,7 +1800,8 @@ security definer
 set search_path = public, pg_temp
 as $$
 declare
-  v_id       text := p_carta ->> 'id';
+  v_id       uuid;
+  v_texto   text := p_carta ->> 'id';
   v_existia  boolean;
   v_classe   text := nullif(p_carta ->> 'classe', '');
 begin
@@ -1787,9 +1809,10 @@ begin
     raise exception 'Só admin mexe no catálogo.';
   end if;
   -- v0.35: carta e evento novos nascem com uuid (`crypto.randomUUID()`)
-  if v_id is null or v_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+  if v_texto is null or v_texto !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     raise exception 'Id inválido: o id da carta é um uuid.';
   end if;
+  v_id := v_texto::uuid;
   if coalesce(btrim(p_porque), '') = '' then
     raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';
   end if;
@@ -1851,16 +1874,18 @@ security definer
 set search_path = public, pg_temp
 as $$
 declare
-  v_id      text := p_evento ->> 'id';
+  v_id      uuid;
+  v_texto   text := p_evento ->> 'id';
   v_existia boolean;
 begin
   if not public.sou_admin() then
     raise exception 'Só admin mexe no catálogo.';
   end if;
   -- v0.35: carta e evento novos nascem com uuid (`crypto.randomUUID()`)
-  if v_id is null or v_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+  if v_texto is null or v_texto !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     raise exception 'Id inválido: o id da carta é um uuid.';
   end if;
+  v_id := v_texto::uuid;
   if coalesce(btrim(p_porque), '') = '' then
     raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';
   end if;
@@ -1901,7 +1926,7 @@ $$;
 -- e das recompensas, e o motor continua sabendo o que ela faz — porque pode
 -- haver alguém no meio de uma run com ela na mão neste exato momento.
 create function public.admin_excluir_carta(
-  p_id      text,
+  p_id      uuid,
   p_familia text,
   p_porque  text
 )
@@ -1952,7 +1977,7 @@ begin
       (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias,
        raridade, custo_dinheiro, custos, versao)
     values (
-      item ->> 'id',
+      (item ->> 'id')::uuid,
       item ->> 'nome',
       coalesce((item ->> 'custo')::smallint, 0),
       nullif(item ->> 'classe', ''),
@@ -1973,7 +1998,7 @@ begin
   for item in select * from jsonb_array_elements(coalesce(p_modos, '[]'::jsonb)) loop
     insert into public.modos (id, nome, descricao, regras, padrao, versao)
     values (
-      item ->> 'id',
+      (item ->> 'id')::uuid,
       coalesce(item ->> 'nome', 'Normal'),
       coalesce(item ->> 'descricao', ''),
       item - 'id' - 'nome' - 'descricao' - 'padrao',
@@ -1986,7 +2011,7 @@ begin
   for item in select * from jsonb_array_elements(p_eventos) loop
     insert into public.cartas_evento (id, nome, tom, texto, efeitos, escolhas, versao)
     values (
-      item ->> 'id',
+      (item ->> 'id')::uuid,
       item ->> 'nome',
       coalesce(item ->> 'tom', 'negativo'),
       coalesce(item ->> 'texto', ''),
@@ -2015,16 +2040,18 @@ security definer
 set search_path = public, pg_temp
 as $$
 declare
-  v_id      text := p_modo ->> 'id';
+  v_id      uuid;
+  v_texto   text := p_modo ->> 'id';
   v_existia boolean;
   v_regras  jsonb := p_modo - 'id' - 'nome' - 'descricao' - 'padrao';
 begin
   if not public.sou_admin() then
     raise exception 'Só admin mexe nas regras do jogo.';
   end if;
-  if v_id is null or v_id !~ '^[a-z0-9-]{2,40}$' then
-    raise exception 'Id inválido: use minúsculas, números e hífen.';
+  if v_texto is null or v_texto !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    raise exception 'Id inválido: o id do modo é um uuid.';
   end if;
+  v_id := v_texto::uuid;
   if coalesce(btrim(p_porque), '') = '' then
     raise exception 'Diga por que está mudando: quem joga vai sentir a diferença.';
   end if;
@@ -2067,7 +2094,7 @@ $$;
 
 grant execute on function public.admin_salvar_carta(jsonb, text, text)   to authenticated;
 grant execute on function public.admin_salvar_evento(jsonb, text, text)  to authenticated;
-grant execute on function public.admin_excluir_carta(text, text, text)   to authenticated;
+grant execute on function public.admin_excluir_carta(uuid, text, text)   to authenticated;
 grant execute on function public.admin_salvar_modo(jsonb, text, text)    to authenticated;
 grant execute on function public.admin_semear_catalogo(jsonb, jsonb, jsonb) to authenticated;
 
@@ -2312,7 +2339,7 @@ grant execute on function public.pedidos_de_amizade() to authenticated;
 -- auth.uid() — e o pior que alguém faz chamando com o id de outra pessoa é
 -- dar a ela uma conquista que os números dela já davam.
 create function public.conferir_conquistas(p_player_id uuid)
-returns setof text
+returns setof uuid
 language plpgsql
 security definer
 set search_path = public, pg_temp
@@ -2320,7 +2347,7 @@ as $$
 begin
   return query
   with candidatas as (
-    select '87fda2d8-dd38-5831-8d40-8e3603c10b81' /* primeira-semana */ as c, (select r.id from public.runs r where r.player_id = p_player_id and r.week_reached >= 2 order by r.ended_at limit 1) as run
+    select '87fda2d8-dd38-5831-8d40-8e3603c10b81'::uuid /* primeira-semana */ as c, (select r.id from public.runs r where r.player_id = p_player_id and r.week_reached >= 2 order by r.ended_at limit 1) as run
     union all
     select '5c3894eb-657e-55a6-b947-b239cbb45244' /* mes-fechado */, (select r.id from public.runs r where r.player_id = p_player_id and r.outcome = 'vitoria' order by r.ended_at limit 1)
     union all
@@ -2368,7 +2395,7 @@ begin
         ) as t(x)
       where s.player_id = p_player_id
     ) >= n.meta then '00000000-0000-0000-0000-000000000000'::uuid end
-    from (values ('2736b724-e383-574e-8099-3f2a5600326a' /* colecionador */, 12), ('871d6dbb-7839-5353-9f39-65db5f5e03b2' /* colecionador-prata */, 24), ('56b1b525-d1c5-59d5-9a39-0820250457d2' /* colecionador-ouro */, 40)) as n(c, meta)
+    from (values ('2736b724-e383-574e-8099-3f2a5600326a'::uuid /* colecionador */, 12), ('871d6dbb-7839-5353-9f39-65db5f5e03b2' /* colecionador-prata */, 24), ('56b1b525-d1c5-59d5-9a39-0820250457d2' /* colecionador-ouro */, 40)) as n(c, meta)
   )
   insert into public.conquistas_do_jogador (player_id, conquista, run_id)
   select p_player_id, c.c, nullif(c.run, '00000000-0000-0000-0000-000000000000'::uuid)
@@ -2386,7 +2413,7 @@ grant execute on function public.conferir_conquistas(uuid) to anon, authenticate
 -- a OCULTA que ainda não foi ganha sai sem nome e sem como-se-ganha: é o
 -- banco que esconde, e não a tela
 create function public.minhas_conquistas(p_player_id uuid)
-returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz,
+returns table (id uuid, nome text, descricao text, icone text, ganha_em timestamptz,
                oculta boolean, tokens smallint, grupo text, nivel smallint)
 language sql
 security definer
@@ -2407,7 +2434,7 @@ grant execute on function public.minhas_conquistas(uuid) to anon, authenticated;
 
 -- as de outra pessoa: só as ganhas
 create function public.conquistas_publicas(p_nick text)
-returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz,
+returns table (id uuid, nome text, descricao text, icone text, ganha_em timestamptz,
                oculta boolean, tokens smallint, grupo text, nivel smallint)
 language sql
 security definer
@@ -2429,7 +2456,7 @@ grant execute on function public.conquistas_publicas(text) to anon, authenticate
 -- o que esta função acrescenta é ler por ela. Abre o mesmo que o replay
 -- público abre: run guardada, e a do abandono só não tem conquista nenhuma
 create function public.conquistas_da_run(p_run_id uuid)
-returns table (id text, nome text, descricao text, icone text, ganha_em timestamptz,
+returns table (id uuid, nome text, descricao text, icone text, ganha_em timestamptz,
                oculta boolean, tokens smallint, grupo text, nivel smallint)
 language sql
 security definer
