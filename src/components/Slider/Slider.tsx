@@ -4,21 +4,28 @@ import { Minus, Plus } from 'lucide-react'
 import { useRef } from 'react'
 import styles from './Slider.module.sass'
 
-/** O lugar do botão de cada ponta, e o tamanho da bolinha (bate com o sass). */
+/** O lugar do botão de cada ponta (bate com o sass). */
 const PONTA = 40
-const BOLINHA = 28
+/** Quanto o dedo anda antes de o toque virar arraste. */
+const FOLGA = 4
 
 /**
  * Controle de volume. Não é um `input[type=range]`: o nativo é irregular de
  * navegador para navegador, e no celular ele rouba o gesto de arrastar do
- * menu lateral com frequência. Aqui o curso é uma div que anda com Pointer
- * Events (os mesmos da carta), com captura do ponteiro — então o dedo pode
- * sair da barra durante o arraste sem o valor travar.
+ * menu lateral com frequência. Aqui a barra anda com Pointer Events (os
+ * mesmos da carta), com captura do ponteiro — então o dedo pode sair dela
+ * durante o arraste sem o valor travar.
+ *
+ * É a barra do iPhone: não há bolinha para mirar. Segura-se a PRÓPRIA
+ * barra, em qualquer ponto, e o valor anda o quanto o dedo andar (arraste
+ * RELATIVO) — tocar não pula para onde caiu o dedo, então pegar a barra
+ * para ajustar 5% não a manda para o outro lado antes.
  *
  * Os botões de − e + moram DENTRO da barra, nas pontas (o − por cima do
  * preenchido, o + no vazio): acertar 5% arrastando num celular é loteria, e
- * teclado e leitor de tela precisam de um alvo de verdade. O desenho é o do
- * `Interruptor` — o trilho, a cor de ligado e a bolinha branca são os mesmos.
+ * teclado e leitor de tela precisam de um alvo de verdade. Um toque neles é
+ * passo; se o dedo andar, vira arraste da barra como em qualquer outro
+ * ponto. O desenho é o do `Interruptor`: o mesmo trilho e a mesma cor.
  *
  * `onChange` dispara a cada passo do arraste; `onSoltar`, uma vez, quando o
  * ajuste termina (soltar o dedo, um clique no − ou +, soltar a tecla). É ali
@@ -40,20 +47,42 @@ export default function Slider({
   passo?: number
   desabilitado?: boolean
 }) {
-  const curso = useRef<HTMLDivElement>(null)
+  const barra = useRef<HTMLDivElement>(null)
+  // onde o dedo desceu e com que valor: o arraste soma a partir dali
+  const gesto = useRef<{ id: number; x: number; v: number; arrastando: boolean } | null>(null)
 
   function limitar(v: number) {
     return Math.min(100, Math.max(0, Math.round(v)))
   }
 
-  function doPonteiro(clientX: number) {
-    const caixa = curso.current?.getBoundingClientRect()
-    if (!caixa || caixa.width <= BOLINHA) return
-    // o centro da bolinha anda de meia bolinha até a outra meia: mirar o
-    // dedo no centro dela, e não na borda do curso
-    const p = (clientX - caixa.left - BOLINHA / 2) / (caixa.width - BOLINHA)
-    const v = limitar(p * 100)
+  function aoDescer(e: React.PointerEvent<HTMLDivElement>) {
+    if (desabilitado || gesto.current) return
+    gesto.current = { id: e.pointerId, x: e.clientX, v: valor, arrastando: false }
+  }
+
+  function aoMover(e: React.PointerEvent<HTMLDivElement>) {
+    const g = gesto.current
+    const caixa = barra.current?.getBoundingClientRect()
+    if (!g || g.id !== e.pointerId || !caixa) return
+    const dx = e.clientX - g.x
+    if (!g.arrastando) {
+      if (Math.abs(dx) < FOLGA) return
+      // só agora a barra toma o ponteiro: capturar já na descida engoliria
+      // o clique do − e do +, que é entregue a quem capturou. E é a captura
+      // que impede o menu lateral de achar que o gesto é dele
+      g.arrastando = true
+      barra.current?.setPointerCapture(e.pointerId)
+    }
+    // a barra inteira é o curso: atravessá-la de ponta a ponta é 0 → 100
+    const v = limitar(g.v + (dx / Math.max(1, caixa.width - 2 * PONTA)) * 100)
     if (v !== valor) onChange(v)
+  }
+
+  function aoSoltar(e: React.PointerEvent<HTMLDivElement>) {
+    const g = gesto.current
+    if (!g || g.id !== e.pointerId) return
+    gesto.current = null
+    if (g.arrastando) onSoltar?.()
   }
 
   const TECLAS: Record<string, number> = {
@@ -81,8 +110,16 @@ export default function Slider({
 
   return (
     <div
+      ref={barra}
       className={`${styles.barra} ${desabilitado ? styles.desligado : ''}`}
-      style={{ '--p': valor / 100, '--ponta': `${PONTA}px`, '--bolinha': `${BOLINHA}px` } as React.CSSProperties}
+      style={{ '--p': valor / 100, '--ponta': `${PONTA}px` } as React.CSSProperties}
+      onPointerDown={aoDescer}
+      onPointerMove={aoMover}
+      onPointerUp={aoSoltar}
+      onPointerCancel={aoSoltar}
+      // a carta e o menu usam o mesmo gesto; este atributo é o que faz a
+      // barra lateral ignorar um arraste que começou aqui dentro
+      data-carta="slider"
     >
       <span className={styles.preenchida} aria-hidden />
 
@@ -97,7 +134,6 @@ export default function Slider({
       </button>
 
       <div
-        ref={curso}
         className={styles.curso}
         role="slider"
         tabIndex={desabilitado ? -1 : 0}
@@ -112,30 +148,7 @@ export default function Slider({
         onKeyUp={(e) => {
           if (e.key in TECLAS || e.key === 'Home' || e.key === 'End') onSoltar?.()
         }}
-        onPointerDown={(e) => {
-          if (desabilitado) return
-          // capturar o ponteiro deixa o dedo sair da barra sem largar o
-          // controle — e impede o menu lateral de achar que é o gesto dele
-          e.currentTarget.setPointerCapture(e.pointerId)
-          doPonteiro(e.clientX)
-        }}
-        onPointerMove={(e) => {
-          if (e.currentTarget.hasPointerCapture(e.pointerId)) doPonteiro(e.clientX)
-        }}
-        onPointerUp={(e) => {
-          if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
-          e.currentTarget.releasePointerCapture(e.pointerId)
-          onSoltar?.()
-        }}
-        onPointerCancel={(e) => {
-          if (e.currentTarget.hasPointerCapture(e.pointerId)) onSoltar?.()
-        }}
-        // a carta e o menu usam o mesmo gesto; este atributo é o que faz a
-        // barra lateral ignorar um arraste que começou aqui dentro
-        data-carta="slider"
-      >
-        <span className={styles.bolinha} aria-hidden />
-      </div>
+      />
 
       <button
         type="button"

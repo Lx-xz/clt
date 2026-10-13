@@ -1307,9 +1307,13 @@ opções. O que ele escolheu, e que deve ser preservado:
   mudo); a caixa de marcar, para "li e aceito". É um `button
   role="switch"` com `aria-checked`, e a LINHA inteira é o alvo do toque.
   **O interruptor e a barra de volume são UM desenho** (v0.38): o mesmo
-  trilho em pílula (`--trilho-desligado`, `--trilho-ligado`), a mesma
-  bolinha branca, a mesma altura. O − e o + do `Slider` moram dentro da
-  barra, nas pontas. O `Slider` tem `onChange` (cada passo do arraste) e
+  trilho em pílula (`--trilho-desligado`, `--trilho-ligado`) e a mesma
+  cor. O `Slider` é a barra do iPhone: sem bolinha, segura-se a própria
+  barra em qualquer ponto e o valor anda o quanto o dedo andar (arraste
+  RELATIVO; tocar não pula o valor). O − e o + moram dentro dela, nas
+  pontas; a barra só captura o ponteiro depois de 4 px de movimento,
+  porque capturar na descida entregaria o clique à barra e o − e o +
+  deixariam de funcionar. O `Slider` tem `onChange` (cada passo do arraste) e
   `onSoltar` (uma vez, ao soltar o dedo, num clique de −/+ ou ao subir a
   tecla): o som de prova do volume de efeitos mora no `onSoltar` — no
   `onChange`, arrastar virava uma metralhadora.

@@ -1,26 +1,36 @@
-// A barra de volume, no desenho do Interruptor: trilho em pílula, o
-// preenchido na cor de "ligado" e a bolinha branca. O − e o + moram nas
-// pontas, dentro dela. `--p` (0 a 1), `--ponta` e `--bolinha` vêm do JS.
+// A barra de volume, no desenho do Interruptor: trilho em pílula e o
+// preenchido na cor de "ligado". Sem bolinha: segura-se a própria barra,
+// como no iPhone. O − e o + moram nas pontas, dentro dela. `--p` (0 a 1) e
+// `--ponta` vêm do JS.
 
 .barra
   position: relative
   display: flex
   align-items: stretch
-  height: 34px
+  height: 40px
   background: var(--trilho-desligado)
   border-radius: 999px
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12)
   // o preenchido não pode vazar da pílula
   overflow: hidden
+  cursor: grab
   user-select: none
+  // o arraste é do controle, não da página: sem isto o celular rola junto
+  touch-action: none
+  transition: transform .15s ease
 
-// do começo da barra até o centro da bolinha: o − fica sempre em cima dele
+  // segurada, a barra cresce um pouco, como a do iPhone
+  &:active:not(.desligado)
+    cursor: grabbing
+    transform: scaleY(1.08)
+
+// do começo da barra até o valor, e o − fica sempre em cima dele: no zero
+// sobra a ponta pintada, e é ela que diz de que lado se aumenta
 .preenchida
   position: absolute
   inset: 0 auto 0 0
-  width: calc(var(--ponta) + var(--bolinha) / 2 + (100% - 2 * var(--ponta) - var(--bolinha)) * var(--p))
+  width: calc(var(--ponta) + (100% - 2 * var(--ponta)) * var(--p))
   background: var(--trilho-ligado)
-  border-radius: 999px
   pointer-events: none
 
 .passo
@@ -55,39 +65,15 @@
   color: var(--tinta-fraca)
 
 .curso
-  position: relative
-  z-index: 1
   flex: 1
   min-width: 0
-  cursor: pointer
-  // o arraste é do controle, não da página: sem isto o celular rola junto
-  touch-action: none
   outline: none
 
-  &:focus-visible .bolinha
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 0 0 3px var(--destaque)
-
-.bolinha
-  position: absolute
-  top: 50%
-  left: calc(var(--bolinha) / 2 + (100% - var(--bolinha)) * var(--p))
-  width: var(--bolinha)
-  height: var(--bolinha)
-  background: #fff
-  border-radius: 50%
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .3)
-  transform: translate(-50%, -50%)
-  pointer-events: none
-  transition: box-shadow .15s ease, transform .12s ease
-
-.curso:active .bolinha
-  transform: translate(-50%, -50%) scale(1.08)
-
-.barra:hover:not(.desligado) .bolinha
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 0 0 4px color-mix(in srgb, var(--tinta) 8%, transparent)
+// o foco é do curso, mas o anel é da barra inteira
+.barra:has(.curso:focus-visible)
+  outline: 2px solid var(--destaque)
+  outline-offset: 2px
 
 .desligado
   opacity: .5
-
-  .curso
-    cursor: default
+  cursor: default
