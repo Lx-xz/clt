@@ -319,20 +319,14 @@ function Pacote({ t }: { t: number }) {
         <Face vista={vista} o={[24, 70, 0]} u={[0, 0, 1]} v={[0, 1, 0]}>
           <Chapa w={48} h={66} cor="#6b4a28" />
         </Face>
-        {/* as abas: de fora com o barbante, e o avesso liso. Moram atrás da
-          carta que sai: abertas, ficam para os lados, e fechadas não há
-          carta nenhuma */}
+        {/* as abas: de fora com o barbante, e o avesso liso. A da esquerda
+          mora atrás da carta que sai: aberta, fica para o lado, e fechada
+          não há carta nenhuma */}
         <Face vista={vista} t={abaE} o={[24, 70, 48]} u={[1, 0, 0]} v={[0, 0, -1]}>
           {abaDeFora('#dcae74')}
         </Face>
         <Face vista={vista} t={abaE} o={[80, 70, 48]} u={[-1, 0, 0]} v={[0, 0, -1]}>
           <Chapa w={56} h={48} cor="#a8753f" />
-        </Face>
-        <Face vista={vista} t={abaD} o={[136, 70, 0]} u={[-1, 0, 0]} v={[0, 0, 1]}>
-          {abaDeFora('#d8a96f')}
-        </Face>
-        <Face vista={vista} t={abaD} o={[80, 70, 0]} u={[1, 0, 0]} v={[0, 0, 1]}>
-          <Chapa w={56} h={48} cor="#9c6c38" />
         </Face>
       </Em>
       <Em c="frente">
@@ -341,6 +335,15 @@ function Pacote({ t }: { t: number }) {
           <Chapa w={48} h={66} cor="#a8763f" />
           <rect x="21.5" y="0" width="5" height="66" fill="#e0d2ae" />
           <rect x="0" y="29" width="48" height="6" fill="#e0d2ae" />
+        </Face>
+        {/* a aba da direita vem DEPOIS da lateral: a vista é da direita, e
+          aberta ela cai para fora, na frente da lateral. Na camada de trás,
+          a lateral a cobria. A carta sai pelo meio, longe dela */}
+        <Face vista={vista} t={abaD} o={[136, 70, 0]} u={[-1, 0, 0]} v={[0, 0, 1]}>
+          {abaDeFora('#d8a96f')}
+        </Face>
+        <Face vista={vista} t={abaD} o={[80, 70, 0]} u={[1, 0, 0]} v={[0, 0, 1]}>
+          <Chapa w={56} h={48} cor="#9c6c38" />
         </Face>
         {/* a frente */}
         <Face vista={vista} o={[24, 70, 0]} u={[1, 0, 0]} v={[0, 1, 0]}>
