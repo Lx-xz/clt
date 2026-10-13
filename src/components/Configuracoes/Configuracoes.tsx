@@ -1,9 +1,10 @@
 'use client'
 
-import { LogOut, Monitor, Moon, Music, Sparkles, Sun, Volume2, VolumeX } from 'lucide-react'
+import { LogOut, Monitor, Moon, Music, Sparkles, Sun, Vibrate, Volume2, VolumeX } from 'lucide-react'
 import { useState } from 'react'
 import { tocar } from '@/data/efeitos'
 import type { Volumes } from '@/data/som'
+import { podeVibrar, vibrar } from '@/data/vibrar'
 import { TEMAS, type Tema } from '@/data/tema'
 import type { Sessao } from '@/game/session'
 import buttons from '@/styles/buttons.module.sass'
@@ -60,6 +61,7 @@ export default function Configuracoes({
   onFechar: () => void
 }) {
   const [aba, setAba] = useState<Aba>('som')
+  const [vibra] = useState(podeVibrar)
 
   return (
     <Dialogo
@@ -129,6 +131,21 @@ export default function Configuracoes({
               dica="Desliga tudo, e devolve o som do aparelho para o que estiver tocando."
               icone={<VolumeX size={18} />}
             />
+            {/* só onde há o que tremer: no computador seria um ajuste que
+                não faz nada */}
+            {vibra ? (
+              <Interruptor
+                ligado={volumes.vibrar}
+                onChange={(v) => {
+                  mudarVolume('vibrar', v)
+                  // ligar treme uma vez, para a pessoa saber como é
+                  if (v) vibrar('abrir')
+                }}
+                rotulo="Vibração"
+                dica="O celular treme junto com as jogadas e as recompensas. Vale com o mudo ligado."
+                icone={<Vibrate size={18} />}
+              />
+            ) : null}
           </div>
 
           <h3 className={styles.titulo}>Volume</h3>

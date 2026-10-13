@@ -66,6 +66,7 @@ export const VERSOES: Versao[] = [
     titulo: 'Configurações arrumadas',
     itens: [
       { tipo: 'melhor', texto: 'As configurações agora têm abas (aparência, som e conta), interruptores no lugar das caixinhas e uma prévia de cada tema. O botão de sair fica sempre à mão, embaixo.' },
+      { tipo: 'novo', texto: 'No celular, o aparelho treme junto com as jogadas e as recompensas. Dá para desligar em Configurações › Som.' },
     ],
   },
   {

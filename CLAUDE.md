@@ -2089,6 +2089,15 @@ e a um bot diferente — não compare os dois.
   `som.ts`, que não baixa fora da mesa). Faltam, da tabela combinada:
   comprar a mão, virar o evento, advertência, cota batida, burnout e
   vitória, o recibo saindo, o token e a máquina vendendo.
+  **A vibração vai junto (v0.38, `src/data/vibrar.ts`)**: `tocar()` chama
+  `vibrar()` antes de tudo, então todo efeito novo já treme (o ritmo é uma
+  linha de `RITMOS`). Ela tem interruptor próprio (`Volumes.vibrar`) e vale
+  com o mudo ligado. Só em aparelho de toque (`pointer: coarse`): o Chrome
+  do computador TEM `navigator.vibrate` e não faz nada. **O iPhone não tem
+  `navigator.vibrate`**: lá a batida é o háptico do `<input type="checkbox"
+  switch>` do iOS 18, alternado por `click()` num rótulo montado e
+  desmontado no `<head>` — uma batida só, sem ritmo, e só dentro de um
+  gesto (a carta desvirando, que sai de `setTimeout`, não treme lá).
 - **Cosméticos desbloqueáveis.** `conquistas.premio` já existe, nulo: é
   onde o acessório que a conquista destrava (crachá, caneca, óculos da
   firma) vai morar. Junto com os pontos de feedback, resolve a pendência "o

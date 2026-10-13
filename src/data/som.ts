@@ -12,11 +12,14 @@ export interface Volumes {
   mudo: boolean
   /** Fora da mesa a trilha toca baixinho, para não competir com a leitura. */
   baixaFora: boolean
+  /** O celular treme junto com os efeitos (`vibrar.ts`). Não é som: vale
+   *  com o mudo ligado. */
+  vibrar: boolean
 }
 
 const CHAVE = 'clt:som:v1'
 
-export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5, efeitos: 0.8, mudo: false, baixaFora: true }
+export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5, efeitos: 0.8, mudo: false, baixaFora: true, vibrar: true }
 
 /** Quanto do volume normal sobra fora da mesa. */
 export const FATOR_FORA = 0.3
@@ -40,6 +43,7 @@ export function lerVolumes(): Volumes {
       // ausente no save antigo: o padrão é abaixar, que é o comportamento
       // que a pessoa esperaria sem nunca ter mexido no ajuste
       baixaFora: v.baixaFora !== false,
+      vibrar: v.vibrar !== false,
     }
   } catch {
     return VOLUMES_PADRAO

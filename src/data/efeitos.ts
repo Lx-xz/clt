@@ -1,6 +1,7 @@
 'use client'
 
 import { EVENTO_VOLUME, lerVolumes, volumeDosEfeitos, type Volumes } from './som'
+import { vibrar } from './vibrar'
 
 /**
  * Os efeitos sonoros: a carta jogada, o salário, as contas, o envelope.
@@ -263,10 +264,12 @@ export function ligarEfeitos() {
   })
 }
 
-/** Toca um efeito. Sem som ligado, sem interação ainda ou com o som ainda
+/** Toca um efeito, e vibra junto. Sem som ligado, sem interação ainda ou com o som ainda
  *  sendo preparado, não toca nada — e não espera: som atrasado é pior que
  *  som nenhum. */
 export function tocar(nome: Efeito) {
+  // a vibração vem antes de tudo: ela não depende do som estar ligado
+  vibrar(nome)
   if (!contexto || !mestre || volumeAtual() === 0) return
   const buffer = buffers[nome]
   if (!buffer) return
