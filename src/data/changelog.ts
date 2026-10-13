@@ -61,6 +61,14 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.38',
+    data: '2026-10-13',
+    titulo: 'Configurações arrumadas',
+    itens: [
+      { tipo: 'melhor', texto: 'As configurações agora têm abas (aparência, som e conta), interruptores no lugar das caixinhas e uma prévia de cada tema. O botão de sair fica sempre à mão, embaixo.' },
+    ],
+  },
+  {
     versao: '0.37',
     data: '2026-10-13',
     titulo: 'O escritório faz barulho',

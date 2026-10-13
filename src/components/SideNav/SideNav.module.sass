@@ -239,41 +239,9 @@ $painel-largo: 256px
   font-size: 14px
   line-height: 1.5
 
-// --------------------------------------------------------- configurações
-.grupo
-  display: flex
-  flex-direction: column
-  gap: 10px
-  padding: 14px
-  background: var(--papel)
-  border: 1px solid var(--linha)
-  border-radius: var(--raio)
-
-.grupoTitulo
-  color: var(--tinta-fraca)
-  font-family: var(--mono)
-  font-size: 10px
-  font-weight: 700
-  letter-spacing: .12em
-  text-transform: uppercase
-
-.grupoDica
-  color: var(--tinta-fraca)
-  font-size: 12px
-  line-height: 1.4
-
-.controle
-  display: flex
-  flex-direction: column
-  gap: 6px
-
-// "mudo" desliga tudo: os dois sliders continuam mexíveis, mas esmaecidos,
-// para ficar claro que o silêncio vem do check e não de um volume zerado
-.desligado
-  opacity: .45
-
-// o Sair das Configurações: a cor do perigo já em repouso, porque é a única
-// ação da janela que não se desfaz
+// o "Descartar e sair" do aviso de pendência: a cor do perigo já em
+// repouso, porque a ação não se desfaz. As Configurações moram em
+// `components/Configuracoes` desde a v0.38
 .botaoSair
   align-self: flex-start
   display: inline-flex
@@ -281,22 +249,6 @@ $painel-largo: 256px
   gap: 6px
   color: var(--estresse)
   border-color: color-mix(in srgb, var(--estresse) 45%, var(--linha))
-
-.controleRotulo
-  display: flex
-  justify-content: space-between
-  gap: 10px
-  color: var(--tinta-fraca)
-  font-size: 13px
-
-  b
-    // largura fixa para o número: sem ela o rótulo empurrava o diálogo
-    // inteiro ao passar de "99%" para "100%"
-    min-width: 4.5ch
-    font-family: var(--mono)
-    font-variant-numeric: tabular-nums
-    font-weight: 600
-    text-align: right
 
 // ------------------------------------------------------------------ avisos
 .comSino
@@ -413,23 +365,3 @@ $painel-largo: 256px
   .backdrop
     transition: none
 
-// os dados da conta, nas Configurações: rótulo pequeno em cima, valor embaixo
-.dadosConta
-  display: grid
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))
-  gap: 10px 16px
-  margin: 0
-
-  dt
-    color: var(--tinta-fraca)
-    font-size: 10px
-    letter-spacing: .08em
-    text-transform: uppercase
-
-  dd
-    margin: 2px 0 0
-    font-size: 14px
-    overflow-wrap: anywhere
-
-.mono
-  font-family: var(--mono)

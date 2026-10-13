@@ -748,8 +748,15 @@ opções. O que ele escolheu, e que deve ser preservado:
   convidado) e "Configurações".
   **"Reiniciar run" e "Sair" saíram da barra (v0.14).** Reiniciar virou
   "Pedir demissão", dentro da mesa, que é onde a vontade de desistir
-  aparece; Sair foi para o fim das Configurações — na barra ele ficava a um
-  clique errado de distância, e estava repetido no fim do perfil. Os dois
+  aparece; Sair foi para as Configurações — na barra ele ficava a um
+  clique errado de distância, e estava repetido no fim do perfil. **Desde
+  a v0.38 as Configurações são um componente próprio**
+  (`components/Configuracoes`), em três abas (Aparência, Som, Conta), e o
+  Sair mora no RODAPÉ, ao lado do Fechar, fora das abas: quem abre a janela
+  para sair não procura em qual aba ele está. O estado (volumes, tema)
+  continua na barra lateral; o componente é só a tela. O tema se escolhe
+  por cartões com a mesa daquele tema desenhada (cores fixas de cada tema,
+  porque a prévia mostra o que NÃO está aplicado). Os dois
   confirmam com o segundo clique (`BotaoConfirmar`, abaixo).
   **Nada de barra inferior no celular** — foi proposta e recusada pelo
   autor. A porta continua sendo o arraste, e o início tem tudo à mão.
@@ -1295,6 +1302,10 @@ opções. O que ele escolheu, e que deve ser preservado:
   `FATOR_FORA` fora da mesa, e a transição é uma rampa no GainNode — trocar
   o ganho de uma vez estala. O efeito que dá `play()` **não** depende de
   `naMesa`, senão trocar de página reiniciaria a trilha.
+- **Liga-e-desliga é `Interruptor`, resposta de formulário é `Check`**
+  (v0.38). O interruptor é para o ajuste que vale na hora do toque (o
+  mudo); a caixa de marcar, para "li e aceito". É um `button
+  role="switch"` com `aria-checked`, e a LINHA inteira é o alvo do toque.
 - **Slider e checkbox são desenhados, não nativos** (`Slider.tsx`,
   `Check.tsx`). O `input[type=range]` é irregular entre navegadores e no
   celular disputa o gesto de arrastar com o menu; o slider daqui é uma trilha

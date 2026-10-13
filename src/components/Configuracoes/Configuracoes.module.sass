@@ -1,0 +1,264 @@
+// As Configurações em abas, com o Sair fixo no rodapé.
+
+.abas
+  margin-bottom: 18px
+
+.secao
+  display: flex
+  flex-direction: column
+  gap: 12px
+  // a altura não salta de uma aba para a outra: o popup ficava pulando
+  min-height: 330px
+
+.titulo
+  margin: 6px 0 -2px
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 600
+  letter-spacing: .1em
+  text-transform: uppercase
+
+// um grupo de ajustes num cartão, com fio entre as linhas
+.cartao
+  display: flex
+  flex-direction: column
+  padding: 2px 14px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 12px
+
+  > * + *
+    border-top: 1px solid color-mix(in srgb, var(--linha) 70%, transparent)
+
+.apagado
+  opacity: .5
+
+.dica
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  line-height: 1.5
+
+.aviso
+  padding: 10px 12px
+  background: color-mix(in srgb, var(--estresse) 9%, var(--papel-alto))
+  border-left: 3px solid var(--estresse)
+  border-radius: 0 8px 8px 0
+  color: var(--tinta)
+
+// ---------------------------------------------------------------- tema
+.temas
+  display: grid
+  grid-template-columns: repeat(3, minmax(0, 1fr))
+  gap: 10px
+
+.tema
+  display: flex
+  flex-direction: column
+  gap: 8px
+  padding: 8px
+  background: var(--papel-alto)
+  border: 2px solid var(--linha)
+  border-radius: 12px
+  color: var(--tinta)
+  font: inherit
+  cursor: pointer
+  transition: border-color .15s ease, transform .15s ease
+
+  &:hover
+    border-color: var(--tinta-fraca)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: 2px
+
+.temaAtivo
+  border-color: var(--destaque)
+
+  &:hover
+    border-color: var(--destaque)
+
+.temaNome
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  gap: 6px
+  font-size: 14px
+  font-weight: 600
+
+// a mesa de mentira: barra em cima, duas cartas e um botão. As cores são as
+// de cada tema, fixas, porque a prévia mostra o tema que NÃO está aplicado
+.previa
+  --p-papel: #e9e4d9
+  --p-alto: #f6f2e8
+  --p-linha: #c4bba7
+  --p-tinta: #1e1c18
+  --p-destaque: #c8971f
+  position: relative
+  display: grid
+  grid-template-columns: 1fr 1fr
+  grid-template-rows: 12px 1fr 10px
+  gap: 6px
+  aspect-ratio: 16 / 10
+  padding: 8px
+  overflow: hidden
+  background: var(--p-papel)
+  border-radius: 8px
+
+.previa_escuro
+  --p-papel: #171613
+  --p-alto: #211f1b
+  --p-linha: #3a362e
+  --p-tinta: #ece7da
+  --p-destaque: #e0b544
+
+// o sistema é metade de cada: a diagonal diz "depende"
+.previa_sistema::after
+  content: ''
+  position: absolute
+  inset: 0
+  background: #171613
+  clip-path: polygon(100% 0, 100% 100%, 0 100%)
+  opacity: .92
+
+.previaBarra
+  grid-column: 1 / -1
+  background: var(--p-alto)
+  border: 1px solid var(--p-linha)
+  border-radius: 4px
+
+.previaCarta
+  background: var(--p-alto)
+  border: 1px solid var(--p-linha)
+  border-radius: 4px
+
+.previaBotao
+  grid-column: 2
+  background: var(--p-destaque)
+  border-radius: 3px
+
+// ----------------------------------------------------------------- som
+.volume
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding: 12px 0
+
+.volumeCabeca
+  display: flex
+  align-items: center
+  gap: 12px
+
+.volumeIcone
+  display: grid
+  flex: none
+  place-items: center
+  width: 34px
+  height: 34px
+  background: var(--papel-baixo)
+  border-radius: 9px
+  color: var(--tinta-fraca)
+
+.volumeRotulo
+  flex: 1
+  font-size: 15px
+  font-weight: 600
+
+.volumeValor
+  // largura fixa e algarismos de mesma largura: sem isso o número
+  // empurrava a linha ao passar de "99%" para "100%"
+  min-width: 4.5ch
+  font-variant-numeric: tabular-nums
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 13px
+  text-align: right
+
+// --------------------------------------------------------------- conta
+.quem
+  display: flex
+  align-items: center
+  gap: 14px
+
+.quemTexto
+  display: flex
+  flex-direction: column
+  gap: 4px
+  min-width: 0
+
+.nick
+  overflow: hidden
+  font-family: var(--mono)
+  font-size: 20px
+  font-weight: 600
+  text-overflow: ellipsis
+
+.selos
+  display: flex
+  flex-wrap: wrap
+  gap: 6px
+
+.selo
+  padding: 2px 9px
+  background: var(--papel-baixo)
+  border-radius: 999px
+  color: var(--tinta-fraca)
+  font-size: 12px
+  font-weight: 700
+
+.seloAdmin
+  background: color-mix(in srgb, var(--destaque) 18%, transparent)
+  color: var(--tinta)
+
+.dados
+  margin: 0
+
+  div
+    display: flex
+    justify-content: space-between
+    gap: 12px
+    padding: 12px 0
+
+  dt
+    color: var(--tinta-fraca)
+    font-size: 14px
+
+  dd
+    min-width: 0
+    margin: 0
+    overflow-wrap: anywhere
+    font-size: 14px
+    text-align: right
+
+  // sem nada para mostrar (o convidado sem nome nem e-mail), o cartão some
+  &:empty
+    display: none
+
+.mono
+  font-family: var(--mono)
+
+// -------------------------------------------------------------- rodapé
+.rodape
+  display: flex
+  flex: 1
+  flex-wrap: wrap
+  justify-content: space-between
+  gap: 8px
+
+.sair
+  display: inline-flex
+  align-items: center
+  gap: 6px
+  color: var(--estresse)
+  border-color: color-mix(in srgb, var(--estresse) 45%, var(--linha))
+
+@media (max-width: 760px)
+  .secao
+    min-height: 0
+
+  .temas
+    gap: 8px
+
+  .temaNome
+    font-size: 13px

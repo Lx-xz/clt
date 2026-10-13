@@ -11,7 +11,6 @@ import {
   Hammer,
   House,
   Layers,
-  LogOut,
   MessageSquareWarning,
   Play,
   Settings,
@@ -19,16 +18,13 @@ import {
   Trophy,
 } from 'lucide-react'
 import Avatar, { TONS_DE_FUNDO, tintaSobre } from '../Avatar'
-import BotaoConfirmar from '../BotaoConfirmar'
+import Configuracoes from '../Configuracoes'
 import { MaquinaIcon, TokenIcon } from '../icons'
-import Check from '../Check'
-import Slider from '../Slider'
 import Dialogo, { popupAberto } from '../Dialogo'
 import Segmentado from '../Segmentado'
 import { useSessao } from '../SessaoGuard'
 import { gravarVolumes, lerVolumes, VOLUMES_PADRAO, type Volumes } from '@/data/som'
-import { tocar } from '@/data/efeitos'
-import { gravarTema, lerTema, TEMAS, type Tema } from '@/data/tema'
+import { gravarTema, lerTema, type Tema } from '@/data/tema'
 import { souAdmin } from '@/data/feedback'
 import { sair } from '@/data/conta'
 import { cancelarSync } from '@/data/sync'
@@ -412,133 +408,16 @@ export default function SideNav() {
       ) : null}
 
       {configurando ? (
-        <Dialogo
-          titulo="Configurações"
-          largo
+        <Configuracoes
+          sessao={sessao}
+          volumes={volumes}
+          mudarVolume={mudarVolume}
+          tema={tema}
+          mudarTema={mudarTema}
+          saindo={saindo}
+          onSair={sairDaConta}
           onFechar={() => setConfigurando(false)}
-          acoes={
-            <button
-              type="button"
-              className={`${buttons.button} ${buttons.primary}`}
-              onClick={() => setConfigurando(false)}
-            >
-              Fechar
-            </button>
-          }
-        >
-          <div className={styles.grupo}>
-            <span className={styles.grupoTitulo}>Tema</span>
-            <Segmentado rotulo="Tema" valor={tema} onChange={mudarTema} opcoes={TEMAS} />
-            <span className={styles.grupoDica}>
-              &ldquo;Sistema&rdquo; acompanha o aparelho, inclusive quando ele troca sozinho de
-              noite.
-            </span>
-          </div>
-
-          <div className={styles.grupo}>
-            <span className={styles.grupoTitulo}>Som</span>
-            <Check marcado={volumes.mudo} onChange={(v) => mudarVolume('mudo', v)}>
-              Mudo — desliga tudo, e solta o som do aparelho
-            </Check>
-            <Check
-              marcado={volumes.baixaFora}
-              desabilitado={volumes.mudo}
-              onChange={(v) => mudarVolume('baixaFora', v)}
-            >
-              Música baixa fora do jogo
-            </Check>
-            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
-              <span className={styles.controleRotulo}>
-                Volume geral <b>{Math.round(volumes.geral * 100)}%</b>
-              </span>
-              <Slider
-                rotulo="Volume geral"
-                valor={Math.round(volumes.geral * 100)}
-                desabilitado={volumes.mudo}
-                onChange={(v) => mudarVolume('geral', v / 100)}
-              />
-            </label>
-            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
-              <span className={styles.controleRotulo}>
-                Volume da música <b>{Math.round(volumes.musica * 100)}%</b>
-              </span>
-              <Slider
-                rotulo="Volume da música"
-                valor={Math.round(volumes.musica * 100)}
-                desabilitado={volumes.mudo}
-                onChange={(v) => mudarVolume('musica', v / 100)}
-              />
-            </label>
-            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
-              <span className={styles.controleRotulo}>
-                Volume dos efeitos <b>{Math.round(volumes.efeitos * 100)}%</b>
-              </span>
-              <Slider
-                rotulo="Volume dos efeitos"
-                valor={Math.round(volumes.efeitos * 100)}
-                desabilitado={volumes.mudo}
-                onChange={(v) => {
-                  mudarVolume('efeitos', v / 100)
-                  // ouvir enquanto ajusta: o número sozinho não diz o volume
-                  tocar('carta')
-                }}
-              />
-            </label>
-          </div>
-
-          <div className={styles.grupo}>
-            <span className={styles.grupoTitulo}>Conta</span>
-            {/* os dados da conta moravam no perfil — que é a página que os
-                OUTROS veem. Aqui só você chega */}
-            <dl className={styles.dadosConta}>
-              {sessao.nome ? (
-                <div>
-                  <dt>Nome</dt>
-                  <dd>{sessao.nome}</dd>
-                </div>
-              ) : null}
-              {sessao.email ? (
-                <div>
-                  <dt>E-mail</dt>
-                  <dd className={styles.mono}>{sessao.email}</dd>
-                </div>
-              ) : null}
-              <div>
-                <dt>Tipo</dt>
-                <dd>{sessao.convidado ? 'Convidado (sem conta)' : 'Conta própria'}</dd>
-              </div>
-              {sessao.convidado ? null : (
-                <div>
-                  <dt>Pontos de feedback</dt>
-                  <dd className={styles.mono}>{sessao.pontos}</dd>
-                </div>
-              )}
-              {sessao.admin ? (
-                <div>
-                  <dt>Permissão</dt>
-                  <dd>Admin</dd>
-                </div>
-              ) : null}
-            </dl>
-            <span className={styles.grupoDica}>
-              Só você vê isto: quem abre o seu perfil vê o nick, o avatar e as partidas.
-            </span>
-            <span className={styles.grupoDica}>
-              {sessao.convidado
-                ? 'Você está sem conta: ao sair, a partida em andamento e as cartas ganhas ficam para trás, e não há como recuperá-las.'
-                : 'Sua partida está salva no banco e volta quando você entrar de novo. Este navegador é que fica limpo.'}
-            </span>
-            <BotaoConfirmar
-              className={`${buttons.button} ${styles.botaoSair}`}
-              armado={sessao.convidado ? 'Confirmar: perder tudo e sair' : 'Confirmar saída'}
-              desabilitado={saindo}
-              onConfirmar={sairDaConta}
-            >
-              <LogOut size={15} aria-hidden />
-              {saindo ? 'Saindo…' : sessao.convidado ? 'Sair (e criar conta)' : 'Sair da conta'}
-            </BotaoConfirmar>
-          </div>
-        </Dialogo>
+        />
       ) : null}
 
       {destinoPendente ? (
