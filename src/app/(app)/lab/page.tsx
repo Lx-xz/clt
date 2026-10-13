@@ -1,6 +1,6 @@
 'use client'
 
-import { Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
+import { Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock, Vibrate } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -36,6 +36,12 @@ const BANCADAS = [
     titulo: 'Recompensas',
     texto: 'Abrir envelope, pacote, maleta e cofre de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
     Icon: Mail,
+  },
+  {
+    href: '/lab/vibracao',
+    titulo: 'Vibração',
+    texto: 'Os jeitos de tremer o celular, um por botão, para descobrir no iPhone qual funciona.',
+    Icon: Vibrate,
   },
   // a proposta anterior (/lab/propostas) mora no museu, guardada de
   // recordação, a pedido do autor
