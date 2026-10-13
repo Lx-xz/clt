@@ -63,6 +63,28 @@ export default function VibracaoPage() {
         <input type="checkbox" {...{ switch: '' }} /> Interruptor nativo — toque com o dedo
       </label>
 
+      {/* A–F falharam no iPhone do autor (só o nativo tremeu): o iOS não
+          treme por clique de CÓDIGO. O que sobra é o dedo de verdade cair
+          num interruptor nativo escondido. G–I testam se ele ainda treme
+          escondido, que é o que deixaria pôr um por baixo de um botão */}
+      <h2 className={styles.titulo}>Toque com o dedo, em cima do texto</h2>
+      <label className={styles.nativo}>
+        <input type="checkbox" {...{ switch: '' }} /> G — o mesmo nativo, mas toque no TEXTO, não no interruptor
+      </label>
+      <label className={`${styles.nativo} ${styles.comEscondido}`}>
+        <input type="checkbox" className={styles.transparente} {...{ switch: '' }} />
+        H — interruptor transparente (opacidade 0) dentro do rótulo
+      </label>
+      <label className={`${styles.nativo} ${styles.comEscondido}`}>
+        <input type="checkbox" className={styles.cobrindo} {...{ switch: '' }} />
+        I — interruptor transparente esticado por cima do botão inteiro
+      </label>
+      <label className={`${styles.nativo} ${styles.comEscondido}`}>
+        <input type="checkbox" className={styles.foraDaTela} {...{ switch: '' }} />
+        J — interruptor fora da tela, só o rótulo à vista
+      </label>
+
+      <h2 className={styles.titulo}>Por código (não tremeram)</h2>
       <div className={styles.lista}>
         {JEITOS.map((j) => (
           <button
