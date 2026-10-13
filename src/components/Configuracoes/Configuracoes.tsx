@@ -152,11 +152,10 @@ export default function Configuracoes({
               rotulo="Efeitos"
               valor={volumes.efeitos}
               desabilitado={volumes.mudo}
-              onChange={(v) => {
-                mudarVolume('efeitos', v)
-                // ouvir enquanto ajusta: o número sozinho não diz o volume
-                tocar('carta')
-              }}
+              onChange={(v) => mudarVolume('efeitos', v)}
+              // ouvir o volume escolhido, mas uma vez, ao soltar: tocando a
+              // cada passo do arraste, era uma metralhadora
+              onSoltar={() => tocar('carta')}
             />
           </div>
 
@@ -209,7 +208,6 @@ export default function Configuracoes({
             )}
           </dl>
 
-          <p className={styles.dica}>Só você vê isto: quem abre o seu perfil vê o nick, o avatar e as partidas.</p>
           <p className={`${styles.dica} ${sessao.convidado ? styles.aviso : ''}`}>
             {sessao.convidado
               ? 'Você está sem conta: ao sair, a partida em andamento e as cartas ganhas ficam para trás, e não há como recuperá-las.'
@@ -228,12 +226,14 @@ function Volume({
   valor,
   desabilitado,
   onChange,
+  onSoltar,
 }: {
   icone: React.ReactNode
   rotulo: string
   valor: number
   desabilitado: boolean
   onChange: (v: number) => void
+  onSoltar?: () => void
 }) {
   const pct = Math.round(valor * 100)
   return (
@@ -243,7 +243,13 @@ function Volume({
         <span className={styles.volumeRotulo}>{rotulo}</span>
         <span className={styles.volumeValor}>{pct}%</span>
       </div>
-      <Slider rotulo={`Volume: ${rotulo.toLowerCase()}`} valor={pct} desabilitado={desabilitado} onChange={(v) => onChange(v / 100)} />
+      <Slider
+        rotulo={`Volume: ${rotulo.toLowerCase()}`}
+        valor={pct}
+        desabilitado={desabilitado}
+        onChange={(v) => onChange(v / 100)}
+        onSoltar={onSoltar}
+      />
     </div>
   )
 }

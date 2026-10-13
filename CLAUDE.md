@@ -1306,10 +1306,17 @@ opções. O que ele escolheu, e que deve ser preservado:
   (v0.38). O interruptor é para o ajuste que vale na hora do toque (o
   mudo); a caixa de marcar, para "li e aceito". É um `button
   role="switch"` com `aria-checked`, e a LINHA inteira é o alvo do toque.
+  **O interruptor e a barra de volume são UM desenho** (v0.38): o mesmo
+  trilho em pílula (`--trilho-desligado`, `--trilho-ligado`), a mesma
+  bolinha branca, a mesma altura. O − e o + do `Slider` moram dentro da
+  barra, nas pontas. O `Slider` tem `onChange` (cada passo do arraste) e
+  `onSoltar` (uma vez, ao soltar o dedo, num clique de −/+ ou ao subir a
+  tecla): o som de prova do volume de efeitos mora no `onSoltar` — no
+  `onChange`, arrastar virava uma metralhadora.
 - **Slider e checkbox são desenhados, não nativos** (`Slider.tsx`,
   `Check.tsx`). O `input[type=range]` é irregular entre navegadores e no
   celular disputa o gesto de arrastar com o menu; o slider daqui é uma trilha
-  com Pointer Events e captura do ponteiro, com botões de − e + (acertar 5%
+  com Pointer Events e captura do ponteiro, com botões de − e + dentro da própria barra (acertar 5%
   arrastando num celular é loteria) e teclas de seta. O check mantém o
   `input` nativo invisível — é ele que dá teclado, leitor de tela e rótulo
   clicável de graça; `opacity: 0`, nunca `display: none`, senão ele perde o

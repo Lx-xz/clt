@@ -1,5 +1,6 @@
 'use client'
 
+import { Check, X } from 'lucide-react'
 import styles from './Interruptor.module.sass'
 
 /**
@@ -43,7 +44,11 @@ export default function Interruptor({
         {dica ? <span className={styles.dica}>{dica}</span> : null}
       </span>
       <span className={`${styles.trilho} ${ligado ? styles.ligado : ''}`} aria-hidden>
-        <span className={styles.bolinha} />
+        {/* o estado também na bolinha, e não só na cor: verde e cinza não
+            são diferença para todo mundo */}
+        <span className={styles.bolinha}>
+          {ligado ? <Check size={15} strokeWidth={3} /> : <X size={14} strokeWidth={3} />}
+        </span>
       </span>
     </button>
   )

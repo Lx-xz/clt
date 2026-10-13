@@ -1,78 +1,93 @@
-.linha
+// A barra de volume, no desenho do Interruptor: trilho em pílula, o
+// preenchido na cor de "ligado" e a bolinha branca. O − e o + moram nas
+// pontas, dentro dela. `--p` (0 a 1), `--ponta` e `--bolinha` vêm do JS.
+
+.barra
+  position: relative
   display: flex
-  align-items: center
-  gap: 10px
+  align-items: stretch
+  height: 34px
+  background: var(--trilho-desligado)
+  border-radius: 999px
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12)
+  // o preenchido não pode vazar da pílula
+  overflow: hidden
+  user-select: none
+
+// do começo da barra até o centro da bolinha: o − fica sempre em cima dele
+.preenchida
+  position: absolute
+  inset: 0 auto 0 0
+  width: calc(var(--ponta) + var(--bolinha) / 2 + (100% - 2 * var(--ponta) - var(--bolinha)) * var(--p))
+  background: var(--trilho-ligado)
+  border-radius: 999px
+  pointer-events: none
 
 .passo
-  flex: none
+  position: relative
+  z-index: 1
   display: grid
+  flex: none
   place-items: center
-  width: 30px
-  height: 30px
+  width: var(--ponta)
   padding: 0
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: var(--raio)
-  color: var(--tinta)
+  background: none
+  border: 0
+  border-radius: 999px
   cursor: pointer
-  transition: border-color .12s ease, background .12s ease
+  transition: opacity .12s ease, transform .1s ease
 
-  &:hover
-    border-color: var(--tinta)
+  &:active:not(:disabled)
+    transform: scale(.85)
 
-  &:active
-    background: var(--papel-baixo)
+  &:disabled
+    opacity: .4
+    cursor: default
 
   &:focus-visible
     outline: 2px solid var(--destaque)
-    outline-offset: 2px
+    outline-offset: -4px
 
-.trilha
+.menos
+  color: var(--papel-alto)
+
+.mais
+  color: var(--tinta-fraca)
+
+.curso
   position: relative
+  z-index: 1
   flex: 1
-  height: 30px
+  min-width: 0
   cursor: pointer
   // o arraste é do controle, não da página: sem isto o celular rola junto
   touch-action: none
+  outline: none
 
-  &::before
-    content: ''
-    position: absolute
-    left: 0
-    right: 0
-    top: 50%
-    height: 6px
-    background: var(--papel-baixo)
-    border: 1px solid var(--linha)
-    border-radius: 999px
-    transform: translateY(-50%)
-
-  &:focus-visible
-    outline: 2px solid var(--destaque)
-    outline-offset: 2px
-    border-radius: var(--raio)
-
-.preenchida
-  position: absolute
-  left: 0
-  top: 50%
-  height: 6px
-  background: var(--tinta)
-  border-radius: 999px
-  transform: translateY(-50%)
-  pointer-events: none
+  &:focus-visible .bolinha
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 0 0 3px var(--destaque)
 
 .bolinha
   position: absolute
   top: 50%
-  width: 17px
-  height: 17px
-  background: var(--papel-alto)
-  border: 2px solid var(--tinta)
+  left: calc(var(--bolinha) / 2 + (100% - var(--bolinha)) * var(--p))
+  width: var(--bolinha)
+  height: var(--bolinha)
+  background: #fff
   border-radius: 50%
-  box-shadow: var(--sombra)
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3)
   transform: translate(-50%, -50%)
   pointer-events: none
+  transition: box-shadow .15s ease, transform .12s ease
+
+.curso:active .bolinha
+  transform: translate(-50%, -50%) scale(1.08)
+
+.barra:hover:not(.desligado) .bolinha
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 0 0 4px color-mix(in srgb, var(--tinta) 8%, transparent)
 
 .desligado
-  opacity: .45
+  opacity: .5
+
+  .curso
+    cursor: default
