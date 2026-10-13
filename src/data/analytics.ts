@@ -85,6 +85,9 @@ export interface DetalheDoJogo extends LinhaMeuJogo {
     log?: LinhaDoLog[]
     /** Os envelopes que a partida deu, com as cartas. Desde a v0.20. */
     envelopes?: EnvelopeGanho[]
+    /** O avatar de quem jogou, como estava no fim. Desde a v0.36: antes
+     *  disso o replay mostra o de hoje. */
+    avatar?: unknown
   } | null
 }
 

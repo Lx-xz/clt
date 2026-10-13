@@ -312,6 +312,12 @@ export interface GameState {
    *  replay mostrarem. Opcional: campo obrigatório novo descartaria o save
    *  de quem está no meio de uma run. */
   envelopesGanhos?: EnvelopeGanho[]
+  /** O avatar de quem jogou, como estava quando a partida acabou: o replay
+   *  mostra ESTE, e não o de hoje — a partida jogada de chapéu continua de
+   *  chapéu depois que a pessoa o tira. É a receita crua, lida por
+   *  `lerAvatar` (o motor não conhece avatar), e opcional pelo mesmo motivo
+   *  de `envelopesGanhos`. */
+  avatar?: unknown
   /** Um resumo por dia fechado, para reabrir a run jogada por jogada depois. */
   history: DayLog[]
   /** A narrativa da run, em ordem cronológica. Era `string[]` com teto de 40

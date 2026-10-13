@@ -42,6 +42,7 @@ import {
 } from '@/data/sync'
 import { useSessao } from '@/components/SessaoGuard'
 import BotaoConfirmar from '@/components/BotaoConfirmar'
+import { lerAvatar } from '@/data/avatar'
 import { conferirConquistas, minhasConquistas, pagarConquistas, type Conquista } from '@/data/conquistas'
 import { problemasDoBaralho } from '@/game/baralho'
 import Recibo, { BotaoCompartilhar, FIM, type DadosDoRecibo, type Desfecho } from '@/components/Recibo'
@@ -134,6 +135,9 @@ export default function JogarPage() {
       // os envelopes entram na RUN também, antes de ela subir para `runs`:
       // é o que deixa o replay mostrar o que a partida deu
       next.envelopesGanhos = r.ganhos
+      // e o avatar de agora: o replay mostra a cara que a pessoa tinha nesta
+      // partida, e não a de quando alguém for olhar
+      next.avatar = sessao.avatar
     }
     setState(next)
     sincronizar(sessao.id, next, loadCollection(), setStatus)
@@ -181,7 +185,7 @@ export default function JogarPage() {
     // "ainda estou escolhendo o baralho", não desistência — e encheria a
     // análise de abandono que não diz nada
     if (state && state.outcome === 'jogando' && state.day >= 3) {
-      void registrarRunAgora(sessao.id, state, 'abandono', sessao.convidado)
+      void registrarRunAgora(sessao.id, { ...state, avatar: sessao.avatar }, 'abandono', sessao.convidado)
     }
     clearRun()
     setAberta(null)
@@ -652,7 +656,7 @@ export default function JogarPage() {
       >
         <Recibo
           dados={dadosDoFim}
-          avatar={sessao.avatar}
+          avatar={state?.avatar ? lerAvatar(state.avatar) : sessao.avatar}
           colecao={colecao}
           onMudarColecao={(c) => {
             setColecao(c)

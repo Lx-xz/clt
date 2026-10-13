@@ -67,6 +67,7 @@ export interface RunRegistravel {
     log?: GameState['log']
     /** Os envelopes que a partida deu, com as cartas — o recibo do replay. */
     envelopes?: GameState['envelopesGanhos']
+    avatar?: GameState['avatar']
   }
 }
 
@@ -93,7 +94,10 @@ export function montarRun(
     modo: run.modo?.id ?? MODO_NORMAL.id,
     visivel,
     convidado,
-    details: { history: run.history, baralho: run.baralho, modo: run.modo, log: run.log, envelopes: run.envelopesGanhos },
+    details: {
+      history: run.history, baralho: run.baralho, modo: run.modo, log: run.log,
+      envelopes: run.envelopesGanhos, avatar: run.avatar,
+    },
   }
 }
 

@@ -182,11 +182,6 @@ export function useAndamento(aberto: boolean, ms: number): number {
   return t
 }
 
-/** O chão: a sombra achatada embaixo de tudo. */
-function Chao({ x = 80, largura = 58 }: { x?: number; largura?: number }) {
-  return <ellipse cx={x} cy="146" rx={largura} ry="6.5" fill="rgba(0,0,0,.13)" />
-}
-
 // ----------------------------------------------------------- a cera
 /** A borda da cera: ondas para fora e para dentro, ligadas por curvas. */
 function gotas(fora: number, dentro: number, n: number): string {
@@ -241,7 +236,6 @@ function Envelope({ t }: { t: number }) {
         </clipPath>
       </defs>
       <Em c="tras">
-        <Chao largura={60} />
         {/* o lado de dentro, que aparece com a aba aberta */}
         <rect x="22" y="44" width="116" height="88" fill="#7a5a30" />
       </Em>
@@ -316,7 +310,6 @@ function Pacote({ t }: { t: number }) {
   return (
     <g transform="translate(-4 0)">
       <Em c="tras">
-        <Chao x={84} />
         {/* por dentro: a parede de trás, escurecendo para o fundo, e a da
           esquerda, que a vista de lado mostra */}
         <Face vista={vista} o={[24, 70, 48]} u={[1, 0, 0]} v={[0, 1, 0]}>
@@ -386,7 +379,6 @@ function Maleta({ t }: { t: number }) {
   return (
     <>
       <Em c="tras">
-        <Chao x={84} largura={66} />
         {/* a metade de trás: o topo, a alça e o forro, que só aparece na
           fresta */}
         <Face vista={vista} t={tras} o={[18, 58, 24]} u={[1, 0, 0]} v={[0, 0, -1]}>
@@ -441,7 +433,6 @@ function Cofre({ t }: { t: number }) {
   return (
     <g transform="translate(8 0)">
       <Em c="tras">
-        <Chao x={84} largura={62} />
         {/* os pés, os de trás antes */}
         <Caixa vista={vista} p={[32, 130, 28]} tam={[16, 9, 12]} cores={pe} />
         <Caixa vista={vista} p={[100, 130, 28]} tam={[16, 9, 12]} cores={pe} />
@@ -570,7 +561,6 @@ function Abobora({ t }: { t: number }) {
         </clipPath>
       </defs>
       <Em c="tras">
-        <Chao largura={62} />
         {/* o buraco, de fora para dentro: a casca da borda de trás, a POLPA
             do corte (a faixa clara), a parede de dentro, alaranjada e funda,
             e o escuro do fundo. A carta sai dali, entre esta camada e a da

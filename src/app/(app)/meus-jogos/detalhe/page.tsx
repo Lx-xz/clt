@@ -150,7 +150,9 @@ function Conteudo({ jogo, avatar, meu }: { jogo: DetalheDoJogo; avatar: Receita;
           envelope e de conquista inclusive */}
       <Recibo
         papel
-        avatar={avatar}
+        // a cara da partida, gravada no fim dela; a de hoje só para quem
+        // jogou antes de o replay guardá-la
+        avatar={jogo.details?.avatar ? lerAvatar(jogo.details.avatar) : avatar}
         dados={dados}
         colecao={colecao}
         onMudarColecao={

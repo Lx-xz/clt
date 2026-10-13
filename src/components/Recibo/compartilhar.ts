@@ -1,4 +1,9 @@
+import { createElement } from 'react'
+import { flushSync } from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import { ENVELOPES } from '@/game/missoes'
+import type { TipoEnvelope } from '@/game/types'
+import { DesenhoDaRecompensa } from '../Recompensa'
 import { FIM, type DadosDoRecibo } from './Recibo'
 
 /** O endereço que vai junto: o do jogo no ar, e não o de onde se joga — quem
@@ -51,6 +56,41 @@ async function imagemDoAvatar(svg: SVGSVGElement): Promise<{ img: HTMLImageEleme
   }
 }
 
+/** O desenho de cada recompensa como imagem, para a fileira do recibo — a
+ *  mesma miniatura do recibo resumido do perfil. O desenho é montado pelo
+ *  próprio componente numa caixa fora da página e serializado como o
+ *  avatar: as cores moram no SVG, e não no CSS, então ele sai igual. */
+async function imagensDasRecompensas(tipos: TipoEnvelope[]): Promise<Map<TipoEnvelope, HTMLImageElement>> {
+  const imagens = new Map<TipoEnvelope, HTMLImageElement>()
+  for (const tipo of new Set(tipos)) {
+    const caixa = document.createElement('div')
+    const raiz = createRoot(caixa)
+    try {
+      flushSync(() =>
+        raiz.render(createElement(DesenhoDaRecompensa, { forma: ENVELOPES[tipo].forma, t: 0, viewBox: '17 19 138 135' })),
+      )
+      const svg = caixa.querySelector('svg')
+      if (!svg) continue
+      svg.setAttribute('width', '138')
+      svg.setAttribute('height', '135')
+      const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }))
+      try {
+        const img = new Image()
+        img.src = url
+        await img.decode()
+        imagens.set(tipo, img)
+      } catch {
+        // sem a miniatura, a fileira só fica sem ela: o texto continua
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
+    } finally {
+      raiz.unmount()
+    }
+  }
+  return imagens
+}
+
 function quebrar(ctx: CanvasRenderingContext2D, texto: string, largura: number): string[] {
   const linhas: string[] = []
   let atual = ''
@@ -87,6 +127,8 @@ function cedula(ctx: CanvasRenderingContext2D, x: number, y: number, cor: string
  */
 export async function imagemDoRecibo(d: DadosDoRecibo, svgDoAvatar?: SVGSVGElement | null): Promise<Blob> {
   const avatar = svgDoAvatar ? await imagemDoAvatar(svgDoAvatar) : null
+  const recompensas = d.envelopes ?? []
+  const desenhos = recompensas.length ? await imagensDasRecompensas(recompensas.map((e) => e.tipo)) : new Map()
   const fim = FIM[d.outcome]
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
@@ -96,11 +138,11 @@ export async function imagemDoRecibo(d: DadosDoRecibo, svgDoAvatar?: SVGSVGEleme
   const linhas: [string, string][] = [['Dias trabalhados', String(d.dias)]]
   if (d.cartasJogadas != null) linhas.push(['Cartas jogadas', String(d.cartasJogadas)])
   if (d.estresse != null) linhas.push(['Estresse no fim', `${d.estresse}/${d.estresseMaximo ?? 10}`])
+  // as recompensas vão numa fileira de miniaturas, como no recibo resumido
+  // do perfil; as conquistas, em linhas de texto embaixo dela
+  const cartasGanhas = recompensas.reduce((n, e) => n + e.cartas.length, 0)
+  const itensGanhos = recompensas.reduce((n, e) => n + (e.cosmeticos?.length ?? 0), 0)
   const extras: { texto: string; cor: string }[] = []
-  for (const e of d.envelopes ?? []) {
-    const n = e.cartas.length
-    extras.push({ texto: `${ENVELOPES[e.tipo].nome} · ${n} ${n === 1 ? 'carta' : 'cartas'}${e.cosmeticos?.length ? ' + item' : ''}`, cor: COR.tinta })
-  }
   for (const c of d.conquistas ?? []) extras.push({ texto: `Conquista: ${c.nome}`, cor: COR.destaque })
 
   ctx.font = `15px ${MONO}`
@@ -219,10 +261,41 @@ export async function imagemDoRecibo(d: DadosDoRecibo, svgDoAvatar?: SVGSVGEleme
     cedula(ctx, dir - larguraValor - 40, y, COR.tinta)
     y += 18
 
-    if (extras.length) {
+    if (recompensas.length || extras.length) {
       y += 14
       tracejado(y)
       y += 12
+    }
+    if (recompensas.length) {
+      // a fileira: os objetos lado a lado, e a conta do que deram ao fim
+      const lado = 64
+      const passo = lado + 12
+      y += 18
+      let x = esq
+      for (const e of recompensas) {
+        const img = desenhos.get(e.tipo)
+        if (img) ctx.drawImage(img, x, y, lado, lado)
+        x += passo
+      }
+      const conta = [
+        `+${cartasGanhas} ${cartasGanhas === 1 ? 'carta' : 'cartas'}`,
+        itensGanhos ? `+${itensGanhos} ${itensGanhos === 1 ? 'item' : 'itens'}` : '',
+      ].filter(Boolean).join(' ')
+      ctx.fillStyle = COR.fraca
+      ctx.font = `bold 17px ${MONO}`
+      ctx.textBaseline = 'middle'
+      // a conta cabe ao lado enquanto houver espaço; senão desce
+      if (x + ctx.measureText(conta).width <= dir) {
+        ctx.fillText(conta, x + 4, y + lado / 2)
+        y += lado
+      } else {
+        y += lado + 26
+        ctx.fillText(conta, esq, y)
+      }
+      ctx.textBaseline = 'alphabetic'
+      y += 12
+    }
+    if (extras.length) {
       ctx.font = `bold 15px ${MONO}`
       for (const e of extras) {
         y += 30

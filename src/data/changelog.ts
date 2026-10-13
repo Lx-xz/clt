@@ -61,6 +61,15 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.36',
+    data: '2026-10-13',
+    titulo: 'A partida guarda a sua cara',
+    itens: [
+      { tipo: 'melhor', texto: 'O replay mostra o avatar como ele estava naquela partida: jogou de chapéu, fica de chapéu.' },
+      { tipo: 'melhor', texto: 'O recibo compartilhado mostra as recompensas que a partida deu.' },
+    ],
+  },
+  {
     versao: '0.34',
     data: '2026-10-12',
     titulo: 'O Halloween chegou ao escritório',

@@ -837,6 +837,19 @@ opções. O que ele escolheu, e que deve ser preservado:
   mede a altura. No celular vai pelo `navigator.share` com arquivo; onde
   ele não aceita arquivo, baixa o PNG e copia a frase. O link é sempre o
   do jogo no ar (`ENDERECO_DO_JOGO`), mesmo compartilhando do localhost.
+  As recompensas vão numa FILEIRA de miniaturas, como no recibo resumido
+  (v0.36): o `DesenhoDaRecompensa` é montado numa caixa fora da página
+  (`createRoot` + `flushSync`) e serializado como o avatar — dá certo
+  porque as cores do desenho moram no SVG, e não no CSS. Cor nova num
+  desenho de recompensa tem que continuar no SVG, senão some da imagem.
+- **O replay mostra o avatar DA PARTIDA (v0.36).** A mesa grava
+  `GameState.avatar` (a receita crua, opcional) na jogada que encerra a
+  run, junto com os envelopes, e ele sobe em `runs.details.avatar`; o
+  replay e o recibo da mesa o leem por `lerAvatar`, e só a run gravada
+  antes disso cai no avatar de hoje. Quem jogou de chapéu e depois o tirou
+  continua de chapéu naquela partida.
+- **As recompensas não têm sombra no chão (v0.36):** o `Chao` dos desenhos
+  saiu a pedido do autor.
 - **`/lab/envelopes` abre recompensa NA CONTA do admin (v0.28).** Até
   ali a coleção da página era uma cópia em memória; a pedido do autor, o
   que sai agora entra na coleção de verdade (lida do banco, como no
