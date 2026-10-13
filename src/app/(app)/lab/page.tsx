@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardCopy, Download, Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
+import { ClipboardCopy, Download, Shirt, Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -8,6 +8,7 @@ import { useSessao } from '@/components/SessaoGuard'
 import { cartasDoJogo, todasAsCartas, todosOsEventos, versaoDoBaralho } from '@/game/catalogo'
 import { baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
 import { regras } from '@/game/regras'
+import { COSMETICOS } from '@/game/cosmeticos'
 import { clearRun, defaultCollection, loadCollection, saveCollection } from '@/game/storage'
 import { sincronizar } from '@/data/sync'
 import buttons from '@/styles/buttons.module.sass'
@@ -57,7 +58,7 @@ const BANCADAS = [
  */
 export default function LabPage() {
   const sessao = useSessao()
-  const [confirmando, setConfirmando] = useState<'desbloquear' | 'resetar' | null>(null)
+  const [confirmando, setConfirmando] = useState<'desbloquear' | 'cosmeticos' | 'resetar' | null>(null)
   const [recado, setRecado] = useState<string | null>(null)
 
   function desbloquearTudo() {
@@ -69,6 +70,16 @@ export default function LabPage() {
     sincronizar(sessao.id, null, nova, () => {})
     setConfirmando(null)
     setRecado(`Coleção com as ${todas.length} cartas, cada uma no teto de cópias. Os baralhos não mudaram.`)
+  }
+
+  function desbloquearCosmeticos() {
+    // todas as peças da tabela, as sazonais inclusive; o avatar vestido não muda
+    const colecao = loadCollection()
+    const nova = { ...colecao, cosmeticos: [...new Set([...colecao.cosmeticos, ...COSMETICOS.map((c) => c.id)])] }
+    saveCollection(nova)
+    sincronizar(sessao.id, null, nova, () => {})
+    setConfirmando(null)
+    setRecado(`Os ${COSMETICOS.length} cosméticos estão na sua coleção. O avatar vestido não mudou.`)
   }
 
   function resetar() {
@@ -160,7 +171,7 @@ export default function LabPage() {
 
       <h2 className={styles.secao}>Atalhos de teste</h2>
       <p className={styles.aviso}>
-        Estes dois mexem na <b>sua</b> conta de verdade, agora. Só admin os vê justamente por isso.
+        Estes mexem na <b>sua</b> conta de verdade, agora. Só admin os vê justamente por isso.
       </p>
       <div className={styles.acoes}>
         <button
@@ -170,6 +181,10 @@ export default function LabPage() {
         >
           <Unlock size={15} aria-hidden />
           Desbloquear todas as cartas
+        </button>
+        <button type="button" className={buttons.button} onClick={() => setConfirmando('cosmeticos')}>
+          <Shirt size={15} aria-hidden />
+          Desbloquear todos os cosméticos
         </button>
         <button type="button" className={buttons.button} onClick={() => setConfirmando('resetar')}>
           <RotateCcw size={15} aria-hidden />
@@ -185,16 +200,16 @@ export default function LabPage() {
 
       {confirmando ? (
         <Dialogo
-          titulo={confirmando === 'desbloquear' ? 'Desbloquear tudo?' : 'Resetar?'}
+          titulo={confirmando === 'desbloquear' ? 'Desbloquear tudo?' : confirmando === 'cosmeticos' ? 'Desbloquear os cosméticos?' : 'Resetar?'}
           onFechar={() => setConfirmando(null)}
           acoes={
             <>
               <button
                 type="button"
                 className={`${buttons.button} ${buttons.primary}`}
-                onClick={confirmando === 'desbloquear' ? desbloquearTudo : resetar}
+                onClick={confirmando === 'desbloquear' ? desbloquearTudo : confirmando === 'cosmeticos' ? desbloquearCosmeticos : resetar}
               >
-                {confirmando === 'desbloquear' ? 'Desbloquear' : 'Resetar'}
+                {confirmando === 'resetar' ? 'Resetar' : 'Desbloquear'}
               </button>
               <button type="button" className={buttons.button} onClick={() => setConfirmando(null)}>
                 Cancelar
@@ -203,7 +218,9 @@ export default function LabPage() {
           }
         >
           <p className={styles.dialogoTexto}>
-            {confirmando === 'desbloquear'
+            {confirmando === 'cosmeticos'
+              ? 'Todas as peças de avatar, as de Halloween inclusive, entram na sua coleção: dá para vestir qualquer uma no editor. A máquina e as recompensas passam a dar só repetidas para esta conta.'
+              : confirmando === 'desbloquear'
               ? 'Todas as cartas entram na sua coleção, no teto de cópias, fora do baralho. Serve para testar carta nova sem jogar quatro semanas — e estraga qualquer leitura de dificuldade que venha da sua conta.'
               : 'A run em andamento é descartada e a coleção volta às cartas iniciais. As partidas já terminadas continuam no histórico: elas são append-only de propósito, e apagá-las seria mentir sobre o balanceamento.'}
           </p>

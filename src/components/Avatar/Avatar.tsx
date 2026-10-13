@@ -267,6 +267,9 @@ export interface DesenhoDeCabelo {
   id: string
   /** A lateral escolhida (veja `capacete`). */
   lateral: TipoDeLateral
+  /** Com boné ou chapéu: a textura que quiser aparecer embaixo dele sabe que
+   *  o comprimento é o `sobChapeu`, mais estreito. */
+  comChapeu: boolean
 }
 
 export interface FormaCabelo {
@@ -291,6 +294,10 @@ export interface FormaCabelo {
   mechas?: boolean
   /** Desenho por cima de TUDO do cabelo, mechas inclusive — o trançado. */
   textura?: (d: DesenhoDeCabelo) => ReactNode
+  /** O que cai POR CIMA da roupa e vale igual com ou sem chapéu: a trança
+   *  sobre o ombro. Na peça da frente, embaixo do chapéu ela seria recortada
+   *  junto com as laterais; na de trás, sumiria atrás da roupa. */
+  porCima?: (d: DesenhoDeCabelo) => ReactNode
   /**
    * O que aparece embaixo do boné e do chapéu. Sem isto, valem as LATERAIS
    * da peça da frente, da aba para baixo (`lados` decide outra peça, ou
@@ -872,77 +879,117 @@ function testaPuxada(Li: number, yT: number, R: number): string {
 }
 
 /**
- * Os cortes DIVIDIDOS no meio (v0.33, da referência do autor): o alto da
- * cabeça em DOIS gomos, com um vinco no meio, e duas cortinas saindo da
- * risca — a testa vira um arco pontudo, e o cabelo cobre os cantos dela até
- * a altura dos olhos. A primeira versão (v0.31) tinha o topo liso e um fio
- * de pele riscado no meio, e não lia como repartido.
+ * Os cortes DIVIDIDOS no meio (refeitos na v0.38). A v0.33 tinha o alto em
+ * dois gomos com um vinco fundo (lia como touca de coração), a testa num
+ * triângulo e os lados retos de caixa: peruca. Hoje:
+ *   - o alto é UM domo liso, só um pouco mais largo que a cabeça, com a
+ *     risca sendo um fio de pele do alto até a testa (`riscaDoRepartido`);
+ *   - a franja é a CORTINA: um arco que sai da risca e desce abrindo para
+ *     os lados, quase reto na têmpora — a testa aparece como um ∩, não como
+ *     um triângulo — e afina até sumir no lado do rosto, sem corte reto;
+ *   - os lados acompanham o rosto por fora, um pouco mais largos embaixo,
+ *     e acabam arredondados (ou virados para fora, no médio).
  *
- * `topoDividido` é o contorno de cima, igual na peça da frente e na de
- * trás: só as duas curvas, de (50 − Lo, T + 7) a (50 + Lo, T + 7), com
- * T = topo − sobe.
+ * `topoLiso` é o contorno de cima, IGUAL na peça da frente e na de trás:
+ * só a curva, de (50 − Lo, T + 7) a (50 + Lo, T + 7), com T = topo − sobe.
  */
-function topoDividido(m: Medidas, Lo: number, sobe: number): string {
+function topoLiso(m: Medidas, Lo: number, sobe: number): string {
   const T = m.topo - sobe
-  const vinco = T + 3.6
-  return `C${50 - Lo} ${T - 2} ${50 - Lo * 0.25} ${T - 2.6} 50 ${vinco} C${50 + Lo * 0.25} ${T - 2.6} ${50 + Lo} ${T - 2} ${50 + Lo} ${T + 7}`
+  return `C${50 - Lo} ${T - 1.5} ${50 - Lo * 0.5} ${T - 2.6} 50 ${T - 2.1} C${50 + Lo * 0.5} ${T - 2.6} ${50 + Lo} ${T - 1.5} ${50 + Lo} ${T + 7}`
 }
 
-/** A peça da frente do repartido: o topo em gomos e as cortinas, descendo
- *  por cima do rosto até `ate` (a altura dos olhos, em geral). */
-function cortinaDe(m: Medidas, ate: number, folga = 1.6, sobe = 4): string {
+/** A peça da frente do repartido: o domo e a cortina, que desce por cima do
+ *  canto da testa e termina em ponta no lado do rosto, na altura `ate`. */
+function cortinaDe(m: Medidas, ate: number, folga = 1.6, sobe = 3): string {
   const Lo = m.larg + folga
-  const Li = m.larg - 1.2
   const T = m.topo
   const a = altura(m)
-  const risca = T + 2.6
-  return `M${50 - Lo} ${ate} L${50 - Lo} ${T - sobe + 7} ${topoDividido(m, Lo, sobe)} L${50 + Lo} ${ate} L${50 + Li} ${ate} C${50 + Li * 0.8} ${T + a * 0.36} ${50 + Li * 0.32} ${T + a * 0.12} 50 ${risca} C${50 - Li * 0.32} ${T + a * 0.12} ${50 - Li * 0.8} ${T + a * 0.36} ${50 - Li} ${ate} Z`
+  const risca = T + 2.4
+  // o arco da cortina: da ponta no lado do rosto ele SOBE quase reto (a
+  // primeira alça fica colada no lado) e só perto do alto deita em direção à
+  // risca — é o que faz a testa ler como um ∩
+  const perto = T + a * 0.14
+  const alto = T + 1.2
+  return `M${50 - Lo} ${ate} L${50 - Lo} ${T - sobe + 7} ${topoLiso(m, Lo, sobe)} L${50 + Lo} ${ate} C${50 + m.larg - 0.6} ${perto} ${50 + m.larg * 0.42} ${alto} ${50 + 0.5} ${risca} L${50 - 0.5} ${risca} C${50 - m.larg * 0.42} ${alto} ${50 - m.larg + 0.6} ${perto} ${50 - Lo} ${ate} Z`
+}
+
+/** A risca: um fio de pele do alto do domo até a testa. */
+function riscaDoRepartido({ m, pele }: DesenhoDeCabelo, sobe = 3): ReactNode {
+  return <path d={`M50 ${m.topo - sobe + 0.6} L50 ${m.topo + 2.2}`} stroke={pele} strokeWidth={0.9} strokeLinecap="round" />
 }
 
 /**
- * A peça de trás: o mesmo topo, e os lados descendo por FORA do rosto até
- * `ate`. Com `vira`, a ponta vira para fora (o repartido médio da
- * referência, que bate no ombro e abre); sem, ela fecha redonda. O miolo de
+ * A peça de trás: o mesmo domo, e os lados descendo por FORA do rosto até
+ * `ate`, abrindo um pouco para baixo. Com `vira`, a ponta vira para fora
+ * (o médio, que bate no ombro e abre); sem, ela fecha redonda. O miolo de
  * baixo some atrás do rosto, do pescoço e da roupa.
  */
 function costasDoRepartido(m: Medidas, ate: number, folga: number, sobe: number, vira = 0): string {
   const Lo = m.larg + folga
   const y0 = m.topo - sobe + 7
-  const meio = m.topo + altura(m) * 0.5
+  const meio = (y0 + ate) / 2
   const xd = 50 + Lo
   const xe = 50 - Lo
   if (vira > 0) {
-    return `M${xe} ${y0} ${topoDividido(m, Lo, sobe)} C${xd + 0.8} ${meio} ${xd + 0.4} ${ate - 9} ${xd + vira - 1} ${ate - 1.5} Q${xd + vira + 1.4} ${ate + 1} ${xd + vira - 1.6} ${ate + 1.6} L${xe - vira + 1.6} ${ate + 1.6} Q${xe - vira - 1.4} ${ate + 1} ${xe - vira + 1} ${ate - 1.5} C${xe - 0.4} ${ate - 9} ${xe - 0.8} ${meio} ${xe} ${y0} Z`
+    return `M${xe} ${y0} ${topoLiso(m, Lo, sobe)} C${xd + 0.6} ${meio} ${xd + 0.8} ${ate - 7} ${xd + vira - 1} ${ate - 1.2} Q${xd + vira + 1.2} ${ate + 0.8} ${xd + vira - 2} ${ate + 1.4} L${xe - vira + 2} ${ate + 1.4} Q${xe - vira - 1.2} ${ate + 0.8} ${xe - vira + 1} ${ate - 1.2} C${xe - 0.8} ${ate - 7} ${xe - 0.6} ${meio} ${xe} ${y0} Z`
   }
-  return `M${xe} ${y0} ${topoDividido(m, Lo, sobe)} L${xd} ${ate - 4} Q${xd} ${ate} ${xd - 4} ${ate} L${xe + 4} ${ate} Q${xe} ${ate} ${xe} ${ate - 4} Z`
+  return `M${xe} ${y0} ${topoLiso(m, Lo, sobe)} C${xd + 0.4} ${meio} ${xd + 0.6} ${ate - 5} ${xd - 1} ${ate - 1} Q${xd - 2.6} ${ate + 0.6} ${xd - 5} ${ate} L${xe + 5} ${ate} Q${xe + 2.6} ${ate + 0.6} ${xe + 1} ${ate - 1} C${xe - 0.6} ${ate - 5} ${xe - 0.4} ${meio} ${xe} ${y0} Z`
 }
 
-/** O comprido de risca no meio: a silhueta do longo, com o topo em gomos e
- *  os lados ondulando de leve até embaixo, como na referência. */
+/** O comprido de risca no meio: o domo, e os lados caindo até embaixo,
+ *  abrindo de leve depois do queixo, como cabelo liso pesado. */
 function longoDividido(m: Medidas): string {
-  const Lo = m.larg + 5
-  const y0 = m.topo - 5 + 7
+  const Lo = m.larg + 4
+  const y0 = m.topo - 3 + 7
   const xd = 50 + Lo
   const xe = 50 - Lo
   const q = m.queixo
-  return `M${xe} ${y0} ${topoDividido(m, Lo, 5)} C${xd + 2} ${q - 22} ${xd - 1} ${q - 10} ${xd + 1.6} ${q} C${xd + 3.4} ${q + 8} ${xd + 1} ${q + 16} ${xd + 2} 100 L${xe - 2} 100 C${xe - 1} ${q + 16} ${xe - 3.4} ${q + 8} ${xe - 1.6} ${q} C${xe + 1} ${q - 10} ${xe - 2} ${q - 22} ${xe} ${y0} Z`
+  return `M${xe} ${y0} ${topoLiso(m, Lo, 3)} C${xd + 0.6} ${q - 24} ${xd + 0.2} ${q - 8} ${xd + 1.4} ${q} C${xd + 2.4} ${q + 8} ${xd + 2.6} ${q + 16} ${xd + 3} 100 L${xe - 3} 100 C${xe - 2.6} ${q + 16} ${xe - 2.4} ${q + 8} ${xe - 1.4} ${q} C${xe - 0.2} ${q - 8} ${xe - 0.6} ${q - 24} ${xe} ${y0} Z`
 }
 
-/** A trança da referência: uma só, caindo de trás da orelha esquerda e por
- *  cima do ombro, em gomos que afinam até a ponta. */
-function trancaDe({ m, cor }: DesenhoDeCabelo): ReactNode {
-  const x = 50 - m.larg - 3.8
-  const y = m.queixo - 3
-  const gomos = [5.2, 5, 4.6, 4.1]
-  let yy = y
+/**
+ * A trança (refeita na v0.38). A de antes era uma fileira de bolinhas que
+ * lia como contas de colar, e embaixo do boné sobrava só a ponta solta no
+ * ombro: o pé dela morava na peça de trás, que o boné troca.
+ *
+ * Hoje ela é UMA peça, `porCima` (vale igual com ou sem chapéu): o pé sai
+ * de trás da orelha esquerda, desce rente ao rosto e cai por cima do ombro,
+ * em gomos que se cruzam — cada gomo é uma folha inclinada, alternando o
+ * lado, com o vinco na cor da sombra —, e termina num laço e num tufo.
+ */
+function trancaDe({ m, cor, sombra }: DesenhoDeCabelo): ReactNode {
+  // o eixo: de trás da orelha (fora do rosto) até o ombro, abrindo um pouco
+  const x0 = 50 - m.larg - 1.6
+  const y0 = m.topo + altura(m) * 0.5
+  const x1 = 50 - m.larg - 5.5
+  const y1 = Math.min(100 - 9, m.queixo + 18)
+  // gomos bem juntos: cada um cobre quase metade do anterior, e é o
+  // cruzamento que faz ler trança (separados, liam como contas)
+  const n = Math.round((y1 - y0) / 4.4)
+  const passo = (y1 - y0) / n
+  const gomos: ReactNode[] = []
+  for (let i = 0; i < n; i += 1) {
+    const t = (i + 0.5) / n
+    const x = x0 + (x1 - x0) * t
+    const y = y0 + passo * (i + 0.5)
+    const r = 3.9 - t * 0.9
+    const s = i % 2 ? 1 : -1
+    gomos.push(
+      <g key={i} transform={`translate(${x} ${y}) rotate(${s * 34})`}>
+        <ellipse cx={s * 1} cy={0} rx={r} ry={r * 0.64} fill={cor} />
+        {/* o vinco em cima de cada gomo: é onde o de cima passa por baixo */}
+        <path d={`M${s * 1 - r * 0.8} ${-r * 0.1} Q${s * 1} ${-r * 0.75} ${s * 1 + r * 0.8} ${-r * 0.1}`} fill="none" stroke={sombra} strokeWidth={0.55} strokeLinecap="round" />
+      </g>,
+    )
+  }
   return (
     <>
-      {gomos.map((r, i) => {
-        const cy = yy + r
-        yy = cy + r * 0.62
-        return <circle key={i} cx={x + (i % 2 ? -0.5 : 0.5)} cy={cy} r={r} fill={cor} />
-      })}
-      <path d={`M${x - 3} ${yy + 2} Q${x} ${yy + 9} ${x + 2.4} ${yy + 2} Z`} fill={cor} />
+      {/* o pé: a faixa de cabelo que liga a cabeça à trança, por trás da orelha */}
+      <path d={`M${x0 + 2.4} ${m.topo + altura(m) * 0.36} L${x0 + 2.6} ${y0 + passo} L${x0 - 2.8} ${y0 + passo} L${x0 - 1.4} ${m.topo + altura(m) * 0.42} Z`} fill={cor} />
+      {gomos}
+      {/* o laço e o tufo da ponta */}
+      <rect x={x1 - 1.9} y={y1 - 0.6} width={3.8} height={1.6} rx={0.8} fill={sombra} />
+      <path d={`M${x1 - 2.2} ${y1 + 1} Q${x1 - 3} ${y1 + 5} ${x1 - 0.6} ${y1 + 6.4} Q${x1} ${y1 + 4.6} ${x1 + 0.6} ${y1 + 6.4} Q${x1 + 3} ${y1 + 5} ${x1 + 2.2} ${y1 + 1} Z`} fill={cor} />
     </>
   )
 }
@@ -1009,9 +1056,8 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
         <path d={franjaDeCachosDe(d.m)} fill={d.cor} />
       </>
     ),
-    textura: ({ m, sombra }) => (
-      <path d={cachinhosDe(m)} fill="none" stroke={sombra} strokeWidth={1.1} strokeLinecap="round" />
-    ),
+    textura: ({ m, sombra, comChapeu }) =>
+      comChapeu ? null : <path d={cachinhosDe(m)} fill="none" stroke={sombra} strokeWidth={1.1} strokeLinecap="round" />,
   },
   quadrado: {
     rotulo: 'Quadrado',
@@ -1109,7 +1155,9 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
     rotulo: 'Tranças',
     alto: 4,
     semEscolhaDeLateral: true,
-    sobChapeu: { atras: comprimentoSobChapeu(() => 100), lados: null },
+    // embaixo do chapéu, mais largo que o dos outros compridos: é ali que as
+    // tranças continuam aparecendo
+    sobChapeu: { atras: comprimentoSobChapeu(() => 100, 4.5), lados: null },
     // o comprimento do longo, com divisão no meio e o trançado desenhado por
     // cima das mechas: sem o trançado, era só o longo de novo
     atras: ({ m, cor }) => <path d={silhuetaDe(m)} fill={cor} />,
@@ -1128,17 +1176,46 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
       )
     },
     mechas: true,
-    textura: ({ m, sombra }) => {
-      const riscos: string[] = []
+    // as tranças de verdade (v0.38): o trançado era um zigue-zague riscado de
+    // uma borda à outra, que passava do contorno do cabelo em vários rostos
+    // e sumia embaixo do boné. Hoje são DUAS tranças finas em cada lado, gomo
+    // a gomo, RECORTADAS pela forma do cabelo daquele momento (o comprido,
+    // ou o rente de baixo do chapéu) mais as mechas: nada sai para fora, e
+    // com boné elas continuam lá
+    textura: (d) => {
+      const { m, sombra, id, comChapeu } = d
+      const larg = comChapeu ? m.larg + 4.5 : m.rx + 3
+      const forma = comChapeu
+        ? `M${50 - larg} ${m.topo} L${50 + larg} ${m.topo} L${50 + larg} 100 L${50 - larg} 100 Z`
+        : silhuetaDe(m)
+      const desde = comChapeu ? m.topo + altura(m) * 0.32 : m.cy - 2
+      const gomos: string[] = []
       for (const s of [-1, 1]) {
-        for (let y = m.cy + 2; y < 100; y += 3.4) {
-          // acima do queixo o rosto ocupa até `larg`: o risco começa fora dele
-          const x1 = 50 + s * (y < m.queixo ? m.larg + 0.6 : m.larg - 1.5)
-          const x2 = 50 + s * (m.rx + 3)
-          riscos.push(`M${x1} ${y} L${(x1 + x2) / 2} ${y + 1.6} L${x2} ${y}`)
+        // as tranças moram na faixa entre o rosto e a borda do cabelo
+        const dentro = m.larg + 0.8
+        const fora = larg - 0.4
+        const largura = (fora - dentro) / 2
+        for (let k = 0; k < 2; k += 1) {
+          const x = 50 + s * (dentro + largura * (k + 0.5))
+          const w = largura * 0.46
+          for (let y = desde + k * 1.4; y < 100; y += 2.8) {
+            gomos.push(`M${x - w} ${y} Q${x} ${y + 2.2} ${x + w} ${y}`)
+          }
+          // o fio entre uma trança e a outra
+          gomos.push(`M${50 + s * (dentro + largura * (k + 1))} ${desde} L${50 + s * (dentro + largura * (k + 1))} 100`)
         }
       }
-      return <path d={riscos.join(' ')} fill="none" stroke={sombra} strokeWidth={0.8} strokeLinejoin="round" />
+      return (
+        <>
+          <defs>
+            <clipPath id={`${id}-trancas`}>
+              <path d={forma} />
+              {[-1, 1].map((s) => <path key={s} d={mechaDe(m, s)} />)}
+            </clipPath>
+          </defs>
+          <path d={gomos.join(' ')} clipPath={`url(#${id}-trancas)`} fill="none" stroke={sombra} strokeWidth={0.7} strokeLinecap="round" />
+        </>
+      )
     },
   },
   // ---- os novos da v0.30–v0.31: cosméticos à espera de o autor dizer
@@ -1168,23 +1245,31 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
   },
   moicano: {
     rotulo: 'Moicano',
-    lateral: 2.6,
-    alto: 0,
-    // uma crista só, lisa: a base na testa, os lados curvos subindo até uma
-    // ponta penteada para trás. A de pontas repicadas lia como coroa. Os
-    // lados da cabeça são os da escolha — raspado é "sem lateral"
+    // chifres e orelhas pousam nas têmporas, que são RASPADAS: a altura de
+    // lá é a da cabeça, e não a da crista no meio
+    alto: 0.5,
+    // refeito na v0.38. Era uma ponta fina saindo do alto da cabeça, que lia
+    // como chifre, e oferecia lateral — moicano é justamente o corte de
+    // lados RASPADOS. Hoje: a cabeça raspada (a cor do cabelo bem fraca, como
+    // a barba por fazer) e a crista, uma faixa larga no meio que sai da
+    // testa e sobe bem acima da cabeça, com três pontas baixas penteadas
+    // para cima
+    semEscolhaDeLateral: true,
     atras: () => null,
-    frente: (d) => {
-      const { m } = d
-      const w = m.larg * 0.3
+    frente: ({ m, cor, id }) => {
       const T = m.topo
-      const yT = T + altura(m) * 0.19
+      const a = altura(m)
+      const yT = T + a * 0.17
+      const w = m.larg * 0.42
+      const topo = T - 11
       return (
         <>
-          {faixas(d, 2.6, T + altura(m) * 0.16)}
+          {/* a cabeça raspada, recortada pelo rosto: só o alto da cabeça, até
+              a linha onde o cabelo nasceria */}
+          <rect x={20} y={T - 2} width={60} height={a * 0.3} fill={cor} opacity={0.24} clipPath={`url(#${id}-rosto)`} />
           <path
-            d={`M${50 - w} ${yT} C${50 - w} ${T + 1} ${50 - 3} ${T - 7} ${50 + 2.5} ${T - 13} C${50 + 2} ${T - 6} ${50 + w} ${T + 1} ${50 + w} ${yT} Q50 ${yT - 2.4} ${50 - w} ${yT} Z`}
-            fill={d.cor}
+            d={`M${50 - w} ${yT} C${50 - w - 0.6} ${T + 2} ${50 - w - 1} ${topo + 5} ${50 - w + 0.6} ${topo + 1.6} L${50 - w * 0.5} ${topo + 3.4} L${50 - w * 0.22} ${topo - 1.2} L${50 + w * 0.1} ${topo + 2.6} L${50 + w * 0.42} ${topo - 1.8} L${50 + w * 0.68} ${topo + 2.6} L${50 + w - 0.2} ${topo + 0.4} C${50 + w + 1.2} ${topo + 5} ${50 + w + 0.6} ${T + 2} ${50 + w} ${yT} Q50 ${yT - 2.4} ${50 - w} ${yT} Z`}
+            fill={cor}
           />
         </>
       )
@@ -1216,56 +1301,61 @@ export const CABELOS_FORMA: Record<FormaDeCabelo, FormaCabelo> = {
     },
     frente: (d) => capacete(d, { folga: 0.3, sobe: 2.5, lado: 3, testa: 0.22, raio: 7, linha: testaPuxada }),
   },
-  // os divididos no meio (v0.33, refeitos da referência): a testa em arco
-  // pontudo, as cortinas até os olhos e o topo em dois gomos. O comprimento
+  // os divididos no meio (refeitos na v0.38, veja `topoLiso`): o domo, a
+  // risca, a cortina em arco e os lados acompanhando o rosto. O comprimento
   // é o que separa os três: até a orelha, batendo no ombro com a ponta
   // virada, e o comprido
   repartidoCurto: {
     rotulo: 'Repartido curto',
-    alto: 4,
+    alto: 3,
     semEscolhaDeLateral: true,
-    atras: ({ m, cor }) => <path d={costasDoRepartido(m, m.topo + altura(m) * 0.66, 2.6, 4)} fill={cor} />,
-    frente: ({ m, cor }) => <path d={cortinaDe(m, m.topo + altura(m) * 0.48, 2.6)} fill={cor} />,
+    atras: ({ m, cor }) => <path d={costasDoRepartido(m, m.topo + altura(m) * 0.62, 1.4, 3)} fill={cor} />,
+    frente: (d) => (
+      <>
+        <path d={cortinaDe(d.m, d.m.topo + altura(d.m) * 0.4, 1.4)} fill={d.cor} />
+        {riscaDoRepartido(d)}
+      </>
+    ),
   },
   repartidoMedio: {
     rotulo: 'Repartido médio',
-    alto: 4,
+    alto: 3,
     semEscolhaDeLateral: true,
     sobChapeu: { atras: comprimentoSobChapeu((m) => m.queixo + 2, 3), lados: null },
-    atras: ({ m, cor }) => <path d={costasDoRepartido(m, m.queixo + 3, 5, 5, 5)} fill={cor} />,
-    frente: ({ m, cor }) => <path d={cortinaDe(m, m.topo + altura(m) * 0.5, 5, 5)} fill={cor} />,
+    atras: ({ m, cor }) => <path d={costasDoRepartido(m, m.queixo + 3, 3, 3, 4)} fill={cor} />,
+    frente: (d) => (
+      <>
+        <path d={cortinaDe(d.m, d.m.topo + altura(d.m) * 0.5, 3)} fill={d.cor} />
+        {riscaDoRepartido(d)}
+      </>
+    ),
   },
   repartidoLongo: {
     rotulo: 'Repartido longo',
-    alto: 4,
+    alto: 3,
     semEscolhaDeLateral: true,
     sobChapeu: { atras: comprimentoSobChapeu(() => 100), lados: null },
     atras: ({ m, cor }) => <path d={longoDividido(m)} fill={cor} />,
-    frente: ({ m, cor }) => <path d={cortinaDe(m, m.topo + altura(m) * 0.52, 5, 5)} fill={cor} />,
-    mechas: true,
+    frente: (d) => (
+      <>
+        <path d={cortinaDe(d.m, d.m.topo + altura(d.m) * 0.52, 4)} fill={d.cor} />
+        {riscaDoRepartido(d)}
+      </>
+    ),
   },
   // os da segunda leva de referências (v0.33): a trança, o pompadour e o
   // mullet. Cosméticos, como os outros novos
   tranca: {
     rotulo: 'Trança',
-    alto: 4,
+    lateral: 3,
+    alto: 2.5,
     semEscolhaDeLateral: true,
-    sobChapeu: { atras: (d) => trancaDe(d), lados: null },
-    // o curto repartido, com a orelha à mostra, e a trança saindo de trás
-    // dela: o pé da trança mora atrás do rosto, os gomos caem por cima do
-    // ombro (na peça da frente, que vai por cima da roupa)
-    atras: ({ m, cor }) => (
-      <>
-        <path d={costasDoRepartido(m, m.topo + altura(m) * 0.6, 1.2, 3)} fill={cor} />
-        <path d={`M${50 - m.larg - 1.2} ${m.topo + 8} L${50 - m.larg + 4} ${m.topo + 8} L${50 - m.larg + 1} ${m.queixo + 2} L${50 - m.larg - 8} ${m.queixo + 2} Z`} fill={cor} />
-      </>
-    ),
-    frente: (d) => (
-      <>
-        <path d={cortinaDe(d.m, d.m.topo + altura(d.m) * 0.3, 1.2, 3)} fill={d.cor} />
-        {trancaDe(d)}
-      </>
-    ),
+    // o cabelo puxado para trás, como o rabo (testa lisa), e a trança
+    // `porCima`, que vale igual com e sem chapéu. Embaixo do chapéu, as
+    // laterais da peça da frente, como em qualquer corte
+    atras: () => null,
+    frente: (d) => capacete({ ...d, lateral: 'cabelo' }, { folga: 0.3, sobe: 2.5, lado: 3, testa: 0.22, raio: 7, linha: testaPuxada }),
+    porCima: (d) => trancaDe(d),
   },
   pompadour: {
     rotulo: 'Pompadour',
@@ -2756,7 +2846,7 @@ export default function Avatar({
   // a lateral é escolha, e cada corte desenha a SUA (veja `capacete`). Quem
   // não oferece a escolha (o careca, os compridos) a ignora
   const tipoDeLateral: TipoDeLateral = forma.semEscolhaDeLateral ? 'nenhuma' : (avatar.lateral ?? 'cabelo')
-  const cabelo: DesenhoDeCabelo = { m, cor: c, sombra: cs, pele: p, id, lateral: tipoDeLateral }
+  const cabelo: DesenhoDeCabelo = { m, cor: c, sombra: cs, pele: p, id, lateral: tipoDeLateral, comChapeu }
   // com chapéu, só as LATERAIS do corte (veja `sobChapeu`), recortadas da
   // aba para baixo e dos lados do rosto para fora
   const recorteDoChapeu = comChapeu ? `url(#${id}-chapeu)` : undefined
@@ -2768,7 +2858,8 @@ export default function Avatar({
       ? <g clipPath={`url(#${id}-lados)`}>{ladosSob(cabelo)}</g>
       : null
     : forma.frente(cabelo)
-  const texturaDoCabelo = comChapeu || !forma.textura ? null : forma.textura(cabelo)
+  // a textura decide sozinha se aparece embaixo do chapéu (as tranças sim)
+  const texturaDoCabelo = forma.textura ? forma.textura(cabelo) : null
   const corDaBarba =
     avatar.corBarba && avatar.corBarba !== 'cabelo' ? TONS_DE_CABELO[avatar.corBarba][0] : c
   // a boca dentro da barba cheia é da cor da barba, mais escura. Numa barba
@@ -2989,6 +3080,7 @@ export default function Avatar({
             ) : null}
             {manequim ? null : texturaDoCabelo}
           </g>
+          {manequim || !forma.porCima ? null : forma.porCima(cabelo)}
 
 
           {/* 8. rosto: sobrancelha, olho, nariz, boca. O manequim não tem

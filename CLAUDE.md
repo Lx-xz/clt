@@ -1087,7 +1087,23 @@ opções. O que ele escolheu, e que deve ser preservado:
     deixava num lugar. A altura em que saem é a do cabelo naquele ponto:
     `FormaCabelo.alto`, ou `noLado` ([esquerda, direita]) quando o corte não
     é simétrico ou o alto não está nas têmporas (topete, pompadour, rabo).
-  - **Os repartidos (v0.33) seguem a referência do autor:** o alto em dois
+  - **Refeitos na v0.38, a pedido do autor:** o MOICANO é a cabeça
+    raspada (a cor do cabelo a 24%, recortada pelo rosto) e uma crista
+    larga com três pontas baixas, sem escolha de lateral — a ponta fina de
+    antes lia como chifre —, e o `alto` dele é o das têmporas raspadas (0,5),
+    porque é ali que chifres e orelhas pousam. Os REPARTIDOS são um domo
+    liso com a risca em fio de pele (`topoLiso`, `riscaDoRepartido`), a
+    cortina em arco (∩, e não triângulo) afinando até sumir no lado do
+    rosto, e os lados acompanhando o rosto; o vinco fundo de dois gomos lia
+    como touca de coração. A TRANÇA é puxada para trás (como o rabo) e a
+    trança mora em `porCima` — peça nova da tabela, desenhada por cima da
+    roupa e igual com ou sem chapéu (no `atras`, o boné a trocava, e sobrava
+    a ponta solta no ombro) —, em gomos inclinados que se cruzam. As
+    TRANÇAS (box braids) viraram duas tranças finas por lado, RECORTADAS
+    pela forma do cabelo do momento: o zigue-zague de antes passava do
+    contorno em vários rostos e sumia embaixo do boné. Para isso a textura
+    recebe `comChapeu` e decide sozinha se aparece embaixo dele.
+  - **Os repartidos (v0.33), a versão de antes:** o alto em dois
     gomos com vinco no meio, a testa num arco pontudo saindo da risca e as
     cortinas cobrindo os cantos dela até os olhos (`topoDividido`,
     `cortinaDe`, `costasDoRepartido`, `longoDividido`). O médio bate no
@@ -1242,7 +1258,8 @@ opções. O que ele escolheu, e que deve ser preservado:
   conveniência, não segurança: o código vai no mesmo bundle para todo mundo,
   porque o site é estático. O que protege de verdade é o Postgres recusar as
   ações de admin. Não ponha ali dentro nada que dependa de esconder.
-  Os dois atalhos de teste da porta (**desbloquear tudo**, **resetar**) e as
+  Os atalhos de teste da porta (**desbloquear tudo**, **desbloquear os
+  cosméticos** — v0.38 —, **resetar**) e as
   aberturas do `/lab/envelopes` são as exceções que mexem na conta de quem clica — e são de admin porque uma coleção
   inteira desbloqueada estraga qualquer leitura de dificuldade que venha
   daquela conta. **Eles moram SÓ aqui.** Estiveram no `/baralho` por um
