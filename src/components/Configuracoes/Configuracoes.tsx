@@ -18,8 +18,8 @@ import styles from './Configuracoes.module.sass'
 type Aba = 'aparencia' | 'som' | 'conta'
 
 const ABAS: { valor: Aba; rotulo: string }[] = [
-  { valor: 'aparencia', rotulo: 'Aparência' },
   { valor: 'som', rotulo: 'Som' },
+  { valor: 'aparencia', rotulo: 'Aparência' },
   { valor: 'conta', rotulo: 'Conta' },
 ]
 
@@ -30,7 +30,7 @@ const ICONE_DO_TEMA: Record<Tema, React.ReactNode> = {
 }
 
 /**
- * As Configurações (v0.38), em três abas — Aparência, Som e Conta — com o
+ * As Configurações (v0.38), em três abas — Som, Aparência e Conta — com o
  * Sair FORA delas, no rodapé, ao lado do Fechar: quem abre as Configurações
  * para sair não pode ter que procurar em qual aba ele mora. Continua com o
  * segundo clique para confirmar (`BotaoConfirmar`), que é o que o protege
@@ -59,7 +59,7 @@ export default function Configuracoes({
   onSair: () => void
   onFechar: () => void
 }) {
-  const [aba, setAba] = useState<Aba>('aparencia')
+  const [aba, setAba] = useState<Aba>('som')
 
   return (
     <Dialogo

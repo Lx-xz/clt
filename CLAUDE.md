@@ -751,7 +751,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   aparece; Sair foi para as Configurações — na barra ele ficava a um
   clique errado de distância, e estava repetido no fim do perfil. **Desde
   a v0.38 as Configurações são um componente próprio**
-  (`components/Configuracoes`), em três abas (Aparência, Som, Conta), e o
+  (`components/Configuracoes`), em três abas (Som, Aparência, Conta; abre no Som), e o
   Sair mora no RODAPÉ, ao lado do Fechar, fora das abas: quem abre a janela
   para sair não procura em qual aba ele está. O estado (volumes, tema)
   continua na barra lateral; o componente é só a tela. O tema se escolhe
