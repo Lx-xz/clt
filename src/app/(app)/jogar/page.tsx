@@ -55,6 +55,7 @@ import { textoDaCondicao } from '@/game/textos'
 import type { CardInstance, Collection, GameState } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './jogar.module.sass'
+import { tocar } from '@/data/efeitos'
 
 const CLASSES: Record<string, string> = {
   tarefa: 'produtividade',
@@ -204,6 +205,8 @@ export default function JogarPage() {
   function jogar(uid: string) {
     if (!state) return
     setAberta(null)
+    // o som sai no próprio gesto, antes do render: depois dele, já é atraso
+    tocar('carta')
     update(playCard(state, uid))
   }
 
@@ -628,12 +631,20 @@ export default function JogarPage() {
 
         <div className={styles.acoes}>
           {state.fridayStep === 'salario' ? (
-            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(paySalary(state))}>
+            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => {
+              tocar('salario')
+              update(paySalary(state))
+            }}>
               Bater o ponto
             </button>
           ) : null}
           {state.fridayStep === 'contas' ? (
-            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => update(payBills(state))}>
+            <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={() => {
+              const depois = payBills(state)
+              // sem dinheiro para as contas é o despejo: o cartão recusado
+              tocar(depois.outcome === 'despejo' ? 'semDinheiro' : 'contas')
+              update(depois)
+            }}>
               Pagar as contas
             </button>
           ) : null}

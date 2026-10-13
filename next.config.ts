@@ -14,6 +14,8 @@ const config: NextConfig = {
     ? {
         output: 'export' as const,
         basePath,
+        // o `fetch` dos efeitos sonoros não ganha o basePath sozinho
+        env: { NEXT_PUBLIC_BASE_PATH: basePath },
         // sem isso os links internos quebram ao servir de um subdiretório
         trailingSlash: true,
       }

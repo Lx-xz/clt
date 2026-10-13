@@ -2047,11 +2047,26 @@ e a um bot diferente — não compare os dois.
   funciona: amigos, conquistas e o replay alheio somem em silêncio
   (`faltaFuncao()` em `jogadores.ts`) em vez de quebrar a página.
 
-- **Efeitos sonoros.** A música de fundo já toca (`src/components/Musica/Musica.tsx`,
-  `public/som/`), com os dois volumes em `src/data/som.ts`. Falta o resto: um
-  som por evento do jogo (carta jogada, cota batida, advertência, vitória,
-  derrota). Quando entrarem, o volume deles é mais um multiplicador em
-  `som.ts`, ao lado de `volumeDaMusica()` — e o autor separa os arquivos.
+- **Efeitos sonoros: os provisórios estão no ar (v0.37), faltam os
+  arquivos de verdade.** `src/data/efeitos.ts` toca pela Web Audio, com
+  cada som decodificado UMA vez na primeira interação e solto da memória
+  depois — `new Audio(arquivo).play()` foi o que deixou os sons atrasados
+  numa tentativa anterior, porque a tag de áudio baixa e decodifica na hora
+  de tocar. Medido no navegador: o som da carta começa 0,4 ms depois do
+  clique duplo. Cada linha de `SONS` é um `arquivo` (em
+  `public/som/efeitos/`) ou uma `sintese` (osciladores e ruído num
+  `OfflineAudioContext`), e hoje são todas síntese, porque daqui não dá
+  para baixar de banco de som: o autor tem Epidemic Sound, e trocar é
+  preencher o `arquivo` da linha (o que não carrega cai na síntese).
+  Tocam: carta jogada (no gesto, ANTES do `update`), salário, contas pagas,
+  sem dinheiro (despejo, e a máquina recusando), abrir recompensa e a carta
+  desvirando (com o brilho maior na épica e na lendária). O contexto é
+  separado do da música e dorme depois de 6 s parado, pela mesma razão do
+  mudo da música; todo `pointerdown`/tecla o acorda na captura, antes de o
+  som do gesto ser pedido. O volume é o terceiro controle (`efeitos` em
+  `som.ts`, que não baixa fora da mesa). Faltam, da tabela combinada:
+  comprar a mão, virar o evento, advertência, cota batida, burnout e
+  vitória, o recibo saindo, o token e a máquina vendendo.
 - **Cosméticos desbloqueáveis.** `conquistas.premio` já existe, nulo: é
   onde o acessório que a conquista destrava (crachá, caneca, óculos da
   firma) vai morar. Junto com os pontos de feedback, resolve a pendência "o

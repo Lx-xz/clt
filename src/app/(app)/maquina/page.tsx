@@ -27,6 +27,7 @@ import {
 } from '@/game/tokens'
 import type { Collection, GameState } from '@/game/types'
 import styles from './maquina.module.sass'
+import { tocar } from '@/data/efeitos'
 
 /** Quanto dura a queda da vaga até a boca (bate com `.caindo` no sass). */
 const QUEDA_MS = 1300
@@ -98,6 +99,7 @@ export default function MaquinaPage() {
     if (!escolhida || !colecao || caindo) return
     const r = comprar(colecao, escolhida)
     if (typeof r === 'string') {
+      tocar('semDinheiro')
       setVisor({ texto: r, erro: true })
       return
     }

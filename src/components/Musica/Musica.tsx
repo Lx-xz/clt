@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
+import { ligarEfeitos } from '@/data/efeitos'
 import { EVENTO_VOLUME, lerVolumes, volumeDaMusica, type Volumes } from '@/data/som'
 
 /**
@@ -81,6 +82,10 @@ export default function Musica({ src }: { src: string }) {
     window.addEventListener(EVENTO_VOLUME, aoMudar)
     return () => window.removeEventListener(EVENTO_VOLUME, aoMudar)
   }, [naMesa])
+
+  // os efeitos moram ao lado da música: o mesmo lugar que está em toda
+  // página e já cuida de esperar a primeira interação
+  useEffect(() => ligarEfeitos(), [])
 
   useEffect(() => {
     const audio = ref.current

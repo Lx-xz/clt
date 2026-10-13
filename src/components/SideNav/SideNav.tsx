@@ -27,6 +27,7 @@ import Dialogo, { popupAberto } from '../Dialogo'
 import Segmentado from '../Segmentado'
 import { useSessao } from '../SessaoGuard'
 import { gravarVolumes, lerVolumes, VOLUMES_PADRAO, type Volumes } from '@/data/som'
+import { tocar } from '@/data/efeitos'
 import { gravarTema, lerTema, TEMAS, type Tema } from '@/data/tema'
 import { souAdmin } from '@/data/feedback'
 import { sair } from '@/data/conta'
@@ -466,6 +467,21 @@ export default function SideNav() {
                 valor={Math.round(volumes.musica * 100)}
                 desabilitado={volumes.mudo}
                 onChange={(v) => mudarVolume('musica', v / 100)}
+              />
+            </label>
+            <label className={`${styles.controle} ${volumes.mudo ? styles.desligado : ''}`}>
+              <span className={styles.controleRotulo}>
+                Volume dos efeitos <b>{Math.round(volumes.efeitos * 100)}%</b>
+              </span>
+              <Slider
+                rotulo="Volume dos efeitos"
+                valor={Math.round(volumes.efeitos * 100)}
+                desabilitado={volumes.mudo}
+                onChange={(v) => {
+                  mudarVolume('efeitos', v / 100)
+                  // ouvir enquanto ajusta: o número sozinho não diz o volume
+                  tocar('carta')
+                }}
               />
             </label>
           </div>

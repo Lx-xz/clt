@@ -19,6 +19,7 @@ import { CosmeticoVirando, IconeDoCosmetico } from '../Maleta'
 import { useSessaoSeHouver } from '../SessaoGuard'
 import { DesenhoDaRecompensa, DURACAO, useAndamento } from '../Recompensa'
 import styles from './Envelope.module.sass'
+import { tocar } from '@/data/efeitos'
 
 /**
  * O selo do envelope ANTIGO (v0.16–v0.22), que hoje só aparece no museu do
@@ -415,7 +416,14 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
   useEffect(() => {
     if (fase !== 'revelando' || guardando) return
     setVirada(false)
-    const t = setTimeout(() => setVirada(true), semMovimento() ? 0 : T.subir)
+    const t = setTimeout(() => {
+      setVirada(true)
+      // o som desvira junto com a carta, e o da épica e da lendária é o
+      // brilho maior, como os raios na tela
+      const id = cartas[atual]
+      const r = id ? getCard(id).raridade : itens[atual - cartas.length]?.raridade
+      tocar(r === 'epica' || r === 'lendaria' ? 'revelarRara' : 'revelar')
+    }, semMovimento() ? 0 : T.subir)
     return () => clearTimeout(t)
   }, [fase, atual, guardando])
 
@@ -426,6 +434,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
     timerDeSegurar.current = setTimeout(() => {
       segurou.current = true
       setSegurando(false)
+      tocar('abrir')
       setViradas(0)
       setFase('resumo')
     }, SEGURAR_MS)
@@ -457,6 +466,7 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
     if (ocupado.current) return
     if (fase === 'esperando') {
       ocupado.current = true
+      tocar('abrir')
       setFase('abrindo')
       setTimeout(() => {
         ocupado.current = false

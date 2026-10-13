@@ -61,6 +61,15 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.37',
+    data: '2026-10-13',
+    titulo: 'O escritório faz barulho',
+    itens: [
+      { tipo: 'novo', texto: 'Efeitos sonoros: a carta na mesa, o salário caindo, as contas pagas, a conta que não fecha e a recompensa abrindo.' },
+      { tipo: 'novo', texto: 'Um volume só para os efeitos, nas Configurações.' },
+    ],
+  },
+  {
     versao: '0.36',
     data: '2026-10-13',
     titulo: 'A partida guarda a sua cara',

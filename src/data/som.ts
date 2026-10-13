@@ -1,13 +1,14 @@
 'use client'
 
 /**
- * Volume, e só. Dois números de 0 a 1 no localStorage: o geral, que vale para
- * tudo que tocar, e o da música, que multiplica o geral. Efeitos sonoros ainda
- * não existem — quando existirem, entram aqui como mais um multiplicador.
+ * Volume, e só. Três números de 0 a 1 no localStorage: o geral, que vale para
+ * tudo que tocar, e o da música e o dos efeitos (v0.37, `efeitos.ts`), que
+ * multiplicam o geral.
  */
 export interface Volumes {
   geral: number
   musica: number
+  efeitos: number
   mudo: boolean
   /** Fora da mesa a trilha toca baixinho, para não competir com a leitura. */
   baixaFora: boolean
@@ -15,7 +16,7 @@ export interface Volumes {
 
 const CHAVE = 'clt:som:v1'
 
-export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5, mudo: false, baixaFora: true }
+export const VOLUMES_PADRAO: Volumes = { geral: 0.7, musica: 0.5, efeitos: 0.8, mudo: false, baixaFora: true }
 
 /** Quanto do volume normal sobra fora da mesa. */
 export const FATOR_FORA = 0.3
@@ -33,6 +34,8 @@ export function lerVolumes(): Volumes {
     return {
       geral: limitar(v.geral, VOLUMES_PADRAO.geral),
       musica: limitar(v.musica, VOLUMES_PADRAO.musica),
+      // ausente em quem gravou antes de os efeitos existirem: o padrão
+      efeitos: limitar(v.efeitos, VOLUMES_PADRAO.efeitos),
       mudo: v.mudo === true,
       // ausente no save antigo: o padrão é abaixar, que é o comportamento
       // que a pessoa esperaria sem nunca ter mexido no ajuste
@@ -66,4 +69,11 @@ export function volumeDaMusica(v: Volumes, naMesa: boolean): number {
   if (v.mudo) return 0
   const base = v.geral * v.musica
   return naMesa || !v.baixaFora ? base : base * FATOR_FORA
+}
+
+/** Os efeitos não baixam fora da mesa: eles só tocam quando a pessoa faz
+ *  alguma coisa, e o som é a resposta a ela. */
+export function volumeDosEfeitos(v: Volumes): number {
+  if (v.mudo) return 0
+  return v.geral * v.efeitos
 }
