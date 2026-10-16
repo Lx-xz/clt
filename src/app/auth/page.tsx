@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, LogIn, UserRound } from 'lucide-react'
+import { ArrowLeft, BookOpen, LogIn, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
@@ -8,6 +8,7 @@ import Check from '@/components/Check'
 import ComoJogar from '@/components/ComoJogar'
 import Segmentado from '@/components/Segmentado'
 import Dialogo from '@/components/Dialogo'
+import ListaDeContas from '@/components/ListaDeContas'
 import { GoogleIcon } from '@/components/icons'
 import Termos from '@/components/Termos'
 import { validarNick } from '@/data/nick'
@@ -23,6 +24,15 @@ import {
   sair,
   type Conta,
 } from '@/data/conta'
+import {
+  concluirTroca,
+  contasSalvas,
+  esquecerConta,
+  prepararTroca,
+  recomecarSite,
+  trocarDeConta,
+  type ContaSalva,
+} from '@/data/contasSalvas'
 import { bancoConfigurado } from '@/data/supabase'
 import { cancelarSync } from '@/data/sync'
 import { limparLocalDoJogo } from '@/game/storage'
@@ -40,6 +50,19 @@ export default function Entrada() {
   const [recado, setRecado] = useState<string | null>(null)
   const [tutorial, setTutorial] = useState(false)
   const [avisoConvidado, setAvisoConvidado] = useState(false)
+  // as contas que já entraram neste aparelho: com alguma, a porta mostra os
+  // perfis (como o YouTube) em vez do formulário
+  const [contas, setContas] = useState<ContaSalva[]>([])
+  const [escolhendo, setEscolhendo] = useState(true)
+  const [editando, setEditando] = useState(false)
+  // `/auth?adicionar` é "entrar com OUTRA conta" sem sair desta: a porta não
+  // manda de volta para o início quem já está dentro
+  const [adicionando, setAdicionando] = useState(false)
+
+  useEffect(() => {
+    setContas(contasSalvas())
+    setAdicionando(new URLSearchParams(window.location.search).has('adicionar'))
+  }, [])
 
   // campos — um só conjunto para as duas abas e para o "completar cadastro"
   const [email, setEmail] = useState('')
@@ -96,8 +119,7 @@ export default function Entrada() {
       setErro(null)
       setRecado(null)
       setOcupado(true)
-      entrar(email, senha)
-        .then(recarregar)
+      entrarAgora(() => entrar(email, senha))
         .catch((falha: unknown) => {
           // errou, fica em "Entrar": era o caso comum (a senha), e mandar
           // para o cadastro cada errinho de digitação levava gente que já
@@ -127,7 +149,10 @@ export default function Entrada() {
       // sem avatar: quem não escolheu é manequim, e escolher é uma visita ao
       // perfil. Perguntar o gênero para sortear um desenho era pedir um dado
       // pessoal para resolver um problema que o manequim já resolve.
-      const { precisaConfirmar } = await cadastrar({ email, senha, nome, nick })
+      let precisaConfirmar = false
+      await entrarAgora(async () => {
+        ;({ precisaConfirmar } = await cadastrar({ email, senha, nome, nick }))
+      })
       if (precisaConfirmar) {
         setRecado(
           'Conta criada. Confira a caixa de entrada de ' +
@@ -135,10 +160,54 @@ export default function Entrada() {
             ' e clique no link de confirmação para entrar.',
         )
         setAba('entrar')
-        return
       }
-      recarregar()
     })
+  }
+
+  /**
+   * Entra (ou cadastra) e segue. Com outra conta já dentro (`adicionar`), o
+   * que ela ainda não subiu sobe antes, e o espelho local dela é limpo
+   * depois — e o site recomeça do zero, como na troca de conta.
+   */
+  async function entrarAgora(acao: () => Promise<void>) {
+    const trocando = adicionando && dentro
+    if (trocando) {
+      const problema = await prepararTroca()
+      if (problema) throw new Error(problema)
+    }
+    await acao()
+    if (!trocando) return recarregar()
+    const depois = await lerConta()
+    // o cadastro que pede confirmação por e-mail não troca a sessão
+    if (depois.tipo === 'conta' && conta && 'perfil' in conta && depois.perfil.id !== conta.perfil.id) {
+      concluirTroca()
+      recomecarSite()
+    }
+  }
+
+  function escolherConta(c: ContaSalva) {
+    void tentar(async () => {
+      const r = await trocarDeConta(c.id)
+      if (r.ok) return recomecarSite()
+      if (r.precisaEntrar) {
+        // a sessão guardada morreu: o formulário, já com quem é
+        setEscolhendo(false)
+        setAba('entrar')
+        setEmail(c.email ?? c.nick)
+        setContas(contasSalvas())
+      }
+      throw new Error(r.motivo)
+    })
+  }
+
+  function sairDe(c: ContaSalva) {
+    esquecerConta(c.id)
+    const restantes = contasSalvas()
+    setContas(restantes)
+    if (restantes.length === 0) {
+      setEditando(false)
+      setEscolhendo(false)
+    }
   }
 
   function completar(e: React.FormEvent) {
@@ -155,6 +224,18 @@ export default function Entrada() {
     void tentar(async () => {
       await completarPerfil(nick, nome, senha || undefined)
       recarregar()
+    })
+  }
+
+  function comGoogle() {
+    void tentar(async () => {
+      if (adicionando && dentro) {
+        const problema = await prepararTroca()
+        if (problema) throw new Error(problema)
+        // o Google sai do site e volta já com a outra conta
+        concluirTroca()
+      }
+      await entrarComGoogle()
     })
   }
 
@@ -193,8 +274,13 @@ export default function Entrada() {
   // lateral, o avatar e o último jogo. Antes a página era a porta e o
   // saguão ao mesmo tempo, e o saguão era um beco — sem barra, sem nada
   useEffect(() => {
-    if (dentro) router.replace('/')
-  }, [dentro, router])
+    if (dentro && !adicionando) router.replace('/')
+  }, [dentro, adicionando, router])
+
+  // a porta mostra os perfis quando há contas guardadas e ninguém entrou; o
+  // "adicionar" vai direto ao formulário
+  const mostrarFormulario = conta?.tipo === 'fora' || (adicionando && dentro)
+  const mostrarContas = mostrarFormulario && !adicionando && escolhendo && contas.length > 0
 
   return (
     <main className={styles.home}>
@@ -215,7 +301,35 @@ export default function Entrada() {
       <div className={styles.painel}>
       {conta === null ? <p className={styles.aviso}>Batendo o ponto…</p> : null}
 
-      {dentro ? <p className={styles.aviso}>Entrando…</p> : null}
+      {dentro && !adicionando ? <p className={styles.aviso}>Entrando…</p> : null}
+
+      {mostrarContas ? (
+        <div className={styles.contas}>
+          <div className={styles.contasTopo}>
+            <h2>Escolha uma conta</h2>
+            <button type="button" className={styles.trocar} onClick={() => setEditando((e) => !e)} disabled={ocupado}>
+              {editando ? 'Pronto' : 'Editar'}
+            </button>
+          </div>
+          <ListaDeContas
+            contas={contas}
+            editando={editando}
+            ocupado={ocupado}
+            onEscolher={escolherConta}
+            onSair={sairDe}
+            onAdicionar={() => {
+              setEscolhendo(false)
+              setEmail('')
+              setErro(null)
+            }}
+          />
+          {editando ? (
+            <p className={styles.dica}>
+              Sair tira a conta só deste aparelho. Para voltar a ela, é entrar com o e-mail ou o nick.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {conta?.tipo === 'incompleto' ? (
         <form className={styles.forma} onSubmit={completar}>
@@ -275,8 +389,18 @@ export default function Entrada() {
         </form>
       ) : null}
 
-      {conta?.tipo === 'fora' ? (
+      {mostrarFormulario && !mostrarContas ? (
         <>
+          {adicionando || contas.length > 0 ? (
+            <button
+              type="button"
+              className={styles.voltarContas}
+              onClick={() => (adicionando ? recomecarSite() : setEscolhendo(true))}
+            >
+              <ArrowLeft size={15} aria-hidden /> {adicionando ? 'Voltar ao jogo' : 'Contas deste aparelho'}
+            </button>
+          ) : null}
+          {adicionando && dentro ? <p className={styles.aviso}>Entre com outra conta. A de agora fica guardada para trocar depois.</p> : null}
           <Segmentado
             className={styles.abas}
             rotulo="Entrar ou criar conta"
@@ -363,20 +487,22 @@ export default function Entrada() {
               type="button"
               className={`${buttons.button} ${styles.largo}`}
               disabled={ocupado}
-              onClick={() => void tentar(entrarComGoogle)}
+              onClick={comGoogle}
             >
               <GoogleIcon size={18} />
               Entrar com o Google
             </button>
-            <button
-              type="button"
-              className={`${buttons.button} ${buttons.ghost} ${styles.largo}`}
-              disabled={ocupado}
-              onClick={() => setAvisoConvidado(true)}
-            >
-              <UserRound size={16} aria-hidden />
-              Jogar como convidado
-            </button>
+            {adicionando ? null : (
+              <button
+                type="button"
+                className={`${buttons.button} ${buttons.ghost} ${styles.largo}`}
+                disabled={ocupado}
+                onClick={() => setAvisoConvidado(true)}
+              >
+                <UserRound size={16} aria-hidden />
+                Jogar como convidado
+              </button>
+            )}
             {aba === 'entrar' ? (
               <button
                 type="button"

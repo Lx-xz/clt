@@ -1734,6 +1734,33 @@ cadastro:** antes, "e-mail ou senha não conferem" abria a aba Criar conta,
 e quem tinha conta e só errou a senha ia tentar criar outra. Hoje fica em
 Entrar, com o recado de que a criação é na outra aba.
 
+**Várias contas no mesmo aparelho (v0.39, `src/data/contasSalvas.ts`),
+como no YouTube.** O Supabase guarda UMA sessão; cada conta que entra
+deixa a própria (o par de tokens) numa lista em `clt-contas:v1` — com
+hífen, e não `clt:`, DE PROPÓSITO: `limparLocalDoJogo` apaga o que começa
+com `clt:` a cada troca, e a lista tem que sobreviver. Trocar é devolver a
+sessão guardada ao Supabase (`setSession`; com o acesso vencido ele renova
+pelo token de renovação), e **nunca `signOut`**, que revogaria a sessão de
+quem está saindo. O token de renovação gira a cada uso, então a conta EM USO
+regrava os dela em toda mudança de sessão (o ouvinte no fim do arquivo); a
+sessão guardada que morrer (senha trocada, revogada) deixa a conta na lista
+com "entrar de novo".
+- `lerConta` lembra a conta completa (nick e avatar de hoje) a cada leitura.
+- Antes de outra conta entrar, `prepararTroca` sobe o save que esperava o
+  timer (`descarregarSync`, novo em `sync.ts`) e as partidas da fila, e
+  RECUSA se uma partida terminada não subiu: a fila é do aparelho, e
+  limpá-la para a próxima conta a perderia. Depois, `concluirTroca` limpa o
+  espelho local e o site recomeça (`recomecarSite`, recarga inteira).
+- A porta (`/auth`) mostra os perfis (`components/ListaDeContas`) quando há
+  conta guardada e ninguém entrou; "Editar" põe o Sair em cada uma (só
+  deste aparelho: esquece a sessão guardada, não desloga em outro lugar).
+  `/auth?adicionar` é entrar com OUTRA conta sem sair: a porta não manda o
+  logado de volta ao início, e entrar, cadastrar ou o Google passam pela
+  mesma troca. O convidado não entra na lista (não tem sessão).
+- Configurações › Conta tem a mesma lista, para trocar sem sair.
+- **Sair é só deste aparelho** (`signOut({ scope: 'local' })`): o padrão
+  do Supabase desconectava a pessoa de todo lugar.
+
 **Trocar (ou criar) a senha mora em Configurações › Conta** (v0.38,
 `TrocarSenha`). Para quem entra pelo Google ela é "Criar senha": com ela a
 conta passa a entrar também por e-mail ou nick, e quem perder o Google não

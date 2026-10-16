@@ -61,6 +61,15 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.39',
+    data: '2026-10-16',
+    titulo: 'Mais de uma conta',
+    itens: [
+      { tipo: 'novo', texto: 'Dá para guardar várias contas no mesmo aparelho e trocar entre elas sem sair, em Configurações › Conta. Ao entrar, aparecem os perfis de cada uma.' },
+      { tipo: 'melhor', texto: 'Sair da conta no computador não desconecta mais o celular.' },
+    ],
+  },
+  {
     versao: '0.38',
     data: '2026-10-13',
     titulo: 'Configurações arrumadas',

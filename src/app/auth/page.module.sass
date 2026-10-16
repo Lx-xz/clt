@@ -280,3 +280,40 @@
 
   .painel
     flex: 0 0 380px
+
+// ------------------------------------------------------------- contas
+// os perfis deste aparelho, como no YouTube (veja `ListaDeContas`)
+.contas
+  display: flex
+  flex-direction: column
+  gap: 10px
+  width: 100%
+  max-width: 380px
+  text-align: left
+
+.contasTopo
+  display: flex
+  align-items: baseline
+  justify-content: space-between
+
+  h2
+    margin: 0
+    font-size: 17px
+
+.voltarContas
+  display: inline-flex
+  align-self: flex-start
+  align-items: center
+  gap: 6px
+  width: 100%
+  max-width: 380px
+  padding: 0
+  border: none
+  background: none
+  color: var(--tinta-fraca)
+  font: inherit
+  font-size: 13px
+  cursor: pointer
+
+  &:hover
+    color: var(--tinta)

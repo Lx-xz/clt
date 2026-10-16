@@ -1,6 +1,7 @@
 'use client'
 
 import { AVATAR_PADRAO, lerAvatar, type Avatar } from './avatar'
+import { atualizarAvatarSalvo, esquecerConta, lembrarConta } from './contasSalvas'
 import { supabase } from './supabase'
 import {
   gravarConvidado,
@@ -74,6 +75,9 @@ export async function lerConta(): Promise<Conta> {
       return { tipo: 'incompleto', perfil, email: perfil.email ?? '' }
     }
     gravarPerfilLocal(perfil)
+    // entra (ou continua) na lista de contas deste aparelho, com o nick e o
+    // avatar de hoje: é ela que a troca de conta mostra
+    await lembrarConta(perfil)
     return { tipo: 'conta', perfil }
   }
 
@@ -235,13 +239,22 @@ export async function trocarAvatar(sessao: Sessao, avatar: Avatar): Promise<Sess
   const { salvarAvatar } = await import('./avatar')
   await salvarAvatar(avatar)
   gravarPerfilLocal(novo)
+  atualizarAvatarSalvo(novo.id, avatar)
   return novo
 }
 
+/**
+ * Sai da conta em uso, e só NESTE aparelho (`scope: 'local'`): o padrão do
+ * Supabase é deslogar a pessoa de todo lugar, e sair do computador não pode
+ * derrubar o celular. Ela também some da lista de contas daqui.
+ */
 export async function sair() {
   limparPerfilLocal()
   limparConvidado()
-  if (supabase) await supabase.auth.signOut()
+  if (!supabase) return
+  const { data } = await supabase.auth.getSession()
+  if (data.session) esquecerConta(data.session.user.id)
+  await supabase.auth.signOut({ scope: 'local' })
 }
 
 /**

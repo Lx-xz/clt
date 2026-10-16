@@ -3,6 +3,7 @@
 import { KeyRound, LogOut, Monitor, Moon, Music, Sparkles, Sun, Vibrate, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { contaTemSenha, definirNovaSenha } from '@/data/conta'
+import { contasSalvas, esquecerConta, recomecarSite, trocarDeConta, type ContaSalva } from '@/data/contasSalvas'
 import { tocar } from '@/data/efeitos'
 import type { Volumes } from '@/data/som'
 import { podeVibrar, vibrar } from '@/data/vibrar'
@@ -13,6 +14,7 @@ import Avatar from '../Avatar'
 import BotaoConfirmar from '../BotaoConfirmar'
 import Dialogo from '../Dialogo'
 import Interruptor from '../Interruptor'
+import ListaDeContas from '../ListaDeContas'
 import Segmentado from '../Segmentado'
 import Slider from '../Slider'
 import styles from './Configuracoes.module.sass'
@@ -226,6 +228,8 @@ export default function Configuracoes({
             )}
           </dl>
 
+          <ContasDoAparelho sessao={sessao} />
+
           {sessao.convidado ? null : <TrocarSenha />}
 
           {/* só o convidado tem o que perder ao sair; quem tem conta não
@@ -284,6 +288,66 @@ function Volume({
  * Não pede a senha atual porque o Auth não pede (a sessão já é a prova); se
  * o projeto exigir login recente, o erro diz para sair e entrar de novo.
  */
+/**
+ * Trocar de conta sem sair (v0.39): as contas que já entraram neste
+ * aparelho, com um toque para passar a outra e o "Adicionar conta", que leva
+ * à porta sem deslogar ninguém. Quem cuida das sessões é `contasSalvas.ts`.
+ */
+function ContasDoAparelho({ sessao }: { sessao: Sessao }) {
+  const [contas, setContas] = useState<ContaSalva[]>([])
+  const [editando, setEditando] = useState(false)
+  const [ocupado, setOcupado] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+
+  useEffect(() => setContas(contasSalvas()), [])
+
+  async function escolher(c: ContaSalva) {
+    setErro(null)
+    setOcupado(true)
+    const r = await trocarDeConta(c.id)
+    if (r.ok) return recomecarSite()
+    setOcupado(false)
+    setContas(contasSalvas())
+    // a sessão guardada morreu: o caminho é entrar de novo, pela porta
+    if (r.precisaEntrar) return window.location.assign(`${process.env.__NEXT_ROUTER_BASEPATH ?? ''}/auth/?adicionar`)
+    setErro(r.motivo)
+  }
+
+  const outras = contas.filter((c) => c.id !== sessao.id)
+
+  return (
+    <div className={styles.contas}>
+      <div className={styles.contasTopo}>
+        <h3 className={styles.titulo}>Contas neste aparelho</h3>
+        {outras.length > 0 ? (
+          <button type="button" className={styles.linkBotao} onClick={() => setEditando((e) => !e)}>
+            {editando ? 'Pronto' : 'Editar'}
+          </button>
+        ) : null}
+      </div>
+      {sessao.convidado && contas.length > 0 ? (
+        <p className={`${styles.dica} ${styles.aviso}`}>Trocar de conta deixa este convidado para trás.</p>
+      ) : null}
+      <ListaDeContas
+        // a conta em uso fica de fora da edição: sair dela é o botão do rodapé
+        contas={editando ? outras : contas}
+        atual={sessao.id}
+        editando={editando}
+        ocupado={ocupado}
+        onEscolher={(c) => void escolher(c)}
+        onSair={(c) => {
+          esquecerConta(c.id)
+          const resto = contasSalvas()
+          setContas(resto)
+          if (!resto.some((x) => x.id !== sessao.id)) setEditando(false)
+        }}
+        onAdicionar={() => window.location.assign(`${process.env.__NEXT_ROUTER_BASEPATH ?? ''}/auth/?adicionar`)}
+      />
+      {erro ? <p className={`${styles.dica} ${styles.aviso}`}>{erro}</p> : null}
+    </div>
+  )
+}
+
 function TrocarSenha() {
   const [temSenha, setTemSenha] = useState<boolean | null>(null)
   const [aberto, setAberto] = useState(false)

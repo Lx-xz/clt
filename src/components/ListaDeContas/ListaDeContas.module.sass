@@ -1,0 +1,95 @@
+.lista
+  display: flex
+  flex-direction: column
+  width: 100%
+  margin: 0
+  padding: 0
+  list-style: none
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  background: var(--papel-alto)
+  overflow: hidden
+
+.item + .item
+  border-top: 1px solid var(--linha)
+
+.linha
+  display: flex
+  align-items: center
+  gap: 12px
+  width: 100%
+  min-height: 64px
+  padding: 10px 14px
+  border: 0
+  background: none
+  color: var(--tinta)
+  font: inherit
+  text-align: left
+
+.tocavel
+  cursor: pointer
+
+  &:hover:not(:disabled)
+    background: var(--papel)
+
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: -2px
+
+  &:disabled
+    cursor: default
+
+  // a conta em uso não troca, mas não é "desligada": não pode esmaecer
+  &[aria-current]
+    opacity: 1
+
+.texto
+  display: flex
+  flex: 1
+  flex-direction: column
+  min-width: 0
+
+.nick
+  overflow: hidden
+  font-weight: 600
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.dica
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  color: var(--tinta-fraca)
+  font-size: 12px
+
+.seta
+  flex: none
+  color: var(--tinta-fraca)
+
+.marca
+  flex: none
+  color: var(--destaque)
+
+.mais
+  display: grid
+  flex: none
+  place-items: center
+  width: 44px
+  height: 44px
+  border: 1px dashed var(--tinta-fraca)
+  border-radius: 50%
+  color: var(--tinta-fraca)
+
+.sair
+  display: inline-flex
+  flex: none
+  align-items: center
+  gap: 6px
+  padding: 6px 10px
+  border: 1px solid var(--linha)
+  border-radius: var(--raio)
+  background: var(--papel)
+  color: var(--tinta)
+  font: inherit
+  font-size: 13px
+  cursor: pointer

@@ -16,13 +16,27 @@ export type StatusSync = 'ocioso' | 'salvando' | 'salvo' | 'erro'
 const ESPERA_MS = 900
 
 let timer: ReturnType<typeof setTimeout> | null = null
+/** A subida que o timer vai fazer, guardada para dar para adiantá-la. */
+let pendente: (() => Promise<void>) | null = null
 
-/** Cancela uma subida ainda pendente — ao trocar de conta, por exemplo. */
+/** Cancela uma subida ainda pendente — ao sair da conta, por exemplo. */
 export function cancelarSync() {
   if (timer) {
     clearTimeout(timer)
     timer = null
   }
+  pendente = null
+}
+
+/**
+ * Faz AGORA a subida que estava esperando o timer. É o que trocar de conta
+ * chama antes de limpar o espelho local: cancelar, como o sair faz, perderia
+ * a última jogada de quem só está trocando e vai voltar.
+ */
+export async function descarregarSync() {
+  const subir = pendente
+  cancelarSync()
+  if (subir) await subir()
 }
 
 /**
@@ -67,14 +81,19 @@ export function sincronizar(
 
   onStatus('salvando')
   if (timer) clearTimeout(timer)
-  timer = setTimeout(async () => {
-    timer = null
+  const subir = async () => {
     try {
       await subirSave(playerId, run, collection)
       onStatus('salvo')
     } catch {
       onStatus('erro')
     }
+  }
+  pendente = subir
+  timer = setTimeout(() => {
+    timer = null
+    pendente = null
+    void subir()
   }, ESPERA_MS)
 }
 
