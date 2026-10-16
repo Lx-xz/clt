@@ -9,9 +9,7 @@ import {
   PedirMotivo,
   estilosDaBancada as comuns,
 } from '../_catalogo/Bancada'
-import { salvarModo, semearCatalogo } from '@/data/cartas'
-import { CARTAS_BASE } from '@/game/cards'
-import { EVENTOS_BASE } from '@/game/events'
+import { salvarModo } from '@/data/cartas'
 import { catalogoVeioDoBanco } from '@/game/catalogo'
 import { MODO_NORMAL, modosDisponiveis, regras, totalDeDias, type Regras } from '@/game/regras'
 import type { WeekConfig } from '@/game/types'
@@ -95,15 +93,6 @@ export default function LabRegrasPage() {
     setDoBanco(catalogoVeioDoBanco())
   }
 
-  async function semear() {
-    setOcupado(true)
-    const r = await semearCatalogo(CARTAS_BASE, EVENTOS_BASE, [MODO_NORMAL])
-    setOcupado(false)
-    if (!r.ok) return setErro(r.erro ?? 'Não deu para semear.')
-    recarregar()
-    setRecado('Catálogo e modo semeados. Daqui em diante o banco é quem manda.')
-  }
-
   async function gravar(oQue: string, porque: string) {
     if (!emEdicao) return
     setOcupado(true)
@@ -142,7 +131,7 @@ export default function LabRegrasPage() {
         quando começa e termina com elas. O número novo vale para a próxima.
       </p>
 
-      <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
+      <Origem doBanco={doBanco} />
 
       {recado ? <p className={styles.recado}>{recado}</p> : null}
       {erro && !pedindo ? <p className={styles.erroTopo}>{erro}</p> : null}
@@ -165,13 +154,6 @@ export default function LabRegrasPage() {
           </button>
         ))}
       </div>
-
-      {!doBanco ? (
-        <p className={styles.dicaSecao}>
-          Semeie o banco para poder editar. Até lá o jogo roda com o modo do código, que é
-          exatamente o mesmo — só não dá para mexer nele sem publicar o site.
-        </p>
-      ) : null}
 
       {emEdicao ? (
         <Dialogo titulo={emEdicao.nome} onFechar={() => setEmEdicao(null)} largo>

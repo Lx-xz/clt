@@ -774,7 +774,7 @@ drop function if exists public.admin_salvar_evento(jsonb, text, text);
 drop function if exists public.admin_excluir_carta(text, text, text);
 drop function if exists public.admin_excluir_carta(uuid, text, text);
 drop function if exists public.admin_semear_catalogo(jsonb, jsonb);
-drop function if exists public.admin_semear_catalogo(jsonb, jsonb, jsonb);
+drop function if exists public.admin_semear_catalogo(jsonb, jsonb, jsonb);  -- saiu na v0.39: as cartas só moram no banco
 drop function if exists public.admin_salvar_modo(jsonb, text, text);
 drop function if exists public.admin_versoes(text);
 drop function if exists public.minhas_notificacoes();
@@ -2012,76 +2012,6 @@ begin
 end;
 $$;
 
--- A ponte de mão única entre o código e o banco: pega as cartas que o site
--- já traz embutidas e escreve as que ainda não existem. Roda uma vez, na
--- estreia do catálogo no banco, e depois é inofensiva (nada é sobrescrito).
-create function public.admin_semear_catalogo(p_cartas jsonb, p_eventos jsonb, p_modos jsonb)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  item jsonb;
-begin
-  if not public.sou_admin() then
-    raise exception 'Só admin mexe no catálogo.';
-  end if;
-
-  for item in select * from jsonb_array_elements(p_cartas) loop
-    insert into public.cartas
-      (id, nome, custo, classe, texto, efeitos, restricao, especial, inicial, copias,
-       raridade, custo_dinheiro, custos, versao)
-    values (
-      (item ->> 'id')::uuid,
-      item ->> 'nome',
-      coalesce((item ->> 'custo')::smallint, 0),
-      nullif(item ->> 'classe', ''),
-      coalesce(item ->> 'texto', ''),
-      coalesce(item -> 'efeitos', '[]'::jsonb),
-      case when item -> 'restricao' = 'null'::jsonb then null else item -> 'restricao' end,
-      coalesce((item ->> 'especial')::boolean, false),
-      coalesce((item ->> 'inicial')::boolean, false),
-      nullif(item ->> 'copias', '')::smallint,
-      coalesce(nullif(item ->> 'raridade', ''), 'comum'),
-      coalesce((item ->> 'custo_dinheiro')::smallint, 0),
-      case when jsonb_typeof(item -> 'custos') = 'array' then item -> 'custos' else '[]'::jsonb end,
-      1
-    )
-    on conflict (id) do nothing;
-  end loop;
-
-  for item in select * from jsonb_array_elements(coalesce(p_modos, '[]'::jsonb)) loop
-    insert into public.modos (id, nome, descricao, regras, padrao, versao)
-    values (
-      (item ->> 'id')::uuid,
-      coalesce(item ->> 'nome', 'Normal'),
-      coalesce(item ->> 'descricao', ''),
-      item - 'id' - 'nome' - 'descricao' - 'padrao',
-      coalesce((item ->> 'padrao')::boolean, false),
-      1
-    )
-    on conflict (id) do nothing;
-  end loop;
-
-  for item in select * from jsonb_array_elements(p_eventos) loop
-    insert into public.cartas_evento (id, nome, tom, texto, efeitos, escolhas, versao)
-    values (
-      (item ->> 'id')::uuid,
-      item ->> 'nome',
-      coalesce(item ->> 'tom', 'negativo'),
-      coalesce(item ->> 'texto', ''),
-      coalesce(item -> 'efeitos', '[]'::jsonb),
-      case when item -> 'escolhas' = 'null'::jsonb then null else item -> 'escolhas' end,
-      1
-    )
-    on conflict (id) do nothing;
-  end loop;
-
-  return public.catalogo();
-end;
-$$;
-
 -- Salvar um modo é mexer no aluguel de todo mundo. Pede motivo pelo mesmo
 -- motivo que a carta pede: quem estiver jogando vai sentir a diferença, e
 -- merece poder ler por quê.
@@ -2152,7 +2082,6 @@ grant execute on function public.admin_salvar_carta(jsonb, text, text)   to auth
 grant execute on function public.admin_salvar_evento(jsonb, text, text)  to authenticated;
 grant execute on function public.admin_excluir_carta(uuid, text, text)   to authenticated;
 grant execute on function public.admin_salvar_modo(jsonb, text, text)    to authenticated;
-grant execute on function public.admin_semear_catalogo(jsonb, jsonb, jsonb) to authenticated;
 
 -- Todas as versões antigas de uma família, COM o `dados` que o `catalogo()`
 -- deixa de fora. É o que deixa o /lab devolver uma carta ao formato que ela

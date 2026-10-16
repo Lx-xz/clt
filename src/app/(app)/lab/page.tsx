@@ -97,8 +97,8 @@ export default function LabPage() {
   /**
    * O jogo como ele está NO AR, num arquivo: as cartas e os eventos do
    * banco, as regras do modo e o baralho equipado desta conta. É o que o
-   * `npm run simular -- --de arquivo.json` lê — sem isso, o simulador mede o
-   * `cards.ts`, que anda atrás do balanceamento feito aqui.
+   * `npm run simular -- --de arquivo.json` lê, e o simulador não roda sem
+   * ele: as cartas só moram no banco.
    */
   function dadosParaOSimulador(): string {
     const colecao = loadCollection()

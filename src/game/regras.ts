@@ -9,9 +9,10 @@ import type { WeekConfig } from './types'
  * catálogo. Hoje existe só o `normal`; a estrutura é a mesma se um dia
  * houver um "difícil" ou um "sem dinheiro".
  *
- * O mesmo par de sempre vale aqui: este arquivo é a SEMENTE (o que
- * `admin_semear_catalogo` leva para o banco) e a REDE (o que vale sem banco,
- * sem rede, ou com a tabela ainda vazia).
+ * `MODO_NORMAL` ainda mora aqui, ao contrário das cartas (v0.39): são uns
+ * vinte números, e é ele que vale com a tabela `modos` vazia — salvá-lo no
+ * /lab/regras é o que cria a linha. Fora isso, quem manda é o banco (ou a
+ * cópia dele guardada no navegador, junto com o catálogo).
  */
 
 export interface Regras {

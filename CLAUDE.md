@@ -55,8 +55,9 @@ funcionam. No ar em <https://lx-xz.github.io/clt/>, deploy automático a cada pu
 
 **48 cartas de ação** (8 tipos iniciais somando 15 cartas no baralho, 40
 desbloqueáveis, em três raridades) e **26 cartas de evento**, das quais 4 são ambíguas e pedem uma
-escolha. Esses números são o baralho de REFERÊNCIA (`cards.ts`/`events.ts`);
-o que está no ar é o que estiver na tabela `cartas` — veja abaixo.
+escolha. Esses números são os da última cópia do código (v0.38); o que está
+no ar é o que estiver na tabela `cartas`, e desde a v0.39 é SÓ lá que as
+cartas moram — veja abaixo.
 
 ---
 
@@ -84,11 +85,9 @@ src/game/     regras puras — nenhum import de React
   types.ts      GameState e companhia
   acoes.ts      o catálogo de AÇÕES: o vocabulário que carta e evento têm
   catalogo.ts   quais cartas e eventos existem agora — a porta única de getCard
-  cards.ts      o baralho de referência (semente e rede)
   regras.ts     os modos de jogo: aluguel, cota, salário, energia base
   colecao.ts    cópias, baralhos montados e o sorteio de cartas
   missoes.ts    missões diárias e envelopes: de onde vem carta nova
-  events.ts     os eventos de referência, pelo mesmo motivo
   engine.ts     o motor: funções puras GameState -> GameState
   storage.ts    localStorage (espelho), validação de formato do save
   session.ts    quem está jogando (perfil da conta, ou o convidado)
@@ -231,7 +230,8 @@ replay sem nem nome para mostrar. A solução tem duas metades, que resolvem
 coisas diferentes:
 
 1. **O retrato, dentro da run.** `createRun` grava em `GameState.baralho` uma
-   cópia de cada carta equipada como ela era naquele dia, mais `VERSAO_BARALHO`.
+   cópia de cada carta equipada como ela era naquele dia, mais a versão do
+   baralho (`versaoDoBaralho()`, que vem de `public.baralho.versao`).
    Sobe junto com a run (`runs.details.baralho`, e a versão também em
    `runs.versao_baralho`) e é o que faz o replay continuar verdadeiro para
    sempre, sem depender de nada externo. **É a única metade que não dá para
@@ -240,25 +240,45 @@ coisas diferentes:
    e não junto com ele. (Até a v0.14 a recompensa semanal entrava no
    baralho no meio da run e era fotografada à parte; desde a v0.15 a
    recompensa é do fim e vai para a coleção, então o retrato inicial basta.)
-2. **O histórico, à mão.** `MUDANCAS` em `src/data/balanceamento.ts`, uma linha
-   por ajuste, com `oQue` (o número) e `porque` (o motivo). É o que o jogador lê
+2. **O histórico, escrito na hora.** Cada salvamento no `/lab` grava uma
+   linha em `cartas_antigas`, com `o_que` (o número) e `porque` (o motivo),
+   e a versão do baralho sobe sozinha. É o que o jogador lê
    ao abrir uma carta no baralho (o histórico mora dentro do detalhe). Um diff automático saberia
    dizer "custo 4 → 6" e não saberia dizer "porque Freela → Hora Extra fechava
    a semana 1 sozinha", que é a parte que importa.
 
-**Ao ajustar uma carta:** suba `VERSAO_BARALHO`, acrescente a linha em
-`MUDANCAS`, e cite em `changelog.ts`. Carta removida vai para
-`CARTAS_REMOVIDAS` com o último formato que teve — `cartaComoEra()` procura
-nessa ordem (retrato da run → baralho de hoje → removidas → rótulo honesto) e
-por isso nenhuma dessas mudanças derruba a página de ninguém.
+**Ao ajustar uma carta:** é no `/lab`, e só lá; o salvamento pede o motivo
+e cuida do resto. Carta removida é `ativa = false`, e o último formato dela
+continua no catálogo — `cartaComoEra()` procura nessa ordem (retrato da run →
+baralho de hoje → removidas → rótulo honesto) e por isso nenhuma dessas
+mudanças derruba a página de ninguém.
 
-**Onde as cartas moram, desde a v0.10:** na tabela `cartas` (e
-`cartas_evento`). `cards.ts` e `events.ts` continuam existindo como SEMENTE
-(é a lista que `admin_semear_catalogo` leva para o banco na estreia) e como
-REDE: sem banco configurado, com a rede fora, ou com o catálogo ainda vazio,
-o jogo abre com elas em vez de não abrir. Quem serve as cartas para o resto
-do código é `src/game/catalogo.ts`, e `getCard`/`getEvent` vêm de lá — nunca
-de um array importado.
+**Onde as cartas moram: SÓ no banco (v0.39).** Na tabela `cartas` (e
+`cartas_evento`), desde a v0.10. Até a v0.38 o código tinha uma cópia
+(`cards.ts`/`events.ts`) como semente e como rede, e ela era a fonte de
+confusão: andava atrás do balanceamento feito no `/lab`, uma vez passou por
+cima dele, e sem banco o jogo abria com números velhos sem avisar. Hoje:
+
+- O catálogo (`src/game/catalogo.ts`) nasce VAZIO. Quem o enche é a RPC
+  `catalogo`, e cada resposta fica guardada no navegador
+  (`clt:catalogo:v1`, em `src/data/cartas.ts`): com a rede fora, o jogo
+  abre com a última cópia que o banco mandou, que é o balanceamento de
+  verdade. Os modos vêm na mesma resposta e na mesma cópia.
+- Sem banco e sem cópia, ou com o catálogo sem baralho inicial ou sem
+  evento (`catalogoJogavel`), a guarda de sessão mostra "Não consegui
+  carregar as cartas", com "Tentar de novo" (`recarregarCatalogo`), em vez
+  de abrir a mesa. **O `/lab` passa assim mesmo:** num banco vazio é lá que
+  nascem as primeiras cartas.
+- Com a cópia (e não o banco ao vivo), o lab mostra o aviso e não grava
+  (`catalogoVeioDoBanco` é falso).
+- Não existe mais semear, "Trazer do código" nem "Copiar para levar ao
+  código", e `admin_semear_catalogo` saiu do `schema.sql` (fica só o
+  `drop`). **Carta e evento se mudam no `/lab`, e só lá.** Um banco zerado
+  pelo `reset.sql` começa sem carta nenhuma.
+- Quem serve as cartas para o resto do código continua sendo
+  `src/game/catalogo.ts`, e `getCard`/`getEvent` vêm de lá. O `MODO_NORMAL`
+  ficou no código (`regras.ts`): é o que vale com a tabela `modos` vazia, e
+  salvá-lo no `/lab/regras` cria a linha.
 
 **As três peças que tornaram o banco seguro**, e que precisam continuar
 valendo juntas (foi a ausência delas que adiou esta mudança por duas
@@ -779,7 +799,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   embaixo, onde ninguém chegava. A última página fala das recompensas, dos
   tokens e da montagem do baralho, com os números das tabelas.
 - **O tutorial (`ComoJogar.tsx`) monta as cartas de verdade.** Ele renderiza o
-  componente `Card` com cartas tiradas de `cards.ts`, e os números (energia
+  componente `Card` com cartas tiradas do catálogo (`getCard`), e os números (energia
   base, contas, estresse máximo) saem das constantes — rebalancear o jogo não
   pode deixar o tutorial mentindo. As cores dos recursos são as mesmas do HUD:
   o jogador reconhece o medidor pela cor antes de ler o nome, e o tutorial não
@@ -1351,7 +1371,7 @@ opções. O que ele escolheu, e que deve ser preservado:
 
 O detalhe da carta no clique **resolve o problema do texto longo** (a Reunião é o
 texto mais comprido do baralho): a carta corta e o texto inteiro vive no modal.
-Não encurte os textos em `cards.ts` por causa de espaço.
+Não encurte os textos das cartas no `/lab` por causa de espaço.
 
 **Sair (ou entrar como convidado) limpa o localStorage do jogo.**
 `limparLocalDoJogo()` (`storage.ts`) + `cancelarSync()` (`sync.ts`) rodam ao
@@ -1869,8 +1889,8 @@ RLS.
 
 Sem as variáveis o site continua de pé e avisa que o banco não está configurado.
 Mas sem conta (e sem convidado, que também precisa do banco) a guarda bloqueia
-`/jogar` e `/baralho`, então **na prática não dá para jogar localmente sem
-credencial** — é uma pendência aberta (veja abaixo).
+`/jogar` e `/baralho`, e as cartas só moram no banco: **não dá para jogar
+localmente sem credencial**, e é decidido (v0.39).
 
 O login por e-mail e por Google se liga no painel do Supabase, não em variável
 nenhuma: o `.env.example` lista o que precisa estar configurado lá.
@@ -1907,9 +1927,12 @@ v0.12 foi conferida (300 runs, **zero diferenças**).
 Simulador copia ou baixa um arquivo com as cartas e os eventos do banco, as
 regras do modo e o baralho equipado de quem exportou, e o simulador o
 carrega pelas mesmas portas do navegador (`carregarCatalogo`,
-`carregarModos`). Sem isso ele mede o `cards.ts`, que anda atrás do
-balanceamento feito no lab. Com `--inicial`, o baralho inicial no lugar do
-equipado. O relatório mostra, por carta, a vitória nas runs em que ela foi
+`carregarModos`). **Desde a v0.39 o arquivo é obrigatório**: as cartas só
+moram no banco. Com `--inicial`, o baralho inicial no lugar do equipado; com
+`--tudo`, o inicial mais uma cópia de cada desbloqueável. Para comparar duas
+versões do motor (`--hash`), rode as duas com o mesmo arquivo — foi assim
+que a saída do `cards.ts` foi conferida (100 runs, `--inicial` e `--tudo`,
+idênticas antes e depois). O relatório mostra, por carta, a vitória nas runs em que ela foi
 jogada contra a geral (correlação, não causa), e por evento quantas runs
 acabaram mal no dia dele.
 
@@ -1986,9 +2009,6 @@ e a um bot diferente — não compare os dois.
 
 ## Pendências abertas
 
-- **Jogar sem banco.** Quem clonar o repositório sem credencial não consegue nem
-  abrir o jogo. Cair num modo local quando o banco não estiver configurado foi
-  oferecido e não decidido.
 - **Animação de compra.** No protótipo as cartas voavam do baralho para a mão uma
   a uma; isso não foi portado para o app.
 - **Sinergias entre cartas.** O Embalo cobre "ordem importa"; gatilhos nomeados
@@ -1999,43 +2019,24 @@ e a um bot diferente — não compare os dois.
   Balanceamento) dá 98% de burnout, quase sempre na primeira semana, e 0% de
   despejo. As duas pontas a mexer são o custo do estresse (o `+2` por cota não
   batida, e o `−3` do fim de semana) e a cota da semana 1. A infraestrutura toda
-  já existe: o retrato dentro da run, `VERSAO_BARALHO`, o histórico por carta, e
+  já existe: o retrato dentro da run, a versão do baralho, o histórico por carta, e
   agora o `npm run simular` para medir antes de decidir. Falta decidir os
   números — e dá para fazer pelo `/lab/regras` sem publicar o site.
-- **Semear o catálogo em produção.** A tabela nasce vazia e o jogo cai no
-  baralho do código até alguém apertar "Semear" no `/lab/cartas`. Enquanto
-  isso não acontece, editar carta é impossível (o botão fica desligado) e o
-  jogo funciona normalmente — é o estado intencional, não um bug.
 - **Rodar o `schema.sql` da v0.20** (`conquistas_da_run`, e as listas de
   partidas devolvendo estresse, cartas jogadas e envelopes). Sem ele o
   recibo resumido só deixa essas linhas de fora, e o replay, as
-  conquistas. E os cinco eventos de custo da v0.20 chegam ao jogo pela
-  caixa "Trazer do código" do `/lab/eventos`, como as cartas.
+  conquistas.
 - **Rodar o `schema.sql` da v0.17** (coluna `cartas.custos`). Sem ele o
   custo em R$ segue funcionando pelo `custo_dinheiro`, mas custo de estresse
   ou produtividade salvo no `/lab` não é gravado.
-- **O BALANCEAMENTO DO AUTOR MORA NO BANCO, e o código não pode passar por
-  cima (v0.33).** Já aconteceu: o autor balanceou cartas no `/lab` e um
-  "Trazer do código" (que vinha com tudo marcado) levou o `cards.ts` por
-  cima. Pelo que ele lembra, as versões dele eram: Proatividade custando 0,
-  Hora Extra dando 50 de dinheiro e 0 de estresse, Automatizar só +1 por
-  dia (até o fim de semana, ou uma vez por run), o evento Sexta de Folga
-  sendo só "Feriado", e Reorganizar a Mesa pedindo uma carta só. Nada se
-  perdeu — a versão substituída fica inteira em `cartas_antigas.dados` —,
-  e o `/lab/cartas` e o `/lab/eventos` agora têm (`_catalogo/Versoes.tsx`):
-  a caixa "O código desfez o seu balanceamento" (saiu na v0.38, veja abaixo), que achava essas versões e
-  as grava de novo com o motivo que o autor tinha escrito; "Versões
-  anteriores" dentro da edição de cada carta ("Usar esta" carrega no
-  editor); o selo "balanceada no lab" no "Trazer do código", que já vem
-  DESMARCADO para essas; e "Copiar para levar ao código", que copia as
-  cartas cuja versão no ar é do lab, para colar numa conversa. Quem lê o
-  `dados` é a RPC `admin_versoes` (só admin). Quem diz se uma mudança veio
-  do código é o motivo dela: os de `MOTIVOS_DO_CODIGO`/`MOTIVOS_DOS_EVENTOS`
-  e os antigos em `MOTIVOS_ANTIGOS` (`Versoes.tsx`) — **ao reescrever uma
-  frase de motivo, a de antes vai para lá.** **Antes de mudar qualquer carta
-  ou evento no código, peça ao autor o texto do "Copiar para levar ao
-  código"** e traga o `cards.ts`/`events.ts` até o banco: o número que vale
-  é o dele.
+- **O balanceamento do autor mora no banco (v0.33).** Um "Trazer do
+  código" já levou o `cards.ts` por cima dele; nada se perdeu (a versão
+  substituída fica em `cartas_antigas.dados`), e "Versões anteriores",
+  dentro da edição de cada carta no `/lab` (`_catalogo/Versoes.tsx`, lida
+  pela RPC `admin_versoes`), deixa ver e voltar a qualquer versão. O
+  histórico marca "do código" pelas frases que aquela caixa gravava
+  (`MOTIVOS_DO_CODIGO`, congelada no próprio arquivo). Desde a v0.39 o
+  código não tem mais cartas, e não há como isso se repetir.
 - **Rodar o `schema.sql` da v0.34** (as colunas novas de `conquistas` —
   `oculta`, `tokens`, `grupo`, `nivel` —, as conquistas novas e
   `colecao_de_amigo`). Sem ele as conquistas aparecem como antes, sem níveis
@@ -2111,21 +2112,6 @@ e a um bot diferente — não compare os dois.
 - **Rodar o `schema.sql` da v0.38** (o pgcrypto, `email_para_entrar` e
   `tentativas_de_entrada`). Sem ele, entrar pelo nick diz "ainda não está
   ligado, use o e-mail"; o e-mail continua funcionando.
-- **Desde a v0.38 o "Trazer do código" só oferece carta e evento NOVOS.**
-  Os que o banco já tem não aparecem, nem diferentes: o balanceamento mora
-  no banco (o autor o faz no `/lab`), e o código anda atrás dele. A caixa
-  "O código desfez o seu balanceamento" saiu junto — sem a caixa oferecendo
-  a versão do código por cima, não há mais como o código desfazer nada. O
-  autor decidiu manter Automatizar, Terapia e Plantão como ficaram.
-- **Mudar carta em `cards.ts` NÃO muda o jogo no ar.** Semear só escreve o
-  que não existe, e rodar o `schema.sql` não toca no que a carta faz (só
-  troca o id antigo pelo uuid, uma vez). Com o banco já
-  semeado, quem leva o código para lá é a caixa "O código tem cartas que o
-  banco não tem" do `/lab/cartas` (v0.16): lista as novas e as diferentes,
-  deixa desmarcar o que o admin editou de propósito, e salva pelo mesmo
-  `admin_salvar_carta`, com o motivo de `MOTIVOS_DO_CODIGO` (`cards.ts`).
-  A comparação ordena as chaves: o `jsonb` reordena, e o texto cru acusaria
-  diferença em toda carta. Ao ajustar carta no código, escreva o porquê lá.
 - **Rodar o `schema.sql` da v0.14 em produção** e acrescentar `/auth/` nas
   Redirect URLs do Supabase (veja a armadilha do Google). Até lá o site
   funciona: amigos, conquistas e o replay alheio somem em silêncio

@@ -1,10 +1,11 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { catalogoPronto } from '@/data/cartas'
+import { catalogoPronto, recarregarCatalogo } from '@/data/cartas'
 import { aoMudarConta, lerConta } from '@/data/conta'
 import { lerSessao, type Sessao } from '@/game/session'
+import buttons from '@/styles/buttons.module.sass'
 import styles from './SessaoGuard.module.sass'
 
 const Contexto = createContext<Sessao | null>(null)
@@ -45,7 +46,12 @@ export function useDefinirSessao(): (s: Sessao) => void {
 export default function SessaoGuard({ children }: { children: React.ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(() => lerSessao())
   const [pronto, setPronto] = useState(false)
+  const [semCartas, setSemCartas] = useState(false)
+  const [tentando, setTentando] = useState(false)
   const router = useRouter()
+  // o /lab abre mesmo sem cartas: é lá que nascem as primeiras de um banco
+  // vazio, e sem esta exceção ninguém conseguiria criá-las
+  const noLab = usePathname().startsWith('/lab')
 
   const conferir = useCallback(() => {
     // o catálogo entra junto com a conta, em paralelo: as duas são uma ida ao
@@ -54,7 +60,8 @@ export default function SessaoGuard({ children }: { children: React.ReactNode })
     // de referência e terminá-la com o do banco seria trocar as cartas no
     // meio do jogo
     Promise.all([lerConta(), catalogoPronto()])
-      .then(([conta]) => {
+      .then(([conta, jogavel]) => {
+        setSemCartas(!jogavel)
         if (conta.tipo === 'conta' || conta.tipo === 'convidado') {
           setSessao(conta.perfil)
           setPronto(true)
@@ -67,8 +74,13 @@ export default function SessaoGuard({ children }: { children: React.ReactNode })
       .catch(() => {
         // banco fora do ar: quem já tem espelho local continua jogando (o
         // save local segura a run), quem não tem volta para a entrada
-        if (lerSessao()) setPronto(true)
-        else router.replace('/auth')
+        if (!lerSessao()) return router.replace('/auth')
+        // o catálogo nunca falha (sem rede ele cai na cópia local), então
+        // esperá-lo aqui é só ler o que ele já decidiu
+        void catalogoPronto().then((jogavel) => {
+          setSemCartas(!jogavel)
+          setPronto(true)
+        })
       })
   }, [router])
 
@@ -79,6 +91,32 @@ export default function SessaoGuard({ children }: { children: React.ReactNode })
 
   if (!pronto || !sessao) {
     return <div className={styles.espera}>Batendo o ponto…</div>
+  }
+
+  // as cartas moram só no banco: sem ele, e sem a cópia que ele deixou neste
+  // navegador, não há com o que jogar — e abrir a mesa vazia seria pior do
+  // que dizer isso
+  if (semCartas && !noLab) {
+    return (
+      <div className={styles.semCartas}>
+        <p>Não consegui carregar as cartas.</p>
+        <p className={styles.dica}>Confira a conexão e tente de novo.</p>
+        <button
+          type="button"
+          className={`${buttons.button} ${buttons.primary}`}
+          disabled={tentando}
+          onClick={() => {
+            setTentando(true)
+            void recarregarCatalogo().then((jogavel) => {
+              setSemCartas(!jogavel)
+              setTentando(false)
+            })
+          }}
+        >
+          {tentando ? 'Tentando…' : 'Tentar de novo'}
+        </button>
+      </div>
+    )
   }
 
   return (

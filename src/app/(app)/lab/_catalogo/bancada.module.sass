@@ -1,22 +1,16 @@
 .origem
-  display: flex
-  flex-wrap: wrap
-  align-items: center
-  gap: 8px
+  // bloco, e não flex: num flex cada pedaço do texto (o <b>, o resto) vira
+  // um item, e a frase quebrava em colunas com o ícone sozinho em cima
+  display: block
   margin: 0 0 20px
   padding: 10px 14px
   border-radius: 10px
   font-size: 13px
   line-height: 1.5
 
-  p
-    display: flex
-    align-items: center
-    gap: 8px
-    margin: 0
-
   svg
-    flex: none
+    margin-right: 6px
+    vertical-align: -2px
 
 // vivo = está mexendo no jogo de verdade. A cor existe para isso ser sentido
 // antes de ser lido
@@ -25,9 +19,7 @@
   background: var(--papel-alto)
   color: var(--tinta-fraca)
 
-.semente
-  flex-direction: column
-  align-items: flex-start
+.semCopia
   border: 1px solid var(--destaque)
   background: var(--papel-alto)
   color: var(--tinta)

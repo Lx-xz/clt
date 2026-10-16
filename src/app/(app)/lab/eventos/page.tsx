@@ -4,7 +4,6 @@ import { ArrowLeft, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Card from '@/components/Card'
-import Check from '@/components/Check'
 import Dialogo from '@/components/Dialogo'
 import Segmentado from '@/components/Segmentado'
 import {
@@ -13,24 +12,16 @@ import {
   Origem,
   PedirMotivo,
   estilosDaBancada as comuns,
-  estavel,
 } from '../_catalogo/Bancada'
 import { EditorDeEfeitos, EditorDeEscolhas, EscapeJson } from '../_catalogo/EditorDeAcoes'
-import {
-  CopiarParaOCodigo,
-  VersoesDaCarta,
-} from '../_catalogo/Versoes'
+import { VersoesDaCarta } from '../_catalogo/Versoes'
 import {
   eventoParaBanco,
   excluirDoCatalogo,
   salvarEvento,
   catalogoComIdsAntigos,
-  semearCatalogo,
   versoesDosEventos,
 } from '@/data/cartas'
-import { CARTAS_BASE } from '@/game/cards'
-import { EVENTOS_BASE, MOTIVOS_DOS_EVENTOS } from '@/game/events'
-import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todosOsEventos } from '@/game/catalogo'
 import type { Efeito } from '@/game/acoes'
 import type { EventCard, EventChoice, EventTone } from '@/game/types'
@@ -79,80 +70,6 @@ function resumoDaMudanca(antes: EventCard | undefined, depois: EventCard): strin
   return partes.join(' · ') || 'Salvo sem mudança de número'
 }
 
-function mesmoEvento(a: EventCard, b: EventCard): boolean {
-  return estavel(eventoParaBanco(a)) === estavel(eventoParaBanco(b))
-}
-
-/**
- * O mesmo "trazer do código" das cartas, para os eventos: semear só escreve
- * o que não existe, então evento novo ou mudado em `events.ts` nunca chega
- * sozinho a um banco já semeado. Lista a diferença e leva o que estiver
- * marcado, pelo mesmo `admin_salvar_evento` da edição, com histórico e
- * motivo. Evento tirado do sorteio (`ativa = false`) fica de fora.
- */
-function TrazerEventosDoCodigo({ eventos, aoTerminar }: { eventos: EventCard[]; aoTerminar: (recado: string) => void }) {
-  const banco = new Map(eventos.map((e) => [e.id, e]))
-  const pendencias = EVENTOS_BASE.flatMap((e) => {
-    const antes = banco.get(e.id)
-    // como nas cartas: evento que o banco já tem não vem do código, nem
-    // diferente — o balanceamento mora no banco. Só o evento NOVO
-    if (antes) return []
-    return [{
-      evento: e,
-      oQue: antes ? 'Ajuste vindo do código' : 'Evento novo',
-      porque: MOTIVOS_DOS_EVENTOS[e.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Evento novo do baralho de referência do código.'),
-    }]
-  })
-  const [fora, setFora] = useState<string[]>([])
-  const [ocupado, setOcupado] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
-  if (pendencias.length === 0) return null
-
-  async function trazer() {
-    setOcupado(true)
-    setErro(null)
-    let feitos = 0
-    for (const p of pendencias) {
-      if (fora.includes(p.evento.id)) continue
-      const r = await salvarEvento(p.evento, p.oQue, p.porque)
-      if (!r.ok) {
-        setErro(`${p.evento.name}: ${r.erro ?? 'não deu para salvar.'}`)
-        break
-      }
-      feitos += 1
-    }
-    setOcupado(false)
-    if (feitos > 0) aoTerminar(`${feitos} ${feitos === 1 ? 'evento veio' : 'eventos vieram'} do código para o banco.`)
-  }
-
-  const marcados = pendencias.length - fora.length
-  return (
-    <section className={styles.trazer}>
-      <h2 className={styles.subtitulo}>Eventos novos no código ({pendencias.length})</h2>
-      <p className={styles.dicaSecao}>
-        Eventos que o <code>events.ts</code> tem e o banco ainda não. Os que já existem aqui não aparecem: a versão
-        do banco é a que vale.
-      </p>
-      <ul className={styles.listaTrazer}>
-        {pendencias.map((p) => (
-          <li key={p.evento.id}>
-            <Check
-              marcado={!fora.includes(p.evento.id)}
-              onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.evento.id) : [...f, p.evento.id]))}
-            >
-              <b>{p.evento.name}</b> · {p.oQue}
-            </Check>
-          </li>
-        ))}
-      </ul>
-      {erro ? <p className={styles.erroTopo}>{erro}</p> : null}
-      <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={trazer} disabled={ocupado || marcados === 0}>
-        {ocupado ? 'Trazendo…' : `Trazer ${marcados} para o banco`}
-      </button>
-    </section>
-  )
-}
-
 export default function LabEventosPage() {
   const [eventos, setEventos] = useState<EventCard[]>(() => todosOsEventos())
   const [doBanco, setDoBanco] = useState(() => catalogoVeioDoBanco())
@@ -168,15 +85,6 @@ export default function LabEventosPage() {
   function recarregar() {
     setEventos(todosOsEventos())
     setDoBanco(catalogoVeioDoBanco())
-  }
-
-  async function semear() {
-    setOcupado(true)
-    const r = await semearCatalogo(CARTAS_BASE, EVENTOS_BASE, [MODO_NORMAL])
-    setOcupado(false)
-    if (!r.ok) return setErro(r.erro ?? 'Não deu para semear.')
-    recarregar()
-    setRecado('Catálogo semeado. Daqui em diante o banco é quem manda.')
   }
 
   function abrir(e: EventCard, ehNovo = false) {
@@ -232,7 +140,7 @@ export default function LabEventosPage() {
         <Link href="/lab/cartas">Cartas de ação ficam aqui.</Link>
       </p>
 
-      <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
+      <Origem doBanco={doBanco} />
 
       {/* o banco ainda tem o id antigo: ler funciona (a leitura traduz), mas
           gravar faria a carta salva com o uuid virar uma linha NOVA ao lado
@@ -242,21 +150,6 @@ export default function LabEventosPage() {
           O banco ainda usa os ids antigos das cartas. Rode o <code>supabase/schema.sql</code> (a migração para uuid)
           antes de salvar qualquer coisa aqui: salvar agora duplicaria a carta.
         </p>
-      ) : null}
-
-
-      {doBanco ? (
-        <CopiarParaOCodigo atuais={eventos.filter((e) => e.ativa !== false)} familia="evento" paraTexto={eventoParaBanco} />
-      ) : null}
-
-      {doBanco ? (
-        <TrazerEventosDoCodigo
-          eventos={eventos}
-          aoTerminar={(r) => {
-            recarregar()
-            setRecado(r)
-          }}
-        />
       ) : null}
 
       {recado ? <p className={styles.recado}>{recado}</p> : null}

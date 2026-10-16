@@ -12,8 +12,9 @@ import { catalogoPronto } from '@/data/cartas'
  * promessa junto com a leitura da conta — então o jogo nunca começa com um
  * baralho e termina com outro.
  *
- * Não trava nada e não mostra erro: sem banco, ou com a rede fora, o jogo
- * segue com as cartas do código. Veja `@/game/catalogo`.
+ * Não trava nada e não mostra erro: com a rede fora, o catálogo cai na
+ * última cópia guardada neste navegador, e quem diz que não há cartas é a
+ * guarda de sessão. Veja `@/game/catalogo`.
  */
 export default function CarregarCatalogo() {
   useEffect(() => {

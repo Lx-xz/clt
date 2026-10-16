@@ -12,26 +12,17 @@ import {
   BotaoExcluir,
   IdInterno,
   Origem,
-  estavel,
   PedirMotivo,
   estilosDaBancada as comuns,
 } from '../_catalogo/Bancada'
 import { EditorDeEfeitos, EscapeJson } from '../_catalogo/EditorDeAcoes'
+import { VersoesDaCarta } from '../_catalogo/Versoes'
 import {
-  CopiarParaOCodigo,
-  VersoesDaCarta,
-} from '../_catalogo/Versoes'
-import {
-  cartaParaBanco,
   excluirDoCatalogo,
   salvarCarta,
   catalogoComIdsAntigos,
-  semearCatalogo,
   versoesDasCartas,
 } from '@/data/cartas'
-import { CARTAS_BASE, MOTIVOS_DO_CODIGO } from '@/game/cards'
-import { EVENTOS_BASE } from '@/game/events'
-import { MODO_NORMAL } from '@/game/regras'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
 import type { Acao, Efeito, Recurso } from '@/game/acoes'
 import { COPIAS_POR_RARIDADE, NOMES_DE_RARIDADE } from '@/game/colecao'
@@ -340,110 +331,6 @@ function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermi
   )
 }
 
-interface Pendencia {
-  carta: ActionCard
-  oQue: string
-  porque: string
-}
-
-function mesmaCarta(a: ActionCard, b: ActionCard): boolean {
-  return estavel(cartaParaBanco(a)) === estavel(cartaParaBanco(b))
-}
-
-/**
- * O que o baralho do código tem e o banco não: carta nova, ou carta que o
- * código mudou. Carta que o admin TIROU do jogo (`ativa = false`) fica de
- * fora — tirar foi uma decisão, e trazer de volta tem que ser outra.
- */
-function pendenciasDoCodigo(doBanco: ActionCard[]): Pendencia[] {
-  const banco = new Map(doBanco.map((c) => [c.id, c]))
-  const lista: Pendencia[] = []
-  for (const carta of CARTAS_BASE) {
-    const antes = banco.get(carta.id)
-    // carta que o banco JÁ tem não vem mais do código, nem diferente: o
-    // balanceamento mora no banco (é o autor que o faz, aqui no lab), e é o
-    // código que anda atrás dele. A caixa oferecendo a versão do código por
-    // cima já desfez o balanceamento do autor uma vez (v0.33). Só a carta
-    // NOVA, que o banco ainda não tem, chega por aqui
-    if (antes) continue
-    lista.push({
-      carta,
-      oQue: resumoDaMudanca(antes, carta),
-      porque: MOTIVOS_DO_CODIGO[carta.id] ?? (antes ? 'Ajuste do baralho de referência do código.' : 'Carta nova do baralho de referência do código.'),
-    })
-  }
-  return lista
-}
-
-/**
- * A ponte de volta entre o código e o banco, para DEPOIS da estreia.
- *
- * Semear só escreve o que não existe — é o que protege o que foi editado
- * aqui —, então uma carta ajustada em `cards.ts` nunca chegava ao banco, e
- * "rodei o schema e as cartas não mudaram" era exatamente isso: o schema
- * cria tabela e função, não reescreve carta. Esta caixa lista a diferença e
- * leva o que estiver marcado, uma carta por vez, pelo mesmo
- * `admin_salvar_carta` da edição — com histórico e motivo, como qualquer
- * outra mudança. Desmarque a carta que você mudou aqui de propósito: trazer
- * a do código desfaria a sua edição.
- */
-function TrazerDoCodigo({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTerminar: (recado: string) => void }) {
-  const pendencias = pendenciasDoCodigo(cartas)
-  const [fora, setFora] = useState<string[]>([])
-  const [ocupado, setOcupado] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
-  if (pendencias.length === 0) return null
-
-  async function trazer() {
-    setOcupado(true)
-    setErro(null)
-    let feitas = 0
-    for (const p of pendencias) {
-      if (fora.includes(p.carta.id)) continue
-      const r = await salvarCarta(p.carta, p.oQue, p.porque)
-      if (!r.ok) {
-        setErro(`${p.carta.name}: ${r.erro ?? 'não deu para salvar.'}`)
-        break
-      }
-      feitas += 1
-    }
-    setOcupado(false)
-    if (feitas > 0) aoTerminar(`${feitas} ${feitas === 1 ? 'carta veio' : 'cartas vieram'} do código para o banco.`)
-  }
-
-  const marcadas = pendencias.length - fora.length
-  return (
-    <section className={styles.trazer}>
-      <h2 className={styles.subtitulo}>Cartas novas no código ({pendencias.length})</h2>
-      <p className={styles.dicaSecao}>
-        Cartas que o <code>cards.ts</code> tem e o banco ainda não. As que já existem aqui não aparecem: a versão
-        do banco é a que vale.
-      </p>
-      <ul className={styles.listaTrazer}>
-        {pendencias.map((p) => (
-          <li key={p.carta.id}>
-            <Check
-              marcado={!fora.includes(p.carta.id)}
-              onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== p.carta.id) : [...f, p.carta.id]))}
-            >
-              <b>{p.carta.name}</b> · {p.oQue}
-            </Check>
-          </li>
-        ))}
-      </ul>
-      {erro ? <p className={styles.erroTopo}>{erro}</p> : null}
-      <button
-        type="button"
-        className={`${buttons.button} ${buttons.primary}`}
-        onClick={trazer}
-        disabled={ocupado || marcadas === 0}
-      >
-        {ocupado ? 'Trazendo…' : `Trazer ${marcadas} para o banco`}
-      </button>
-    </section>
-  )
-}
-
 export default function LabCartasPage() {
   const [cartas, setCartas] = useState<ActionCard[]>(() => todasAsCartas())
   const [doBanco, setDoBanco] = useState(() => catalogoVeioDoBanco())
@@ -461,15 +348,6 @@ export default function LabCartasPage() {
   function recarregar() {
     setCartas(todasAsCartas())
     setDoBanco(catalogoVeioDoBanco())
-  }
-
-  async function semear() {
-    setOcupado(true)
-    const r = await semearCatalogo(CARTAS_BASE, EVENTOS_BASE, [MODO_NORMAL])
-    setOcupado(false)
-    if (!r.ok) return setErro(r.erro ?? 'Não deu para semear.')
-    recarregar()
-    setRecado('Catálogo semeado. Daqui em diante o banco é quem manda.')
   }
 
   function abrir(c: ActionCard) {
@@ -536,7 +414,7 @@ export default function LabCartasPage() {
         <Link href="/lab/eventos">Cartas de evento ficam aqui.</Link>
       </p>
 
-      <Origem doBanco={doBanco} aoSemear={semear} semeando={ocupado} />
+      <Origem doBanco={doBanco} />
 
       {/* o banco ainda tem o id antigo: ler funciona (a leitura traduz), mas
           gravar faria a carta salva com o uuid virar uma linha NOVA ao lado
@@ -558,20 +436,6 @@ export default function LabCartasPage() {
         />
       ) : null}
 
-
-      {doBanco ? (
-        <CopiarParaOCodigo atuais={cartas.filter((c) => c.ativa !== false)} familia="acao" paraTexto={cartaParaBanco} />
-      ) : null}
-
-      {doBanco ? (
-        <TrazerDoCodigo
-          cartas={cartas}
-          aoTerminar={(r) => {
-            recarregar()
-            setRecado(r)
-          }}
-        />
-      ) : null}
 
       {recado ? <p className={styles.recado}>{recado}</p> : null}
       {erro && !pedindo ? <p className={styles.erroTopo}>{erro}</p> : null}

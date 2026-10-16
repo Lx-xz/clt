@@ -1,4 +1,4 @@
-import { carregarCatalogo, type CatalogoCarregado } from '@/game/catalogo'
+import { carregarCatalogo, catalogoJogavel, type CatalogoCarregado } from '@/game/catalogo'
 import { MODO_NORMAL, carregarModos, type Regras } from '@/game/regras'
 import type {
   ActionCard,
@@ -239,38 +239,74 @@ function traduzir(bruto: RespostaCatalogo): CatalogoCarregado {
 }
 
 /**
- * Busca o catálogo e o instala no motor. Devolve se o banco realmente mandou
- * cartas.
- *
- * **Falhar aqui não é erro fatal, de propósito.** Sem banco, com a rede fora
- * ou com o catálogo ainda não semeado, o jogo continua com as cartas do
- * código (`cards.ts`) — o pior caso é jogar o baralho de referência, não é
- * ficar sem jogo.
+ * A última resposta do banco, guardada neste navegador. É a rede de quando a
+ * rede cai: o jogo abre com as cartas que o banco mandou da última vez, e não
+ * com uma cópia do código que nunca acompanhou o balanceamento. Não é dado
+ * de ninguém (é o catálogo, que é público), então `limparLocalDoJogo` pode
+ * apagá-la à vontade: a próxima abertura busca de novo.
  */
+const CHAVE_DO_CATALOGO = 'clt:catalogo:v1'
+
+function guardarCopia(resposta: RespostaCatalogo) {
+  try {
+    localStorage.setItem(CHAVE_DO_CATALOGO, JSON.stringify(resposta))
+  } catch {
+    // cheio ou bloqueado: fica sem rede, e só
+  }
+}
+
+function lerCopia(): RespostaCatalogo | null {
+  try {
+    const texto = localStorage.getItem(CHAVE_DO_CATALOGO)
+    return texto ? (JSON.parse(texto) as RespostaCatalogo) : null
+  } catch {
+    return null
+  }
+}
+
+function instalar(resposta: RespostaCatalogo, aoVivo: boolean) {
+  carregarModos((resposta.modos ?? []).map(paraRegras))
+  carregarCatalogo(traduzir(resposta), aoVivo)
+}
+
 let tentativa: Promise<boolean> | null = null
 
 /**
  * O catálogo, carregado uma vez por visita. Todo mundo que precisa dele
  * espera a MESMA promessa: a home dispara sem esperar (o tutorial só abre no
  * clique, e até lá a resposta chegou) e a guarda de sessão aguarda junto com
- * a leitura da conta, sem custar uma viagem a mais.
+ * a leitura da conta, sem custar uma viagem a mais. Devolve se dá para
+ * jogar (`catalogoJogavel`).
  */
 export function catalogoPronto(): Promise<boolean> {
   tentativa ??= carregarCatalogoDoBanco()
   return tentativa
 }
 
+/** Esquece a tentativa e busca de novo: é o "tentar de novo" da guarda. */
+export function recarregarCatalogo(): Promise<boolean> {
+  tentativa = null
+  return catalogoPronto()
+}
+
 export async function carregarCatalogoDoBanco(): Promise<boolean> {
-  if (!supabase) return false
-  try {
-    const { data, error } = await supabase.rpc('catalogo')
-    if (error || !data) return false
-    const resposta = data as RespostaCatalogo
-    carregarModos((resposta.modos ?? []).map(paraRegras))
-    return carregarCatalogo(traduzir(resposta))
-  } catch {
-    return false
+  let resposta: RespostaCatalogo | null = null
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('catalogo')
+      if (!error && data) resposta = data as RespostaCatalogo
+    } catch {
+      // sem rede: cai na cópia
+    }
   }
+  if (resposta) {
+    instalar(resposta, true)
+    guardarCopia(resposta)
+  } else {
+    const copia = lerCopia()
+    if (copia) instalar(copia, false)
+  }
+  return catalogoJogavel()
 }
 
 // ------------------------------------------------------------------ admin
@@ -292,8 +328,8 @@ async function escrever(
   if (error) return { ok: false, erro: error.message }
   if (data) {
     const resposta = data as RespostaCatalogo
-    carregarModos((resposta.modos ?? []).map(paraRegras))
-    carregarCatalogo(traduzir(resposta))
+    instalar(resposta, true)
+    guardarCopia(resposta)
   }
   return { ok: true }
 }
@@ -323,16 +359,6 @@ export function salvarEvento(evento: EventCard, oQue: string, porque: string) {
  *  carta na mão termina a partida normalmente. */
 export function excluirDoCatalogo(id: CardId, familia: 'acao' | 'evento', porque: string) {
   return escrever('admin_excluir_carta', { p_id: id, p_familia: familia, p_porque: porque })
-}
-
-/** A ponte de mão única: leva o baralho do código para o banco. Roda uma vez,
- *  na estreia; depois é inofensiva, porque nada existente é sobrescrito. */
-export function semearCatalogo(cartas: ActionCard[], eventos: EventCard[], modos: Regras[]) {
-  return escrever('admin_semear_catalogo', {
-    p_cartas: cartas.map(cartaParaBanco),
-    p_eventos: eventos.map(eventoParaBanco),
-    p_modos: modos.map((m, i) => ({ ...m, padrao: i === 0 })),
-  })
 }
 
 /** As regras do jogo. Mexer aqui não afeta quem já está no meio de uma run:

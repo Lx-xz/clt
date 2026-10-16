@@ -18,27 +18,25 @@
  *    o `ctx.sorte` passam todos por lá, então a mesma semente dá exatamente a
  *    mesma partida. É o que permite comparar duas versões do motor jogada por
  *    jogada — foi assim que a migração das cartas para dado foi conferida.
- * 2. **O baralho é o do CÓDIGO.** Sem navegador ninguém chama
- *    `carregarCatalogo`, então `catalogo.ts` fica na semente de `cards.ts`.
- *    O script confere isso em voz alta em vez de supor.
+ * 2. **O baralho é o do ARQUIVO.** Desde a v0.39 as cartas só moram no
+ *    banco, e o simulador mede o jogo como está no ar: o arquivo que o
+ *    Lab › Simulador exporta (as cartas, os eventos e as regras do banco, e
+ *    o baralho equipado de quem exportou). Para comparar duas versões do
+ *    motor, rode as duas com o MESMO arquivo.
  *
  * Uso:
- *   npm run simular                    500 runs, semente 1
- *   npm run simular -- --runs 2000     mais runs
- *   npm run simular -- --hash          imprime só o hash de cada run, para
- *                                      comparar duas versões do motor
- *   npm run simular -- --tudo          baralho inicial + 1 cópia de cada
- *                                      desbloqueável: é como as cartas novas
- *                                      entram na medição
- *   npm run simular -- --de jogo.json  o jogo COMO ESTÁ NO AR: as cartas,
- *                                      os eventos e as regras do banco, e o
- *                                      baralho equipado de quem exportou
- *                                      (Lab › Simulador). Com `--inicial`,
- *                                      o baralho inicial em vez do equipado
+ *   npm run simular -- --de jogo.json             500 runs, semente 1, com o
+ *                                                 baralho equipado do arquivo
+ *   npm run simular -- --de jogo.json --inicial   o baralho inicial
+ *   npm run simular -- --de jogo.json --tudo      o inicial + 1 cópia de cada
+ *                                                 desbloqueável
+ *   npm run simular -- --de jogo.json --runs 2000 mais runs
+ *   npm run simular -- --de jogo.json --hash      só o hash de cada run, para
+ *                                                 comparar duas versões do motor
  */
 
 import { readFileSync } from 'node:fs'
-import { carregarCatalogo, cartasDoJogo, catalogoVeioDoBanco, eventosDoJogo, getEvent } from '../src/game/catalogo'
+import { carregarCatalogo, cartasDoJogo, catalogoJogavel, eventosDoJogo, getEvent } from '../src/game/catalogo'
 import { idAtual } from '../src/game/ids'
 import { custosDe } from '../src/game/custos'
 import * as engine from '../src/game/engine'
@@ -69,10 +67,6 @@ const ARQUIVO = (() => {
   return i >= 0 ? args[i + 1] : null
 })()
 
-if (catalogoVeioDoBanco()) {
-  throw new Error('O catálogo veio do banco: a medição não seria reproduzível.')
-}
-
 /** O que o Lab › Simulador exporta. */
 interface Exportado {
   geradoEm: string
@@ -83,17 +77,20 @@ interface Exportado {
   eventos: EventCard[]
 }
 
-// o jogo do arquivo entra no lugar da semente: o motor lê o catálogo e as
-// regras pelas mesmas portas que o navegador usa
-let BARALHO_DO_ARQUIVO: CardId[] | null = null
-let DE_ONDE = 'o código (cards.ts / events.ts)'
-if (ARQUIVO) {
-  const dados = JSON.parse(readFileSync(ARQUIVO, 'utf8')) as Exportado
-  carregarCatalogo({ cartas: dados.cartas, eventos: dados.eventos, versao: dados.versao, mudancas: [], removidas: [] })
-  carregarModos([dados.modo])
-  if (!INICIAL) BARALHO_DO_ARQUIVO = dados.baralho.cartas.map((id) => idAtual(id))
-  DE_ONDE = `${ARQUIVO} (exportado em ${dados.geradoEm.slice(0, 10)}${BARALHO_DO_ARQUIVO ? `, baralho "${dados.baralho.nome}"` : ''})`
+// o motor lê o catálogo e as regras pelas mesmas portas que o navegador usa
+if (!ARQUIVO) {
+  console.error('Falta o arquivo: npm run simular -- --de jogo.json (Lab › Simulador › Baixar arquivo).')
+  process.exit(1)
 }
+const dados = JSON.parse(readFileSync(ARQUIVO, 'utf8')) as Exportado
+carregarCatalogo({ cartas: dados.cartas, eventos: dados.eventos, versao: dados.versao, mudancas: [], removidas: [] })
+carregarModos([dados.modo])
+if (!catalogoJogavel()) {
+  console.error(`${ARQUIVO} não tem baralho inicial ou eventos: não dá para jogar.`)
+  process.exit(1)
+}
+const BARALHO_DO_ARQUIVO: CardId[] | null = INICIAL || TUDO ? null : dados.baralho.cartas.map((id) => idAtual(id))
+const DE_ONDE = `${ARQUIVO} (exportado em ${dados.geradoEm.slice(0, 10)}${BARALHO_DO_ARQUIVO ? `, baralho "${dados.baralho.nome}"` : ''})`
 
 // ---------------------------------------------------------------------- bot
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertTriangle, Database, FileCode2, Trash2 } from 'lucide-react'
+import { AlertTriangle, Database, Trash2, WifiOff } from 'lucide-react'
 import Dialogo from '@/components/Dialogo'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './bancada.module.sass'
@@ -14,14 +14,12 @@ import styles from './bancada.module.sass'
  * consegue fazer nada se o banco disser que quem está ali não é admin.
  */
 
-/** Onde as cartas estão vindo agora. Aparece no topo das duas bancadas
- *  porque editar achando que se está no banco, e estar no código, é o erro
- *  mais caro que esta tela permite cometer. */
-export function Origem({ doBanco, aoSemear, semeando }: {
-  doBanco: boolean
-  aoSemear: () => void
-  semeando: boolean
-}) {
+/** Onde as cartas estão vindo agora. Aparece no topo das bancadas porque
+ *  editar achando que se está no banco, e estar numa cópia, é o erro mais
+ *  caro que estas telas permitem cometer. Desde a v0.39 não há mais cartas
+ *  no código: quando não é o banco, é a última cópia que ele deixou neste
+ *  navegador, e aí nada se grava. */
+export function Origem({ doBanco }: { doBanco: boolean }) {
   if (doBanco) {
     return (
       <p className={`${styles.origem} ${styles.viva}`}>
@@ -32,16 +30,11 @@ export function Origem({ doBanco, aoSemear, semeando }: {
     )
   }
   return (
-    <div className={`${styles.origem} ${styles.semente}`}>
-      <p>
-        <FileCode2 size={14} aria-hidden />
-        As cartas estão vindo do <b>código</b> — o banco ainda não tem catálogo. Semeie uma vez
-        para poder editar; nada existente é sobrescrito.
-      </p>
-      <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={aoSemear} disabled={semeando}>
-        {semeando ? 'Semeando…' : 'Semear o banco com o baralho do código'}
-      </button>
-    </div>
+    <p className={`${styles.origem} ${styles.semCopia}`}>
+      <WifiOff size={14} aria-hidden />
+      Sem conexão com o banco: isto é a última cópia guardada neste navegador. Editar fica
+      desligado até a conexão voltar.
+    </p>
   )
 }
 
@@ -124,19 +117,6 @@ export function BotaoExcluir({ onClick }: { onClick: () => void }) {
 }
 
 export { styles as estilosDaBancada }
-
-/** JSON com as chaves em ordem: o `jsonb` do banco reordena as chaves dos
- *  objetos, e comparar o texto cru acusaria diferença em toda carta. */
-export function estavel(v: unknown): string {
-  if (Array.isArray(v)) return `[${v.map(estavel).join(',')}]`
-  if (v && typeof v === 'object') {
-    const pares = Object.entries(v as Record<string, unknown>)
-      .filter(([, x]) => x !== undefined)
-      .sort(([a], [b]) => a.localeCompare(b))
-    return `{${pares.map(([k, x]) => `${JSON.stringify(k)}:${estavel(x)}`).join(',')}}`
-  }
-  return JSON.stringify(v)
-}
 
 /** O id na edição: só de leitura, porque não muda nunca. */
 export function IdInterno({ id }: { id: string }) {

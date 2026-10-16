@@ -1,60 +1,68 @@
 'use client'
 
-import { History, RotateCcw } from 'lucide-react'
+import { History } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import Check from '@/components/Check'
-import { MOTIVOS_DO_CODIGO } from '@/game/cards'
-import { MOTIVOS_DOS_EVENTOS } from '@/game/events'
-import { mudancasDoCatalogo } from '@/game/catalogo'
 import type { VersaoAntiga } from '@/data/cartas'
 import buttons from '@/styles/buttons.module.sass'
 import styles from '../cartas/cartas.module.sass'
 
 /**
- * O balanceamento feito à mão no /lab, e o que o protege do código.
+ * O histórico de versões de cada carta, no /lab.
  *
- * Já aconteceu: o autor ajustou cartas aqui (Proatividade de graça, Hora
- * Extra sem estresse), e um "Trazer do código" depois levou o `cards.ts` por
- * cima, porque a caixa vinha com tudo marcado. Nada se perdeu — a versão
- * substituída fica inteira em `cartas_antigas` —, mas não havia como vê-la
- * nem como voltar. Daqui saem as três coisas que faltavam: saber se a versão
- * no ar é do lab ou do código, achar o balanceamento que o código desfez, e
- * devolver uma carta a qualquer versão antiga.
+ * Até a v0.38 o código tinha uma cópia das cartas, e o "Trazer do código"
+ * gravava a versão dela no banco — uma vez, por cima do balanceamento do
+ * autor. Desde a v0.39 o banco é a única fonte e essa ponte não existe mais;
+ * o que sobrou dela é saber, no histórico, qual versão antiga VEIO do código.
  */
 
 /**
- * Os motivos que o "Trazer do código" grava. É por eles que se sabe que uma
- * mudança veio do código e não da mão de alguém: o motivo digitado no lab
- * nunca é igual a uma destas frases. Quando uma frase de `MOTIVOS_DO_CODIGO`
- * for reescrita, a de antes vem para cá — senão as linhas antigas passariam
- * a parecer edição do lab.
+ * Os motivos que o "Trazer do código" gravava. É por eles que o histórico
+ * diz "do código" e não "feita no lab": motivo digitado à mão nunca é igual
+ * a uma destas frases. A lista está congelada — nada novo vem do código.
  */
-const MOTIVOS_ANTIGOS = [
+const MOTIVOS_DO_CODIGO = new Set([
   'O último recurso perto do burnout, uma vez por run.',
   'O tudo ou nada: muita produtividade hoje, paga em estresse agora e em energia amanhã.',
   'Ajuste do baralho de referência do código.',
   'Carta nova do baralho de referência do código.',
   'Evento novo do baralho de referência do código.',
-]
-
-const DO_CODIGO = new Set([
-  ...Object.values(MOTIVOS_DO_CODIGO),
-  ...Object.values(MOTIVOS_DOS_EVENTOS),
-  ...MOTIVOS_ANTIGOS,
+  'Virou lendária: é a carta que muda o resto da run, e agora vem uma cópia só.',
+  'Virou lendária: um salário maior pelo resto da run é a maior virada do jogo.',
+  'Virou épica: uma das cartas que decidem uma semana.',
+  'Virou épica: a renda de toda sexta é um prêmio de envelope bom.',
+  'Primeira carta que se paga em estresse: troca saúde por meta, para quem tem energia de sobra e cota faltando.',
+  'O tudo ou nada: muita produtividade hoje, paga em estresse agora e em energia amanhã. Épica: decide um dia inteiro.',
+  'Primeira carta que se paga em produtividade: parar de trabalhar para respirar.',
+  'Uma saída para a demissão que se paga em dinheiro, e não em puxar o saco.',
+  'O café que custa dinheiro em vez de estresse: o de sempre cansa, este pesa no bolso.',
+  'Comprar produtividade: para quem tem dinheiro e não tem energia.',
+  'Dinheiro pago em estresse, sem gastar energia nenhuma.',
+  'Recompensa quem monta o naipe social.',
+  'Trocar carta da mão por mais cartas, que quase não existia no jogo.',
+  'Mais forte na hora do aperto, que é quando o estresse mata.',
+  'Uma renda que entra semana a semana, paga em estresse. Épica: é prêmio de envelope bom.',
+  'Empurrar o problema para amanhã, que é o assunto do jogo.',
+  'O estresse como combustível: a carta fica mais forte justamente quando a espiral do estresse aperta.',
+  'Uma saída para o dia ruim que não custa energia: só sai quando o estresse já está alto.',
+  'O último recurso perto do burnout, uma vez por run. Épica: tira a run do buraco.',
+  'Era a Tarefa melhor em tudo: mais produtividade pelo mesmo custo e sem preço nenhum.',
+  'Rendia 1 de produtividade por energia e ainda tirava estresse; a régua (Tarefa Simples) é 0,67.',
+  'A 0,5 de produtividade por energia só servia de enchimento.',
+  'Ideia do autor: tira estresse de verdade, mas com custo de verdade, em dinheiro.',
+  'Era dinheiro de graça; agora também compra uma carta.',
+  'Era a pior troca do jogo: energia demais por pouco dinheiro.',
+  'Armadilha consciente: energia agora, estresse depois. Rara para não aparecer toda hora.',
+  'O baralho inicial passou a ter pelo menos 3 cartas de cada naipe.',
+  'Uma Tarefa Simples cedeu lugar à terceira Reunião (3 por naipe no inicial).',
+  'Com cartas pagas em dinheiro, o dia também pode baratear o preço delas.',
+  'O outro lado da Black Friday: o dia em que tudo que se paga em dinheiro encarece.',
+  'Um alívio para as cartas pagas em estresse.',
+  'O dia em que as cartas pagas em estresse pesam mais.',
+  'O primeiro evento que mexe no custo em produtividade.',
 ])
 
-export function veioDoCodigo(porque: string): boolean {
-  return DO_CODIGO.has(porque.trim())
-}
-
-/**
- * A versão no ar desta carta foi escrita à mão no lab? A mudança mais nova
- * do histórico é a que produziu a versão de hoje; se o motivo dela não é um
- * dos do código, foi alguém aqui. Carta sem histórico é a da semente.
- */
-export function editadaNoLab(id: string, familia: 'acao' | 'evento'): boolean {
-  const ultima = mudancasDoCatalogo().find((m) => m.carta === id && m.familia === familia)
-  return Boolean(ultima && !veioDoCodigo(ultima.porque))
+function veioDoCodigo(porque: string): boolean {
+  return MOTIVOS_DO_CODIGO.has(porque.trim())
 }
 
 /**
@@ -112,50 +120,5 @@ export function VersoesDaCarta<T>({ id, carregar, aoUsar, descrever }: {
         })}
       </ol>
     </details>
-  )
-}
-
-/**
- * O caminho de volta para o código: copia, como texto, as cartas cuja versão
- * no ar foi feita aqui, com o motivo. É para colar numa conversa e levar o
- * `cards.ts` até o banco. Desde que a caixa "Trazer do código" só oferece
- * carta NOVA, o código atrás não ameaça mais nada, mas é ele a semente e a
- * rede: quanto mais perto do banco, melhor.
- */
-export function CopiarParaOCodigo<T extends { id: string; name: string }>({ atuais, familia, paraTexto }: {
-  atuais: T[]
-  familia: 'acao' | 'evento'
-  paraTexto: (c: T) => unknown
-}) {
-  const [copiado, setCopiado] = useState(false)
-  const doLab = atuais.filter((c) => editadaNoLab(c.id, familia))
-  if (doLab.length === 0) return null
-
-  async function copiar() {
-    const texto = JSON.stringify(
-      doLab.map((c) => ({
-        ...(paraTexto(c) as object),
-        porque: mudancasDoCatalogo().find((m) => m.carta === c.id && m.familia === familia)?.porque,
-      })),
-      null,
-      2,
-    )
-    try {
-      await navigator.clipboard.writeText(texto)
-      setCopiado(true)
-      setTimeout(() => setCopiado(false), 2500)
-    } catch {
-      setCopiado(false)
-    }
-  }
-
-  return (
-    <p className={styles.dicaSecao}>
-      {doLab.length} {familia === 'acao' ? (doLab.length === 1 ? 'carta está' : 'cartas estão') : (doLab.length === 1 ? 'evento está' : 'eventos estão')}{' '}
-      no ar com a versão feita aqui: {doLab.map((c) => c.name).join(', ')}.{' '}
-      <button type="button" className={buttons.button} onClick={copiar}>
-        {copiado ? 'Copiado' : 'Copiar para levar ao código'}
-      </button>
-    </p>
   )
 }

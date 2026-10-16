@@ -1,5 +1,3 @@
-import { CARTAS_BASE, VERSAO_BARALHO_BASE } from './cards'
-import { EVENTOS_BASE } from './events'
 import type {
   ActionCard,
   CardId,
@@ -17,18 +15,15 @@ import { idAtual } from './ids'
  * onde o resto do jogo as enxerga — `getCard` e `getEvent` leem daqui, não de
  * um array importado.
  *
- * **As cartas do código não foram embora: viraram a semente e a rede.** O
- * catálogo nasce com elas, e o banco só substitui o que conseguir carregar.
- * Isso resolve três coisas de uma vez:
- *
- * 1. O jogo abre e funciona sem banco nenhum — que era uma pendência aberta.
- * 2. Uma falha de rede no meio do carregamento não deixa ninguém sem jogo.
- * 3. A simulação fora do navegador (`src/game/` não importa React nem
- *    Supabase) continua rodando com o baralho de referência.
- *
- * O preço é ter o baralho escrito em dois lugares, e ele é pago uma vez:
- * `admin_semear_catalogo` leva o do código para o banco na estreia, e daí em
- * diante o do código é só o fallback.
+ * **O banco é a ÚNICA fonte (v0.39).** Até ali o código tinha uma cópia
+ * (`cards.ts`/`events.ts`), que servia de semente e de rede: sem banco, o
+ * jogo abria com ela. Só que a cópia andava atrás do balanceamento feito no
+ * /lab, e a rede jogava a pessoa com números velhos sem avisar — duas
+ * versões do mesmo baralho, e nenhuma certeza de qual valia. Hoje o catálogo
+ * nasce VAZIO; quem o enche é o banco ou, com a rede fora, a última cópia
+ * que o banco mandou para este navegador (`src/data/cartas.ts`). Sem nenhum
+ * dos dois a guarda de sessão diz que não conseguiu carregar as cartas, em
+ * vez de abrir a mesa. O simulador lê o arquivo exportado do /lab.
  */
 
 interface Catalogo {
@@ -44,18 +39,11 @@ function porId<T extends { id: CardId }>(itens: T[]): Map<CardId, T> {
   return new Map(itens.map((i) => [i.id, i]))
 }
 
-function catalogoDoCodigo(): Catalogo {
-  return {
-    cartas: porId(CARTAS_BASE),
-    eventos: porId(EVENTOS_BASE),
-    versao: VERSAO_BARALHO_BASE,
-    mudancas: [],
-    removidas: [],
-    doBanco: false,
-  }
+function catalogoVazio(): Catalogo {
+  return { cartas: new Map(), eventos: new Map(), versao: 0, mudancas: [], removidas: [], doBanco: false }
 }
 
-let atual: Catalogo = catalogoDoCodigo()
+let atual: Catalogo = catalogoVazio()
 
 export interface CatalogoCarregado {
   cartas: ActionCard[]
@@ -66,29 +54,28 @@ export interface CatalogoCarregado {
 }
 
 /**
- * Troca o catálogo pelo que veio do banco. Chamado uma vez, na abertura do
- * site (`CarregarCatalogo.tsx`).
+ * Troca o catálogo pelo que veio do banco. `aoVivo` diz se a resposta veio
+ * agora ou da cópia guardada no navegador: com a cópia, o /lab não grava
+ * (estaria editando em cima do que pode já ter mudado).
  *
- * Um catálogo vazio é IGNORADO de propósito: banco recém-criado, ainda não
- * semeado, devolve zero cartas, e trocar o baralho por nada deixaria o jogo
- * sem como ser jogado. Nesse caso o do código continua valendo.
+ * Catálogo vazio é instalado também: é o banco recém-criado, e é no /lab
+ * que nascem as primeiras cartas. Quem decide se dá para JOGAR é
+ * `catalogoJogavel`.
  */
-export function carregarCatalogo(dados: CatalogoCarregado): boolean {
-  if (dados.cartas.length === 0) return false
+export function carregarCatalogo(dados: CatalogoCarregado, aoVivo = true) {
   atual = {
     cartas: porId(dados.cartas),
-    eventos: porId(dados.eventos.length > 0 ? dados.eventos : EVENTOS_BASE),
+    eventos: porId(dados.eventos),
     versao: dados.versao,
     mudancas: dados.mudancas,
     removidas: dados.removidas,
-    doBanco: true,
+    doBanco: aoVivo,
   }
-  return true
 }
 
-/** Volta ao baralho de referência. Existe para o teste e para "sair da conta". */
-export function reiniciarCatalogo() {
-  atual = catalogoDoCodigo()
+/** Dá para começar uma partida: há baralho inicial e evento para virar. */
+export function catalogoJogavel(): boolean {
+  return cartasIniciais().length > 0 && eventosDoJogo().length > 0
 }
 
 export function catalogoVeioDoBanco(): boolean {
