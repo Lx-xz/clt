@@ -544,9 +544,9 @@ export default function AberturaDeEnvelope({ tipo, cartas, cosmeticos, novas, em
           </button>
           <div className={styles.titulo}>{env.nome}</div>
           {/* o palco inteiro é o alvo do toque: abrir e passar carta é o
-              mesmo gesto, onde quer que o dedo caia */}
-          // um RÓTULO, e não uma div: no iPhone é ele que alterna o
-          // interruptor que treme no toque (`vibrar.ts`)
+              mesmo gesto, onde quer que o dedo caia. É um RÓTULO, e não uma
+              div: no iPhone é ele que alterna o interruptor que treme no
+              toque (`vibrar.ts`) */}
           <label
             ref={areaToque}
             className={styles.areaToque}
