@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      # o repositório ainda não tem main; enquanto isso o padrão é este branch
-      - claude/card-game-initial-site-s3ck6j
   workflow_dispatch:
 
 # permissões que a action de deploy do Pages exige
