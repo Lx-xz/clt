@@ -67,6 +67,7 @@ export const VERSOES: Versao[] = [
     itens: [
       { tipo: 'novo', texto: 'Cartas podem guardar outra carta da mão para amanhã: ela volta junto com a mão do dia seguinte.' },
       { tipo: 'novo', texto: 'Às vezes chega um presente: uma carta de surpresa, num envelope, esperando no início.' },
+      { tipo: 'melhor', texto: 'A advertência verbal aparece: o marcador de advertências fica com a borda vermelha e um ponto no canto. A próxima vira advertência de verdade.' },
     ],
   },
   {

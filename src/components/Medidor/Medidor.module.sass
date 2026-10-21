@@ -16,6 +16,39 @@
     outline: 2px solid var(--destaque)
     outline-offset: 2px
 
+// o aviso que o número não mostra (a advertência verbal): borda vermelha e
+// um ponto no canto, que pulsa ao aparecer — o chip continua dizendo 0/3,
+// e é a borda que diz "a próxima conta"
+.emAlerta
+  border-color: var(--estresse)
+  box-shadow: inset 0 0 0 1px var(--estresse)
+
+.ponto
+  position: absolute
+  top: -4px
+  right: -4px
+  width: 11px
+  height: 11px
+  border: 2px solid var(--papel)
+  border-radius: 50%
+  background: var(--estresse)
+  animation: ponto-chega .5s ease both
+
+@keyframes ponto-chega
+  0%
+    transform: scale(0)
+  60%
+    transform: scale(1.4)
+  100%
+    transform: scale(1)
+
+.alertaDica
+  display: block
+  margin-top: 4px
+  // a dica é escura nos dois temas: o vermelho do estresse sumia nela
+  color: #ff9d92
+  font-weight: 600
+
 .valor
   font-family: var(--mono)
   font-size: 15px
@@ -102,7 +135,7 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, .3)
 
 @media (prefers-reduced-motion: reduce)
-  .subiu, .desceu, .delta
+  .subiu, .desceu, .delta, .ponto
     animation: none
 
 // -------------------------------------------------- retângulos no celular

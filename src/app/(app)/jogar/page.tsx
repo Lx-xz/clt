@@ -327,10 +327,13 @@ export default function JogarPage() {
           <Medidor
             icon={RESOURCE_ICONS.advertencias}
             nome="Advertências"
-            descricao="Chegou a três, é demissão."
+            descricao="Chegou a três, é demissão. Duas verbais viram uma de verdade."
             valor={state.warnings}
             total={state.modo.advertenciasMaximas}
             subirEhRuim
+            // a verbal (informal) não muda o número, e por isso não aparecia
+            // em lugar nenhum: duas viram uma advertência de verdade
+            alerta={state.informalWarnings > 0 ? 'Você tem uma advertência verbal: a próxima vira advertência.' : undefined}
           />
         </div>
         <span className={styles.espaco} />

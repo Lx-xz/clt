@@ -15,6 +15,9 @@ interface MedidorProps {
   tom?: string
   /** Quando subir é ruim, como estresse e advertências. */
   subirEhRuim?: boolean
+  /** Um aviso que o número não mostra (a advertência verbal): pinta a borda
+   *  de vermelho, põe um ponto no canto e entra na dica. */
+  alerta?: string
 }
 
 /** Interpola o número mostrado para a mudança ser vista, não só notada. */
@@ -57,6 +60,7 @@ export default function Medidor({
   prefixo,
   tom,
   subirEhRuim,
+  alerta,
 }: MedidorProps) {
   const mostrado = useNumeroAnimado(valor)
   const [dica, setDica] = useState(false)
@@ -132,13 +136,14 @@ export default function Medidor({
   const bom = delta === null ? false : subirEhRuim ? delta < 0 : delta > 0
   const classes = [styles.medidor]
   if (delta !== null) classes.push(bom ? styles.subiu : styles.desceu)
+  if (alerta) classes.push(styles.emAlerta)
 
   return (
     <button
       ref={chip}
       type="button"
       className={classes.join(' ')}
-      aria-label={`${nome}: ${valor}${total !== undefined ? ` de ${total}` : ''}. ${descricao}`}
+      aria-label={`${nome}: ${valor}${total !== undefined ? ` de ${total}` : ''}. ${alerta ? `${alerta}. ` : ''}${descricao}`}
       // no toque, `pointerenter` dispara junto com o clique e os dois se
       // anulavam: a dica abria e fechava na mesma batida, ou pior, ficava
       // presa aberta. Passar o mouse é do mouse; tocar é só o clique.
@@ -157,6 +162,7 @@ export default function Medidor({
         {mostrado}
       </span>
       {total !== undefined ? <span className={styles.total}>/{total}</span> : null}
+      {alerta ? <span className={styles.ponto} aria-hidden /> : null}
       {delta !== null ? (
         <span className={`${styles.delta} ${bom ? styles.deltaBom : styles.deltaRuim}`}>
           {delta > 0 ? '+' : '−'}
@@ -171,6 +177,7 @@ export default function Medidor({
           style={posicao ? { left: posicao.left, top: posicao.top } : { opacity: 0 }}
         >
           <strong>{nome}</strong> — {descricao}
+          {alerta ? <span className={styles.alertaDica}>{alerta}</span> : null}
         </span>
       ) : null}
     </button>
