@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { humorDoEstresse } from '@/components/Avatar'
 import AvatarHero from '@/components/AvatarHero'
 import Missoes from '@/components/Missoes'
+import Presentes from '@/components/Presentes'
 import { useSessao } from '@/components/SessaoGuard'
 import { carregarDoBanco, sincronizar } from '@/data/sync'
 import { dayLabel } from '@/game/engine'
@@ -34,6 +35,8 @@ export default function InicioPage() {
   const sessao = useSessao()
   const [run, setRun] = useState<GameState | null>(null)
   const [colecao, setColecao] = useState<Collection | null>(null)
+  // o presente só abre sobre a coleção do BANCO, nunca sobre o espelho local
+  const [doBanco, setDoBanco] = useState(false)
 
   // o save e a coleção moram no espelho local; ler na montagem evita a
   // divergência entre o HTML do build e o primeiro render no navegador
@@ -52,6 +55,7 @@ export default function InicioPage() {
       .then(({ run: salva, collection }) => {
         if (!vivo) return
         setColecao(collection)
+        setDoBanco(true)
         setRun(salva && salva.outcome === 'jogando' ? salva : null)
       })
       .catch(() => {})
@@ -115,6 +119,7 @@ export default function InicioPage() {
           <h2 className={styles.titulo}>Missões do dia</h2>
           {colecao ? <Missoes colecao={colecao} onMudar={mudarColecao} /> : null}
         </section>
+        {colecao && doBanco ? <Presentes colecao={colecao} onMudar={mudarColecao} convidado={sessao.convidado} /> : null}
       </div>
     </main>
   )

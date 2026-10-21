@@ -100,7 +100,7 @@ function contexto(cartaId?: CardId): Contexto {
       return alvo.cardId
     },
     mostrarDescarte: (state, cartas, porque) => anunciarDescarte(state, cartas, porque),
-    pedirDescarte: (state, quantas, porque, entao, cartaId) => {
+    pedirDescarte: (state, quantas, porque, entao, cartaId, guardar) => {
       // mais do que há na mão vira o que há: pedir 3 de uma mão de 1 travaria
       // o dia esperando uma escolha impossível
       const restam = Math.min(quantas, state.hand.length)
@@ -108,7 +108,7 @@ function contexto(cartaId?: CardId): Contexto {
         executar(state, entao, contexto(cartaId ?? undefined))
         return
       }
-      state.escolhaDeDescarte = { restam, porque, entao, cartaId }
+      state.escolhaDeDescarte = { restam, porque, entao, cartaId, ...(guardar ? { guardar } : {}) }
     },
     pedirEscolha: (state, opcoes, cartaId) => {
       // uma pergunta sem resposta possível travaria o dia para sempre
@@ -408,11 +408,25 @@ export function revealEvent(input: GameState): GameState {
   dispararEfeitos(state, event.efeitos, 'aoRevelar', ctx)
   descartarPerguntaDeEvento(state)
   draw(state, state.maoDoDia)
+  devolverGuardadas(state)
   // e só depois da mão chegar vem o que precisa dela (a Fofoca de Corredor)
   dispararEfeitos(state, event.efeitos, 'aposComprar', ctx)
   descartarPerguntaDeEvento(state)
   state.phase = 'dia'
   return checkDefeat(state)
+}
+
+/**
+ * As cartas guardadas ontem voltam POR CIMA da mão do dia, que já veio
+ * inteira: guardar é ter uma carta a mais hoje, e não trocar uma das cinco.
+ * Entra depois do `draw` (e antes do `aposComprar`), para a Fofoca de
+ * Corredor poder levar uma delas como levaria qualquer outra.
+ */
+function devolverGuardadas(state: GameState) {
+  if (!state.guardadas?.length) return
+  state.hand.push(...state.guardadas)
+  log(state, `Voltou para a mão: ${state.guardadas.map((c) => getCard(c.cardId).name).join(', ')}.`)
+  state.guardadas = []
 }
 
 /**
@@ -446,6 +460,7 @@ export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
   state.pendingEventChoice = false
   state.lastEventChoice = index
   draw(state, state.maoDoDia)
+  devolverGuardadas(state)
   dispararEfeitos(state, event.efeitos, 'aposComprar', ctx)
   descartarPerguntaDeEvento(state)
   state.phase = 'dia'
@@ -504,10 +519,18 @@ export function escolherParaDescartar(input: GameState, uid: string): GameState 
   if (!alvo) return input
 
   state.hand = state.hand.filter((c) => c.uid !== uid)
-  state.discard.push(alvo)
-  log(state, `${pedido.porque} descartou ${getCard(alvo.cardId).name}.`)
-  anunciarDescarte(state, [alvo.cardId], pedido.porque)
-  reagirAoDescarte(state, [alvo.cardId])
+  if (pedido.guardar) {
+    // guardar não é descartar: a carta não passa pelo descarte (nem dispara o
+    // `aoDescartar` dela) e volta inteira na mão de amanhã
+    state.guardadas = [...(state.guardadas ?? []), alvo]
+    log(state, `${getCard(alvo.cardId).name} fica para amanhã.`)
+    anunciarMensagem(state, `${getCard(alvo.cardId).name} fica para amanhã.`)
+  } else {
+    state.discard.push(alvo)
+    log(state, `${pedido.porque} descartou ${getCard(alvo.cardId).name}.`)
+    anunciarDescarte(state, [alvo.cardId], pedido.porque)
+    reagirAoDescarte(state, [alvo.cardId])
+  }
 
   const restam = pedido.restam - 1
   // a mão pode ter acabado antes da conta fechar (uma carta que pede 2 numa

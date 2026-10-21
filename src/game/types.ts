@@ -220,6 +220,10 @@ export interface GameState {
 
   deck: CardInstance[]
   hand: CardInstance[]
+  /** As cartas que o jogador guardou para amanhã (`guardarParaAmanha`):
+   *  fora da mão e do baralho até a mão do dia seguinte chegar, e aí entram
+   *  POR CIMA dela. Opcional, como todo campo novo: save de antes não tem. */
+  guardadas?: CardInstance[]
   discard: CardInstance[]
   /** O que já foi jogado hoje, para o tapete mostrar o dia se montando. */
   playedToday: CardId[]
@@ -252,6 +256,8 @@ export interface GameState {
     entao: Acao[]
     /** Quem pediu, para o `se` das ações de `entao` continuar valendo. */
     cartaId: CardId | null
+    /** Escolher para GUARDAR até amanhã, e não para descartar. */
+    guardar?: boolean
   } | null
 
   /**

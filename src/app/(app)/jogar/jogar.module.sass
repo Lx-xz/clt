@@ -888,6 +888,10 @@
   &:focus-within::after
     opacity: 1
 
+// guardar não é perder a carta: o mesmo rótulo, com a palavra certa
+.guardavel::after
+  content: 'Guardar'
+
 // no toque não existe hover: o rótulo fica sempre visível, senão a única
 // pista de que a carta é clicável some
 @media (hover: none)

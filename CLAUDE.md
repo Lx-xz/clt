@@ -200,6 +200,16 @@ tradução do vocabulário antigo acontece na LEITURA (`migrarAcoes` em
 valida a receita do avatar. Não há migração para rodar no banco: salvar a carta
 de novo no `/lab` já grava o formato de hoje.
 
+**Guardar para amanhã (v0.40, `guardarParaAmanha`)** é o irmão do
+`escolherDescarte`: o mesmo pedido à mão (`escolhaDeDescarte`, agora com
+`guardar: true`), mas a carta escolhida não vai ao descarte nem dispara o
+`aoDescartar` — vai para `GameState.guardadas` (opcional, sem subir a chave
+do save) e volta POR CIMA da mão do dia seguinte (`devolverGuardadas`,
+logo depois do `draw` e antes do `aposComprar`). Na mesa, o rótulo da
+carta escolhível vira "Guardar" (`.guardavel`). O "Deixar pra Amanhã" adia
+um problema; isto adia uma carta. Conferido com o simulador: a saída das
+cartas de sempre não mudou.
+
 **`escolha` e `escolherDescarte` PARAM a lista.** `executar` devolve o que
 faltava para dentro da pergunta (`escolhaAberta.resto`) e retoma ao responder —
 senão as ações depois da pergunta aconteceriam antes dela, que é contar o fim
@@ -1761,6 +1771,20 @@ com "entrar de novo".
 - **Sair é só deste aparelho** (`signOut({ scope: 'local' })`): o padrão
   do Supabase desconectava a pessoa de todo lugar.
 
+**Presentes do admin (v0.40, `src/data/presentes.ts`).** O admin dá uma
+carta a um jogador pelo `/lab` (seção Presente: nick, carta e recado), e
+ela aparece no INÍCIO de quem recebe (`components/Presentes`): um aviso com
+o recado e "Abrir", que vira um envelope com a abertura de sempre (a cópia
+acima do teto vira token, como qualquer outra). A tabela `presentes` é só
+o RECADO, sem política nem grant: `admin_enviar_presente` recusa quem não é
+admin e convidado (que não tem `auth.uid()` para receber), e
+`receber_presente` devolve verdadeiro UMA vez por presente — o site marca
+como recebido ANTES de pôr a carta na coleção, e é isso que impede duas
+abas de darem a mesma carta duas vezes. O aviso só abre depois de a coleção
+vir do banco (`doBanco` no início), senão subiria a coleção velha do
+espelho local por cima. Por enquanto só no início: quem está na mesa vê
+na próxima visita a ele.
+
 **Trocar (ou criar) a senha mora em Configurações › Conta** (v0.38,
 `TrocarSenha`). Para quem entra pelo Google ela é "Criar senha": com ela a
 conta passa a entrar também por e-mail ou nick, e quem perder o Google não
@@ -2136,6 +2160,9 @@ e a um bot diferente — não compare os dois.
   run (`run_id` não existe mais). A run que
   falhar não se perde — entra na fila (`clt:runs-pendentes:v1`, que lê o
   `run_id` de antes como `id`) e sobe na próxima abertura da mesa.
+- **Rodar o `schema.sql` da v0.40** (a tabela `presentes` e as três
+  funções). Sem ele, enviar presente no lab diz que a função falta, e o
+  início não mostra nada.
 - **Rodar o `schema.sql` da v0.38** (o pgcrypto, `email_para_entrar` e
   `tentativas_de_entrada`). Sem ele, entrar pelo nick diz "ainda não está
   ligado, use o e-mail"; o e-mail continua funcionando.

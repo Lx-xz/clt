@@ -1,4 +1,5 @@
 import {
+  BookmarkPlus,
   AlertTriangle, Ban, CalendarDays, Dices, Gauge, Gift, GitBranch, Hand, Layers,
   LayoutGrid, MessageSquare, Repeat, Split, Sunrise, Target, Trash2, Zap,
   type LucideIcon,
@@ -123,6 +124,14 @@ export const DESCRITORES = {
     campos: [
       { chave: 'quantas', rotulo: 'Quantas', padrao: 1, campo: { tipo: 'numero', min: 1, max: 10 } },
       { chave: 'porque', rotulo: 'O que a mesa diz', padrao: '', opcional: true, campo: { tipo: 'texto', exemplo: 'Escolha o que sai da mesa' } },
+      { chave: 'entao', rotulo: 'então', padrao: [], opcional: true, campo: { tipo: 'acoes' } },
+    ],
+  },
+  guardarParaAmanha: {
+    rotulo: 'Guardar carta para amanhã', grupo: 'cartas', Icone: BookmarkPlus,
+    campos: [
+      { chave: 'quantas', rotulo: 'Quantas', padrao: 1, campo: { tipo: 'numero', min: 1, max: 10 } },
+      { chave: 'porque', rotulo: 'O que a mesa diz', padrao: '', opcional: true, campo: { tipo: 'texto', exemplo: 'Escolha o que fica para amanhã' } },
       { chave: 'entao', rotulo: 'então', padrao: [], opcional: true, campo: { tipo: 'acoes' } },
     ],
   },

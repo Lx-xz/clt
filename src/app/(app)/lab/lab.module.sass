@@ -79,3 +79,28 @@
   color: var(--tinta-fraca)
   font-size: 14px
   line-height: 1.55
+
+// o presente: nick, carta e recado, um embaixo do outro
+.presente
+  display: flex
+  flex-direction: column
+  gap: 8px
+  max-width: 420px
+
+  .recado
+    margin-top: 4px
+
+.campo
+  width: 100%
+  padding: 8px 12px
+  border: 1px solid var(--tinta)
+  border-radius: var(--raio)
+  background: var(--papel-alto)
+  color: var(--tinta)
+  // 16px: abaixo disso o Safari do iPhone dá zoom ao focar e não desfaz
+  font-size: 16px
+
+.erro
+  margin: 4px 0 0
+  color: var(--estresse)
+  font-size: 13px

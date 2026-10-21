@@ -1,15 +1,16 @@
 'use client'
 
-import { ClipboardCopy, Download, Shirt, Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
+import { ClipboardCopy, Download, Gift, Shirt, Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
 import { useSessao } from '@/components/SessaoGuard'
 import { cartasDoJogo, todasAsCartas, todosOsEventos, versaoDoBaralho } from '@/game/catalogo'
-import { baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
+import { NOMES_DE_RARIDADE, baralhoAtivo, cartasDoBaralho, copiasMaximas } from '@/game/colecao'
 import { regras } from '@/game/regras'
 import { COSMETICOS } from '@/game/cosmeticos'
 import { clearRun, defaultCollection, loadCollection, saveCollection } from '@/game/storage'
+import { enviarPresente } from '@/data/presentes'
 import { sincronizar } from '@/data/sync'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './lab.module.sass'
@@ -169,6 +170,13 @@ export default function LabPage() {
         </button>
       </div>
 
+      <h2 className={styles.secao}>Presente</h2>
+      <p className={styles.aviso}>
+        Dá uma carta a um jogador. Ela aparece no início dele, num envelope para abrir, com o seu recado. Convidado
+        não recebe.
+      </p>
+      <EnviarPresente />
+
       <h2 className={styles.secao}>Atalhos de teste</h2>
       <p className={styles.aviso}>
         Estes mexem na <b>sua</b> conta de verdade, agora. Só admin os vê justamente por isso.
@@ -227,5 +235,65 @@ export default function LabPage() {
         </Dialogo>
       ) : null}
     </main>
+  )
+}
+
+/**
+ * O presente do admin (v0.40). Quem confere se é admin é o banco
+ * (`admin_enviar_presente`); a carta chega pelo site de quem recebe, no
+ * início (`components/Presentes`).
+ */
+function EnviarPresente() {
+  const cartas = [...cartasDoJogo()].sort((a, b) => a.name.localeCompare(b.name, 'pt'))
+  const [nick, setNick] = useState('')
+  const [carta, setCarta] = useState(cartas[0]?.id ?? '')
+  const [mensagem, setMensagem] = useState('')
+  const [ocupado, setOcupado] = useState(false)
+  const [recado, setRecado] = useState<{ ok: boolean; texto: string } | null>(null)
+
+  async function enviar(e: React.FormEvent) {
+    e.preventDefault()
+    setOcupado(true)
+    setRecado(null)
+    const r = await enviarPresente(nick.trim(), carta, mensagem)
+    setOcupado(false)
+    if (!r.ok) return setRecado({ ok: false, texto: r.erro ?? 'Não deu para enviar.' })
+    const nome = cartas.find((c) => c.id === carta)?.name ?? 'A carta'
+    setRecado({ ok: true, texto: `${nome} foi para ${nick.trim()}. Aparece na próxima vez que abrir o início.` })
+    setMensagem('')
+  }
+
+  return (
+    <form className={styles.presente} onSubmit={(e) => void enviar(e)}>
+      <input
+        className={styles.campo}
+        value={nick}
+        onChange={(e) => setNick(e.target.value)}
+        placeholder="nick de quem recebe"
+        aria-label="Nick de quem recebe"
+        autoCapitalize="none"
+        spellCheck={false}
+        required
+      />
+      <select className={styles.campo} value={carta} onChange={(e) => setCarta(e.target.value)} aria-label="Carta">
+        {cartas.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name} · {NOMES_DE_RARIDADE[c.raridade ?? 'comum']}
+          </option>
+        ))}
+      </select>
+      <input
+        className={styles.campo}
+        value={mensagem}
+        onChange={(e) => setMensagem(e.target.value)}
+        placeholder="recado (opcional)"
+        aria-label="Recado"
+        maxLength={200}
+      />
+      <button type="submit" className={`${buttons.button} ${buttons.primary}`} disabled={ocupado || !nick.trim() || !carta}>
+        <Gift size={15} aria-hidden /> {ocupado ? 'Enviando…' : 'Enviar presente'}
+      </button>
+      {recado ? <p className={recado.ok ? styles.recado : styles.erro}>{recado.texto}</p> : null}
+    </form>
   )
 }

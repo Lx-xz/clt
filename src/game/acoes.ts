@@ -47,6 +47,11 @@ export type Acao =
    *  que acontece depois — é assim que "descarte 1 para comprar 1" existe sem
    *  uma ação nova para cada troca. */
   | { faz: 'escolherDescarte'; quantas: number; porque?: string; entao?: Acao[] }
+  /** O irmão do `escolherDescarte`: o jogador escolhe carta da mão, mas ela
+   *  não vai para o descarte — sai da mão hoje e volta junto com a mão de
+   *  amanhã (`GameState.guardadas`). O "Deixar pra Amanhã" adia um problema;
+   *  isto adia uma CARTA. */
+  | { faz: 'guardarParaAmanha'; quantas: number; porque?: string; entao?: Acao[] }
   | { faz: 'ganharCarta'; carta: CardId; onde: 'mao' | 'descarte' }
   /** Muda o custo de todas as cartas até o fim do dia. */
   /** Muda o custo de TODAS as cartas hoje. Sem `qual`, é a energia (o
@@ -168,13 +173,15 @@ export interface Contexto {
   /** Avisa a mesa do que acabou de sair, para o jogador VER as cartas indo
    *  embora em vez de a mão encolher sozinha. */
   mostrarDescarte: (state: GameState, cartas: CardId[], porque: string) => void
-  /** Pausa o dia até o jogador escolher o que descartar. */
+  /** Pausa o dia até o jogador escolher o que descartar — ou, com
+   *  `guardar`, o que fica para amanhã. */
   pedirDescarte: (
     state: GameState,
     quantas: number,
     porque: string,
     entao: Acao[],
     cartaId: CardId | null,
+    guardar?: boolean,
   ) => void
   /** Pausa o dia até o jogador escolher um dos caminhos da carta. */
   pedirEscolha: (
@@ -282,6 +289,16 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
       ctx.mostrarDescarte(state, saiu, acao.porque ?? 'Descarte')
       break
     }
+    case 'guardarParaAmanha':
+      ctx.pedirDescarte(
+        state,
+        acao.quantas,
+        acao.porque ?? 'Escolha o que fica para amanhã',
+        acao.entao ?? [],
+        ctx.cartaId ?? null,
+        true,
+      )
+      break
     case 'escolherDescarte':
       ctx.pedirDescarte(
         state,
@@ -467,6 +484,7 @@ function migrarAcao(acao: Acao): Acao {
     case 'se':
       return { ...acao, entao: migrarAcoes(acao.entao), senao: acao.senao && migrarAcoes(acao.senao) }
     case 'escolherDescarte':
+    case 'guardarParaAmanha':
       return { ...acao, entao: acao.entao && migrarAcoes(acao.entao) }
     case 'amanha':
       return { ...acao, acoes: migrarAcoes(acao.acoes) }

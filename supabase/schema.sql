@@ -735,6 +735,9 @@ drop function if exists public.meu_perfil();
 drop function if exists public.nick_livre(text);
 drop function if exists public.completar_perfil(text, text, boolean);
 drop function if exists public.email_para_entrar(text, text);
+drop function if exists public.admin_enviar_presente(text, text, text);
+drop function if exists public.meus_presentes();
+drop function if exists public.receber_presente(uuid);
 drop function if exists public.salvar_avatar(jsonb);
 drop function if exists public.criar_convidado(text);
 -- entrada por nick, sem senha: não existe mais
@@ -968,6 +971,90 @@ end;
 $$;
 
 grant execute on function public.email_para_entrar(text, text) to anon, authenticated;
+
+-- ------------------------------------------------------------ presentes
+-- O admin dá uma carta a um jogador (v0.40), e ela aparece na tela dele.
+-- A carta não entra na coleção por aqui: a coleção mora em
+-- `saves.collection`, e quem a escreve é o site. Esta tabela é o recado:
+-- o site do jogador lê os presentes ainda não recebidos, marca como
+-- recebido e só então põe a carta na coleção, num envelope que ele abre.
+-- Sem política nem grant: só as funções mexem nela.
+create table if not exists public.presentes (
+  id          uuid primary key default gen_random_uuid(),
+  para        uuid not null references public.players(id) on delete cascade,
+  carta       uuid not null,
+  mensagem    text,
+  criado_em   timestamptz not null default now(),
+  recebido_em timestamptz
+);
+create index if not exists presentes_para_idx on public.presentes (para) where recebido_em is null;
+alter table public.presentes enable row level security;
+
+-- Só admin, e só para quem tem conta: o convidado não tem como receber
+-- (não tem `auth.uid()`), e o nick dele some quando ele sai.
+create function public.admin_enviar_presente(p_nick text, p_carta text, p_mensagem text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_para  uuid;
+  v_carta uuid;
+  v_id    uuid;
+begin
+  if not public.sou_admin() then
+    raise exception 'Só admin dá presente.';
+  end if;
+  select id into v_para from public.players
+  where lower(nick) = lower(trim(coalesce(p_nick, ''))) and not convidado;
+  if v_para is null then
+    raise exception 'Ninguém com esse nick (convidado não recebe presente).';
+  end if;
+  if p_carta is null or p_carta !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    raise exception 'O id da carta é um uuid.';
+  end if;
+  v_carta := p_carta::uuid;
+  if not exists (select 1 from public.cartas where id = v_carta and ativa) then
+    raise exception 'Essa carta não está no jogo.';
+  end if;
+  insert into public.presentes (para, carta, mensagem)
+  values (v_para, v_carta, nullif(left(trim(coalesce(p_mensagem, '')), 200), ''))
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
+create function public.meus_presentes()
+returns table (id uuid, carta uuid, mensagem text, criado_em timestamptz)
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select id, carta, mensagem, criado_em from public.presentes
+  where para = auth.uid() and recebido_em is null
+  order by criado_em;
+$$;
+
+-- Devolve verdadeiro UMA vez por presente: é o que impede duas abas de
+-- porem a mesma carta duas vezes na coleção.
+create function public.receber_presente(p_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  update public.presentes set recebido_em = now()
+  where id = p_id and para = auth.uid() and recebido_em is null;
+  return found;
+end;
+$$;
+
+grant execute on function public.admin_enviar_presente(text, text, text) to authenticated;
+grant execute on function public.meus_presentes() to authenticated;
+grant execute on function public.receber_presente(uuid) to authenticated;
 
 -- Guarda o avatar de quem está logado. O conteúdo não é validado aqui de
 -- propósito: quem valida é `lerAvatar()` no site, na LEITURA, e peça

@@ -493,7 +493,7 @@ export default function JogarPage() {
             <b>{escolhendo.porque}</b>
             <span>
               Escolha {escolhendo.restam === 1 ? '1 carta' : `${escolhendo.restam} cartas`} da sua
-              mão para descartar.
+              mão {escolhendo.guardar ? 'para guardar até amanhã' : 'para descartar'}.
             </span>
           </div>
         ) : null}
@@ -546,7 +546,7 @@ export default function JogarPage() {
                       rotation={(i - meio) * 5}
                       lift={Math.abs(i - meio) * 7}
                       style={{ '--i': i } as React.CSSProperties}
-                      className={styles.escolhivel}
+                      className={`${styles.escolhivel} ${escolhendo.guardar ? styles.guardavel : ''}`}
                       onOpen={() => escolherDescarte(instancia.uid)}
                     />
                   )
@@ -810,7 +810,9 @@ function dicaDoTapete(state: GameState, esperandoEvento: boolean): string {
 function motivoBloqueio(state: GameState, instancia: CardInstance): string {
   const carta = getCard(instancia.cardId)
   if (state.phase !== 'dia') return 'Só dá para jogar depois de revelar o evento do dia.'
-  if (state.escolhaDeDescarte) return 'Primeiro escolha o que descartar.'
+  if (state.escolhaDeDescarte) {
+    return state.escolhaDeDescarte.guardar ? 'Primeiro escolha o que fica para amanhã.' : 'Primeiro escolha o que descartar.'
+  }
   if (state.escolhaAberta) return 'Primeiro responda a pergunta da carta.'
   if (carta.kind !== null && state.blockedKinds.includes(carta.kind)) {
     return `O evento de hoje bloqueia cartas de ${carta.kind}.`
