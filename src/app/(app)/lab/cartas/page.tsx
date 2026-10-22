@@ -615,8 +615,8 @@ export default function LabCartasPage() {
               {emEdicao.text.trim() && !comentarioDaCarta(emEdicao.text)
                 ? 'Isto ainda parece a descrição de antes (tem número ou R$): com a descrição automática, ele não aparece na carta. Troque por um comentário — a piada da carta, sem números.'
                 : rolarDaCarta(emEdicao.efeitos)
-                  ? 'Carta de sorte: a barra mostra as faixas, e o comentário fica no detalhe da carta.'
-                  : 'A sátira da carta, em itálico embaixo do que ela faz. Sem números: o que ela faz já está escrito em cima. Quem escolheu "Escrita" nas Configurações vê este texto no lugar.'}
+                  ? 'Carta de sorte: a barra mostra as faixas, e o comentário aparece no detalhe, quando o jogador abre a carta.'
+                  : 'A sátira da carta: aparece em itálico no detalhe, quando o jogador abre a carta. Sem números — o que ela faz já está escrito. Quem escolheu "Escrita" nas Configurações vê este texto na carta.'}
             </span>
           </label>
 

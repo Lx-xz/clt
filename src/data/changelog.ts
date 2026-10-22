@@ -65,7 +65,7 @@ export const VERSOES: Versao[] = [
     data: '2026-10-22',
     titulo: 'Cartas com ícones',
     itens: [
-      { tipo: 'melhor', texto: 'A carta diz o que faz com o ícone antes do número: +🔥1 em vez de "+1 estresse". Embaixo, um comentário sobre ela.' },
+      { tipo: 'melhor', texto: 'A carta diz o que faz com o ícone antes do número: +🔥1 em vez de "+1 estresse". Ao abrir a carta, um comentário sobre ela.' },
       { tipo: 'novo', texto: 'Em Configurações › Aparência dá para voltar à descrição escrita.' },
     ],
   },

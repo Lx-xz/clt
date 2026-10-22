@@ -7,7 +7,7 @@ import type { ActionCard, Custo, EventCard } from '@/game/types'
 import BarraDaSorte from '../BarraDaSorte'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { rolarDaCarta } from '@/game/acoes'
-import { comentarioDaCarta, descreverCarta } from '@/game/descricao'
+import { descreverCarta } from '@/game/descricao'
 import { useModoDaDescricao } from '@/data/modoDaDescricao'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import { ArrowDown, ArrowUp } from 'lucide-react'
@@ -107,12 +107,12 @@ export default function Card({
   // texto dela, se houver, vira a linha de cima (o que ela faz além do dado)
   const rolar = evento ? null : rolarDaCarta(card.efeitos)
   // a descrição AUTOMÁTICA (v0.44): sai das ações, com o ícone do recurso
-  // antes do número, e o texto escrito vira o comentário embaixo dela. O
-  // evento continua escrito: as escolhas dele já são texto
+  // antes do número. O texto escrito virou o comentário, e ele mora SÓ no
+  // detalhe (pedido do autor): a carta fica com o que ela faz. O evento
+  // continua escrito: as escolhas dele já são texto
   const modo = useModoDaDescricao()
   const automatica = !evento && modo === 'icones'
   const descricao = automatica ? descreverCarta(card, { semRolar: Boolean(rolar) }) : card.text
-  const comentario = automatica && !rolar ? comentarioDaCarta(card.text) : null
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
   /** Só a carta que ARRASTA prende o dedo: as outras deixam a lista rolar
    *  por baixo dela (o histórico, a fileira de cartas do replay). */
@@ -317,12 +317,9 @@ export default function Card({
             {corpo ?? (rolar ? (
               <BarraDaSorte rolar={rolar} texto={automatica ? descricao : card.text} destaque={saiuNaSorte} />
             ) : (
-              <>
-                <p className={`${styles.texto} ${automatica ? styles.automatica : ''}`}>
-                  <TextoComIcones texto={descricao || card.text} />
-                </p>
-                {comentario ? <p className={styles.comentario}>{comentario}</p> : null}
-              </>
+              <p className={`${styles.texto} ${automatica ? styles.automatica : ''}`}>
+                <TextoComIcones texto={descricao || card.text} />
+              </p>
             ))}
           </div>
         </div>
