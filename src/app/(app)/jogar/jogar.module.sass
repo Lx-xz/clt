@@ -310,11 +310,18 @@
 // menores quando não cabem mais. `--ov` é quanto cada carta entra na de
 // antes (negativo é vão)
 .jogadas
+  // FORA do fluxo do tapete: o tamanho das cartas sai do tamanho do tapete
+  // (medido), e se elas o empurrassem ele cresceria, as cartas cresceriam
+  // junto, e no celular (onde a mesa tem altura livre) a mesa passava da
+  // tela até a conta assentar
+  position: absolute
+  inset: 0
   display: flex
   flex-direction: column
   align-items: center
+  justify-content: center
   gap: 8px
-  max-width: 100%
+  padding: 12px
   --carta-w: calc(var(--carta-h) * .66)
   --carta-arte: calc(var(--carta-h) * .39)
 
@@ -326,13 +333,13 @@
   > * + *
     margin-left: calc(var(--carta-w) * var(--ov, 0) * -1)
 
-  > *:hover
-    z-index: 5
+  @media (hover: hover)
+    > *:hover
+      z-index: 5
 
 .jogada
   animation: jogada-entra .3s cubic-bezier(.2, .8, .25, 1) backwards
   animation-delay: calc(var(--i, 0) * 40ms)
-  transition: width .25s ease, height .25s ease
 
 @keyframes jogada-entra
   from
@@ -468,8 +475,11 @@
     animation: mao-entra .34s cubic-bezier(.2, .8, .25, 1) backwards
     animation-delay: calc(var(--i, 0) * 45ms)
 
-  > *:hover
-    z-index: 20
+  // só com mouse: no toque o :hover GRUDA na última carta tocada, e ela
+  // ficava por cima das vizinhas, escondendo-as
+  @media (hover: hover)
+    > *:hover
+      z-index: 20
 
 // só enquanto se arrasta: ao soltar, a carta muda de lugar no flex no mesmo
 // quadro em que a vaga fecha, e uma transição ali faria as outras pularem

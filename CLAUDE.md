@@ -931,7 +931,15 @@ opções. O que ele escolheu, e que deve ser preservado:
   borda do evento. Elas vêm GRANDES e
   só viram duas fileiras menores quando não cabem numa (`arranjoDasJogadas`
   na mesa, pelo tamanho medido do tapete); a altura que era fixa deixava o
-  tapete quase vazio. Clicar numa jogada abre o detalhe dela. Reordenar a
+  tapete quase vazio. Ganha o arranjo em que se vê MAIS de cada carta
+  (altura vezes o que a vizinha não tampa). **As jogadas moram FORA do
+  fluxo do tapete** (`position: absolute`): o tamanho delas sai do tapete
+  medido, e se elas o empurrassem, ele cresceria, elas cresceriam junto, e
+  no celular (onde a mesa tem altura livre) a mesa passava da tela até a
+  conta assentar. Clicar numa jogada abre o detalhe dela. O `:hover` que
+  põe a carta por cima das vizinhas (no leque e nas jogadas) é só de
+  mouse: no toque ele GRUDA na última carta tocada, e ela tampava as
+  outras. Reordenar a
   mão mede os centros das cartas UMA vez, no começo do arraste: medidos a
   cada movimento, eles pegavam as outras no meio da transição que abre a
   vaga, e a mão tremia com o dedo entre duas cartas.

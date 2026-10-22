@@ -1033,6 +1033,10 @@ function arranjoDasJogadas(n: number, area: { w: number; h: number }) {
   // uma fileira enquanto ela não aperta: menos de um terço de cada carta
   // escondido e a carta ainda grande
   if (n <= 2 || (uma.sobreposicao <= 0.34 && uma.alturaDaCarta >= h * 0.5)) return uma
+  // ganha o arranjo em que a parte À MOSTRA de cada carta é maior: a
+  // altura vezes o que a vizinha não tampa. Cartas menores e inteiras leem
+  // melhor que grandes e tampadas
   const duas = fileiras(2)
-  return duas.alturaDaCarta * (1 - duas.sobreposicao * 0.5) > uma.alturaDaCarta * (1 - uma.sobreposicao * 0.5) ? duas : uma
+  const mostra = (a: typeof uma) => a.alturaDaCarta * (1 - a.sobreposicao)
+  return mostra(duas) > mostra(uma) ? duas : uma
 }
