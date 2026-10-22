@@ -494,6 +494,22 @@ export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
 
 // ------------------------------------------------------------ jogar cartas
 
+/**
+ * Muda uma carta de lugar na mão (a pessoa arrastou e soltou de volta nela).
+ * A ordem da mão não vale nada para as regras — nenhuma carta pergunta a
+ * posição —, então isto é só arrumação: não conta jogada, não gasta nada.
+ * `destino` é o lugar na mão SEM a carta.
+ */
+export function reordenarMao(input: GameState, uid: string, destino: number): GameState {
+  const de = input.hand.findIndex((c) => c.uid === uid)
+  if (de < 0) return input
+  const resto = input.hand.filter((c) => c.uid !== uid)
+  const para = Math.max(0, Math.min(resto.length, Math.round(destino)))
+  if (para === de) return input
+  resto.splice(para, 0, input.hand[de])
+  return { ...input, hand: resto }
+}
+
 export function playCard(input: GameState, uid: string): GameState {
   const state = clone(input)
   const instance = state.hand.find((c) => c.uid === uid)

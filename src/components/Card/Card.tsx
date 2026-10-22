@@ -44,6 +44,13 @@ export interface CardProps {
   /** Alvo em que soltar a carta conta como jogada. */
   dropRef?: RefObject<HTMLElement | null>
   onDragOver?: (over: boolean) => void
+  /** O arraste em curso, em coordenadas de tela (a mão reordena por ele). */
+  onArrastar?: (x: number, y: number) => void
+  /** O arraste soltou FORA do alvo. Quem reordena a mão devolve quanto o
+   *  lugar da carta andou na horizontal, para ela sair do ponto em que foi
+   *  solta, e não do lugar novo. A carta que não se joga (sem energia) ainda
+   *  se arrasta por isto: reordenar não é jogar. */
+  onSoltar?: (x: number, y: number) => number | void
   style?: CSSProperties
   className?: string
   /** O corpo desenhado no lugar do texto — é como a carta de SORTE mostra
@@ -79,6 +86,8 @@ export default function Card({
   semArraste = false,
   dropRef,
   onDragOver,
+  onArrastar,
+  onSoltar,
   style,
   className,
   corpo,
@@ -87,7 +96,11 @@ export default function Card({
 }: CardProps) {
   const ref = useRef<HTMLDivElement>(null)
   const palco = useRef<HTMLLabelElement & HTMLDivElement>(null)
-  const arraste = useRef<{ x: number; y: number; moveu: boolean } | null>(null)
+  const arraste = useRef<{ x: number; y: number; moveu: boolean; ultimoX: number; ultimoT: number } | null>(null)
+  /** A inclinação do arraste: o alvo vem da velocidade do ponteiro, e um
+   *  laço de quadros persegue o alvo e o deixa voltar a zero quando o
+   *  ponteiro para — sem o laço, a carta ficaria torta parada. */
+  const inclinacao = useRef({ atual: 0, alvo: 0, quadro: 0 })
   const cliqueSimples = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ignorarClique = useRef(false)
 
@@ -140,7 +153,7 @@ export default function Card({
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
   /** Só a carta que ARRASTA prende o dedo: as outras deixam a lista rolar
    *  por baixo dela (o histórico, a fileira de cartas do replay). */
-  const arrastavel = Boolean(onPlay) && !semArraste
+  const arrastavel = (Boolean(onPlay) || Boolean(onSoltar)) && !semArraste
 
   /** Informa só o deslocamento do ponteiro; o CSS compõe o resto. */
   function mover(dx: number, dy: number) {
@@ -152,11 +165,32 @@ export default function Card({
 
   function limpar() {
     const el = ref.current
+    pararInclinacao()
     if (!el) return
     el.classList.remove(styles.arrastando)
     el.style.removeProperty('--ddx')
     el.style.removeProperty('--ddy')
   }
+
+  function inclinar() {
+    const el = ref.current
+    const t = inclinacao.current
+    t.atual += (t.alvo - t.atual) * 0.3
+    t.alvo *= 0.9
+    el?.style.setProperty('--inclina', `${t.atual.toFixed(2)}deg`)
+    t.quadro = requestAnimationFrame(inclinar)
+  }
+
+  function pararInclinacao() {
+    const t = inclinacao.current
+    cancelAnimationFrame(t.quadro)
+    t.quadro = 0
+    t.atual = 0
+    t.alvo = 0
+    ref.current?.style.removeProperty('--inclina')
+  }
+
+  useEffect(() => () => cancelAnimationFrame(inclinacao.current.quadro), [])
 
   function sobreAlvo(x: number, y: number) {
     const alvo = dropRef?.current
@@ -170,9 +204,9 @@ export default function Card({
     // `cliqueSimples` esperando) aponta o rótulo da carta para o interruptor
     // que treme; qualquer outro toque desaponta (`vibrar.ts`)
     apontarParaTremer(palco.current, !!onPlay && !disabled && !locked && !faceDown && !!cliqueSimples.current)
-    if (!arrastavel || disabled || locked || faceDown || e.button !== 0) return
+    if (!arrastavel || (disabled && !onSoltar) || locked || faceDown || e.button !== 0) return
     ignorarClique.current = false
-    arraste.current = { x: e.clientX, y: e.clientY, moveu: false }
+    arraste.current = { x: e.clientX, y: e.clientY, moveu: false, ultimoX: e.clientX, ultimoT: e.timeStamp }
     ref.current?.setPointerCapture(e.pointerId)
   }
 
@@ -185,11 +219,23 @@ export default function Card({
       if (Math.abs(dx) + Math.abs(dy) < LIMIAR_ARRASTE) return
       d.moveu = true
       ref.current?.classList.add(styles.arrastando)
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        inclinacao.current.quadro = requestAnimationFrame(inclinar)
+      }
     }
+    // a carta tomba para o lado em que vai, mais quanto mais rápido: é o
+    // que faz parecer que ela está presa pela ponta dos dedos
+    const dt = Math.max(1, e.timeStamp - d.ultimoT)
+    const vx = (e.clientX - d.ultimoX) / dt
+    d.ultimoX = e.clientX
+    d.ultimoT = e.timeStamp
+    const t = inclinacao.current
+    t.alvo = Math.max(-15, Math.min(15, t.alvo * 0.5 + vx * 14))
     // o deslocamento é o do ponteiro, em coordenadas de tela: a carta fica
     // exatamente sob o cursor, sem depender de medir a caixa girada
     mover(dx, dy)
-    onDragOver?.(sobreAlvo(e.clientX, e.clientY))
+    onDragOver?.(!disabled && sobreAlvo(e.clientX, e.clientY))
+    onArrastar?.(e.clientX, e.clientY)
   }
 
   function soltar(e: React.PointerEvent<HTMLDivElement>) {
@@ -202,9 +248,23 @@ export default function Card({
       limpar()
       return
     }
-    const acertou = sobreAlvo(e.clientX, e.clientY)
+    const acertou = !disabled && sobreAlvo(e.clientX, e.clientY)
+    if (acertou) {
+      limpar()
+      onPlay?.()
+      return
+    }
+    // solta fora do tapete: a mão pode ter dado um lugar novo à carta. Ela
+    // sai de onde foi solta (o delta menos o quanto o lugar andou) e só no
+    // quadro seguinte desliza até ele, com a transição de sempre
+    const andou = onSoltar?.(e.clientX, e.clientY)
+    if (typeof andou === 'number' && andou !== 0) {
+      mover(e.clientX - d.x - andou, e.clientY - d.y)
+      pararInclinacao()
+      requestAnimationFrame(() => requestAnimationFrame(limpar))
+      return
+    }
     limpar()
-    if (acertou) onPlay?.()
   }
 
   function onClick() {

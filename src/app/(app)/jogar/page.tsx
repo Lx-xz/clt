@@ -34,6 +34,7 @@ import {
   paySalary,
   playCard,
   pularRecompensaSemanal,
+  reordenarMao,
   restWeekend,
   revealEvent,
 } from '@/game/engine'
@@ -92,6 +93,10 @@ export default function JogarPage() {
   /** A coleção, para o recibo mostrar as missões e os envelopes por abrir. */
   const [colecao, setColecao] = useState<Collection | null>(null)
   const tapete = useRef<HTMLDivElement>(null)
+  const leque = useRef<HTMLDivElement>(null)
+  /** A carta sendo arrastada pela mão: de onde saiu, onde cairia se fosse
+   *  solta agora, e a distância entre dois lugares do leque. */
+  const [reordem, setReordem] = useState<{ uid: string; de: number; para: number; passo: number } | null>(null)
   const sessao = useSessao()
 
   // a última carta jogada que rolou um dado na barra: é nela que a faixa que
@@ -225,9 +230,59 @@ export default function JogarPage() {
   function jogar(uid: string) {
     if (!state) return
     setAberta(null)
+    setReordem(null)
     // o som sai no próprio gesto, antes do render: depois dele, já é atraso
     tocar('carta')
     update(playCard(state, uid))
+  }
+
+  /**
+   * Onde a carta arrastada cairia na mão, ou `null` com o ponteiro fora da
+   * faixa da mão. É quantas das OUTRAS têm o centro à esquerda dele. O
+   * centro é o do lugar (o rótulo da carta, que não gira), descontado o
+   * deslocamento que abre a vaga; a posição na mão é o `order` dele, porque
+   * as cartas não mudam de lugar no DOM (veja o leque).
+   */
+  function lugarNaMao(uid: string, de: number, x: number, y: number) {
+    const el = leque.current
+    const zona = el?.parentElement
+    if (!el || !zona) return null
+    const r = zona.getBoundingClientRect()
+    if (x < r.left || x > r.right || y < r.top - 30 || y > r.bottom) return null
+    const centros: { pos: number; x: number }[] = []
+    for (const filho of Array.from(el.children) as HTMLElement[]) {
+      const pos = Number(filho.style.order)
+      const c = filho.getBoundingClientRect()
+      centros.push({ pos, x: c.left + c.width / 2 - deslocamento(pos) })
+    }
+    centros.sort((a, b) => a.pos - b.pos)
+    const passo = centros.length > 1 ? (centros[centros.length - 1].x - centros[0].x) / (centros.length - 1) : 0
+    const para = centros.filter((c) => c.pos !== de && c.x < x).length
+    return { uid, de, para, passo }
+  }
+
+  /** Quanto a carta da posição `j` anda para abrir a vaga da arrastada. */
+  function deslocamento(j: number) {
+    if (!reordem || j === reordem.de) return 0
+    const { de, para, passo } = reordem
+    if (de < para && j > de && j <= para) return -passo
+    if (para < de && j >= para && j < de) return passo
+    return 0
+  }
+
+  function arrastarNaMao(uid: string, de: number, x: number, y: number) {
+    const lugar = lugarNaMao(uid, de, x, y) ?? { uid, de, para: de, passo: reordem?.passo ?? 0 }
+    if (reordem?.uid !== lugar.uid || reordem.para !== lugar.para) setReordem(lugar)
+  }
+
+  /** Soltou fora do tapete: se foi na mão, a carta muda de lugar. Devolve
+   *  quanto o lugar dela andou, para a carta sair de onde foi solta. */
+  function soltarNaMao(uid: string, de: number, x: number, y: number) {
+    const lugar = lugarNaMao(uid, de, x, y)
+    setReordem(null)
+    if (!state || !lugar || lugar.para === de) return 0
+    update(reordenarMao(state, uid, lugar.para))
+    return (lugar.para - de) * lugar.passo
   }
 
   /** A resposta do jogador ao pedido de descarte de uma carta ou evento. */
@@ -546,7 +601,8 @@ export default function JogarPage() {
           <span className={styles.maoVazia}>{esperandoEvento ? 'Aguardando o evento' : 'Mão vazia'}</span>
         ) : (
           <div
-            className={styles.leque}
+            ref={leque}
+            className={`${styles.leque} ${reordem ? styles.reordenando : ''}`}
             style={
               {
                 // com poucas cartas não há motivo para esconder os nomes
@@ -555,8 +611,21 @@ export default function JogarPage() {
               } as React.CSSProperties
             }
           >
-            {state.hand.map((instancia, i) => {
+            {/* as cartas vão ao DOM numa ordem FIXA (pelo uid) e a posição
+                na mão é o `order` do flex: reordenar não move nó nenhum —
+                mover reinicia a animação de entrada da carta —, e o flex
+                pinta pela ordem do `order`, então a sobreposição segue a mão */}
+            {state.hand
+              .map((instancia, i) => ({ instancia, i }))
+              .sort((a, b) => (a.instancia.uid < b.instancia.uid ? -1 : 1))
+              .map(({ instancia, i }) => {
                 const carta = getCard(instancia.cardId)
+                const lugar = {
+                  '--i': i,
+                  order: i,
+                  '--abre': `${deslocamento(i)}px`,
+                  zIndex: reordem?.uid === instancia.uid ? 40 : undefined,
+                } as React.CSSProperties
                 const podeJogar = canPlay(state, instancia)
                 // com uma escolha de descarte em pé, a mão inteira vira
                 // seletor: o clique simples deixa de abrir o detalhe e passa
@@ -574,7 +643,7 @@ export default function JogarPage() {
                       custos={custosEfetivos(state, carta)}
                       rotation={(i - meio) * 5}
                       lift={Math.abs(i - meio) * 7}
-                      style={{ '--i': i } as React.CSSProperties}
+                      style={lugar}
                       className={`${styles.escolhivel} ${escolhendo.guardar ? styles.guardavel : ''}`}
                       onOpen={() => escolherDescarte(instancia.uid)}
                     />
@@ -588,12 +657,14 @@ export default function JogarPage() {
                       custos={custosEfetivos(state, carta)}
                     rotation={(i - meio) * 5}
                     lift={Math.abs(i - meio) * 7}
-                    style={{ '--i': i } as React.CSSProperties}
+                    style={lugar}
                     disabled={!podeJogar}
                     onOpen={() => setAberta(instancia)}
                     onPlay={podeJogar ? () => jogar(instancia.uid) : undefined}
                     dropRef={tapete}
                     onDragOver={setSobreTapete}
+                    onArrastar={(x, y) => arrastarNaMao(instancia.uid, i, x, y)}
+                    onSoltar={(x, y) => soltarNaMao(instancia.uid, i, x, y)}
                   />
                 )
               })}

@@ -1,4 +1,4 @@
-// O detalhe da carta (v0.45): a carta FLUTUA no meio da cortina escura, sem
+// O detalhe da carta (v0.45): a carta fica sozinha no meio da cortina escura, sem
 // janela em volta, e as informações ficam escritas direto na cortina, ao
 // lado dela. O autor provou duas versões (com as informações num cartão de
 // papel, e assim) e um brilho da raridade atrás; ficou esta, sem o brilho
@@ -48,9 +48,9 @@
   place-items: center
   flex: none
 
-// a carta não fica parada: sobe e desce devagar, com um quase nada de giro
+// a carta chega e fica PARADA: o sobe e desce saiu a pedido do autor
 .flutua
-  animation: chegar .4s cubic-bezier(.2, .8, .25, 1) both, flutuar 4.2s ease-in-out .4s infinite
+  animation: chegar .4s cubic-bezier(.2, .8, .25, 1) both
 
 // ampliada por `zoom`, e não por variáveis de tamanho: as fontes da carta
 // têm teto em px, e só o zoom cresce o texto junto com ela
@@ -74,12 +74,6 @@
   from
     opacity: 0
     transform: translateY(26px) scale(.9)
-
-@keyframes flutuar
-  0%, 100%
-    transform: translateY(0) rotate(-.6deg)
-  50%
-    transform: translateY(-9px) rotate(.6deg)
 
 // ------------------------------------------------------------ as informações
 

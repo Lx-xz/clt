@@ -433,11 +433,19 @@
 
   > *
     margin-inline: calc(var(--carta-w) * var(--sobreposicao, -.11))
+    // a vaga que se abre para a carta arrastada (`translate`, e não
+    // `transform`: este é da animação de entrada, e os dois se somam)
+    translate: var(--abre, 0px) 0
     animation: mao-entra .34s cubic-bezier(.2, .8, .25, 1) backwards
     animation-delay: calc(var(--i, 0) * 45ms)
 
   > *:hover
     z-index: 20
+
+// só enquanto se arrasta: ao soltar, a carta muda de lugar no flex no mesmo
+// quadro em que a vaga fecha, e uma transição ali faria as outras pularem
+.reordenando > *
+  transition: translate .2s cubic-bezier(.2, .8, .25, 1)
 
 @keyframes mao-entra
   from

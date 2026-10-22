@@ -21,7 +21,9 @@ $levantada: 18px
   // O JS só informa o delta do ponteiro em --ddx/--ddy; quem compõe posição,
   // levantada e escala é o CSS, para hover e arraste não brigarem por --ty.
   --ty: var(--lift, 0px)
-  transform: translate(var(--tx, 0px), var(--ty)) rotate(var(--rot, 0deg)) rotateY(var(--flip, 0deg)) scale(var(--sc, 1))
+  // `--leque` zera o giro do leque no arraste: o `--rot` vem inline, e só
+  // assim a classe consegue endireitar a carta (inline ganha da classe)
+  transform: translate(var(--tx, 0px), var(--ty)) rotate(calc(var(--rot, 0deg) * var(--leque, 1) + var(--inclina, 0deg))) rotateY(var(--flip, 0deg)) scale(var(--sc, 1))
   transition: transform .3s cubic-bezier(.2, .8, .25, 1)
   // o dedo que encosta numa carta parada ROLA a lista em volta dela (o
   // histórico, a fileira do replay); era `none` em toda carta, e a fileira
@@ -51,6 +53,8 @@ $levantada: 18px
   --tx: var(--ddx, 0px)
   --ty: calc(var(--lift, 0px) - #{$levantada} + var(--ddy, 0px))
   --sc: 1.09
+  // pegou, endireitou: o giro do leque sai, e quem inclina é o arraste
+  --leque: 0
   cursor: grabbing
   transition: none
   z-index: 90

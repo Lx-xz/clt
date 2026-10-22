@@ -61,6 +61,15 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.45',
+    data: '2026-10-22',
+    titulo: 'A mão na sua ordem',
+    itens: [
+      { tipo: 'novo', texto: 'Arraste uma carta para outro lugar da mão para reorganizar: agrupe o trabalho, o descanso, como quiser.' },
+      { tipo: 'melhor', texto: 'A carta endireita ao ser pega e inclina para o lado em que você arrasta.' },
+    ],
+  },
+  {
     versao: '0.44',
     data: '2026-10-22',
     titulo: 'Cartas com ícones',

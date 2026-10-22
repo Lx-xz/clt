@@ -317,8 +317,8 @@ para caminhos.
 vermelho, azul ou amarelo; a faixa é papel e um fio de tinta. O `tom` das
 saídas do `rolar` e o `semCor` continuam no dado das cartas já salvas, mas
 não pintam mais nada, e o editor não os oferece.
-**O detalhe da carta (`CardDetail`, v0.45):** a carta flutua sozinha na
-cortina escura (sem janela), ampliada por `zoom` (as fontes da carta têm
+**O detalhe da carta (`CardDetail`, v0.45):** a carta fica sozinha, PARADA
+(o sobe e desce saiu a pedido do autor), na cortina escura (sem janela), ampliada por `zoom` (as fontes da carta têm
 teto em px, e só o zoom cresce o texto junto), e as informações vêm
 escritas direto na cortina, ao lado — com as cores do tema escuro na
 coluna, porque a cortina é escura nos dois temas. O "Jogar" tem o ícone de
@@ -889,6 +889,24 @@ opções. O que ele escolheu, e que deve ser preservado:
   arrasta**, a não ser o baralho no computador (entre as duas colunas); no
   celular as colunas são abas, não há onde soltar, e ele passa
   `semArraste` (o clique duplo e o contador continuam movendo a cópia).
+- **Pegar a carta a endireita, e arrastar a inclina (v0.45).** No
+  arraste o giro do leque sai (`--leque: 0` em `.arrastando`; o `--rot` é
+  inline e nenhuma classe o venceria) e a carta tomba para o lado em que
+  vai, mais quanto mais rápido: a velocidade do ponteiro vira um ALVO de
+  inclinação (`--inclina`), e um laço de quadros persegue o alvo e o deixa
+  cair a zero quando o dedo para. Sem movimento reduzido, nada disso.
+- **A mão se reordena arrastando (v0.45, `reordenarMao`).** Soltou no
+  tapete, joga; soltou na faixa da mão, a carta muda de lugar, e enquanto
+  ela anda as outras abrem a vaga (`--abre`, pela propriedade `translate`,
+  que soma com o `transform` da animação de entrada). A ordem da mão não
+  vale nada para as regras: é só arrumação. A carta que não se pode jogar
+  agora (sem energia) também se arrasta, só não joga. **As cartas vão ao
+  DOM numa ordem FIXA (pelo uid) e a posição é o `order` do flex**: mover
+  o nó reiniciaria a `mao-entra` da carta, e o flex pinta pela ordem do
+  `order`, então a sobreposição segue a mão. Ao soltar, a carta sai do
+  ponto em que foi solta (`onSoltar` devolve quanto o lugar dela andou) e
+  só então desliza; a vaga fecha sem transição, no mesmo quadro em que a
+  carta muda de lugar.
 - **Medidores compactos:** só ícone e valor (`⚡ 10`), com nome e explicação numa
   dica que aparece no hover, no foco e no toque. No celular o dinheiro perde o
   "R$" e os 6 medidores viram uma grade 3×2.
