@@ -1,0 +1,358 @@
+.pagina
+  max-width: 1100px
+  padding: 24px 20px 60px
+
+.voltar
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.titulo
+  margin: 8px 0 4px
+
+.intro
+  max-width: 62ch
+  margin: 0 0 14px
+  color: var(--tinta-fraca)
+  font-size: 14px
+  line-height: 1.5
+
+.secao
+  margin: 30px 0 12px
+  color: var(--tinta-fraca)
+  font-size: 13px
+  letter-spacing: .1em
+  text-transform: uppercase
+
+.cartas, .mesas
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr))
+  gap: 20px
+
+.mesas
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))
+
+.opcao
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 10px
+  margin: 0
+  --carta-h: 260px
+
+  figcaption
+    max-width: 30ch
+    color: var(--tinta-fraca)
+    font-size: 13px
+    line-height: 1.4
+    text-align: center
+
+    b
+      display: block
+      color: var(--tinta)
+
+// --------------------------------------------------- 1 · barra dividida
+.barra
+  display: flex
+  flex: 1
+  flex-direction: column
+  gap: 3px
+  margin: -4px
+
+.lado
+  display: flex
+  flex-direction: column
+  justify-content: center
+  gap: 1px
+  min-height: 0
+  padding: 3px 6px 3px 9px
+  border-left: 4px solid
+  border-radius: 2px
+  font-size: 11px
+  line-height: 1.25
+
+.bom
+  border-color: var(--produtividade)
+  background: color-mix(in srgb, var(--produtividade) 10%, var(--papel))
+
+.ruim
+  border-color: var(--estresse)
+  background: color-mix(in srgb, var(--estresse) 9%, var(--papel))
+
+.pct
+  font-family: var(--mono)
+  font-size: 10px
+  font-weight: 700
+  .bom &
+    color: var(--produtividade)
+  .ruim &
+    color: var(--estresse)
+
+.efeito
+  color: var(--tinta)
+
+// --------------------------------------------------- 2 · cara ou coroa
+.moedas
+  display: flex
+  flex: 1
+  flex-direction: column
+  justify-content: center
+  gap: 2px
+  font-size: 11px
+  line-height: 1.25
+
+.linhaMoeda
+  display: flex
+  align-items: center
+  gap: 6px
+
+.moedinha
+  display: grid
+  flex: none
+  place-items: center
+  width: 20px
+  height: 20px
+  border-radius: 50%
+  color: #6b4e12
+
+.cara
+  background: #e8c35a
+  box-shadow: inset 0 0 0 2px #c9a13a
+
+.coroa
+  background: #d9b24a
+  box-shadow: inset 0 0 0 2px #b38a2c
+
+.divisa
+  color: var(--tinta-fraca)
+  font-size: 9px
+  letter-spacing: .1em
+  text-align: center
+  text-transform: uppercase
+
+// --------------------------------------------------- 5 · detalhe
+.detalhe
+  display: grid
+  grid-template-columns: 1fr 1fr
+  gap: 10px
+  width: min(100%, 440px)
+
+.saida
+  display: flex
+  flex-direction: column
+  gap: 6px
+  padding: 12px 14px
+  border-left-width: 4px
+  border-left-style: solid
+  border-radius: var(--raio)
+  font-size: 14px
+
+.saidaTopo
+  font-family: var(--mono)
+  font-size: 11px
+  font-weight: 700
+  letter-spacing: .04em
+  text-transform: uppercase
+  .bom &
+    color: var(--produtividade)
+  .ruim &
+    color: var(--estresse)
+
+// --------------------------------------------------- 4 · a mesa
+.mesa
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 10px
+  width: 100%
+
+.tapete
+  position: relative
+  display: grid
+  place-items: center
+  width: 100%
+  height: 190px
+  border: 1px dashed var(--linha)
+  border-radius: var(--raio)
+  background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--tinta) 4%, transparent) 10px 20px)
+
+.vazio
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+
+.palco
+  display: grid
+  place-items: center
+  width: 100%
+
+.balao
+  position: absolute
+  right: 10px
+  bottom: 10px
+  left: 10px
+  margin: 0
+  padding: 7px 10px
+  border-radius: 8px
+  background: var(--papel-alto)
+  font-size: 13px
+  text-align: center
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .15)
+  animation: balao .25s ease both
+
+.balaoBom
+  border-left: 4px solid var(--produtividade)
+
+.balaoRuim
+  border-left: 4px solid var(--estresse)
+
+@keyframes balao
+  from
+    opacity: 0
+    transform: translateY(6px)
+
+// a moeda: o pulo é do invólucro, o giro é da moeda
+.pulo
+  perspective: 600px
+  animation: pulo 1.4s cubic-bezier(.3, .7, .4, 1) both
+
+@keyframes pulo
+  0%
+    transform: translateY(40px)
+  35%
+    transform: translateY(-46px)
+  80%
+    transform: translateY(0)
+  88%
+    transform: translateY(-6px)
+  100%
+    transform: translateY(0)
+
+.moeda
+  position: relative
+  width: 76px
+  height: 76px
+  transform-style: preserve-3d
+  transition: transform 1.4s cubic-bezier(.15, .6, .3, 1)
+
+.faceMoeda
+  position: absolute
+  inset: 0
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+  gap: 1px
+  border-radius: 50%
+  color: #6b4e12
+  backface-visibility: hidden
+  box-shadow: inset 0 0 0 4px #b38a2c
+
+  small
+    font-size: 10px
+    font-weight: 700
+    letter-spacing: .08em
+    text-transform: uppercase
+
+.verso
+  transform: rotateY(180deg)
+
+// o dado: rola mostrando faces e para no sorteado, com a cor do resultado
+.dadoArea
+  display: flex
+  flex-direction: column
+  align-items: center
+  gap: 8px
+  margin-bottom: 30px
+
+.dado
+  display: grid
+  place-items: center
+  width: 64px
+  height: 64px
+  border: 2px solid var(--tinta)
+  border-radius: 12px
+  background: var(--papel-alto)
+  font-family: var(--mono)
+  font-size: 30px
+  font-weight: 700
+  box-shadow: 0 4px 0 var(--tinta)
+  animation: rolar .35s linear infinite
+
+.dadoParado
+  animation: pousar .3s ease both
+
+.dadoBom
+  border-color: var(--produtividade)
+  color: var(--produtividade)
+  box-shadow: 0 4px 0 var(--produtividade)
+
+.dadoRuim
+  border-color: var(--estresse)
+  color: var(--estresse)
+  box-shadow: 0 4px 0 var(--estresse)
+
+@keyframes rolar
+  0%
+    transform: rotate(0) translateY(0)
+  50%
+    transform: rotate(180deg) translateY(-8px)
+  100%
+    transform: rotate(360deg) translateY(0)
+
+@keyframes pousar
+  0%
+    transform: scale(1.25)
+  100%
+    transform: scale(1)
+
+.alvo
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: 11px
+
+// o ponteiro: a barra da carta, deitada, e uma agulha que corre e para
+.regua
+  position: relative
+  display: flex
+  width: 86%
+  height: 34px
+  margin-bottom: 34px
+  border-radius: 6px
+  overflow: visible
+  font-family: var(--mono)
+  font-size: 11px
+  font-weight: 700
+
+.faixaBoa, .faixaRuim
+  display: grid
+  place-items: center
+  color: #fff
+
+.faixaBoa
+  border-radius: 6px 0 0 6px
+  background: var(--produtividade)
+
+.faixaRuim
+  flex: 1
+  border-radius: 0 6px 6px 0
+  background: var(--estresse)
+
+.agulha
+  position: absolute
+  top: -8px
+  bottom: -8px
+  width: 4px
+  margin-left: -2px
+  border-radius: 2px
+  background: var(--tinta)
+  box-shadow: 0 0 0 2px var(--papel)
+  transition: left 1.6s cubic-bezier(.12, .7, .25, 1)
+
+@media (prefers-reduced-motion: reduce)
+  .pulo, .dado, .balao
+    animation: none
+  .moeda, .agulha
+    transition: none

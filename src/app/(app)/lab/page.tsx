@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardCopy, Download, Gift, Shirt, Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
+import { ClipboardCopy, Dices, Download, Gift, Shirt, Landmark, Layers, Mail, RotateCcw, Shuffle, SlidersHorizontal, Sparkles, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Dialogo from '@/components/Dialogo'
@@ -39,6 +39,12 @@ const BANCADAS = [
     titulo: 'Recompensas',
     texto: 'Abrir envelope, pacote, maleta e cofre de mentira, com a animação de verdade, e ver o que sai em mil aberturas. Nada vai para a sua coleção.',
     Icon: Mail,
+  },
+  {
+    href: '/lab/sorte',
+    titulo: 'Cartas de sorte',
+    texto: 'Protótipos para a carta com chance ficar fácil de ler: barra, moeda, dado e a sorte tirada na mesa.',
+    Icon: Dices,
   },
   // a proposta anterior (/lab/propostas) mora no museu, guardada de
   // recordação, a pedido do autor

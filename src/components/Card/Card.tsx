@@ -1,7 +1,7 @@
 'use client'
 
 import { Coffee, Droplet, Hammer } from 'lucide-react'
-import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
+import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { custosDe, textoDoCusto } from '@/game/custos'
 import type { ActionCard, Custo, EventCard } from '@/game/types'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
@@ -40,6 +40,12 @@ export interface CardProps {
   onDragOver?: (over: boolean) => void
   style?: CSSProperties
   className?: string
+  /** O corpo desenhado no lugar do texto — é como a carta de SORTE mostra
+   *  as duas saídas (protótipos em `/lab/sorte`). */
+  corpo?: ReactNode
+  /** Um selo a mais no canto de cima, ao lado do da classe (o dado da carta
+   *  de sorte). */
+  seloExtra?: ReactNode
 }
 
 function isEvent(card: ActionCard | EventCard): card is EventCard {
@@ -66,6 +72,8 @@ export default function Card({
   onDragOver,
   style,
   className,
+  corpo,
+  seloExtra,
 }: CardProps) {
   const ref = useRef<HTMLDivElement>(null)
   const palco = useRef<HTMLLabelElement & HTMLDivElement>(null)
@@ -268,6 +276,7 @@ export default function Card({
           <span className={styles.selo} aria-label={locked ? 'bloqueada' : undefined} aria-hidden={!locked}>
             {locked ? <LockIcon size={13} /> : <Icon size={13} />}
           </span>
+          {seloExtra ? <span className={styles.seloExtra}>{seloExtra}</span> : null}
           {copies && copies > 1 ? <span className={styles.copias}>×{copies}</span> : null}
           <div className={styles.arte}>
             <Icon size={40} aria-hidden />
@@ -276,9 +285,11 @@ export default function Card({
             <span className={styles.nome}>{card.name}</span>
           </div>
           <div className={styles.corpo}>
-            <p className={styles.texto}>
-              <TextoComIcones texto={card.text} />
-            </p>
+            {corpo ?? (
+              <p className={styles.texto}>
+                <TextoComIcones texto={card.text} />
+              </p>
+            )}
           </div>
         </div>
         <div className={`${styles.face} ${styles.tras}`}>
