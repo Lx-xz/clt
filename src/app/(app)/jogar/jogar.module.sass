@@ -1,6 +1,7 @@
 // A mesa ocupa exatamente a altura disponível: nada de rolagem no jogo.
 .mesa
   position: relative
+  --largura-dos-botoes: 150px
   display: grid
   grid-template-columns: minmax(96px, 132px) 1fr minmax(96px, 132px)
   grid-template-rows: auto auto minmax(0, 1fr) auto
@@ -52,20 +53,25 @@
   top: 100%
   left: 10px
   z-index: 30
+  // no computador, um em cima do outro e da mesma largura, com o crachá do
+  // lado (v0.46); no celular voltam a ser uma fileira de ícones
   display: flex
+  flex-direction: column
+  align-items: stretch
+  width: var(--largura-dos-botoes)
   gap: 8px
-  margin-top: 8px
+  margin-top: 10px
 
 .botaoCanto
   display: inline-flex
   align-items: center
-  gap: 5px
-  padding: 7px 12px
+  gap: 7px
+  padding: 9px 14px
   background: var(--papel-alto)
   border: 1px solid var(--linha)
   border-radius: var(--raio)
   color: var(--tinta-fraca)
-  font-size: 12px
+  font-size: 13.5px
   cursor: pointer
   box-shadow: 0 6px 16px rgba(30, 28, 24, .16)
 
@@ -149,11 +155,13 @@
 // o crachá pendurado no canto do tapete. Fica ABAIXO das cartas jogadas
 // (z 1): numa mesa cheia no celular, a carta é o que importa
 .cracha
-  // ao lado do evento, embaixo dos botões do canto (v0.46)
+  // ao lado do evento (v0.46): no computador, à direita dos botões
+  // empilhados e da altura do evento; no celular, embaixo dos botões,
+  // ocupando o canto que sobra até o evento
   position: absolute
   z-index: 1
-  top: 50px
-  left: 10px
+  top: 0
+  left: calc(10px + var(--largura-dos-botoes) + 12px)
   display: flex
   flex-direction: column
   align-items: center
@@ -180,14 +188,22 @@
     background: var(--linha)
 
 .crachaAvatar
-  border-radius: 5px
+  // o tamanho vem inline do componente; aqui ele acompanha o evento, e o
+  // SVG (que leva width/height próprios) acompanha a caixa
+  width: var(--avatar-cracha) !important
+  height: var(--avatar-cracha) !important
+  border-radius: 6px
+
+  svg
+    width: 100%
+    height: 100%
 
 .crachaNome
-  max-width: 72px
+  max-width: var(--avatar-cracha)
   overflow: hidden
   color: var(--tinta-fraca)
   font-family: var(--mono)
-  font-size: 9px
+  font-size: 11px
   letter-spacing: .04em
   text-overflow: ellipsis
   text-transform: uppercase
@@ -222,6 +238,9 @@
 .zonaEvento
   grid-area: event
   position: relative
+  --altura-evento: clamp(140px, 22vh, 200px)
+  // o crachá tem a altura do evento: o furo, o avatar e o nome
+  --avatar-cracha: calc(var(--altura-evento) - 44px)
   display: flex
   flex-direction: column
   align-items: center
@@ -231,7 +250,7 @@
 // a carta de evento tem altura própria; a largura e a arte precisam
 // acompanhar, senão ela fica alta e estreita (espremida)
 .eventoCarta
-  --carta-h: clamp(140px, 22vh, 200px)
+  --carta-h: var(--altura-evento)
   --carta-w: calc(var(--carta-h) * .66)
   --carta-arte: calc(var(--carta-h) * .39)
 
@@ -760,33 +779,28 @@
   // do header é disputado, e o "Próx. dia" é quem precisa da palavra
   .cantoEsquerdo
     left: 8px
+    flex-direction: row
+    width: auto
     margin-top: 6px
     gap: 6px
 
   .botaoCanto
-    padding: 6px 8px
+    padding: 7px 9px
 
   .rotuloCanto
     display: none
 
-  // 56 px no celular: o tamanho em que a lágrima e a olheira ainda se leem
+  // no celular o crachá cobre o canto que sobra entre os botões e o
+  // evento: a largura vai até a borda do evento (metade da tela menos meia
+  // carta), a altura até o pé dele
+  .zonaEvento
+    --altura-evento: clamp(184px, 50vw, 224px)
+    --avatar-cracha: min(calc(50vw - var(--altura-evento) * .33 - 34px), calc(var(--altura-evento) - 44px - 36px))
+
   .cracha
     top: 44px
     left: 0
     padding: 10px 5px 5px
-
-  // o tamanho vem inline do componente; aqui ele é sobrescrito, e o SVG
-  // (que leva width/height próprios) acompanha a caixa
-  .crachaAvatar
-    width: 56px !important
-    height: 56px !important
-
-    svg
-      width: 100%
-      height: 100%
-
-  .crachaNome
-    max-width: 56px
 
   // "Próx. dia" no celular
   .proximoDia
@@ -803,7 +817,7 @@
 
   // a carta de evento é o foco da tela; mantém a proporção de carta
   .eventoCarta
-    --carta-h: clamp(184px, 50vw, 224px)
+    --carta-h: var(--altura-evento)
     --carta-w: calc(var(--carta-h) * .66)
     --carta-arte: calc(var(--carta-h) * .39)
 

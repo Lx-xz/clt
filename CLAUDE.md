@@ -922,8 +922,13 @@ opções. O que ele escolheu, e que deve ser preservado:
   ponto em que foi solta (`onSoltar` devolve quanto o lugar dela andou) e
   só então desliza; a vaga fecha sem transição, no mesmo quadro em que a
   carta muda de lugar.
-- **O crachá mora ao lado do evento (v0.46)**, embaixo dos botões do
-  canto, e o tapete fica todo para as cartas jogadas. Elas vêm GRANDES e
+- **O crachá mora ao lado do evento (v0.46)**, e o tapete fica todo
+  para as cartas jogadas. No computador os três botões do canto ficam um
+  em cima do outro, da mesma largura (`--largura-dos-botoes`), e o crachá
+  vem do lado deles, da altura do evento (`--altura-evento`, que a carta de
+  evento também usa, e `--avatar-cracha`). No celular os botões voltam a
+  ser uma fileira de ícones, e o crachá cobre o canto embaixo deles até a
+  borda do evento. Elas vêm GRANDES e
   só viram duas fileiras menores quando não cabem numa (`arranjoDasJogadas`
   na mesa, pelo tamanho medido do tapete); a altura que era fixa deixava o
   tapete quase vazio. Clicar numa jogada abre o detalhe dela. Reordenar a
