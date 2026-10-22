@@ -1,0 +1,64 @@
+// a cena: perspectiva aqui, e daqui para dentro só transform e preserve-3d
+.cena
+  display: grid
+  place-items: center
+  perspective: 700px
+
+.pulo, .inclinado, .giro, .dado
+  position: relative
+  width: 0
+  height: 0
+  transform-style: preserve-3d
+
+// cai, quica e assenta — o invólucro, e não o dado, para o giro e o pulo
+// não brigarem pelo mesmo transform
+.pulo
+  animation: pulo 1.3s cubic-bezier(.3, .7, .4, 1) both
+
+@keyframes pulo
+  0%
+    transform: translateY(-70px) scale(.9)
+  45%
+    transform: translateY(0) scale(1)
+  60%
+    transform: translateY(-14px)
+  75%
+    transform: translateY(0)
+  85%
+    transform: translateY(-4px)
+  100%
+    transform: translateY(0)
+
+// a cambalhota: em volta de um eixo sorteado, desacelerando até zero —
+// é por terminar em ZERO que o dado pousa exatamente na face sorteada
+.giro
+  animation: giro 1.4s cubic-bezier(.12, .62, .25, 1) both
+
+@keyframes giro
+  from
+    transform: rotate3d(var(--ex), var(--ey), var(--ez), var(--voltas))
+  to
+    transform: rotate3d(var(--ex), var(--ey), var(--ez), 0deg)
+
+.face
+  position: absolute
+  left: 0
+  top: 0
+  backface-visibility: hidden
+
+  svg
+    display: block
+    overflow: visible
+
+// a face que saiu acende de leve depois de parar
+.sorteada polygon
+  stroke: #e8c35a
+  stroke-width: .05
+
+.par
+  display: flex
+  gap: 4px
+
+@media (prefers-reduced-motion: reduce)
+  .pulo, .giro
+    animation: none

@@ -26,19 +26,16 @@
   letter-spacing: .1em
   text-transform: uppercase
 
-.cartas, .mesas
+.cartas
   display: grid
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr))
-  gap: 20px
-
-.mesas
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))
+  gap: 22px
 
 .opcao
   display: flex
   flex-direction: column
   align-items: center
-  gap: 10px
+  gap: 8px
   margin: 0
   --carta-h: 260px
 
@@ -49,11 +46,20 @@
     line-height: 1.4
     text-align: center
 
-    b
-      display: block
-      color: var(--tinta)
+.linkBotao
+  padding: 0
+  border: none
+  background: none
+  color: var(--tinta-fraca)
+  font: inherit
+  font-size: 12px
+  text-decoration: underline
+  cursor: pointer
 
-// --------------------------------------------------- 1 · barra dividida
+// ------------------------------------------------------- a barra dividida
+// as cores dizem o TOM da saída, e o tom é escolha de quem faz a carta:
+// verde e vermelho só quando a carta quer dizer "deu certo / deu errado".
+// As neutras não julgam: três tons de papelada que se distinguem entre si
 .barra
   display: flex
   flex: 1
@@ -62,131 +68,99 @@
   margin: -4px
 
 .lado
+  --tom: var(--tinta-fraca)
   display: flex
   flex-direction: column
   justify-content: center
   gap: 1px
   min-height: 0
   padding: 3px 6px 3px 9px
-  border-left: 4px solid
+  border-left: 4px solid var(--tom)
   border-radius: 2px
+  background: color-mix(in srgb, var(--tom) 11%, var(--papel))
   font-size: 11px
   line-height: 1.25
+  transition: opacity .3s ease, transform .3s ease, box-shadow .3s ease
 
 .bom
-  border-color: var(--produtividade)
-  background: color-mix(in srgb, var(--produtividade) 10%, var(--papel))
+  --tom: var(--produtividade)
 
 .ruim
-  border-color: var(--estresse)
-  background: color-mix(in srgb, var(--estresse) 9%, var(--papel))
+  --tom: var(--estresse)
 
-.pct
+.neutro0
+  --tom: #56708f
+
+.neutro1
+  --tom: #a0783a
+
+.neutro2
+  --tom: #7d5a7a
+
+// a faixa que saiu na mesa acende; as outras recuam
+.aceso
+  box-shadow: 0 0 0 2px var(--tom)
+  transform: scale(1.03)
+
+.apagado
+  opacity: .4
+
+.faixa
+  color: var(--tom)
   font-family: var(--mono)
   font-size: 10px
   font-weight: 700
-  .bom &
-    color: var(--produtividade)
-  .ruim &
-    color: var(--estresse)
+
+  small
+    font-weight: 400
+    opacity: .8
 
 .efeito
   color: var(--tinta)
 
-// --------------------------------------------------- 2 · cara ou coroa
-.moedas
-  display: flex
-  flex: 1
-  flex-direction: column
-  justify-content: center
-  gap: 2px
-  font-size: 11px
-  line-height: 1.25
-
-.linhaMoeda
-  display: flex
-  align-items: center
-  gap: 6px
-
-.moedinha
-  display: grid
-  flex: none
-  place-items: center
-  width: 20px
-  height: 20px
-  border-radius: 50%
-  color: #6b4e12
-
-.cara
-  background: #e8c35a
-  box-shadow: inset 0 0 0 2px #c9a13a
-
-.coroa
-  background: #d9b24a
-  box-shadow: inset 0 0 0 2px #b38a2c
-
-.divisa
-  color: var(--tinta-fraca)
-  font-size: 9px
-  letter-spacing: .1em
-  text-align: center
-  text-transform: uppercase
-
-// --------------------------------------------------- 5 · detalhe
-.detalhe
-  display: grid
-  grid-template-columns: 1fr 1fr
-  gap: 10px
-  width: min(100%, 440px)
-
-.saida
-  display: flex
-  flex-direction: column
-  gap: 6px
-  padding: 12px 14px
-  border-left-width: 4px
-  border-left-style: solid
-  border-radius: var(--raio)
-  font-size: 14px
-
-.saidaTopo
+.seloTexto
   font-family: var(--mono)
-  font-size: 11px
+  font-size: 10px
   font-weight: 700
-  letter-spacing: .04em
-  text-transform: uppercase
-  .bom &
-    color: var(--produtividade)
-  .ruim &
-    color: var(--estresse)
 
-// --------------------------------------------------- 4 · a mesa
+// ------------------------------------------------------------ a mesa
+.escolha
+  margin-bottom: 14px
+
 .mesa
-  display: flex
-  flex-direction: column
+  display: grid
+  grid-template-columns: auto 1fr
   align-items: center
-  gap: 10px
-  width: 100%
+  gap: 18px 24px
+  --carta-h: 260px
+
+  > button
+    grid-column: 1 / -1
+    justify-self: start
+
+  @media (max-width: 640px)
+    grid-template-columns: 1fr
+    justify-items: center
+
+    > button
+      justify-self: center
 
 .tapete
   position: relative
   display: grid
   place-items: center
   width: 100%
-  height: 190px
+  min-height: 240px
   border: 1px dashed var(--linha)
   border-radius: var(--raio)
   background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--tinta) 4%, transparent) 10px 20px)
 
 .vazio
+  max-width: 30ch
   margin: 0
   color: var(--tinta-fraca)
   font-size: 13px
-
-.palco
-  display: grid
-  place-items: center
-  width: 100%
+  text-align: center
 
 .balao
   position: absolute
@@ -195,6 +169,7 @@
   left: 10px
   margin: 0
   padding: 7px 10px
+  border-left: 4px solid var(--tinta-fraca)
   border-radius: 8px
   background: var(--papel-alto)
   font-size: 13px
@@ -202,157 +177,45 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, .15)
   animation: balao .25s ease both
 
-.balaoBom
-  border-left: 4px solid var(--produtividade)
+.balao_bom
+  border-left-color: var(--produtividade)
 
-.balaoRuim
-  border-left: 4px solid var(--estresse)
+.balao_ruim
+  border-left-color: var(--estresse)
+
+.balao_neutro
+  border-left-color: #56708f
 
 @keyframes balao
   from
     opacity: 0
     transform: translateY(6px)
 
-// a moeda: o pulo é do invólucro, o giro é da moeda
-.pulo
-  perspective: 600px
-  animation: pulo 1.4s cubic-bezier(.3, .7, .4, 1) both
+// ------------------------------------------------------- todos os dados
+.bancada
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  gap: 14px
 
-@keyframes pulo
-  0%
-    transform: translateY(40px)
-  35%
-    transform: translateY(-46px)
-  80%
-    transform: translateY(0)
-  88%
-    transform: translateY(-6px)
-  100%
-    transform: translateY(0)
+.fileira
+  display: flex
+  flex-wrap: wrap
+  gap: 6px 10px
 
-.moeda
-  position: relative
-  width: 76px
-  height: 76px
-  transform-style: preserve-3d
-  transition: transform 1.4s cubic-bezier(.15, .6, .3, 1)
-
-.faceMoeda
-  position: absolute
-  inset: 0
+.umDado
   display: flex
   flex-direction: column
   align-items: center
-  justify-content: center
-  gap: 1px
-  border-radius: 50%
-  color: #6b4e12
-  backface-visibility: hidden
-  box-shadow: inset 0 0 0 4px #b38a2c
+  gap: 2px
 
-  small
-    font-size: 10px
-    font-weight: 700
-    letter-spacing: .08em
-    text-transform: uppercase
-
-.verso
-  transform: rotateY(180deg)
-
-// o dado: rola mostrando faces e para no sorteado, com a cor do resultado
-.dadoArea
-  display: flex
-  flex-direction: column
-  align-items: center
-  gap: 8px
-  margin-bottom: 30px
-
-.dado
-  display: grid
-  place-items: center
-  width: 64px
-  height: 64px
-  border: 2px solid var(--tinta)
-  border-radius: 12px
-  background: var(--papel-alto)
-  font-family: var(--mono)
-  font-size: 30px
-  font-weight: 700
-  box-shadow: 0 4px 0 var(--tinta)
-  animation: rolar .35s linear infinite
-
-.dadoParado
-  animation: pousar .3s ease both
-
-.dadoBom
-  border-color: var(--produtividade)
-  color: var(--produtividade)
-  box-shadow: 0 4px 0 var(--produtividade)
-
-.dadoRuim
-  border-color: var(--estresse)
-  color: var(--estresse)
-  box-shadow: 0 4px 0 var(--estresse)
-
-@keyframes rolar
-  0%
-    transform: rotate(0) translateY(0)
-  50%
-    transform: rotate(180deg) translateY(-8px)
-  100%
-    transform: rotate(360deg) translateY(0)
-
-@keyframes pousar
-  0%
-    transform: scale(1.25)
-  100%
-    transform: scale(1)
-
-.alvo
+.nomeDado
   color: var(--tinta-fraca)
   font-family: var(--mono)
-  font-size: 11px
-
-// o ponteiro: a barra da carta, deitada, e uma agulha que corre e para
-.regua
-  position: relative
-  display: flex
-  width: 86%
-  height: 34px
-  margin-bottom: 34px
-  border-radius: 6px
-  overflow: visible
-  font-family: var(--mono)
-  font-size: 11px
-  font-weight: 700
-
-.faixaBoa, .faixaRuim
-  display: grid
-  place-items: center
-  color: #fff
-
-.faixaBoa
-  border-radius: 6px 0 0 6px
-  background: var(--produtividade)
-
-.faixaRuim
-  flex: 1
-  border-radius: 0 6px 6px 0
-  background: var(--estresse)
-
-.agulha
-  position: absolute
-  top: -8px
-  bottom: -8px
-  width: 4px
-  margin-left: -2px
-  border-radius: 2px
-  background: var(--tinta)
-  box-shadow: 0 0 0 2px var(--papel)
-  transition: left 1.6s cubic-bezier(.12, .7, .25, 1)
+  font-size: 12px
 
 @media (prefers-reduced-motion: reduce)
-  .pulo, .dado, .balao
+  .balao
     animation: none
-  .moeda, .agulha
+  .lado
     transition: none
