@@ -321,9 +321,29 @@ $levantada: 18px
 // a descrição automática é curta e de ícones: lê em tinta cheia, e um
 // pouco maior que o texto corrido de antes
 .automatica
+  display: flex
+  flex-direction: column
+  gap: 4px
   color: var(--tinta)
   font-weight: 550
-  -webkit-line-clamp: 5
+
+  p
+    margin: 0
+
+// a linha com condição: o rótulo em cima, em letra de máquina, e um fio do
+// lado — o mesmo desenho das faixas da barra dividida, sem a cor
+.condicionada
+  display: flex
+  flex-direction: column
+  gap: 1px
+  padding-left: 6px
+  border-left: 3px solid color-mix(in srgb, var(--tinta) 30%, transparent)
+
+.quando
+  color: var(--tinta-fraca)
+  font-family: var(--mono)
+  font-size: .85em
+  font-weight: 700
 
 // o tom do evento colore a borda e o selo do canto, como a raridade faz na
 // carta de ação

@@ -306,6 +306,16 @@ de condição têm a mesma altura, as de sorteio a altura da chance. `se` sem
 barra é uma só (`BarraDividida`, dentro de `BarraDaSorte`), para sorte e
 para caminhos. Só no modo "Com ícones".
 
+**A condição vai EM CIMA do que ela libera (v0.44, `linhasDaCarta`).** Na
+face da carta a descrição sai em linhas: a condição (ou o gatilho, "Na
+sexta") num rótulo de letra de máquina com um fio do lado — o desenho das
+faixas da barra, sem cor —, e o efeito embaixo. "Só com 4+🔥" em cima de
+"−3🔥, +4↗"; um `se` sem `senao` sai numa linha própria. A restrição da
+carta é o rótulo da primeira linha sem condição. O texto corrido
+(`descreverCarta`) continua no detalhe, no lab e no leitor de tela. Cada
+linha é flex em coluna, então o texto com ícones mora num `<span>`: solto,
+cada pedaço (o número, o ícone, a vírgula) virava um item numa linha.
+
 **O dado é 3D de CSS** (faces do fecho convexo dos vértices, cada uma um SVG
 posto por `matrix3d`): vale a armadilha do 3D achatado, e o `overflow` mora
 só na raiz da cena.

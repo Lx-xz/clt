@@ -209,6 +209,57 @@ export function descreverCarta(
   return partes.join('. ')
 }
 
+/** Uma linha da descrição: o que a carta faz e, se houver, a condição (ou o
+ *  gatilho) que vai em cima dela. */
+export interface Linha {
+  quando?: string
+  texto: string
+}
+
+/**
+ * A descrição em LINHAS (v0.44, pedido do autor): a condição sai da frase e
+ * vai em cima do que ela libera, como o rótulo das faixas da barra — "Só
+ * com 4+🔥" em cima de "−3🔥, +4↗", "já jogou social hoje" em cima de
+ * "−2🔥". É o mesmo conteúdo de `descreverCarta`, que continua servindo onde
+ * só cabe texto corrido (o detalhe, o leitor de tela, o lab).
+ *
+ * A restrição (1× por partida, "só com") vale para a carta inteira: é o
+ * rótulo da primeira linha sem condição, ou uma linha só dela. Um `se` sem
+ * `senao` no meio das ações vira uma linha à parte, com a condição em cima.
+ */
+export function linhasDaCarta(
+  carta: { efeitos?: Efeito[]; restricao?: Restricao },
+  opcoes: { semRolar?: boolean } = {},
+): Linha[] {
+  const linhas: Linha[] = []
+  for (const e of carta.efeitos ?? []) {
+    const doJogar = !e.quando || e.quando === 'aoJogar'
+    const acoes = opcoes.semRolar && doJogar ? e.acoes.filter((a) => a.faz !== 'rolar') : e.acoes
+    const gatilho = e.quando ? QUANDO[e.quando] : undefined
+    const cond = e.se ? descreverCondicao(e.se) : undefined
+    const quando = [gatilho, cond].filter(Boolean).join(', ') || undefined
+    // os `se` sem `senao` de um bloco sem condição saem em linhas próprias
+    const soltos = !cond ? acoes.filter((a) => a.faz === 'se' && !(a.senao && a.senao.length)) : []
+    const t = lista(acoes.filter((a) => !soltos.includes(a)))
+    if (t) linhas.push({ quando, texto: frase(t) })
+    for (const a of soltos) {
+      if (a.faz !== 'se') continue
+      const dentro = lista(a.entao)
+      if (dentro) linhas.push({ quando: [gatilho, descreverCondicao(a.condicao)].filter(Boolean).join(', '), texto: frase(dentro) })
+    }
+  }
+  const r = carta.restricao
+  const restricao = [r?.umaVezPorRun ? '1× por partida' : '', r?.exige ? `só com ${descreverCondicao(r.exige)}` : '']
+    .filter(Boolean)
+    .join(' · ')
+  if (restricao) {
+    const livre = linhas.find((l) => !l.quando)
+    if (livre) livre.quando = restricao
+    else linhas.unshift({ quando: restricao, texto: '' })
+  }
+  return linhas
+}
+
 /**
  * O texto escrito da carta, se ele já é um COMENTÁRIO. Até a v0.43 ele era
  * a descrição do efeito ("+3 energia, +1 estresse"), e mostrado embaixo da

@@ -7,7 +7,7 @@ import type { ActionCard, Custo, EventCard } from '@/game/types'
 import BarraDaSorte, { BarraDeCaminhos } from '../BarraDaSorte'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { rolarDaCarta } from '@/game/acoes'
-import { caminhosDaCarta, descreverCarta } from '@/game/descricao'
+import { caminhosDaCarta, descreverCarta, linhasDaCarta } from '@/game/descricao'
 import { useModoDaDescricao } from '@/data/modoDaDescricao'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import { ArrowDown, ArrowUp } from 'lucide-react'
@@ -322,9 +322,32 @@ export default function Card({
             ) : caminhos ? (
               <BarraDeCaminhos antes={caminhos.antes} caminhos={caminhos.caminhos} />
             ) : (
-              <p className={`${styles.texto} ${automatica ? styles.automatica : ''}`}>
-                <TextoComIcones texto={descricao || card.text} />
-              </p>
+              automatica && descricao ? (
+                // em linhas: a condição em cima do que ela libera, como o
+                // rótulo das faixas da barra
+                <div className={`${styles.texto} ${styles.automatica}`}>
+                  {linhasDaCarta(card).map((l, i) => (
+                    <p key={i} className={l.quando ? styles.condicionada : styles.linha}>
+                      {l.quando ? (
+                        <span className={styles.quando}>
+                          <TextoComIcones texto={l.quando} />
+                        </span>
+                      ) : null}
+                      {/* num <span>: a linha é flex em coluna, e o texto com
+                          ícones solto viraria um item por pedaço */}
+                      {l.texto ? (
+                        <span>
+                          <TextoComIcones texto={l.texto} />
+                        </span>
+                      ) : null}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.texto}>
+                  <TextoComIcones texto={descricao || card.text} />
+                </p>
+              )
             ))}
           </div>
         </div>
