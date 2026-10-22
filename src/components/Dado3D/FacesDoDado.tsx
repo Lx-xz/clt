@@ -29,7 +29,7 @@ export default function FacesDoDado({ tipo, tamanho, cor, corNumero, rotulo, ori
         const nTela = orientacao(fc.n)
         const brilho = Math.max(0, nTela[0] * luz[0] + nTela[1] * luz[1] + nTela[2] * luz[2])
         const escuro = Math.round(34 - brilho * 30)
-        const numero = s.numeros[i]
+        const numero = s.cantos ? null : s.numeros[i]
         const texto = numero === null ? null : rotulo ? rotulo(numero) : String(numero)
         const fonte = texto ? Math.min(fc.raio * (texto.length > 1 ? 1 : 1.3), 0.62, 1.5 / texto.length) : 0
         const m = `matrix3d(${fc.u[0]},${fc.u[1]},${fc.u[2]},0,${fc.v[0]},${fc.v[1]},${fc.v[2]},0,${fc.n[0]},${fc.n[1]},${fc.n[2]},0,${fc.c[0] * metade},${fc.c[1] * metade},${fc.c[2] * metade},1)`
@@ -63,6 +63,20 @@ export default function FacesDoDado({ tipo, tamanho, cor, corNumero, rotulo, ori
                   ) : null}
                 </g>
               ) : null}
+              {s.cantos?.[i].map((n, k) => {
+                // o número perto do canto, de pé apontando PARA o canto:
+                // virado o dado, quem lê a ponta de cima lê o mesmo número
+                // nas três faces que se veem
+                const [cx, cy] = fc.pontos[k]
+                const x = fc.meio[0] + (cx - fc.meio[0]) * 0.5
+                const y = fc.meio[1] + (cy - fc.meio[1]) * 0.5
+                const giro = (Math.atan2(cx - fc.meio[0], -(cy - fc.meio[1])) * 180) / Math.PI
+                return (
+                  <text key={k} x={0} y={0} dy="0.35em" transform={`translate(${x} ${y}) rotate(${giro})`} fill={corNumero} fontSize={fc.raio * 1.05} fontWeight={700} textAnchor="middle" fontFamily="var(--mono), monospace">
+                    {rotulo ? rotulo(n) : n}
+                  </text>
+                )
+              })}
             </svg>
           </div>
         )

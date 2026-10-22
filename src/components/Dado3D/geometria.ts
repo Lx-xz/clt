@@ -34,6 +34,8 @@ export interface Face {
    *  para o bico comprido, e o número saía do meio. */
   meio: [number, number]
   raio: number
+  /** Os cantos em 3D, na ordem de `pontos`. */
+  cantos: Vec[]
 }
 
 /** A distância de um ponto à borda de um polígono convexo (negativa fora). */
@@ -112,7 +114,7 @@ function fecho(pontos: Vec[]): Face[] {
         const v = mul(alto, -1)
         const u = cross(v, n)
         const pontos2d = ordenados.map((p) => [dot(sub(p, c), u), dot(sub(p, c), v)] as [number, number])
-        faces.push({ c, u, v, n, pontos: pontos2d, ...circuloDentro(pontos2d) })
+        faces.push({ c, u, v, n, pontos: pontos2d, ...circuloDentro(pontos2d), cantos: ordenados })
       }
   return faces
 }
@@ -179,8 +181,19 @@ export const LADOS: Record<TipoDeDado, number> = { d2: 2, d3: 3, d4: 4, d6: 6, d
 
 export interface Solido {
   faces: Face[]
-  /** O número de cada face (nulo na borda da moeda). */
+  /** O número de cada face (nulo na borda da moeda). No d4, o número que
+   *  a face dá quando é a de BAIXO. */
   numeros: (number | null)[]
+  /** Os vértices, no mesmo tamanho das faces: quem diz a que altura o
+   *  centro fica quando o dado está apoiado na mesa. */
+  vertices: Vec[]
+  /** Só no d4: o número de cada canto de cada face (o do vértice). O d4
+   *  não para com uma face para cima — para numa face e com uma PONTA para
+   *  cima —, então o número mora nos cantos, como no dado de verdade, e o
+   *  resultado é o da ponta de cima. */
+  cantos?: number[][]
+  /** A face sorteada fica para BAIXO (o d4), e não para cima. */
+  apoiaNaFace?: boolean
 }
 
 const cache = new Map<string, Solido>()
@@ -195,12 +208,20 @@ export function solido(tipo: TipoDeDado): Solido {
   faces = faces.map((f) => ({
     ...f,
     c: mul(f.c, 1 / raio),
+    cantos: f.cantos.map((p) => mul(p, 1 / raio)),
     pontos: f.pontos.map(([x, y]) => [x / raio, y / raio] as [number, number]),
     meio: [f.meio[0] / raio, f.meio[1] / raio] as [number, number],
     raio: f.raio / raio,
   }))
+  const vertices = VERTICES[base].map((p) => mul(p, 1 / raio))
+  const mesmo = (a: Vec, b: Vec) => len(sub(a, b)) < 1e-6
   let numeros: (number | null)[]
-  if (tipo === 'd2') {
+  let cantos: number[][] | undefined
+  if (tipo === 'd4') {
+    // o vértice k vale k + 1; a face vale o vértice que NÃO está nela
+    cantos = faces.map((f) => f.cantos.map((p) => vertices.findIndex((v) => mesmo(v, p)) + 1))
+    numeros = cantos.map((cs) => [1, 2, 3, 4].find((n) => !cs.includes(n)) ?? null)
+  } else if (tipo === 'd2') {
     // só as duas tampas têm número; a borda é a borda
     let n = 0
     numeros = faces.map((f) => (f.pontos.length > 4 ? ++n : null))
@@ -209,7 +230,7 @@ export function solido(tipo: TipoDeDado): Solido {
   } else {
     numeros = faces.map((_, i) => i + 1)
   }
-  const s = { faces, numeros }
+  const s: Solido = { faces, numeros, vertices, cantos, apoiaNaFace: tipo === 'd4' }
   cache.set(tipo, s)
   return s
 }

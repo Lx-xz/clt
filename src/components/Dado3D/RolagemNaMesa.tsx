@@ -32,7 +32,8 @@ export interface DadoNaMesa {
   rotulo?: (numero: number) => string
 }
 
-const INCLINACAO = 38
+// a mesa vista bem de cima: o dado deitado mostra a face quase de frente
+const INCLINACAO = 24
 const GRAVIDADE = 2200
 const QUICA = 0.42
 const BATE = 0.72
@@ -61,28 +62,36 @@ function aleatorioQ(): Quat {
   return normalizar([Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1])
 }
 
-/**
- * Quanto cada dado pousa "deitado" para trás, além de virar a face para
- * quem olha. A moeda cai reta; o d10, que é comprido, fica meio de lado,
- * como fica na mesa de verdade. Zero é a face olhando direto para a câmera.
- */
-const REPOUSO: Record<TipoDeDado, number> = { d2: 0, d3: 0.05, d4: 0.2, d6: 0.05, d8: 0.16, d10: 0.32, d12: 0.12, d20: 0.12 }
-
 const mult = (a: number[][], b: number[][]) => a.map((linha) => [0, 1, 2].map((j) => linha[0] * b[0][j] + linha[1] * b[1][j] + linha[2] * b[2][j]))
-const rotX = (t: number) => [[1, 0, 0], [0, Math.cos(t), -Math.sin(t)], [0, Math.sin(t), Math.cos(t)]]
 
-/** A orientação que deixa a face `i` virada para quem olha (a mesa é
- *  inclinada, então "para cima" na mesa ainda não é "para a gente": a
- *  face é desvirada da inclinação), com o número de pé, girada `giro` em
- *  volta da normal dela. */
+/**
+ * A orientação em que o dado DEITA na mesa com a face `i` para cima — a
+ * face paralela ao tampo, como num dado de verdade parado — e o número de
+ * pé para quem olha, girado `giro` em volta do "para cima". No d4 a face
+ * `i` é a de baixo, e o que fica para cima é a ponta.
+ *
+ * (Até a v0.41 a face era desvirada da inclinação da mesa para olhar
+ * direto para a câmera, e o dado parava meio em pé, apoiado em nada. Quem
+ * deixa o número legível agora é a câmera mais de cima.)
+ */
 function alvoDaFace(tipo: TipoDeDado, i: number, giro: number): Quat {
-  const f = solido(tipo).faces[i]
-  const base = [f.u, f.v, f.n] as number[][]
+  const s = solido(tipo)
+  const f = s.faces[i]
+  const base = (s.apoiaNaFace ? [f.u, f.v.map((x) => -x), f.n.map((x) => -x)] : [f.u, f.v, f.n]) as number[][]
   const c = Math.cos(giro)
-  const s = Math.sin(giro)
-  const rz = [[c, -s, 0], [s, c, 0], [0, 0, 1]]
-  const desvira = rotX(-(INCLINACAO * Math.PI) / 180 + REPOUSO[tipo])
-  return deMatriz(mult(desvira, mult(rz, base)))
+  const sn = Math.sin(giro)
+  const rz = [[c, -sn, 0], [sn, c, 0], [0, 0, 1]]
+  return deMatriz(mult(rz, base))
+}
+
+/** A que altura fica o centro do dado para ele ENCOSTAR na mesa, do jeito
+ *  que estiver virado: o vértice mais baixo toca o tampo. É o que faz o
+ *  dado tombar de aresta em aresta enquanto rola, e a moeda deitada ficar
+ *  rente ao chão em vez de flutuar à altura de um cubo. */
+function alturaDeApoio(tipo: TipoDeDado, m: number[][], metade: number): number {
+  let menor = 0
+  for (const v of solido(tipo).vertices) menor = Math.min(menor, m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2])
+  return -menor * metade
 }
 
 /** De todos os giros pequenos possíveis, o que está mais perto de onde o
@@ -364,7 +373,7 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
                 className={styles.sombra}
                 style={{ width: tamanho, height: tamanho, transform: `translate3d(${c.x - tamanho / 2}px, ${c.y - tamanho / 2}px, 0) scale(${sombra})`, opacity: 0.35 * sombra }}
               />
-              <div className={styles.corpo} style={{ transform: css(m, [c.x, c.y, raio + c.z]) }}>
+              <div className={styles.corpo} style={{ transform: css(m, [c.x, c.y, alturaDeApoio(d.tipo, m, tamanho / 2) + c.z]) }}>
                 <FacesDoDado
                   tipo={d.tipo}
                   tamanho={tamanho}
@@ -372,7 +381,7 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
                   corNumero={d.corNumero ?? '#f6f2e8'}
                   rotulo={d.rotulo}
                   orientacao={(n) => naTela(aplicar(m, n))}
-                  destaque={c.parado && c.pouso ? faces[i] : null}
+                  destaque={c.parado && c.pouso && !solido(d.tipo).apoiaNaFace ? faces[i] : null}
                 />
               </div>
             </div>

@@ -221,8 +221,14 @@ número ou dados, com o sinal, a quantidade, os lados e o "+".
 Na mesa, `DadosNaMesa` joga os dados no tapete quando o `selo` muda: a
 física de `components/Dado3D/RolagemNaMesa` (gravidade, quique nas bordas,
 atrito, colisão entre dados) e, quando eles quase param, um `slerp` até a
-face que o MOTOR sorteou, de frente para quem olha, com a inclinação de
-repouso de cada dado (`REPOUSO`: a moeda deita reta, o d10 fica de lado). O
+face que o MOTOR sorteou, DEITADA na mesa (paralela ao tampo, o número de
+pé para quem olha). O centro do dado fica na altura em que o vértice mais
+baixo encosta no tampo (`alturaDeApoio`), e é isso que o faz tombar de
+aresta em aresta e a moeda ficar rente ao chão. A câmera é que fica mais de
+cima (`INCLINACAO` 24°): na v0.41 a face era desvirada da inclinação para
+olhar a câmera, e o dado parava meio em pé, apoiado em nada. O d4 não para
+com face para cima: o número mora nos CANTOS (`Solido.cantos`), a face
+sorteada vai para baixo (`apoiaNaFace`) e vale a ponta de cima. O
 número já saiu antes da animação: ela não decide nada. O d100 são dois d10
 (a dezena em vermelho), a moeda é a d2 dourada. O `/lab/sorte` tem a mesma
 mesa com "Você joga" (arrastar e soltar: a velocidade do dedo é o

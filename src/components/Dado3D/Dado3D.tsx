@@ -85,9 +85,10 @@ export default function Dado3D({
   }, [jogada])
 
   // a rotação final leva (u, v, n) da face sorteada para (x, y, z) da tela
+  // no d4 a face sorteada vai para TRÁS, e a ponta que vale vem para a frente
   const f = s.faces[face]
-  const R = [f.u, f.v, f.n]
-  const final = `matrix3d(${f.u[0]},${f.v[0]},${f.n[0]},0,${f.u[1]},${f.v[1]},${f.n[1]},0,${f.u[2]},${f.v[2]},${f.n[2]},0,0,0,0,1)`
+  const R = s.apoiaNaFace ? [f.u, f.v.map((x) => -x) as Vec, f.n.map((x) => -x) as Vec] : [f.u, f.v, f.n]
+  const final = `matrix3d(${R[0][0]},${R[1][0]},${R[2][0]},0,${R[0][1]},${R[1][1]},${R[2][1]},0,${R[0][2]},${R[1][2]},${R[2][2]},0,0,0,0,1)`
 
   // a luz é calculada para a posição FINAL: na cambalhota ninguém repara
   const inclina = (v: Vec) => aplicar(rot('x', INCLINACAO_X), aplicar(rot('y', INCLINACAO_Y), v))
@@ -112,7 +113,7 @@ export default function Dado3D({
                 corNumero={corNumero}
                 rotulo={rotulo}
                 orientacao={(n) => inclina(aplicar(R, n))}
-                destaque={parado ? face : null}
+                destaque={parado && !s.apoiaNaFace ? face : null}
               />
             </div>
           </div>
