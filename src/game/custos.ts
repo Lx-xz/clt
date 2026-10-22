@@ -1,3 +1,4 @@
+import type { Acao, Efeito } from './acoes'
 import type { Custo, GameState, RecursoDeCusto } from './types'
 
 /**
@@ -21,6 +22,35 @@ import type { Custo, GameState, RecursoDeCusto } from './types'
  */
 
 export const RECURSOS_DE_CUSTO: RecursoDeCusto[] = ['dinheiro', 'estresse', 'produtividade']
+
+/**
+ * Os custos que uma carta pode ter HOJE (v0.47): o de estresse saiu. Ele
+ * era o único que SOMA, e a mesma coisa aparecia de dois jeitos — "+2🔥" na
+ * descrição de umas cartas e no carimbo de outras. Continua lido (os
+ * retratos das runs antigas o têm), mas a carta do catálogo o recebe como
+ * efeito (`estresseViraEfeito`), e o editor não o oferece mais.
+ */
+export const CUSTOS_DE_CARTA: RecursoDeCusto[] = ['dinheiro', 'produtividade']
+
+/**
+ * O custo de estresse da carta vira o primeiro efeito dela: "+N🔥" no
+ * começo do primeiro bloco sem condição que roda ao jogar (ou num bloco
+ * novo, à frente de todos). A ordem é a do custo, que era pago antes dos
+ * efeitos. É tradução na LEITURA, como `migrarAcoes`: salvar a carta no lab
+ * já grava o formato novo, e nada precisa rodar no banco.
+ */
+export function estresseViraEfeito<C extends { custos?: Custo[]; efeitos: Efeito[] }>(carta: C): C {
+  const estresse = carta.custos?.find((c) => c.qual === 'estresse')?.quanto ?? 0
+  if (!(estresse > 0)) return carta
+  const custos = carta.custos!.filter((c) => c.qual !== 'estresse')
+  const acao: Acao = { faz: 'recurso', qual: 'estresse', quanto: estresse }
+  const i = carta.efeitos.findIndex((e) => !e.se && (!e.quando || e.quando === 'aoJogar'))
+  const efeitos =
+    i >= 0
+      ? carta.efeitos.map((e, j) => (j === i ? { ...e, acoes: [acao, ...e.acoes] } : e))
+      : [{ acoes: [acao] }, ...carta.efeitos]
+  return { ...carta, custos: custos.length ? custos : undefined, efeitos }
+}
 
 /** Os custos de uma carta ou de um retrato. Lê também o `custoDinheiro` da
  *  v0.15, que ainda mora nos retratos gravados dentro das runs antigas. */

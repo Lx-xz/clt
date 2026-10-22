@@ -125,6 +125,8 @@ export function descreverAcao(a: Acao): string {
     case 'ganharCarta':
       return `ganhe ${getCard(a.carta).name} ${a.onde === 'mao' ? 'na mão' : 'no descarte'}`
     case 'custo': {
+      // o de estresse mexe no estresse que as cartas DÃO (v0.47), não num custo
+      if (a.qual === 'estresse') return `cartas dão ${Math.abs(a.quanto)}{estresse} a ${a.quanto < 0 ? 'menos' : 'mais'} hoje`
       const icone = ICONE[a.qual ?? 'energia'] ?? '{energia}'
       return `cartas ${a.quanto < 0 ? '−' : '+'}${Math.abs(a.quanto)}${icone} hoje`
     }

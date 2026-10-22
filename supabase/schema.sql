@@ -481,8 +481,11 @@ create table if not exists public.cartas_antigas (
 -- tradução: o site chega ao mesmo uuid sozinho, e é ele que traduz, NA
 -- LEITURA, o id antigo que mora nos saves, nas runs gravadas e no
 -- localStorage de cada um. Aqui só se reescreve o catálogo, que é de onde os
--- uuids nascem. `id_antigo` fica para o site reconhecer, nos dados antigos,
--- as cartas que o admin criou no lab antes disto (essas o código não conhece).
+-- uuids nascem. `id_antigo` guardava o nome antigo de cada carta, para o
+-- site reconhecer as que o admin criou no lab antes disto (essas o código não
+-- conhece). Desde a v0.47 o bloco seguinte reescreve TUDO e o derruba; ele é
+-- criado aqui de novo só para esta migração ter onde gravar num banco que
+-- ainda não passou por ela.
 --
 -- Roda quantas vezes for preciso: só toca no que ainda não é uuid. E NÃO
 -- mude o espaço de nomes: com outro, o mesmo id antigo daria outro uuid.
@@ -526,6 +529,65 @@ end;
 $$;
 
 create index if not exists antigas_carta_idx on public.cartas_antigas (carta_id, criada_em desc, versao desc);
+
+-- v0.47: o id antigo some de TODO lugar, e o `id_antigo` com ele. Até aqui o
+-- banco só tinha reescrito o catálogo, e quem traduzia o resto (os saves, o
+-- `details` de cada run, o histórico das cartas, o `ganharCarta` dentro dos
+-- efeitos) era o site, na leitura, com o `id_antigo` como dicionário das
+-- cartas criadas no lab antes do uuid. Agora tudo é reescrito aqui, uma vez,
+-- e o dicionário pode ir embora.
+--
+-- A troca é TEXTUAL, do id ENTRE ASPAS (`"hora-extra"` → `"<uuid>"`): pega o
+-- id onde ele for valor e onde for chave (a coleção guarda as cópias com o id
+-- na chave), e não pega texto corrido, porque frase nenhuma é exatamente o
+-- nome em hífens entre aspas. Conferido contra o código: nenhum outro valor
+-- do jogo (avatar, cosmético, missão) é igual a um id antigo de carta.
+--
+-- Roda quantas vezes for preciso: sem a coluna, não há o que fazer; com ela
+-- vazia (o `add column` acima a recria a cada execução), só a derruba.
+do $$
+declare
+  m     record;
+  velho text;
+  novo  text;
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'cartas' and column_name = 'id_antigo'
+  ) then
+    return;
+  end if;
+
+  for m in
+    select id_antigo as antigo, id::text as atual from public.cartas where id_antigo is not null
+    union
+    select id_antigo, id::text from public.cartas_evento where id_antigo is not null
+  loop
+    velho := '"' || m.antigo || '"';
+    novo  := '"' || m.atual || '"';
+    update public.saves set run = replace(run::text, velho, novo)::jsonb
+      where run is not null and strpos(run::text, velho) > 0;
+    update public.saves set collection = replace(collection::text, velho, novo)::jsonb
+      where collection is not null and strpos(collection::text, velho) > 0;
+    update public.runs set details = replace(details::text, velho, novo)::jsonb
+      where details is not null and strpos(details::text, velho) > 0;
+    update public.cartas_antigas set dados = replace(dados::text, velho, novo)::jsonb
+      where strpos(dados::text, velho) > 0;
+    update public.cartas set efeitos = replace(efeitos::text, velho, novo)::jsonb
+      where strpos(efeitos::text, velho) > 0;
+    update public.cartas_evento set efeitos = replace(efeitos::text, velho, novo)::jsonb
+      where strpos(efeitos::text, velho) > 0;
+    update public.cartas_evento set escolhas = replace(escolhas::text, velho, novo)::jsonb
+      where escolhas is not null and strpos(escolhas::text, velho) > 0;
+    -- a máquina guarda a vaga vendida como `carta:<id>`
+    update public.saves set collection = replace(collection::text, '"carta:' || m.antigo || '"', '"carta:' || m.atual || '"')::jsonb
+      where collection is not null and strpos(collection::text, '"carta:' || m.antigo || '"') > 0;
+  end loop;
+
+  alter table public.cartas        drop column id_antigo;
+  alter table public.cartas_evento drop column id_antigo;
+end;
+$$;
 
 -- Uma linha só, para sempre. A versão do baralho é global: ela diz em que
 -- balanceamento uma run foi jogada, e é isso que a torna comparável entre
@@ -1930,9 +1992,10 @@ end;
 $$;
 
 -- Cria ou ajusta uma carta de ação. `p_o_que` e `p_porque` são o que o
--- jogador lê no histórico da carta. Desde a v0.47 o `porque` é OPCIONAL (a
--- pedido do autor): o `o_que` sugerido já registra a mudança, e o histórico
--- continua sendo gravado; só a frase do motivo pode faltar.
+-- jogador lê no histórico da carta. Desde a v0.47 o `porque` é OPCIONAL em
+-- tudo (criar, ajustar, remover e as regras do jogo, a pedido do autor): o
+-- `o_que` sugerido já registra a mudança, e o histórico continua sendo
+-- gravado; só a frase do motivo pode faltar.
 create function public.admin_salvar_carta(
   p_carta  jsonb,
   p_o_que  text,
@@ -2077,10 +2140,6 @@ begin
   if not public.sou_admin() then
     raise exception 'Só admin mexe no catálogo.';
   end if;
-  if coalesce(btrim(p_porque), '') = '' then
-    raise exception 'Diga por que está removendo: o replay de quem jogou com ela vai mostrar esse texto.';
-  end if;
-
   perform public.arquivar_carta(p_id, p_familia, 'removida', 'Carta removida do jogo', p_porque);
 
   if p_familia = 'acao' then
@@ -2120,9 +2179,6 @@ begin
     raise exception 'Id inválido: o id do modo é um uuid.';
   end if;
   v_id := v_texto::uuid;
-  if coalesce(btrim(p_porque), '') = '' then
-    raise exception 'Diga por que está mudando: quem joga vai sentir a diferença.';
-  end if;
   if jsonb_array_length(coalesce(v_regras -> 'semanas', '[]'::jsonb)) = 0 then
     raise exception 'Um modo sem semanas não tem como ser jogado.';
   end if;

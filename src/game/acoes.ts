@@ -412,7 +412,14 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
       if (acao.qual === 'produtividade') state.productivity += quanto
       else if (acao.qual === 'energia') state.energy = Math.max(0, state.energy + quanto)
       else if (acao.qual === 'dinheiro') state.money += quanto
-      else state.stress = Math.max(0, state.stress + quanto)
+      else {
+        // o estresse que uma CARTA dá muda com os eventos do dia (o Chefe de
+        // Folga, a Pressão por Resultado): é o `custo` de estresse, que até a
+        // v0.47 mexia no custo de estresse das cartas e hoje, com esse custo
+        // virado efeito, mexe no estresse que elas dão. Nunca vira alívio
+        const mod = quanto > 0 && ctx.cartaId ? (state.modCustos?.estresse ?? 0) : 0
+        state.stress = Math.max(0, state.stress + (mod ? Math.max(0, quanto + mod) : quanto))
+      }
       break
     }
     case 'amanha':

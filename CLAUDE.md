@@ -449,10 +449,9 @@ entregas):
 3. **Não dá para mudar em silêncio.** Todo salvamento grava uma linha em
    `cartas_antigas`. O `o_que` ("Custo 4 → 6") é sugerido automaticamente
    pela bancada, porque essa metade um diff sabe escrever; o `porque` é
-   digitado. **Desde a v0.47 o `porque` é OPCIONAL ao criar ou ajustar
-   carta e evento** (pedido do autor: o `o_que` já registra a mudança); para
-   REMOVER e para as regras do jogo (`admin_excluir_carta`,
-   `admin_salvar_modo`) o banco ainda o exige.
+   digitado. **Desde a v0.47 o `porque` é OPCIONAL em tudo** — criar,
+   ajustar, remover e as regras do jogo (pedido do autor: o `o_que` já
+   registra a mudança); nenhuma função do banco o recusa mais.
 
 **Uma carta desconhecida não derruba mais nada.** `getCard` devolve uma carta
 inerte (custo 0, sem classe, sem efeito) e avisa no console, em vez de lançar.
@@ -773,6 +772,22 @@ o `EditorDeCustos`.
   ação `custo` ganhou `qual` (sem ele, ou `energia`, é o `costModifier` de
   sempre; os outros somam em `GameState.modCustos`, que zera no
   `startDay`), e a mesa passa o resultado ao `Card` pela prop `custos`.
+- **Não existe mais custo de ESTRESSE (v0.47, pedido do autor).** Ele era
+  o único custo que SOMA, e a mesma coisa aparecia de dois jeitos: "+2🔥" na
+  descrição de umas cartas e no carimbo de outras. Na leitura do banco
+  (`estresseViraEfeito` em `custos.ts`, chamada por `paraCarta` e pelo
+  simulador) ele vira o PRIMEIRO efeito da carta — no começo do primeiro
+  bloco sem condição que roda ao jogar, na ordem em que o custo era pago —,
+  e o editor só oferece energia, dinheiro e produtividade
+  (`CUSTOS_DE_CARTA`); salvar a carta grava o formato novo. O `RecursoDeCusto`
+  continua com `estresse` porque os retratos das runs antigas o têm. A ação
+  `custo` com `qual: 'estresse'` (o Chefe de Folga e a Pressão por
+  Resultado) passou a mexer no estresse que as CARTAS dão naquele dia
+  (`modCustos.estresse`, aplicado em `executarAcao` quando o `recurso` de
+  estresse é positivo e vem de carta; nunca vira alívio). Medido: a
+  conversão sozinha muda quase nada (`--tudo`, 400 runs, 9,5% → 9,0% de
+  vitória); com os eventos valendo para toda carta que dá estresse, 7,2%.
+  Se um dia voltar a existir carta que GASTA estresse, é só inverter.
 - **Tradução na LEITURA, nas três portas:** `custosDaLinha` (banco: coluna
   `custos` se tiver algo, senão `custo_dinheiro`), `custosDe` (retrato de
   run antiga, que guarda `custoDinheiro`) e `lerCustos` (soma repetidos,
@@ -1522,8 +1537,7 @@ opções. O que ele escolheu, e que deve ser preservado:
   bloco de efeito SEM condição (é o atalho de quem só quer rebalancear um
   número), e o editor de blocos abaixo monta a carta inteira, condição e
   sorteio inclusive — veja "A carta se monta em blocos".
-  **Salvar pede um motivo** (opcional desde a v0.47 para criar e ajustar;
-  obrigatório para remover). O histórico de uma carta nasce no momento da
+  **Salvar pede um motivo** (opcional em tudo desde a v0.47). O histórico de uma carta nasce no momento da
   mudança, porque escrito depois ele não seria escrito.
 - **`/lab/avatar` (até a v0.25, hoje só no git) produzia código, não salvava nada.** O site é export estático:
   não há servidor para escrever arquivo, então a bancada devolve a linha de
@@ -2337,7 +2351,12 @@ e a um bot diferente — não compare os dois.
   traduz é a LEITURA, como sempre — `idAtual` nos campos que se sabe que
   são id (`lerColecao`, `getCard`, `migrarAcao` no `ganharCarta`), e
   `traduzirIds` no que não tem formato fixo (`migrarRun`, o `details` do
-  replay e das listas de partidas). `traduzirIds` só troca os ids antigos
+  replay e das listas de partidas). **Desde a v0.47 o `schema.sql` reescreve
+  tudo no BANCO também** (saves, `runs.details`, `cartas_antigas.dados` e o
+  `ganharCarta` dentro dos efeitos): troca textual do id ENTRE ASPAS pelo
+  uuid, com o `id_antigo` como dicionário, e então derruba a coluna. A
+  tradução na leitura ficou como rede para o que mora no navegador de cada
+  um (o espelho do save, a fila de runs pendentes). `traduzirIds` só troca os ids antigos
   CONHECIDOS (`IDS_ANTIGOS_DO_CODIGO` mais o `id_antigo` que o banco
   devolve, que cobre as cartas criadas no lab antes disto): ele anda num
   objeto qualquer, e trocar toda string que não é uuid trocaria texto.
@@ -2359,9 +2378,9 @@ e a um bot diferente — não compare os dois.
   run (`run_id` não existe mais). A run que
   falhar não se perde — entra na fila (`clt:runs-pendentes:v1`, que lê o
   `run_id` de antes como `id`) e sobe na próxima abertura da mesa.
-- **Rodar o `schema.sql` da v0.47** (`admin_salvar_carta` e
-  `admin_salvar_evento` sem a recusa do motivo vazio). Sem ele, salvar no
-  lab com o motivo em branco volta com o erro "Diga por que está mudando".
+- **Rodar o `schema.sql` da v0.47**: as funções de salvar e remover sem a
+  recusa do motivo vazio (sem ele, salvar em branco volta com "Diga por que
+  está mudando"), e a reescrita dos ids antigos (abaixo).
 - **Rodar o `schema.sql` da v0.40** (a tabela `presentes` e as três
   funções). Sem ele, enviar presente no lab diz que a função falta, e o
   início não mostra nada.

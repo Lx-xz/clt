@@ -45,12 +45,10 @@ export function Origem({ doBanco }: { doBanco: boolean }) {
  * nasce AQUI, no momento da mudança. Escrito depois ele não seria escrito, e
  * o jogador veria o custo da carta mudar sem nunca saber por quê.
  *
- * `opcional` (v0.47, pedido do autor): ao criar ou ajustar carta e evento o
- * motivo pode ficar em branco — o "o que mudou" já entra no histórico. Para
- * remover e para as regras do jogo ele continua obrigatório, e o banco
- * repete a mesma regra.
+ * Desde a v0.47 o motivo é OPCIONAL em tudo (pedido do autor): o "o que
+ * mudou" já entra no histórico, e o banco aceita o motivo em branco.
  */
-export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFechar, erro, salvando, opcional }: {
+export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFechar, erro, salvando }: {
   titulo: string
   oQueSugerido: string
   exemplo: string
@@ -58,7 +56,6 @@ export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFech
   aoFechar: () => void
   erro: string | null
   salvando: boolean
-  opcional?: boolean
 }) {
   const [oQue, setOQue] = useState(oQueSugerido)
   const [porque, setPorque] = useState('')
@@ -75,7 +72,7 @@ export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFech
         />
       </label>
       <label className={styles.rotulo}>
-        {opcional ? 'Por que mudou (opcional)' : 'Por que mudou'}
+        Por que mudou (opcional)
         <textarea
           className={styles.campoTexto}
           value={porque}
@@ -101,7 +98,7 @@ export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFech
         <button
           type="button"
           className={`${buttons.button} ${buttons.primary}`}
-          disabled={(!opcional && porque.trim().length < 3) || salvando}
+          disabled={salvando}
           onClick={() => aoConfirmar(oQue.trim(), porque.trim())}
         >
           {salvando ? 'Salvando…' : 'Salvar'}
@@ -111,7 +108,7 @@ export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFech
   )
 }
 
-/** O botão de remover, com a mesma exigência de motivo. */
+/** O botão de remover; ele também abre o `PedirMotivo`. */
 export function BotaoExcluir({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" className={`${buttons.button} ${styles.excluir}`} onClick={onClick}>

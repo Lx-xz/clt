@@ -61,6 +61,15 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.47',
+    data: '2026-10-22',
+    titulo: 'Estresse sem carimbo',
+    itens: [
+      { tipo: 'melhor', texto: 'O estresse que uma carta dá aparece só no que ela faz (+2🔥), e não mais como custo no canto.' },
+      { tipo: 'melhor', texto: 'Chefe de Folga e Pressão por Resultado mudam o estresse de toda carta que dá estresse naquele dia.' },
+    ],
+  },
+  {
     versao: '0.46',
     data: '2026-10-22',
     titulo: 'Mesa mais larga',

@@ -19,7 +19,7 @@ const BANCADAS = [
   {
     href: '/lab/cartas',
     titulo: 'Cartas de ação',
-    texto: 'Criar, editar e remover carta — direto no banco, com o motivo da mudança obrigatório.',
+    texto: 'Criar, editar e remover carta — direto no banco, com o motivo da mudança no histórico.',
     Icon: Layers,
   },
   {

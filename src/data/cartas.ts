@@ -13,7 +13,7 @@ import type {
   Raridade,
 } from '@/game/types'
 import { migrarAcoes, migrarEfeitos } from '@/game/acoes'
-import { lerCustos } from '@/game/custos'
+import { estresseViraEfeito, lerCustos } from '@/game/custos'
 import type { Acao, Efeito, Restricao } from '@/game/acoes'
 import { ehUuid, idAtual, idDoModo, registrarIdsAntigos } from '@/game/ids'
 import { supabase } from './supabase'
@@ -108,7 +108,8 @@ function paraRaridade(bruta: string | null | undefined): Raridade | undefined {
  */
 function paraCarta(linha: LinhaCarta): ActionCard {
   if (!ehUuid(linha.id)) idsAntigosNoBanco = true
-  return {
+  // v0.47: o custo de estresse vira o primeiro efeito da carta
+  return estresseViraEfeito({
     // o banco que ainda não rodou a migração da v0.35 manda o id antigo: ele
     // vira o uuid na leitura, igual ao que a migração vai gravar
     id: idAtual(linha.id),
@@ -125,7 +126,7 @@ function paraCarta(linha: LinhaCarta): ActionCard {
     custos: custosDaLinha(linha),
     ativa: linha.ativa,
     versao: linha.versao,
-  }
+  })
 }
 
 function paraEvento(linha: LinhaEvento): EventCard {
@@ -337,8 +338,7 @@ async function escrever(
 /**
  * `oQue` e `porque` viajam junto com a carta: o histórico da carta nasce NO
  * MOMENTO da edição, porque escrito depois ele não seria escrito. Desde a
- * v0.47 o `porque` pode ir vazio ao criar ou ajustar carta e evento (pedido
- * do autor); para remover, o banco ainda o exige.
+ * v0.47 o `porque` pode ir vazio em tudo (pedido do autor).
  */
 export function salvarCarta(carta: ActionCard, oQue: string, porque: string) {
   return escrever('admin_salvar_carta', {

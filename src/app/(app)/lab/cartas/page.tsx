@@ -28,7 +28,7 @@ import { rolarDaCarta, type Acao, type Efeito, type Recurso, type Restricao } fr
 import { comentarioDaCarta, descreverCarta, descreverCondicao } from '@/game/descricao'
 import { COMENTARIOS_SUGERIDOS } from './comentarios'
 import { COPIAS_POR_RARIDADE, NOMES_DE_RARIDADE } from '@/game/colecao'
-import { RECURSOS_DE_CUSTO, lerCustos } from '@/game/custos'
+import { CUSTOS_DE_CARTA, RECURSOS_DE_CUSTO, lerCustos } from '@/game/custos'
 import type { ActionCard, ClasseDaCarta, Custo, Raridade, RecursoDeCusto } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import styles from './cartas.module.sass'
@@ -199,7 +199,7 @@ function EditorDeCustos({ carta, onChange }: {
     onChange(Math.max(0, energia), custos.length ? custos : undefined)
   }
 
-  const livres = (['energia', ...RECURSOS_DE_CUSTO] as RecursoDaLinha[]).filter(
+  const livres = (['energia', ...CUSTOS_DE_CARTA] as RecursoDaLinha[]).filter(
     (r) => !linhas.some((l) => l.qual === r),
   )
 
@@ -360,22 +360,28 @@ function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermi
  * marcando as que quiser. Cada uma é um salvamento normal, com motivo.
  */
 function TrocarPorComentarios({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTerminar: (recado: string) => void }) {
-  const achadas = cartas
-    .filter((c) => c.ativa !== false && !comentarioDaCarta(c.text) && COMENTARIOS_SUGERIDOS[c.name])
-    .map((c) => ({ carta: c, comentario: COMENTARIOS_SUGERIDOS[c.name] }))
-  const [fora, setFora] = useState<string[]>([])
+  // TODA carta cujo texto ainda é a descrição de antes, e não só as que têm
+  // comentário sugerido: as que o autor criou ou renomeou no lab ficavam de
+  // fora em silêncio, e pareciam ter sido trocadas (v0.47)
+  const achadas = cartas.filter((c) => c.ativa !== false && c.text.trim() && !comentarioDaCarta(c.text))
+  const [textos, setTextos] = useState<Record<string, string>>(() =>
+    Object.fromEntries(achadas.map((c) => [c.id, COMENTARIOS_SUGERIDOS[c.name] ?? ''])),
+  )
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   if (achadas.length === 0) return null
+
+  // vai quem tem um comentário de verdade escrito (sem número): em branco
+  // fica como está, para o autor escrever depois
+  const prontas = achadas.filter((c) => comentarioDaCarta(textos[c.id] ?? ''))
 
   async function trocar() {
     setOcupado(true)
     setErro(null)
     let feitas = 0
-    for (const { carta, comentario } of achadas) {
-      if (fora.includes(carta.id)) continue
+    for (const carta of prontas) {
       const r = await salvarCarta(
-        { ...carta, text: comentario },
+        { ...carta, text: (textos[carta.id] ?? '').trim() },
         'Texto virou comentário',
         'A descrição agora sai das ações, com os ícones; o texto escrito passou a ser o comentário da carta.',
       )
@@ -389,30 +395,39 @@ function TrocarPorComentarios({ cartas, aoTerminar }: { cartas: ActionCard[]; ao
     if (feitas > 0) aoTerminar(`${feitas} ${feitas === 1 ? 'carta ganhou' : 'cartas ganharam'} comentário.`)
   }
 
-  const marcadas = achadas.length - fora.length
   return (
     <section className={styles.trazer}>
       <h2 className={styles.subtitulo}>Cartas com a descrição de antes ({achadas.length})</h2>
       <p className={styles.dicaSecao}>
-        A carta agora diz o que faz sozinha, com os ícones. O texto escrito dessas ainda é a
-        descrição antiga, e por isso não aparece; marque as que devem trocar pelo comentário
-        sugerido. Dá para ajustar qualquer uma depois, abrindo a carta.
+        A carta agora diz o que faz sozinha, com os ícones. O texto escrito destas ainda é a
+        descrição antiga (tem número ou R$), e por isso não aparece. Escreva o comentário de cada
+        uma — as que têm sugestão já vêm preenchidas — e salve; as que ficarem em branco ficam como
+        estão.
       </p>
-      <ul className={styles.listaTrazer}>
-        {achadas.map(({ carta, comentario }) => (
-          <li key={carta.id}>
-            <Check
-              marcado={!fora.includes(carta.id)}
-              onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== carta.id) : [...f, carta.id]))}
-            >
-              <b>{carta.name}</b> · <TextoComIcones texto={descreverCarta(carta)} /> · <i>{comentario}</i>
-            </Check>
-          </li>
-        ))}
+      <ul className={styles.listaComentarios}>
+        {achadas.map((carta) => {
+          const t = textos[carta.id] ?? ''
+          const comNumero = t.trim() !== '' && !comentarioDaCarta(t)
+          return (
+            <li key={carta.id}>
+              <span>
+                <b>{carta.name}</b> · <TextoComIcones texto={descreverCarta(carta)} />
+                <small className={styles.textoAntigo}> · hoje: “{carta.text}”</small>
+              </span>
+              <input
+                className={comuns.campo}
+                value={t}
+                placeholder="O comentário irônico da carta, sem números"
+                onChange={(e) => setTextos((x) => ({ ...x, [carta.id]: e.target.value }))}
+              />
+              {comNumero ? <small className={styles.erroTopo}>Sem números: com número, ele é lido como descrição e não aparece.</small> : null}
+            </li>
+          )
+        })}
       </ul>
       {erro ? <p className={styles.erroTopo}>{erro}</p> : null}
-      <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={trocar} disabled={ocupado || marcadas === 0}>
-        {ocupado ? 'Salvando…' : `Trocar ${marcadas}`}
+      <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={trocar} disabled={ocupado || prontas.length === 0}>
+        {ocupado ? 'Salvando…' : `Salvar ${prontas.length}`}
       </button>
     </section>
   )
@@ -778,7 +793,6 @@ export default function LabCartasPage() {
           aoFechar={() => setPedindo(null)}
           erro={erro}
           salvando={ocupado}
-          opcional
         />
       ) : null}
 

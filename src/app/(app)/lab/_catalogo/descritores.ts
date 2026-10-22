@@ -159,7 +159,9 @@ export const DESCRITORES = {
           opcoes: [
             { valor: 'energia', rotulo: 'Energia' },
             { valor: 'dinheiro', rotulo: 'Dinheiro' },
-            { valor: 'estresse', rotulo: 'Estresse' },
+            // não há mais custo de estresse (v0.47): este mexe no estresse
+            // que as cartas DÃO hoje
+            { valor: 'estresse', rotulo: 'Estresse que as cartas dão' },
             { valor: 'produtividade', rotulo: 'Produtividade' },
           ],
         },

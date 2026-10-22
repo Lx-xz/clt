@@ -39,7 +39,7 @@ import { readFileSync } from 'node:fs'
 import { carregarCatalogo, cartasDoJogo, catalogoJogavel, eventosDoJogo, getEvent } from '../src/game/catalogo'
 import { mediaDe } from '../src/game/acoes'
 import { idAtual } from '../src/game/ids'
-import { custosDe } from '../src/game/custos'
+import { custosDe, estresseViraEfeito } from '../src/game/custos'
 import * as engine from '../src/game/engine'
 import { baralhoAtivo, cartasDoBaralho, colecaoInicial } from '../src/game/colecao'
 import { carregarModos, regras, totalDeDias, type Regras } from '../src/game/regras'
@@ -84,7 +84,9 @@ if (!ARQUIVO) {
   process.exit(1)
 }
 const dados = JSON.parse(readFileSync(ARQUIVO, 'utf8')) as Exportado
-carregarCatalogo({ cartas: dados.cartas, eventos: dados.eventos, versao: dados.versao, mudancas: [], removidas: [] })
+// o arquivo exportado antes da v0.47 ainda traz custo de estresse: ele vira
+// efeito, como na leitura do banco
+carregarCatalogo({ cartas: dados.cartas.map(estresseViraEfeito), eventos: dados.eventos, versao: dados.versao, mudancas: [], removidas: [] })
 carregarModos([dados.modo])
 if (!catalogoJogavel()) {
   console.error(`${ARQUIVO} não tem baralho inicial ou eventos: não dá para jogar.`)
