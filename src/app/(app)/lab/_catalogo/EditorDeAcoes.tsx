@@ -502,7 +502,7 @@ function Adicionar({ aoEscolher }: { aoEscolher: (faz: NomeDeAcao) => void }) {
  * coisa. A recursão aqui é a mesma da `ListaDeAcoes`, e sai do mesmo lugar —
  * o descritor diz que o campo é `condicao`/`condicoes`, e o editor obedece.
  */
-function EditorDeCondicao({ cond, aoMudar, rotulo = 'Só se', permitirVazio = true }: {
+export function EditorDeCondicao({ cond, aoMudar, rotulo = 'Só se', permitirVazio = true }: {
   cond: Condicao | undefined
   aoMudar: (c: Condicao | undefined) => void
   rotulo?: string

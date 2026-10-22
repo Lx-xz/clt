@@ -296,6 +296,14 @@ Configurações para voltar à descrição escrita; o autor a tirou, e a
 descrição com ícones é a única. Evento continua escrito, e a carta de sorte
 põe a descrição automática (sem o `rolar`) em cima da barra.
 
+**A restrição se edita no `/lab/cartas` (v0.44, "Quando dá para jogar").**
+`ActionCard.restricao` (`umaVezPorRun`, `exige`) é o que `canPlay` confere
+ANTES dos efeitos, e o lab nunca a mostrou: ela veio do código antigo para o
+banco e ficou invisível, enquanto o "Só se: Sempre" de cada BLOCO parecia
+dizer que a carta não tinha limite. A descrição automática (o "1× por
+partida" do Grito no Travesseiro) estava certa; o editor é que escondia o
+dado. Hoje é a caixa "Uma vez por partida" e o "Só dá para jogar com".
+
 **"Se X, senão Y" também é barra dividida (v0.44, `caminhosDaCarta`).**
 A carta com dois ou mais blocos de condição (a Reunião), com uma ação `se`
 que tem `senao` (o Prazo Apertado), ou com um `sorteio` de duas saídas (a

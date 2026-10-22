@@ -15,7 +15,7 @@ import {
   PedirMotivo,
   estilosDaBancada as comuns,
 } from '../_catalogo/Bancada'
-import { EditorDeEfeitos, EscapeJson } from '../_catalogo/EditorDeAcoes'
+import { EditorDeCondicao, EditorDeEfeitos, EscapeJson } from '../_catalogo/EditorDeAcoes'
 import { VersoesDaCarta } from '../_catalogo/Versoes'
 import {
   excluirDoCatalogo,
@@ -24,8 +24,8 @@ import {
   versoesDasCartas,
 } from '@/data/cartas'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
-import { rolarDaCarta, type Acao, type Efeito, type Recurso } from '@/game/acoes'
-import { comentarioDaCarta, descreverCarta } from '@/game/descricao'
+import { rolarDaCarta, type Acao, type Efeito, type Recurso, type Restricao } from '@/game/acoes'
+import { comentarioDaCarta, descreverCarta, descreverCondicao } from '@/game/descricao'
 import { COMENTARIOS_SUGERIDOS } from './comentarios'
 import { COPIAS_POR_RARIDADE, NOMES_DE_RARIDADE } from '@/game/colecao'
 import { RECURSOS_DE_CUSTO, lerCustos } from '@/game/custos'
@@ -114,6 +114,17 @@ function mudarRecurso(c: ActionCard, qual: Recurso, quanto: number): ActionCard 
 }
 
 /**
+ * Junta a mudança na restrição e a apaga quando fica vazia: sem isso a carta
+ * gravaria `{}` e o resumo da mudança diria que algo mudou.
+ */
+function comRestricao(r: Restricao | undefined, mudanca: Restricao): Restricao | undefined {
+  const nova: Restricao = { ...r, ...mudanca }
+  if (!nova.umaVezPorRun) delete nova.umaVezPorRun
+  if (!nova.exige) delete nova.exige
+  return Object.keys(nova).length ? nova : undefined
+}
+
+/**
  * O resumo da mudança, em número. É a metade que um diff SABE escrever — e é
  * justamente por isso que ela é sugerida e o `porque` não: pedir à pessoa as
  * duas partes faria ela digitar o que a máquina já sabe, e o campo caro
@@ -140,6 +151,13 @@ function resumoDaMudanca(antes: ActionCard | undefined, depois: ActionCard): str
   }
   if ((antes.copies ?? 1) !== (depois.copies ?? 1)) {
     partes.push(`Cópias ${antes.copies ?? 1} → ${depois.copies ?? 1}`)
+  }
+  if (Boolean(antes.restricao?.umaVezPorRun) !== Boolean(depois.restricao?.umaVezPorRun)) {
+    partes.push(depois.restricao?.umaVezPorRun ? 'Passou a ser 1× por partida' : 'Deixou de ser 1× por partida')
+  }
+  if (JSON.stringify(antes.restricao?.exige) !== JSON.stringify(depois.restricao?.exige)) {
+    const exige = depois.restricao?.exige
+    partes.push(exige ? `Só com ${descreverCondicao(exige)}` : 'Sem condição para jogar')
   }
   if (JSON.stringify(antes.efeitos) !== JSON.stringify(depois.efeitos)) partes.push('Efeito mudou')
   if (antes.text !== depois.text) partes.push('Texto reescrito')
@@ -616,7 +634,7 @@ export default function LabCartasPage() {
                 ? 'Isto ainda parece a descrição de antes (tem número ou R$): com a descrição automática, ele não aparece na carta. Troque por um comentário — a piada da carta, sem números.'
                 : rolarDaCarta(emEdicao.efeitos)
                   ? 'Carta de sorte: a barra mostra as faixas, e o comentário aparece no detalhe, quando o jogador abre a carta.'
-                  : 'A sátira da carta: aparece em itálico no detalhe, quando o jogador abre a carta. Sem números — o que ela faz já está escrito. Quem escolheu "Escrita" nas Configurações vê este texto na carta.'}
+                  : 'A sátira da carta: aparece em itálico no detalhe, quando o jogador abre a carta. Sem números — o que ela faz já está escrito. Na face da carta, só quando cabe inteiro.'}
             </span>
           </label>
 
@@ -647,6 +665,27 @@ export default function LabCartasPage() {
               aparece na sexta. Para cobrar, acrescente um custo de dinheiro (“+ Custo”, acima).
             </p>
           ) : null}
+
+          <div className={comuns.rotulo}>
+            Quando dá para jogar
+            <span className={comuns.dica}>
+              A restrição da carta, que vale ANTES de qualquer efeito: sem ela cumprida, a carta
+              não sai da mão. É o rótulo da primeira linha da carta (&quot;1× por partida · só com
+              8+&quot;). Não confunda com o &quot;só se&quot; dos blocos abaixo, que só decide se
+              aquele bloco roda.
+            </span>
+          </div>
+          <Check
+            marcado={Boolean(emEdicao.restricao?.umaVezPorRun)}
+            onChange={(v) => setEmEdicao({ ...emEdicao, restricao: comRestricao(emEdicao.restricao, { umaVezPorRun: v || undefined }) })}
+          >
+            Uma vez por partida
+          </Check>
+          <EditorDeCondicao
+            rotulo="Só dá para jogar com"
+            cond={emEdicao.restricao?.exige}
+            aoMudar={(exige) => setEmEdicao({ ...emEdicao, restricao: comRestricao(emEdicao.restricao, { exige }) })}
+          />
 
           <div className={comuns.rotulo}>
             O que a carta faz
