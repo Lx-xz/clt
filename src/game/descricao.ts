@@ -4,7 +4,7 @@ import { getCard } from './catalogo'
 /**
  * A DESCRIÇÃO AUTOMÁTICA da carta (v0.44): o que ela faz, escrito a partir
  * das ações — e não à mão. É curta de propósito: o recurso vira o ícone dele
- * ANTES do número ("+{estresse}1" é o foguinho e o 1), que é como o HUD já
+ * DEPOIS do número ("+1{estresse}" é o 1 e o foguinho), que é como o HUD já
  * fala, e a frase some. O texto escrito no lab deixa de ser a descrição e
  * vira o COMENTÁRIO da carta (a piada, a sátira).
  *
@@ -27,14 +27,23 @@ const ICONE: Record<string, string> = {
   dinheiro: '{dinheiro}',
 }
 
-/** "+{energia}2", "−{estresse}1", "+{dinheiro}1d3". */
+/** "+2{energia}", "−1{estresse}", "+1d3{dinheiro}": o ícone DEPOIS do
+ *  número (v0.44, segunda leitura do autor: "+1🔥" lê melhor que "+🔥1"). */
 function recurso(qual: string, q: Quantia): string {
   const icone = ICONE[qual] ?? qual
   if (ehRolagem(q)) {
     const t = textoDaRolagem(q)
-    return t.startsWith('−') ? `−${icone}${t.slice(1)}` : `+${icone}${t}`
+    return t.startsWith('−') ? `${t}${icone}` : `+${t}${icone}`
   }
-  return `${q < 0 ? '−' : '+'}${icone}${Math.abs(q)}`
+  return `${q < 0 ? '−' : '+'}${Math.abs(q)}${icone}`
+}
+
+/** "4+{estresse}", "até 3{estresse}", "2–5{estresse}". */
+function limite(icone: string, aoMenos?: number, noMaximo?: number): string {
+  if (aoMenos !== undefined && noMaximo !== undefined) return aoMenos === noMaximo ? `${aoMenos}${icone}` : `${aoMenos}–${noMaximo}${icone}`
+  if (aoMenos !== undefined) return `${aoMenos}+${icone}`
+  if (noMaximo !== undefined) return `até ${noMaximo}${icone}`
+  return icone
 }
 
 function numero(q: Quantia): string {
@@ -64,11 +73,11 @@ export function descreverCondicao(c: Condicao): string {
     case 'embalo':
       return `embalo ${c.aoMenos}+`
     case 'recurso':
-      return `${ICONE[c.qual] ?? c.qual} ${faixa(c.aoMenos, c.noMaximo)}`
+      return limite(ICONE[c.qual] ?? c.qual, c.aoMenos, c.noMaximo)
     case 'cotaBatida':
       return c.valor ? 'cota batida' : 'cota não batida'
     case 'advertencias':
-      return `{advertencia} ≥ ${c.aoMenos}`
+      return limite('{advertencia}', c.aoMenos)
     case 'ineditaNaRun':
       return '1ª vez na partida'
     case 'cartasJogadasHoje':
@@ -115,13 +124,13 @@ export function descreverAcao(a: Acao): string {
       return `ganhe ${getCard(a.carta).name} ${a.onde === 'mao' ? 'na mão' : 'no descarte'}`
     case 'custo': {
       const icone = ICONE[a.qual ?? 'energia'] ?? '{energia}'
-      return `cartas ${a.quanto < 0 ? '−' : '+'}${icone}${Math.abs(a.quanto)} hoje`
+      return `cartas ${a.quanto < 0 ? '−' : '+'}${Math.abs(a.quanto)}${icone} hoje`
     }
     case 'bloquearClasse':
       return `sem ${a.classe} hoje`
     case 'advertencia':
       if (a.informal) return a.quanto < 0 ? `−${Math.abs(a.quanto)} verbal` : `+${a.quanto} ${plural(a.quanto, 'advertência verbal', 'advertências verbais')}`
-      return `${a.quanto < 0 ? '−' : '+'}{advertencia}${Math.abs(a.quanto)}`
+      return `${a.quanto < 0 ? '−' : '+'}${Math.abs(a.quanto)}{advertencia}`
     case 'cota':
       if (a.absoluto) return `cota = ${numero(a.quanto)}`
       return ehRolagem(a.quanto)
@@ -171,9 +180,9 @@ const QUANDO: Record<string, string> = {
   aposComprar: 'Ao comprar a mão',
 }
 
-/** A primeira letra em maiúscula, sem mexer no ícone que abre a frase. */
+/** A primeira letra em maiúscula (sinal e número ficam como estão). */
 function frase(t: string): string {
-  return t.charAt(0) === '{' || t.charAt(0) === '+' || t.charAt(0) === '−' ? t : t.charAt(0).toUpperCase() + t.slice(1)
+  return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
 /**
@@ -211,4 +220,65 @@ export function comentarioDaCarta(texto: string | undefined): string | null {
   const t = texto?.trim()
   if (!t || /\d|R\$/.test(t)) return null
   return t
+}
+
+/** Um caminho da carta que escolhe pelo estado: quando vale e o que faz. */
+export interface Caminho {
+  quando: string
+  texto: string
+  /** No `sorteio`, a chance do caminho (0 a 1): vira a altura da faixa. */
+  chance?: number
+}
+
+/**
+ * A carta que tem DOIS (ou mais) caminhos pelo estado da partida — "se for a
+ * 1ª do dia: isto; senão: aquilo" — desenhada como a barra dividida da carta
+ * de sorte, só que com a condição no lugar das faces (v0.44, pedido do
+ * autor). Vale para dois formatos que o editor produz:
+ *
+ * - dois ou mais BLOCOS com condição (a Reunião: um bloco para a primeira do
+ *   dia, outro para a segunda);
+ * - uma ação `se` com `senao` (o Prazo Apertado).
+ *
+ * O resto da carta (o que ela faz sempre, a restrição, os gatilhos) vira o
+ * `antes`, a linha por cima da barra. `se` sem `senao` não é caminho: é "e,
+ * se tal, mais isto", e continua no texto. Nulo quando não há caminhos.
+ */
+export function caminhosDaCarta(carta: { efeitos?: Efeito[]; restricao?: Restricao }): { antes: string; caminhos: Caminho[] } | null {
+  const efeitos = carta.efeitos ?? []
+  const ehDoJogar = (e: Efeito) => !e.quando || e.quando === 'aoJogar'
+  const condicionais = efeitos.filter((e) => ehDoJogar(e) && e.se)
+  if (condicionais.length >= 2) {
+    return {
+      antes: descreverCarta({ ...carta, efeitos: efeitos.filter((e) => !condicionais.includes(e)) }),
+      caminhos: condicionais.map((e) => ({ quando: descreverCondicao(e.se!), texto: frase(lista(e.acoes) || 'nada') })),
+    }
+  }
+  for (const e of efeitos) {
+    if (!ehDoJogar(e) || e.se) continue
+    // um `se` com `senao`, ou o `sorteio` de duas saídas (o "50%: isto;
+    // senão aquilo" que quem testou achava difícil de ler)
+    const ses = e.acoes.filter((a) => (a.faz === 'se' || a.faz === 'sorteio') && a.senao && a.senao.length > 0)
+    if (ses.length !== 1) continue
+    const se = ses[0] as Extract<Acao, { faz: 'se' | 'sorteio' }>
+    const antes = descreverCarta({ ...carta, efeitos: efeitos.map((x) => (x === e ? { ...x, acoes: x.acoes.filter((a) => a !== se) } : x)) })
+    if (se.faz === 'sorteio') {
+      const pct = Math.round(se.chance * 100)
+      return {
+        antes,
+        caminhos: [
+          { quando: `${pct}%`, texto: frase(lista(se.entao) || 'nada'), chance: se.chance },
+          { quando: `${100 - pct}%`, texto: frase(lista(se.senao) || 'nada'), chance: 1 - se.chance },
+        ],
+      }
+    }
+    return {
+      antes,
+      caminhos: [
+        { quando: descreverCondicao(se.condicao), texto: frase(lista(se.entao) || 'nada') },
+        { quando: 'senão', texto: frase(lista(se.senao) || 'nada') },
+      ],
+    }
+  }
+  return null
 }

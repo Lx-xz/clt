@@ -4,10 +4,10 @@ import { Coffee, Coins, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { custosDe, textoDoCusto } from '@/game/custos'
 import type { ActionCard, Custo, EventCard } from '@/game/types'
-import BarraDaSorte from '../BarraDaSorte'
+import BarraDaSorte, { BarraDeCaminhos } from '../BarraDaSorte'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { rolarDaCarta } from '@/game/acoes'
-import { descreverCarta } from '@/game/descricao'
+import { caminhosDaCarta, descreverCarta } from '@/game/descricao'
 import { useModoDaDescricao } from '@/data/modoDaDescricao'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import { ArrowDown, ArrowUp } from 'lucide-react'
@@ -113,6 +113,9 @@ export default function Card({
   const modo = useModoDaDescricao()
   const automatica = !evento && modo === 'icones'
   const descricao = automatica ? descreverCarta(card, { semRolar: Boolean(rolar) }) : card.text
+  // "se X, senão Y" também se desenha dividido, com a condição no lugar
+  // das faces do dado
+  const caminhos = automatica && !rolar ? caminhosDaCarta(card) : null
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
   /** Só a carta que ARRASTA prende o dedo: as outras deixam a lista rolar
    *  por baixo dela (o histórico, a fileira de cartas do replay). */
@@ -316,6 +319,8 @@ export default function Card({
           <div className={styles.corpo}>
             {corpo ?? (rolar ? (
               <BarraDaSorte rolar={rolar} texto={automatica ? descricao : card.text} destaque={saiuNaSorte} />
+            ) : caminhos ? (
+              <BarraDeCaminhos antes={caminhos.antes} caminhos={caminhos.caminhos} />
             ) : (
               <p className={`${styles.texto} ${automatica ? styles.automatica : ''}`}>
                 <TextoComIcones texto={descricao || card.text} />

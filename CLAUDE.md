@@ -273,8 +273,9 @@ dado (faixas)" no `/lab/cartas` é escolha de quem balanceia. O editor
 
 **A descrição da carta sai das ações (v0.44, `src/game/descricao.ts`).**
 `descreverCarta` escreve o que a carta faz a partir do mesmo dado que o
-motor roda, curto e com o ÍCONE do recurso antes do número
-("+{estresse}1" é o foguinho e o 1; a notação `{energia}`, `{estresse}`,
+motor roda, curto e com o ÍCONE do recurso DEPOIS do número
+("+1{estresse}" é o 1 e o foguinho — antes do número foi a primeira
+tentativa, e o autor preferiu depois; a notação `{energia}`, `{estresse}`,
 `{produtividade}`, `{dinheiro}` e `{advertencia}` é desenhada por
 `TextoComIcones`, na cor do medidor, e `textoSemReais` a lê em voz alta).
 Rebalancear no lab já muda o que a carta diz — o texto à mão era "a única
@@ -293,6 +294,17 @@ Configurações › Aparência, "Descrição das cartas" volta para a escrita
 (`src/data/modoDaDescricao.ts`, chave `clt-descricao:v1` com hífen, para
 sobreviver à troca de conta). Evento continua escrito, e a carta de sorte
 põe a descrição automática (sem o `rolar`) em cima da barra.
+
+**"Se X, senão Y" também é barra dividida (v0.44, `caminhosDaCarta`).**
+A carta com dois ou mais blocos de condição (a Reunião), com uma ação `se`
+que tem `senao` (o Prazo Apertado), ou com um `sorteio` de duas saídas (a
+Pedir Aumento) se desenha com `BarraDeCaminhos`: a condição (ou a chance)
+no lugar das faces do dado, o que acontece embaixo, e o resto da carta na
+linha de cima. Faixas neutras (o motor não sabe qual caminho é o bom); as
+de condição têm a mesma altura, as de sorteio a altura da chance. `se` sem
+`senao` não é caminho ("e, se tal, mais isto") e continua no texto. A
+barra é uma só (`BarraDividida`, dentro de `BarraDaSorte`), para sorte e
+para caminhos. Só no modo "Com ícones".
 
 **O dado é 3D de CSS** (faces do fecho convexo dos vértices, cada uma um SVG
 posto por `matrix3d`): vale a armadilha do 3D achatado, e o `overflow` mora
