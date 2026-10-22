@@ -271,6 +271,28 @@ dado (faixas)" no `/lab/cartas` é escolha de quem balanceia. O editor
 (`ListaDeSaidas`) acusa face sem faixa e face em duas.
 `migrarAcao` converte o `lados` em número (o `<select>` guarda "10").
 
+**A descrição da carta sai das ações (v0.44, `src/game/descricao.ts`).**
+`descreverCarta` escreve o que a carta faz a partir do mesmo dado que o
+motor roda, curto e com o ÍCONE do recurso antes do número
+("+{estresse}1" é o foguinho e o 1; a notação `{energia}`, `{estresse}`,
+`{produtividade}`, `{dinheiro}` e `{advertencia}` é desenhada por
+`TextoComIcones`, na cor do medidor, e `textoSemReais` a lê em voz alta).
+Rebalancear no lab já muda o que a carta diz — o texto à mão era "a única
+coisa que pode mentir". Toda ação tem uma linha no `switch` de
+`descreverAcao`, sem `default`: ação nova sem descrição quebra o build.
+O TEXTO ESCRITO virou o COMENTÁRIO da carta (a sátira), em itálico embaixo
+da descrição e no detalhe. **A regra da transição** (`comentarioDaCarta`):
+texto com número ou "R$" é a descrição de antes e fica escondido; sem
+número, é comentário. O `/lab/cartas` mostra a descrição gerada, chama o
+campo de "Comentário da carta", avisa quando o texto ainda é descrição, e
+tem a seção "Cartas com a descrição de antes", que troca o texto pelos
+comentários sugeridos (`lab/cartas/comentarios.ts`, pelo NOME da carta) —
+um salvamento com motivo por carta, como sempre. É um TESTE: em
+Configurações › Aparência, "Descrição das cartas" volta para a escrita
+(`src/data/modoDaDescricao.ts`, chave `clt-descricao:v1` com hífen, para
+sobreviver à troca de conta). Evento continua escrito, e a carta de sorte
+põe a descrição automática (sem o `rolar`) em cima da barra.
+
 **O dado é 3D de CSS** (faces do fecho convexo dos vértices, cada uma um SVG
 posto por `matrix3d`): vale a armadilha do 3D achatado, e o `overflow` mora
 só na raiz da cena.

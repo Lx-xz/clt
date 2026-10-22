@@ -25,6 +25,8 @@ import {
 } from '@/data/cartas'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
 import { rolarDaCarta, type Acao, type Efeito, type Recurso } from '@/game/acoes'
+import { comentarioDaCarta, descreverCarta } from '@/game/descricao'
+import { COMENTARIOS_SUGERIDOS } from './comentarios'
 import { COPIAS_POR_RARIDADE, NOMES_DE_RARIDADE } from '@/game/colecao'
 import { RECURSOS_DE_CUSTO, lerCustos } from '@/game/custos'
 import type { ActionCard, ClasseDaCarta, Custo, Raridade, RecursoDeCusto } from '@/game/types'
@@ -333,6 +335,71 @@ function ConverterCustos({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTermi
   )
 }
 
+/**
+ * As cartas cujo texto ainda é a DESCRIÇÃO de antes (tem número ou R$) e
+ * que têm um comentário sugerido (`comentarios.ts`). Com a descrição
+ * automática esse texto não aparece mais na carta; aqui ele vira a sátira,
+ * marcando as que quiser. Cada uma é um salvamento normal, com motivo.
+ */
+function TrocarPorComentarios({ cartas, aoTerminar }: { cartas: ActionCard[]; aoTerminar: (recado: string) => void }) {
+  const achadas = cartas
+    .filter((c) => c.ativa !== false && !comentarioDaCarta(c.text) && COMENTARIOS_SUGERIDOS[c.name])
+    .map((c) => ({ carta: c, comentario: COMENTARIOS_SUGERIDOS[c.name] }))
+  const [fora, setFora] = useState<string[]>([])
+  const [ocupado, setOcupado] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  if (achadas.length === 0) return null
+
+  async function trocar() {
+    setOcupado(true)
+    setErro(null)
+    let feitas = 0
+    for (const { carta, comentario } of achadas) {
+      if (fora.includes(carta.id)) continue
+      const r = await salvarCarta(
+        { ...carta, text: comentario },
+        'Texto virou comentário',
+        'A descrição agora sai das ações, com os ícones; o texto escrito passou a ser o comentário da carta.',
+      )
+      if (!r.ok) {
+        setErro(`${carta.name}: ${r.erro ?? 'não deu para salvar.'}`)
+        break
+      }
+      feitas += 1
+    }
+    setOcupado(false)
+    if (feitas > 0) aoTerminar(`${feitas} ${feitas === 1 ? 'carta ganhou' : 'cartas ganharam'} comentário.`)
+  }
+
+  const marcadas = achadas.length - fora.length
+  return (
+    <section className={styles.trazer}>
+      <h2 className={styles.subtitulo}>Cartas com a descrição de antes ({achadas.length})</h2>
+      <p className={styles.dicaSecao}>
+        A carta agora diz o que faz sozinha, com os ícones. O texto escrito dessas ainda é a
+        descrição antiga, e por isso não aparece; marque as que devem trocar pelo comentário
+        sugerido. Dá para ajustar qualquer uma depois, abrindo a carta.
+      </p>
+      <ul className={styles.listaTrazer}>
+        {achadas.map(({ carta, comentario }) => (
+          <li key={carta.id}>
+            <Check
+              marcado={!fora.includes(carta.id)}
+              onChange={(v) => setFora((f) => (v ? f.filter((id) => id !== carta.id) : [...f, carta.id]))}
+            >
+              <b>{carta.name}</b> · <TextoComIcones texto={descreverCarta(carta)} /> · <i>{comentario}</i>
+            </Check>
+          </li>
+        ))}
+      </ul>
+      {erro ? <p className={styles.erroTopo}>{erro}</p> : null}
+      <button type="button" className={`${buttons.button} ${buttons.primary}`} onClick={trocar} disabled={ocupado || marcadas === 0}>
+        {ocupado ? 'Salvando…' : `Trocar ${marcadas}`}
+      </button>
+    </section>
+  )
+}
+
 export default function LabCartasPage() {
   const [cartas, setCartas] = useState<ActionCard[]>(() => todasAsCartas())
   const [doBanco, setDoBanco] = useState(() => catalogoVeioDoBanco())
@@ -437,6 +504,15 @@ export default function LabCartasPage() {
           }}
         />
       ) : null}
+      {doBanco ? (
+        <TrocarPorComentarios
+          cartas={cartas}
+          aoTerminar={(r) => {
+            recarregar()
+            setRecado(r)
+          }}
+        />
+      ) : null}
 
 
       {recado ? <p className={styles.recado}>{recado}</p> : null}
@@ -523,8 +599,12 @@ export default function LabCartasPage() {
             </span>
           </label>
 
+          <p className={comuns.dica}>
+            <b>O que a carta diz</b> (sai das ações, sozinho):{' '}
+            <TextoComIcones texto={descreverCarta(emEdicao, { semRolar: Boolean(rolarDaCarta(emEdicao.efeitos)) }) || '—'} />
+          </p>
           <label className={comuns.rotulo}>
-            Texto da carta
+            Comentário da carta
             <textarea
               className={comuns.campoTexto}
               rows={2}
@@ -532,9 +612,11 @@ export default function LabCartasPage() {
               onChange={(e) => setEmEdicao({ ...emEdicao, text: e.target.value })}
             />
             <span className={comuns.dica}>
-              {rolarDaCarta(emEdicao.efeitos)
-                ? 'Esta carta rola um dado: a carta se desenha como barra, com o texto de cada faixa. Este texto aparece em cima da barra — escreva só o que ela faz ALÉM do dado, ou deixe vazio.'
-                : 'É o que o jogador lê. Escreva o efeito de verdade — o texto não é lido pelo motor, então ele é a única coisa que pode mentir.'}
+              {emEdicao.text.trim() && !comentarioDaCarta(emEdicao.text)
+                ? 'Isto ainda parece a descrição de antes (tem número ou R$): com a descrição automática, ele não aparece na carta. Troque por um comentário — a piada da carta, sem números.'
+                : rolarDaCarta(emEdicao.efeitos)
+                  ? 'Carta de sorte: a barra mostra as faixas, e o comentário fica no detalhe da carta.'
+                  : 'A sátira da carta, em itálico embaixo do que ela faz. Sem números: o que ela faz já está escrito em cima. Quem escolheu "Escrita" nas Configurações vê este texto no lugar.'}
             </span>
           </label>
 
