@@ -228,11 +228,27 @@ aresta em aresta e a moeda ficar rente ao chão. A câmera é que fica mais de
 cima (`INCLINACAO` 24°): na v0.41 a face era desvirada da inclinação para
 olhar a câmera, e o dado parava meio em pé, apoiado em nada. O d4 não para
 com face para cima: o número mora nos CANTOS (`Solido.cantos`), a face
-sorteada vai para baixo (`apoiaNaFace`) e vale a ponta de cima. O
-número já saiu antes da animação: ela não decide nada. O d100 são dois d10
-(a dezena em vermelho), a moeda é a d2 dourada. O `/lab/sorte` tem a mesma
-mesa com "Você joga" (arrastar e soltar: a velocidade do dedo é o
-lançamento) — no jogo, por enquanto, a mesa joga sozinha.
+sorteada vai para baixo (`apoiaNaFace`) e vale a ponta de cima.
+O d100 são dois d10 (a dezena em vermelho), a moeda é a d2 dourada.
+**Desde a v0.42 quem tira o número é a JOGADA, não um sorteio feito antes.**
+Na mesa, a carta que rola PAUSA (`GameState.rolagemAberta`, opcional, como
+a `escolhaAberta`: a lista para e o resto espera em `resto`; `pausaAberta`
+olha as duas, e `dispararEfeitos` empilha os blocos seguintes ali, com a
+condição conferida na hora). Os dados esperam no tapete; a pessoa arrasta
+e solta (a velocidade do gesto é o lançamento) ou toca em "Jogar", e
+quando eles quase param o resultado é a face MAIS VIRADA PARA CIMA naquele
+instante (`faceDeCima`; no d4, a mais virada para baixo) — o assentar é só
+o fim do tombo, sem cambalhota de última hora. A soma fica à vista, os
+dados esmaecem e só então `responderRolagem(state, valores)` segue a carta
+(ela confere os valores: dado a mais ou fora da faixa não entra). Quem
+liga isso é a mesa (`jogarDadosNaMesa(true)` ao montar, `false` ao sair):
+sem ela (o simulador, inclusive o do lab no navegador) o motor sorteia na
+hora pela `sorte`, e a saída do simulador não mudou (`--hash`, 150 runs).
+Só a carta jogada pausa (`contexto(id, true)` em `playCard`, na resposta
+de `escolha`, no `entao` do descarte e na própria `responderRolagem`):
+evento e começo de dia rolam na hora, pela mesma razão da `escolha`, e a
+mesa os joga sozinha até a face que saiu. A rolagem da mão grava
+`ultimaRolagem.naMao`, que a mesa não joga de novo.
 **O dado é 3D de CSS** (faces do fecho convexo dos vértices, cada uma um SVG
 posto por `matrix3d`): vale a armadilha do 3D achatado, e o `overflow` mora
 só na raiz da cena.

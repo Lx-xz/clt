@@ -26,6 +26,8 @@ import {
   effectiveCost,
   endDay,
   escolherOpcao,
+  jogarDadosNaMesa,
+  responderRolagem,
   escolherParaDescartar,
   escolherRecompensa,
   payBills,
@@ -91,6 +93,14 @@ export default function JogarPage() {
   const [colecao, setColecao] = useState<Collection | null>(null)
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
+
+  // na mesa, os dados de uma carta são jogados por quem joga, e o número é o
+  // da face que ficar para cima; fora dela (o simulador do lab roda o mesmo
+  // motor no navegador) o motor volta a sortear sozinho
+  useEffect(() => {
+    jogarDadosNaMesa(true)
+    return () => jogarDadosNaMesa(false)
+  }, [])
 
   useEffect(() => {
     let vivo = true
@@ -398,7 +408,7 @@ export default function JogarPage() {
             className={`${buttons.button} ${buttons.primary} ${styles.proximoDia}`}
             // o dia não fecha por cima de uma pergunta em aberto; o motor
             // recusa de qualquer jeito, e o botão apagado explica por quê
-            disabled={Boolean(escolhendo) || Boolean(state.escolhaAberta)}
+            disabled={Boolean(escolhendo) || Boolean(state.escolhaAberta) || Boolean(state.rolagemAberta)}
             onClick={() => update(endDay(state))}
           >
             <span className={styles.rotuloLongo}>Próximo dia</span>
@@ -473,7 +483,12 @@ export default function JogarPage() {
         )}
         <DescarteNaMesa descarte={state.ultimoDescarte} />
         <MensagemNaMesa mensagem={state.ultimaMensagem} />
-        <DadosNaMesa rolagem={state.ultimaRolagem} />
+        <DadosNaMesa
+          rolagem={state.ultimaRolagem}
+          pedido={state.rolagemAberta}
+          nomeDaCarta={state.rolagemAberta?.cartaId ? getCard(state.rolagemAberta.cartaId).name : undefined}
+          onJogou={(valores) => update(responderRolagem(state, valores))}
+        />
 
         {state.escolhaAberta ? (
           <div className={styles.pedido} role="status">
@@ -819,6 +834,7 @@ function motivoBloqueio(state: GameState, instancia: CardInstance): string {
     return state.escolhaDeDescarte.guardar ? 'Primeiro escolha o que fica para amanhã.' : 'Primeiro escolha o que descartar.'
   }
   if (state.escolhaAberta) return 'Primeiro responda a pergunta da carta.'
+  if (state.rolagemAberta) return 'Primeiro jogue os dados.'
   if (carta.kind !== null && state.blockedKinds.includes(carta.kind)) {
     return `O evento de hoje bloqueia cartas de ${carta.kind}.`
   }

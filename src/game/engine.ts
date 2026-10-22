@@ -21,8 +21,12 @@ import {
   dispararEfeitos,
   executar,
   executarAcao,
+  anotarRolagem,
+  comQuantia,
+  pausaAberta,
   type Acao,
   type Contexto,
+  type Rolagem,
 } from './acoes'
 import type {
   CardId,
@@ -82,8 +86,28 @@ function clone(state: GameState): GameState {
  * que permite rodar o motor com sorteio determinístico e comparar duas
  * versões jogada por jogada.
  */
-function contexto(cartaId?: CardId): Contexto {
+/**
+ * Quem joga os dados de uma carta: a sorte do motor (o padrão, e sempre no
+ * simulador) ou a MESA, que liga isto ao abrir — aí a carta pausa e o
+ * número é o da face que ficar para cima (`responderRolagem`).
+ */
+let dadosNaMesa = false
+export function jogarDadosNaMesa(sim: boolean) {
+  dadosNaMesa = sim
+}
+
+/** `pausarDados`: só a carta jogada (e o que continua dela) espera os dados.
+ *  Evento e começo de dia rolam na hora — a pausa não sobreviveria à mão
+ *  comprada logo depois, pela mesma razão da `escolha`. */
+function contexto(cartaId?: CardId, pausarDados = false): Contexto {
   return {
+    ...(pausarDados && dadosNaMesa
+      ? {
+          pedirRolagem: (state: GameState, acao: Acao, rolagem: Rolagem) => {
+            state.rolagemAberta = { rolagem, acao, cartaId: cartaId ?? null, resto: [] }
+          },
+        }
+      : {}),
     cartaId,
     comprar: (state, quantas) => draw(state, quantas),
     descartarMao: (state) => discardHand(state),
@@ -105,7 +129,7 @@ function contexto(cartaId?: CardId): Contexto {
       // o dia esperando uma escolha impossível
       const restam = Math.min(quantas, state.hand.length)
       if (restam <= 0) {
-        executar(state, entao, contexto(cartaId ?? undefined))
+        executar(state, entao, contexto(cartaId ?? undefined, true))
         return
       }
       state.escolhaDeDescarte = { restam, porque, entao, cartaId, ...(guardar ? { guardar } : {}) }
@@ -145,7 +169,7 @@ export function canPlay(state: GameState, instance: CardInstance) {
   if (state.phase !== 'dia') return false
   // uma pergunta em aberto para o dia até ser respondida, senão o jogador
   // escaparia dela jogando outra coisa
-  if (state.escolhaDeDescarte || state.escolhaAberta) return false
+  if (state.escolhaDeDescarte || state.escolhaAberta || state.rolagemAberta) return false
   const card = getCard(instance.cardId)
   // carta neutra não tem classe para ser bloqueada — Sistema Fora do Ar não
   // tem como proibir "nenhum tipo"
@@ -326,6 +350,7 @@ function startDay(input: GameState): GameState {
   state.ultimaMensagem = null
   state.escolhaDeDescarte = null
   state.escolhaAberta = null
+  state.rolagemAberta = null
   state.streakKind = null
   state.streakCount = 0
   state.lastCombo = null
@@ -490,7 +515,7 @@ export function playCard(input: GameState, uid: string): GameState {
   // essa ordem é load-bearing: é ela que faz `jaJogadaHoje` contar as vezes
   // ANTERIORES, `ineditaNaRun` valer na primeira vez, e
   // `cartasJogadasHoje noMaximo: 0` significar "só se esta for a primeira"
-  dispararEfeitos(state, card.efeitos, 'aoJogar', contexto(card.id))
+  dispararEfeitos(state, card.efeitos, 'aoJogar', contexto(card.id, true))
 
   state.playedToday.push(card.id)
   if (!state.jogadasNaSemana.includes(card.id)) state.jogadasNaSemana.push(card.id)
@@ -541,7 +566,7 @@ export function escolherParaDescartar(input: GameState, uid: string): GameState 
   }
 
   state.escolhaDeDescarte = null
-  executar(state, pedido.entao, contexto(pedido.cartaId ?? undefined))
+  executar(state, pedido.entao, contexto(pedido.cartaId ?? undefined, true))
   return checkDefeat(state)
 }
 
@@ -563,14 +588,42 @@ export function escolherOpcao(input: GameState, indice: number): GameState {
   // limpar ANTES de executar: senão o próprio `executar` veria uma pergunta
   // aberta no primeiro passo e pausaria a si mesmo
   state.escolhaAberta = null
-  const ctx = contexto(pergunta.cartaId ?? undefined)
+  const ctx = contexto(pergunta.cartaId ?? undefined, true)
   log(state, `Escolheu "${opcao.rotulo}".`)
   executar(state, opcao.acoes, ctx)
 
   // uma pergunta dentro da pergunta adia o resto mais uma vez
-  const aninhada = state.escolhaAberta as GameState['escolhaAberta']
+  const aninhada = pausaAberta(state)
   if (aninhada) aninhada.resto = [...aninhada.resto, ...pergunta.resto]
   else executar(state, pergunta.resto, ctx)
+  return checkDefeat(state)
+}
+
+/**
+ * Os dados pararam na mesa, e `valores` é o que ficou para cima em cada um
+ * (v0.42). O número sai da jogada, e não de um sorteio feito antes: quem
+ * joga o dado com o dedo é quem tira o resultado. Depois, o resto da carta
+ * continua, como depois de uma `escolha`.
+ */
+export function responderRolagem(input: GameState, valores: number[]): GameState {
+  const state = clone(input)
+  const pedido = state.rolagemAberta
+  if (!pedido) return input
+  const { rolagem } = pedido
+  const lados = Math.max(2, Math.round(rolagem.lados))
+  const quantos = Math.max(1, Math.round(rolagem.dados))
+  // o que vem da tela é conferido: um dado a mais ou um 7 num d6 não entram
+  const limpos = Array.from({ length: quantos }, (_, i) => {
+    const v = Math.round(valores[i] ?? NaN)
+    return v >= 1 && v <= lados ? v : 1 + Math.floor(Math.random() * lados)
+  })
+  state.rolagemAberta = null
+  const total = anotarRolagem(state, rolagem, limpos, log, true)
+  const ctx = contexto(pedido.cartaId ?? undefined, true)
+  executar(state, [comQuantia(pedido.acao, total)], ctx)
+  const aninhada = pausaAberta(state)
+  if (aninhada) aninhada.resto = [...aninhada.resto, ...pedido.resto]
+  else executar(state, pedido.resto, ctx)
   return checkDefeat(state)
 }
 
@@ -654,7 +707,7 @@ export function endDay(input: GameState): GameState {
   let state = clone(input)
   if (state.phase !== 'dia') return input
   // pergunta em aberto: o dia não fecha por cima dela
-  if (state.escolhaDeDescarte || state.escolhaAberta) return input
+  if (state.escolhaDeDescarte || state.escolhaAberta || state.rolagemAberta) return input
 
   const metQuota = state.productivity >= state.dailyQuota
   if (!metQuota) {

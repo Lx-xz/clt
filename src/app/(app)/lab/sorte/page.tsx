@@ -4,7 +4,7 @@ import { ArrowLeft, Dices } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Card from '@/components/Card'
-import Dado3D, { DadoPercentual, LADOS, RolagemNaMesa, dadosDoValor, type DadoNaMesa, type TipoDeDado } from '@/components/Dado3D'
+import Dado3D, { DadoPercentual, LADOS, RolagemNaMesa, dadosDoValor, valoresDosNumeros, type DadoNaMesa, type TipoDeDado } from '@/components/Dado3D'
 import { TextoComIcones } from '@/components/Dinheiro'
 import Segmentado from '@/components/Segmentado'
 import type { ActionCard } from '@/game/types'
@@ -187,17 +187,36 @@ function Mesa({ ex, modo }: { ex: Exemplo; modo: 'auto' | 'mao' }) {
 
   function jogar() {
     if (!dado) return
-    setValor(sortear(dado))
+    // na mesa automática o número sai antes (como num evento); na mão, quem
+    // decide é a face que ficar para cima
+    setValor(modo === 'auto' ? sortear(dado) : 0)
     setParou(false)
     setJogada((j) => j + 1)
   }
+
+  const lados = dado === 'd100' ? 100 : dado ? LADOS[dado] : 0
+  const naMesa: DadoNaMesa[] =
+    dado && valor !== null
+      ? modo === 'auto'
+        ? dadosDoResultado(dado, valor)
+        : dadosDoResultado(dado, 1).map(({ valor: _v, ...resto }) => resto)
+      : []
 
   return (
     <div className={styles.mesa}>
       <Card card={ex.carta} corpo={<CorpoBarra ex={ex} destaque={parou ? saiu : null} />} seloExtra={dado ? <SeloDoDado dado={dado} /> : null} />
       <div className={styles.tapete}>
         {dado && valor !== null ? (
-          <RolagemNaMesa dados={dadosDoResultado(dado, valor)} modo={modo} jogada={jogada} tamanho={72} onParar={() => setParou(true)} />
+          <RolagemNaMesa
+            dados={naMesa}
+            modo={modo}
+            jogada={jogada}
+            tamanho={72}
+            onParar={(numeros) => {
+              if (modo === 'mao') setValor(valoresDosNumeros(lados, numeros)[0])
+              setParou(true)
+            }}
+          />
         ) : (
           <p className={styles.vazio}>{dado ? 'Jogue a carta.' : 'Esta não rola dado: o caminho sai do estado da partida.'}</p>
         )}

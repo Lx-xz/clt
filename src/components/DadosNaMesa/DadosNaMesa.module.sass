@@ -5,6 +5,11 @@
   z-index: 30
   pointer-events: none
 
+// os dados esperando a mão: aqui a camada PEGA o ponteiro (o dia está
+// parado até eles saírem, então nada embaixo precisa dele)
+.pegando
+  pointer-events: auto
+
 .saindo
   animation: sair .4s ease 1s both
 
@@ -28,6 +33,54 @@
 
   b
     font-size: 16px
+
+// o que a carta pediu, e o botão para a mesa jogar por quem não quer
+// arrastar. Preso nas DUAS bordas (e não centrado por transform): numa mesa
+// estreita, um balão de largura própria passava da tela e arrastava a
+// página inteira para o lado
+.pedido
+  position: absolute
+  top: 10px
+  right: 10px
+  left: 10px
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  justify-content: center
+  gap: 4px 10px
+  width: fit-content
+  max-width: calc(100% - 20px)
+  margin: 0 auto
+  padding: 6px 8px 6px 14px
+  border: 1px solid var(--linha)
+  border-radius: 16px
+  background: var(--papel-alto)
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18)
+  font-family: var(--mono)
+  font-size: 13px
+
+  small
+    flex-basis: 100%
+    color: var(--tinta-fraca)
+    font-size: 11px
+    text-align: center
+
+  button
+    display: inline-flex
+    align-items: center
+    gap: 5px
+    padding: 4px 12px
+    border: none
+    border-radius: 999px
+    background: var(--tinta)
+    color: var(--papel)
+    font: inherit
+    font-weight: 700
+    cursor: pointer
+
+.oQue
+  min-width: 0
+  overflow-wrap: anywhere
 
 @keyframes entrar
   from

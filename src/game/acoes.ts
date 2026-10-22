@@ -60,6 +60,20 @@ export function mediaDe(q: Quantia): number {
   return q.negativo ? -media : media
 }
 
+/** A quantia de uma ação que tem uma (recurso, comprar, cota); nulo nas outras. */
+export function quantiaDe(acao: Acao): Quantia | null {
+  if (acao.faz === 'recurso' || acao.faz === 'cota') return acao.quanto
+  if (acao.faz === 'comprar') return acao.quantas
+  return null
+}
+
+/** A mesma ação, com a quantia já resolvida num número. */
+export function comQuantia(acao: Acao, n: number): Acao {
+  if (acao.faz === 'recurso' || acao.faz === 'cota') return { ...acao, quanto: n }
+  if (acao.faz === 'comprar') return { ...acao, quantas: n }
+  return acao
+}
+
 /** "1d3", "2d6+1", "−1d4": como a rolagem se escreve. */
 export function textoDaRolagem(r: Rolagem): string {
   const mais = r.mais ? (r.mais > 0 ? `+${r.mais}` : `${r.mais}`) : ''
@@ -234,6 +248,10 @@ export interface Contexto {
   mostrarMensagem: (state: GameState, texto: string) => void
   /** 0..1; recebe o sorteio de fora para o teste poder ser determinístico. */
   sorte: () => number
+  /** Quando existe, os dados NÃO são rolados aqui: a lista pausa (como numa
+   *  `escolha`) até a mesa dizer o que os dados de verdade deram. Sem ele
+   *  (o simulador, os eventos), rola-se na hora pela `sorte`. */
+  pedirRolagem?: (state: GameState, acao: Acao, rolagem: Rolagem) => void
 }
 
 export function condicaoVale(state: GameState, cond: Condicao | undefined, ctx: Contexto): boolean {
@@ -294,26 +312,46 @@ function valorDoRecurso(state: GameState, qual: Recurso): number {
   return state.money
 }
 
-/** Roda uma ação. Muda o estado no lugar — o motor já clonou antes. */
 /**
- * O número de uma quantia: ele mesmo, ou os dados rolados agora. A rolagem
- * fica anotada no estado (com um `selo` que muda a cada uma, como o da
- * mensagem) para a mesa jogar os dados na frente de quem joga, e numa linha
- * do histórico.
+ * Anota uma rolagem já feita: o total, a linha do histórico e o
+ * `ultimaRolagem` para a mesa. `naMao` marca a que o jogador jogou com a
+ * mão — essa a mesa já mostrou, e não joga de novo.
+ */
+export function anotarRolagem(
+  state: GameState,
+  q: Rolagem,
+  valores: number[],
+  log: (state: GameState, texto: string) => void,
+  naMao = false,
+): number {
+  const total = valores.reduce((a, b) => a + b, 0) + (q.mais ?? 0)
+  const selo = (state.ultimaRolagem?.selo ?? 0) + 1
+  state.ultimaRolagem = { lados: Math.max(2, Math.round(q.lados)), valores, mais: q.mais ?? 0, total, selo, ...(naMao ? { naMao } : {}) }
+  log(state, `Rolou ${textoDaRolagem(q).replace('−', '')}: ${valores.join(' + ')}${q.mais ? ` ${q.mais > 0 ? '+' : '−'} ${Math.abs(q.mais)}` : ''} = ${total}.`)
+  return q.negativo ? -total : total
+}
+
+/**
+ * O número de uma quantia: ele mesmo, ou os dados rolados agora, pela
+ * `sorte` (o caminho do simulador e dos eventos; a carta jogada na mesa
+ * pausa antes, em `executarAcao`).
  */
 function resolver(state: GameState, q: Quantia, ctx: Contexto): number {
   if (!ehRolagem(q)) return q
   const lados = Math.max(2, Math.round(q.lados))
   const valores: number[] = []
   for (let i = 0; i < Math.max(1, Math.round(q.dados)); i++) valores.push(1 + Math.floor(ctx.sorte() * lados))
-  const total = valores.reduce((a, b) => a + b, 0) + (q.mais ?? 0)
-  const selo = (state.ultimaRolagem?.selo ?? 0) + 1
-  state.ultimaRolagem = { lados, valores, mais: q.mais ?? 0, total, selo }
-  ctx.log(state, `Rolou ${textoDaRolagem(q).replace('−', '')}: ${valores.join(' + ')}${q.mais ? ` ${q.mais > 0 ? '+' : '−'} ${Math.abs(q.mais)}` : ''} = ${total}.`)
-  return q.negativo ? -total : total
+  return anotarRolagem(state, q, valores, ctx.log)
 }
 
+/** Roda uma ação. Muda o estado no lugar — o motor já clonou antes. */
 export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
+  // dados que o jogador vai jogar: a ação espera a mesa, e a lista pausa
+  const q = quantiaDe(acao)
+  if (q !== null && ehRolagem(q) && ctx.pedirRolagem) {
+    ctx.pedirRolagem(state, acao, q)
+    return
+  }
   switch (acao.faz) {
     case 'recurso': {
       const quanto = resolver(state, acao.quanto, ctx)
@@ -450,8 +488,10 @@ export function executar(state: GameState, acoes: Acao[], ctx: Contexto) {
     // O resto fica guardado na própria pergunta e é retomado ao responder,
     // o que resolve o aninhamento de graça: um `escolha` dentro de um
     // `sorteio` pausa a lista de dentro, e a de fora empilha atrás.
-    if (state.escolhaAberta) {
-      state.escolhaAberta.resto = [...state.escolhaAberta.resto, ...acoes.slice(i + 1)]
+    // Os dados que esperam a mão do jogador param a lista do mesmo jeito.
+    const pausa = pausaAberta(state)
+    if (pausa) {
+      pausa.resto = [...pausa.resto, ...acoes.slice(i + 1)]
       return
     }
   }
@@ -468,8 +508,20 @@ export function dispararEfeitos(
   for (const efeito of efeitos) {
     if ((efeito.quando ?? padraoDe(quando)) !== quando) continue
     if (!condicaoVale(state, efeito.se, ctx)) continue
+    // um bloco anterior pausou: este vai para depois da resposta, com a
+    // condição conferida AGORA (é agora que a carta está sendo jogada)
+    const pausa = pausaAberta(state)
+    if (pausa) {
+      pausa.resto = [...pausa.resto, ...efeito.acoes]
+      continue
+    }
     executar(state, efeito.acoes, ctx)
   }
+}
+
+/** A pergunta (ou os dados) que segura a lista agora, se houver. */
+export function pausaAberta(state: GameState): { resto: Acao[] } | null {
+  return state.escolhaAberta ?? state.rolagemAberta ?? null
 }
 
 /** Sem `quando`, o efeito pertence ao gatilho principal daquele dono. */

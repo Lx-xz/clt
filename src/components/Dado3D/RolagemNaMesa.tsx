@@ -26,7 +26,9 @@ import styles from './Dado3D.module.sass'
 
 export interface DadoNaMesa {
   tipo: TipoDeDado
-  valor: number
+  /** O número que tem que sair. Sem ele, quem decide é a JOGADA: o dado
+   *  para na face que estiver mais para cima quando ele assentar. */
+  valor?: number
   cor?: string
   corNumero?: string
   rotulo?: (numero: number) => string
@@ -49,6 +51,8 @@ interface Corpo {
   giroAr: Vec
   // o pouso: de `q0` até `alvo`, em `t` de 0 a 1
   pouso: { q0: Quat; alvo: Quat; t: number } | null
+  /** A face em que ele vai parar (decidida no pouso, se não veio pronta). */
+  face: number
   parado: boolean
 }
 
@@ -94,13 +98,36 @@ function alturaDeApoio(tipo: TipoDeDado, m: number[][], metade: number): number 
   return -menor * metade
 }
 
+/**
+ * A face que a jogada deu: a que está mais virada para cima agora (no d4,
+ * a mais virada para BAIXO, porque vale a ponta de cima). Escolhida quando
+ * o dado está quase parado, ela fica a poucos graus de onde ele já está, e
+ * o assentar é só o fim do tombo — nada de cambalhota de última hora.
+ */
+function faceDeCima(tipo: TipoDeDado, q: Quat): number {
+  const s = solido(tipo)
+  const m = matriz(q)
+  let melhor = 0
+  let maior = -Infinity
+  s.faces.forEach((f, i) => {
+    if (s.numeros[i] === null) return // a borda da moeda não é resultado
+    const z = m[2][0] * f.n[0] + m[2][1] * f.n[1] + m[2][2] * f.n[2]
+    const nota = s.apoiaNaFace ? -z : z
+    if (nota > maior) {
+      maior = nota
+      melhor = i
+    }
+  })
+  return melhor
+}
+
 /** De todos os giros pequenos possíveis, o que está mais perto de onde o
  *  dado já está: o pouso fica curto, e o dado não dá meia-volta no fim. */
 function melhorAlvo(tipo: TipoDeDado, face: number, atual: Quat): Quat {
   let melhor = alvoDaFace(tipo, face, 0)
   let maior = -1
-  for (let k = -6; k <= 6; k++) {
-    const giro = (k / 6) * 0.3 // até uns 17° para cada lado: de pé, mas não engessado
+  for (let k = -8; k <= 8; k++) {
+    const giro = (k / 8) * 0.6 // até uns 35° para cada lado: de pé, mas não engessado
     const q = alvoDaFace(tipo, face, giro)
     const d = Math.abs(q[0] * atual[0] + q[1] * atual[1] + q[2] * atual[2] + q[3] * atual[3])
     if (d > maior) {
@@ -111,13 +138,16 @@ function melhorAlvo(tipo: TipoDeDado, face: number, atual: Quat): Quat {
   return melhor
 }
 
-export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanho = 64, onParar, onJogar }: {
+export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanho = 64, semDica = false, onParar, onJogar }: {
   dados: DadoNaMesa[]
   modo?: 'auto' | 'mao'
   /** Muda para jogar de novo. */
   jogada?: number
   tamanho?: number
-  onParar?: () => void
+  /** Quem chama já explica o que fazer (a mesa do jogo). */
+  semDica?: boolean
+  /** Quando todos param, com o NÚMERO que ficou para cima em cada um. */
+  onParar?: (numeros: number[]) => void
   /** No modo `mao`, avisa quando a pessoa soltou o dado. */
   onJogar?: () => void
 }) {
@@ -143,7 +173,12 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
   jogar.current = onJogar
 
   const raio = tamanho * 0.48
-  const faces = dados.map((d, i) => faceDoValor(d.tipo, d.valor, jogada + i))
+  // a face de cada dado: a pedida, ou nenhuma ainda (-1) até a jogada dizer
+  const facePedida = (i: number) => {
+    const d = dados[i]
+    return d.valor === undefined ? -1 : faceDoValor(d.tipo, d.valor, jogada + i)
+  }
+  const numeros = () => corpos.current.map((c, i) => solido(dados[i].tipo).numeros[c.face] ?? 1)
 
   // o tamanho da mesa, em px, no plano dela
   const medida = () => {
@@ -164,6 +199,7 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
       giroAr: [Math.random() * 14 - 7, Math.random() * 14 - 7, Math.random() * 8 - 4],
       pouso: null,
       parado: false,
+      face: facePedida(i),
     }))
     setEsperando(false)
   }
@@ -173,19 +209,27 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
     const reduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     const { w, h } = medida()
     if (reduzido) {
-      corpos.current = dados.map((d, i) => ({
-        x: w / 2 + (i - (dados.length - 1) / 2) * raio * 2.4, y: h / 2, z: 0, vx: 0, vy: 0, vz: 0,
-        q: alvoDaFace(d.tipo, faces[i], 0), giroAr: [0, 0, 0], pouso: null, parado: true,
-      }))
+      // sem movimento não há jogada: a face sai da sorte
+      corpos.current = dados.map((d, i) => {
+        const pedida = facePedida(i)
+        const s = solido(d.tipo)
+        const validas = s.faces.map((_, k) => k).filter((k) => s.numeros[k] !== null)
+        const face = pedida >= 0 ? pedida : validas[Math.floor(Math.random() * validas.length)]
+        return {
+          x: w / 2 + (i - (dados.length - 1) / 2) * raio * 2.4, y: h / 2, z: 0, vx: 0, vy: 0, vz: 0,
+          q: alvoDaFace(d.tipo, face, 0), giroAr: [0, 0, 0], pouso: { q0: alvoDaFace(d.tipo, face, 0), alvo: alvoDaFace(d.tipo, face, 0), t: 1 }, parado: true, face,
+        }
+      })
       setQuadro((n) => n + 1)
-      parar.current?.()
+      if (modo === 'auto') parar.current?.(numeros())
+      else setEsperando(true)
       return
     }
     if (modo === 'mao') {
       // parados num canto, esperando alguém pegar
       corpos.current = dados.map((_, i) => ({
         x: w * 0.18 + i * raio * 2.3, y: h * 0.62, z: 0, vx: 0, vy: 0, vz: 0,
-        q: aleatorioQ(), giroAr: [0, 0, 0], pouso: null, parado: true,
+        q: aleatorioQ(), giroAr: [0, 0, 0], pouso: null, parado: true, face: facePedida(i),
       }))
       setEsperando(true)
       setQuadro((n) => n + 1)
@@ -240,7 +284,8 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
             }
             if (v > 1) c.q = normalizar(vezes(eixoAngulo([-c.vy, c.vx, 0], (v / raio) * dt * 0.75), c.q))
             if ((v < 110 && c.z === 0 && tempo > 0.5) || tempo > 3.2) {
-              c.pouso = { q0: c.q, alvo: melhorAlvo(dados[i].tipo, faces[i], c.q), t: 0 }
+              if (c.face < 0) c.face = faceDeCima(dados[i].tipo, c.q)
+              c.pouso = { q0: c.q, alvo: melhorAlvo(dados[i].tipo, c.face, c.q), t: 0 }
             }
           } else {
             c.pouso.t = Math.min(1, c.pouso.t + dt / 0.5)
@@ -280,7 +325,7 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
           }
         if (!avisou && cs.every((c) => c.parado)) {
           avisou = true
-          parar.current?.()
+          parar.current?.(numeros())
         }
       }
       setQuadro((n) => (n + 1) % 1e6)
@@ -381,14 +426,14 @@ export default function RolagemNaMesa({ dados, modo = 'auto', jogada = 0, tamanh
                   corNumero={d.corNumero ?? '#f6f2e8'}
                   rotulo={d.rotulo}
                   orientacao={(n) => naTela(aplicar(m, n))}
-                  destaque={c.parado && c.pouso && !solido(d.tipo).apoiaNaFace ? faces[i] : null}
+                  destaque={c.parado && c.pouso && !solido(d.tipo).apoiaNaFace ? c.face : null}
                 />
               </div>
             </div>
           )
         })}
       </div>
-      {modo === 'mao' && esperando ? <p className={styles.dica}>Pegue o dado e jogue</p> : null}
+      {modo === 'mao' && esperando && !semDica ? <p className={styles.dica}>Pegue o dado e jogue</p> : null}
     </div>
   )
 }
@@ -417,4 +462,28 @@ export function dadosDoValor(lados: number, valor: number, moeda?: 'cara-coroa')
   const tipo = `d${lados}` as TipoDeDado
   if (!['d3', 'd4', 'd6', 'd8', 'd10', 'd12', 'd20'].includes(tipo)) return null
   return [{ tipo, valor }]
+}
+
+/**
+ * Os dados que a mesa põe para uma rolagem que AINDA não saiu (o jogador
+ * vai jogar): `quantos` dados de `lados`, sem número marcado. O d100 de
+ * cada um são dois d10. Nulo para um dado que não existe de verdade.
+ */
+export function dadosDaRolagem(lados: number, quantos: number): DadoNaMesa[] | null {
+  const um = lados === 100 ? dadosDoValor(100, 1) : dadosDoValor(lados, 1)
+  if (!um) return null
+  const sem = um.map(({ valor: _valor, ...resto }) => resto)
+  return Array.from({ length: quantos }, () => sem).flat()
+}
+
+/** O caminho de volta: dos números que ficaram para cima ao valor de cada
+ *  dado da rolagem (no d100, a dezena e a unidade juntam; 00 com 0 é 100). */
+export function valoresDosNumeros(lados: number, numeros: number[]): number[] {
+  if (lados !== 100) return numeros
+  const valores: number[] = []
+  for (let i = 0; i < numeros.length; i += 2) {
+    const v = (numeros[i] % 10) * 10 + ((numeros[i + 1] ?? 10) % 10)
+    valores.push(v === 0 ? 100 : v)
+  }
+  return valores
 }

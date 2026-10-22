@@ -1,4 +1,4 @@
-import type { Acao, Efeito, Recurso, Restricao } from './acoes'
+import type { Acao, Efeito, Recurso, Restricao, Rolagem } from './acoes'
 import type { Regras } from './regras'
 
 export type CardId = string
@@ -227,7 +227,11 @@ export interface GameState {
   /** A última rolagem de dados de uma carta ou evento (`Quantia` com
    *  dados), para a mesa jogá-los na tela. `selo` muda a cada rolagem.
    *  Opcional, sem subir a chave do save. */
-  ultimaRolagem?: { lados: number; valores: number[]; mais: number; total: number; selo: number }
+  ultimaRolagem?: { lados: number; valores: number[]; mais: number; total: number; selo: number; naMao?: boolean }
+  /** Dados que a carta pediu e o jogador ainda não jogou na mesa (v0.42):
+   *  o número sai da face que ficar para cima, e a lista da carta espera
+   *  aqui, como numa `escolha`. Opcional, sem subir a chave do save. */
+  rolagemAberta?: { rolagem: Rolagem; acao: Acao; cartaId: CardId | null; resto: Acao[] } | null
   discard: CardInstance[]
   /** O que já foi jogado hoje, para o tapete mostrar o dia se montando. */
   playedToday: CardId[]

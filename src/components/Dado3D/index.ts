@@ -1,6 +1,6 @@
 export { default } from './Dado3D'
 export * from './Dado3D'
 export * from './geometria'
-export { default as RolagemNaMesa, dadosDoValor } from './RolagemNaMesa'
+export { default as RolagemNaMesa, dadosDoValor, dadosDaRolagem, valoresDosNumeros } from './RolagemNaMesa'
 export type { DadoNaMesa } from './RolagemNaMesa'
 export { faceDoValor } from './FacesDoDado'
