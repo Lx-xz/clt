@@ -204,6 +204,10 @@ export type Condicao =
   | { se: 'advertencias'; aoMenos: number }
   /** Esta carta ainda não foi jogada nenhuma vez nesta run. */
   | { se: 'ineditaNaRun' }
+  /** Um efeito que ESTA carta deixou ainda está valendo (o "+1 todo dia"
+   *  da Automatizar): é o que deixa a carta fazer outra coisa enquanto o
+   *  efeito de antes não acaba (v0.46). */
+  | { se: 'efeitoAtivo' }
   /** Quantas cartas já saíram hoje, de qualquer tipo. Com `noMaximo: 0` é
    *  "só se for a PRIMEIRA do dia" — e é mais geral do que uma condição com
    *  esse nome, que só saberia dizer essa frase. */
@@ -325,6 +329,8 @@ export function condicaoVale(state: GameState, cond: Condicao | undefined, ctx: 
       return state.warnings >= cond.aoMenos
     case 'ineditaNaRun':
       return ctx.cartaId ? !state.usadasNaRun.includes(ctx.cartaId) : true
+    case 'efeitoAtivo':
+      return ctx.cartaId ? state.recorrentes.some((r) => r.origem === ctx.cartaId) : false
     case 'cartasJogadasHoje':
       return entre(state.playedToday.length, cond.aoMenos, cond.noMaximo)
     case 'classeJogadaHoje': {
@@ -499,6 +505,7 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
           quanto: acao.quanto,
           cada: acao.cada,
           restam,
+          ...(restam === null ? {} : { total: restam }),
           // guarda o ID, não o nome: quem traduz id em nome é o catálogo, e
           // quem fala com o catálogo é o motor. A ação continua sem conhecer
           // carta nenhuma

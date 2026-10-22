@@ -62,6 +62,8 @@ export function textoDaCondicao(cond: Condicao): string {
       return `você tiver ${cond.aoMenos} advertência${cond.aoMenos === 1 ? '' : 's'} ou mais`
     case 'ineditaNaRun':
       return 'esta carta ainda não tiver saído nesta run'
+    case 'efeitoAtivo':
+      return 'um efeito desta carta ainda estiver valendo'
     case 'cartasJogadasHoje':
       // a fórmula genérica diria "o número de cartas jogadas hoje for 0 ou
       // menos", que é verdade e não é português

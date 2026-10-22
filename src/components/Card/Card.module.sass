@@ -231,7 +231,44 @@ $levantada: 18px
   // a mesma borda de 2px de toda carta, só que na cor da raridade
   --cor-borda: var(--cor-raridade)
 
-  .selo
+  // o efeito que a carta deixou valendo, contando os dias (v0.46): um selo
+// no pé da arte, como o carimbo de data de um protocolo
+.diaDoEfeito
+  position: absolute
+  bottom: 4px
+  left: 50%
+  display: inline-flex
+  align-items: center
+  gap: 3px
+  padding: 1px 6px
+  transform: translateX(-50%)
+  background: var(--tinta)
+  border-radius: 999px
+  color: var(--papel-alto)
+  font-family: var(--mono)
+  font-size: 9px
+  font-weight: 700
+  letter-spacing: .04em
+  white-space: nowrap
+
+// a carta de 1× por partida que já saiu: um carimbo atravessado na arte
+.usada
+  position: absolute
+  top: 50%
+  left: 50%
+  padding: 1px 8px
+  transform: translate(-50%, -50%) rotate(-12deg)
+  border: 2px solid var(--estresse)
+  border-radius: 3px
+  color: var(--estresse)
+  font-family: var(--mono)
+  font-size: 12px
+  font-weight: 800
+  letter-spacing: .14em
+  text-transform: uppercase
+  background: color-mix(in srgb, var(--papel-alto) 70%, transparent)
+
+.selo
     background: var(--cor-raridade)
     color: #fff
 

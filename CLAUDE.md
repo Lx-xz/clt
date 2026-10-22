@@ -327,6 +327,21 @@ carta: no canto da tela ficava longe. O autor provou duas versões (as
 informações num cartão de papel, e assim) e o brilho da raridade atrás da
 carta; escolheu esta, SEM o brilho.
 
+**Os caminhos dizem o TOTAL, e o que vale agora acende (v0.46).** A carta
+que faz uma coisa sempre e mais uma com condição (a Meditação no Banheiro:
+um bloco "6+🔥: −2🔥" e outro "−2🔥") também vira barra de caminhos, com a
+soma de cada um ("6+🔥: −4🔥", "senão: −2🔥", `mesclar` em `descricao.ts`);
+o mesmo para o `se` sem `senao` no meio das ações (a Reunião que Podia Ser
+E-mail). Cada `Caminho` leva a condição (`cond`), e na MÃO o motor diz qual
+vale agora (`caminhoAtivo` em `engine.ts`): ele fica contornado na cor da
+tinta (branco no tema escuro) e os outros esmaecem. A condição nova
+`efeitoAtivo` ("ativa") pergunta se um efeito que ESTA carta deixou ainda
+vale — é com ela que a Automatizar vira "não ativa: +2↗, +1↗ todo dia por
+6 dias" / "ativa: +1↗" (a carta se refaz no `/lab`). O efeito ativo aparece
+na carta como "dia N/total" (`diaDoEfeito`, pelo `Recorrente.total`,
+opcional: quem gravou antes vê "ativa"), contando o dia em que ela saiu
+como o 1; e a carta de 1× por partida que já saiu leva o carimbo "usada".
+
 **A condição vai EM CIMA do que ela libera (v0.44, `linhasDaCarta`).** Na
 face da carta a descrição sai em linhas: a condição (ou o gatilho, "Na
 sexta") num rótulo de letra de máquina com um fio do lado — o desenho das
@@ -907,6 +922,14 @@ opções. O que ele escolheu, e que deve ser preservado:
   ponto em que foi solta (`onSoltar` devolve quanto o lugar dela andou) e
   só então desliza; a vaga fecha sem transição, no mesmo quadro em que a
   carta muda de lugar.
+- **O crachá mora ao lado do evento (v0.46)**, embaixo dos botões do
+  canto, e o tapete fica todo para as cartas jogadas. Elas vêm GRANDES e
+  só viram duas fileiras menores quando não cabem numa (`arranjoDasJogadas`
+  na mesa, pelo tamanho medido do tapete); a altura que era fixa deixava o
+  tapete quase vazio. Clicar numa jogada abre o detalhe dela. Reordenar a
+  mão mede os centros das cartas UMA vez, no começo do arraste: medidos a
+  cada movimento, eles pegavam as outras no meio da transição que abre a
+  vaga, e a mão tremia com o dedo entre duas cartas.
 - **Medidores compactos:** só ícone e valor (`⚡ 10`), com nome e explicação numa
   dica que aparece no hover, no foco e no toque. No celular o dinheiro perde o
   "R$" e os 6 medidores viram uma grade 3×2.

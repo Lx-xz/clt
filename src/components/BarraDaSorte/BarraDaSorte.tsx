@@ -33,7 +33,7 @@ interface Faixa {
  * ficaram no sass; o `tom` da faixa continua no dado da carta, só não pinta
  * mais nada. `destaque` acende a faixa que saiu na mesa.
  */
-function BarraDividida({ antes, faixas, destaque }: { antes?: string; faixas: Faixa[]; destaque?: number | null }) {
+function BarraDividida({ antes, faixas, destaque, vale }: { antes?: string; faixas: Faixa[]; destaque?: number | null; vale?: number | null }) {
   return (
     <div className={styles.corpo}>
       {/* o que a carta faz ALÉM dos caminhos, por cima da barra */}
@@ -45,7 +45,13 @@ function BarraDividida({ antes, faixas, destaque }: { antes?: string; faixas: Fa
       <div className={styles.barra}>
         {faixas.map((f, i) => {
           const tom = styles.semCor
-          const estado = destaque == null ? '' : destaque === i ? styles.aceso : styles.apagado
+          // `destaque` é a faixa que SAIU (o dado já rolou); `vale` é o
+          // caminho que valeria se a carta fosse jogada agora (v0.46)
+          const estado = destaque != null
+            ? destaque === i ? styles.aceso : styles.apagado
+            : vale != null
+              ? vale === i ? styles.vale : styles.naoVale
+              : ''
           return (
             <div key={i} className={`${styles.lado} ${tom} ${estado}`} style={{ flexGrow: Math.max(f.peso, 0.28) }}>
               <span className={styles.faixa}>
@@ -92,10 +98,11 @@ export default function BarraDaSorte({ rolar, texto, destaque }: { rolar: Rolar;
 /** A carta de CAMINHOS (v0.44): "se X, senão Y", com a condição no lugar das
  *  faces, todos da mesma altura; ou o `sorteio`, com a altura da chance.
  *  Neutros: o motor não sabe qual caminho é o bom. */
-export function BarraDeCaminhos({ antes, caminhos }: { antes?: string; caminhos: Caminho[] }) {
+export function BarraDeCaminhos({ antes, caminhos, vale }: { antes?: string; caminhos: Caminho[]; vale?: number | null }) {
   return (
     <BarraDividida
       antes={antes}
+      vale={vale}
       faixas={caminhos.map((c) => ({ rotulo: c.quando, texto: c.texto, tom: 'neutro', peso: c.chance ?? 1 / caminhos.length }))}
     />
   )

@@ -149,10 +149,11 @@
 // o crachá pendurado no canto do tapete. Fica ABAIXO das cartas jogadas
 // (z 1): numa mesa cheia no celular, a carta é o que importa
 .cracha
+  // ao lado do evento, embaixo dos botões do canto (v0.46)
   position: absolute
   z-index: 1
-  top: 14px
-  left: 14px
+  top: 50px
+  left: 10px
   display: flex
   flex-direction: column
   align-items: center
@@ -220,6 +221,7 @@
 // ------------------------------------------------------------- evento
 .zonaEvento
   grid-area: event
+  position: relative
   display: flex
   flex-direction: column
   align-items: center
@@ -284,26 +286,34 @@
   text-transform: uppercase
   pointer-events: none
 
-// as cartas jogadas ficam maiores; quando são muitas, vão se empilhando uma
-// sobre a outra em vez de encolher ou quebrar linha
+// as cartas jogadas (v0.46): o tamanho vem do JS (`arranjoDasJogadas`),
+// medido pelo tapete — grandes enquanto cabem numa fileira, e duas fileiras
+// menores quando não cabem mais. `--ov` é quanto cada carta entra na de
+// antes (negativo é vão)
 .jogadas
   display: flex
-  align-items: flex-start
-  justify-content: center
+  flex-direction: column
+  align-items: center
+  gap: 8px
   max-width: 100%
-  padding: 0 6px
-  --ov: clamp(.16, calc((var(--n, 1) - 2) * .08 + .16), .66)
-
-  > * + *
-    margin-left: calc(var(--carta-w) * var(--ov) * -1)
-    transition: margin-left .2s ease
-
-.jogada
-  --carta-h: clamp(98px, 15vh, 138px)
   --carta-w: calc(var(--carta-h) * .66)
   --carta-arte: calc(var(--carta-h) * .39)
+
+.fileira
+  display: flex
+  justify-content: center
+  max-width: 100%
+
+  > * + *
+    margin-left: calc(var(--carta-w) * var(--ov, 0) * -1)
+
+  > *:hover
+    z-index: 5
+
+.jogada
   animation: jogada-entra .3s cubic-bezier(.2, .8, .25, 1) backwards
   animation-delay: calc(var(--i, 0) * 40ms)
+  transition: width .25s ease, height .25s ease
 
 @keyframes jogada-entra
   from
@@ -761,8 +771,8 @@
 
   // 56 px no celular: o tamanho em que a lágrima e a olheira ainda se leem
   .cracha
-    top: 8px
-    left: 8px
+    top: 44px
+    left: 0
     padding: 10px 5px 5px
 
   // o tamanho vem inline do componente; aqui ele é sobrescrito, e o SVG
@@ -794,11 +804,6 @@
   // a carta de evento é o foco da tela; mantém a proporção de carta
   .eventoCarta
     --carta-h: clamp(184px, 50vw, 224px)
-    --carta-w: calc(var(--carta-h) * .66)
-    --carta-arte: calc(var(--carta-h) * .39)
-
-  .jogada
-    --carta-h: clamp(96px, 24vw, 128px)
     --carta-w: calc(var(--carta-h) * .66)
     --carta-arte: calc(var(--carta-h) * .39)
 

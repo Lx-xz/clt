@@ -33,6 +33,8 @@ import {
   payBills,
   paySalary,
   playCard,
+  caminhoAtivo,
+  diaDoEfeito,
   pularRecompensaSemanal,
   reordenarMao,
   restWeekend,
@@ -73,6 +75,10 @@ export default function JogarPage() {
   const [state, setState] = useState<GameState | null>(null)
   const [aberta, setAberta] = useState<CardInstance | null>(null)
   const [eventoAberto, setEventoAberto] = useState(false)
+  /** A carta já jogada hoje que a pessoa abriu para ler (o tapete). */
+  const [jogadaAberta, setJogadaAberta] = useState<string | null>(null)
+  /** O tamanho do tapete, para as jogadas crescerem até onde cabem. */
+  const [areaDoTapete, setAreaDoTapete] = useState({ w: 0, h: 0 })
   const [sobreTapete, setSobreTapete] = useState(false)
   const [status, setStatus] = useState<StatusSync>('ocioso')
   const [falha, setFalha] = useState<string | null>(null)
@@ -102,6 +108,14 @@ export default function JogarPage() {
   // a última carta jogada que rolou um dado na barra: é nela que a faixa que
   // saiu acende (enquanto o dado ainda espera a mão, nada acende)
   const rolou = state?.ultimaRolagem
+  useEffect(() => {
+    const el = tapete.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setAreaDoTapete({ w: el.clientWidth, h: el.clientHeight }))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [Boolean(state)])
+
   const jogadaQueRolou =
     state && !state.rolagemAberta && rolou?.cartaId && rolou.saida !== undefined && rolou.saida >= 0
       ? state.playedToday.lastIndexOf(rolou.cartaId)
@@ -231,31 +245,39 @@ export default function JogarPage() {
     if (!state) return
     setAberta(null)
     setReordem(null)
+    centrosDaMao.current = null
     // o som sai no próprio gesto, antes do render: depois dele, já é atraso
     tocar('carta')
     update(playCard(state, uid))
   }
 
+  /** Os centros dos lugares da mão, medidos UMA vez, no começo do arraste.
+   *  Medidos a cada movimento, eles pegavam as outras cartas no meio da
+   *  transição que abre a vaga: o centro andava, a vaga mudava, a transição
+   *  voltava — e a mão tremia com o dedo entre duas cartas. */
+  const centrosDaMao = useRef<{ pos: number; x: number }[] | null>(null)
+
   /**
    * Onde a carta arrastada cairia na mão, ou `null` com o ponteiro fora da
-   * faixa da mão. É quantas das OUTRAS têm o centro à esquerda dele. O
-   * centro é o do lugar (o rótulo da carta, que não gira), descontado o
-   * deslocamento que abre a vaga; a posição na mão é o `order` dele, porque
-   * as cartas não mudam de lugar no DOM (veja o leque).
+   * faixa da mão. É quantas das OUTRAS têm o centro à esquerda dele. A
+   * posição na mão é o `order` do lugar, porque as cartas não mudam de lugar
+   * no DOM (veja o leque).
    */
   function lugarNaMao(uid: string, de: number, x: number, y: number) {
     const el = leque.current
     const zona = el?.parentElement
     if (!el || !zona) return null
+    if (!centrosDaMao.current) {
+      centrosDaMao.current = (Array.from(el.children) as HTMLElement[])
+        .map((filho) => {
+          const c = filho.getBoundingClientRect()
+          return { pos: Number(filho.style.order), x: c.left + c.width / 2 }
+        })
+        .sort((a, b) => a.pos - b.pos)
+    }
+    const centros = centrosDaMao.current
     const r = zona.getBoundingClientRect()
     if (x < r.left || x > r.right || y < r.top - 30 || y > r.bottom) return null
-    const centros: { pos: number; x: number }[] = []
-    for (const filho of Array.from(el.children) as HTMLElement[]) {
-      const pos = Number(filho.style.order)
-      const c = filho.getBoundingClientRect()
-      centros.push({ pos, x: c.left + c.width / 2 - deslocamento(pos) })
-    }
-    centros.sort((a, b) => a.pos - b.pos)
     const passo = centros.length > 1 ? (centros[centros.length - 1].x - centros[0].x) / (centros.length - 1) : 0
     const para = centros.filter((c) => c.pos !== de && c.x < x).length
     return { uid, de, para, passo }
@@ -280,6 +302,7 @@ export default function JogarPage() {
   function soltarNaMao(uid: string, de: number, x: number, y: number) {
     const lugar = lugarNaMao(uid, de, x, y)
     setReordem(null)
+    centrosDaMao.current = null
     if (!state || !lugar || lugar.para === de) return 0
     update(reordenarMao(state, uid, lugar.para))
     return (lugar.para - de) * lugar.passo
@@ -482,6 +505,24 @@ export default function JogarPage() {
       </div>
 
       <div className={styles.zonaEvento}>
+        {/* o crachá: o medidor de estresse com CARA. Ele cansa junto com o
+            jogador — a conta "Energia = 10 − Estresse" é o jogo inteiro, e
+            antes dele ela só existia em texto. Morava no header, com 24 px,
+            depois no canto do tapete; hoje fica ao lado do evento, embaixo
+            dos botões, num canto que sobrava (v0.46), e o tapete fica todo
+            para as cartas jogadas. A `key` pelo humor faz o crachá balançar
+            quando a cara troca */}
+        {(() => {
+          const humor = acabou && state.outcome === 'vitoria'
+            ? 'vitoria'
+            : humorDoEstresse(state.stress, state.modo.estresseMaximo)
+          return (
+            <div key={humor} className={styles.cracha} aria-label={`Seu avatar: ${humor}`}>
+              <Avatar avatar={sessao.avatar} tamanho={72} className={styles.crachaAvatar} humor={humor} vivo />
+              <span className={styles.crachaNome}>{sessao.nick}</span>
+            </div>
+          )
+        })()}
         {evento ? (
           <Card
             card={evento}
@@ -510,40 +551,37 @@ export default function JogarPage() {
       </div>
 
       <div ref={tapete} className={`${styles.tapete} ${sobreTapete ? styles.alvo : ''}`}>
-        {/* o crachá: o medidor de estresse com CARA. Ele cansa junto com o
-            jogador — a conta "Energia = 10 − Estresse" é o jogo inteiro, e
-            antes dele ela só existia em texto. Morava no header, com 24 px,
-            e no celular não dava para ver a cara mudar; aqui, no canto do
-            tapete, ele tem espaço. A `key` pelo humor faz o crachá balançar
-            quando a cara troca */}
-        {(() => {
-          const humor = acabou && state.outcome === 'vitoria'
-            ? 'vitoria'
-            : humorDoEstresse(state.stress, state.modo.estresseMaximo)
-          return (
-            <div key={humor} className={styles.cracha} aria-label={`Seu avatar: ${humor}`}>
-              <Avatar avatar={sessao.avatar} tamanho={72} className={styles.crachaAvatar} humor={humor} vivo />
-              <span className={styles.crachaNome}>{sessao.nick}</span>
-            </div>
-          )
-        })()}
         {state.playedToday.length === 0 ? (
           <span className={styles.dicaTapete}>{dicaDoTapete(state, esperandoEvento)}</span>
         ) : (
-          <div
-            className={styles.jogadas}
-            style={{ '--n': state.playedToday.length } as React.CSSProperties}
-          >
-            {state.playedToday.map((id, i) => (
-              <Card
-                key={`${id}-${i}`}
-                card={getCard(id)}
-                className={styles.jogada}
-                style={{ '--i': i } as React.CSSProperties}
-                saiuNaSorte={i === jogadaQueRolou ? state.ultimaRolagem?.saida : null}
-              />
-            ))}
-          </div>
+          (() => {
+            const { fileiras, alturaDaCarta, sobreposicao } = arranjoDasJogadas(state.playedToday.length, areaDoTapete)
+            const porFileira = Math.ceil(state.playedToday.length / fileiras)
+            const linhas = Array.from({ length: fileiras }, (_, f) =>
+              state.playedToday.map((id, i) => ({ id, i })).slice(f * porFileira, (f + 1) * porFileira),
+            )
+            return (
+              <div
+                className={styles.jogadas}
+                style={{ '--carta-h': `${alturaDaCarta}px`, '--ov': sobreposicao } as React.CSSProperties}
+              >
+                {linhas.map((linha, f) => (
+                  <div key={f} className={styles.fileira}>
+                    {linha.map(({ id, i }) => (
+                      <Card
+                        key={`${id}-${i}`}
+                        card={getCard(id)}
+                        className={styles.jogada}
+                        style={{ '--i': i } as React.CSSProperties}
+                        saiuNaSorte={i === jogadaQueRolou ? state.ultimaRolagem?.saida : null}
+                        onOpen={() => setJogadaAberta(id)}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )
+          })()
         )}
         <DescarteNaMesa descarte={state.ultimoDescarte} />
         <MensagemNaMesa mensagem={state.ultimaMensagem} />
@@ -659,6 +697,9 @@ export default function JogarPage() {
                     lift={Math.abs(i - meio) * 7}
                     style={lugar}
                     disabled={!podeJogar}
+                    caminhoAtivo={caminhoAtivo(state, carta)}
+                    efeitoAtivo={diaDoEfeito(state, carta.id)}
+                    usada={Boolean(carta.restricao?.umaVezPorRun && state.usadasNaRun.includes(carta.id))}
                     onOpen={() => setAberta(instancia)}
                     onPlay={podeJogar ? () => jogar(instancia.uid) : undefined}
                     dropRef={tapete}
@@ -675,6 +716,7 @@ export default function JogarPage() {
       <Pilha area={styles.pilhaDesc} rotulo="Descarte" quantidade={state.discard.length} />
 
       {eventoAberto && evento ? <CardDetail card={evento} onClose={() => setEventoAberto(false)} /> : null}
+      {jogadaAberta ? <CardDetail card={getCard(jogadaAberta)} onClose={() => setJogadaAberta(null)} /> : null}
 
       {aberta ? (
         <CardDetail
@@ -955,4 +997,42 @@ function Pilha({ area, rotulo, quantidade }: { area: string; rotulo: string; qua
       <span className={styles.rotPilha}>{rotulo}</span>
     </div>
   )
+}
+
+/**
+ * Como as cartas jogadas hoje cabem no tapete (v0.46, pedido do autor): as
+ * primeiras vêm GRANDES, e só quando não cabem mais numa fileira (sem se
+ * sobrepor demais) a jogada inteira vira duas fileiras menores — o dia tem
+ * no máximo umas vinte cartas, dez por fileira. A altura sai do espaço que o
+ * tapete tem, medido; antes era fixa, e o tapete ficava quase todo vazio.
+ */
+function arranjoDasJogadas(n: number, area: { w: number; h: number }) {
+  const PROPORCAO = 0.66
+  const VAO = 8
+  const MAXIMA = 250
+  const w = Math.max(0, area.w - 24)
+  const h = Math.max(0, area.h - 24)
+  function fileiras(f: number) {
+    const por = Math.ceil(n / f)
+    let altura = Math.min(MAXIMA, (h - (f - 1) * VAO) / f)
+    // sem sobrepor: a altura que faz `por` cartas caberem lado a lado
+    const semSobrepor = (w - (por - 1) * VAO) / (por * PROPORCAO)
+    if (semSobrepor >= altura) return { fileiras: f, alturaDaCarta: altura, sobreposicao: -VAO / (altura * PROPORCAO) }
+    // sobrepondo: quanto cada carta entra na de antes para a fileira caber
+    const largura = altura * PROPORCAO
+    let sobreposicao = por > 1 ? 1 - (w - largura) / ((por - 1) * largura) : 0
+    // sobreposição demais esconde a carta: aí ela encolhe
+    if (sobreposicao > 0.55) {
+      sobreposicao = 0.55
+      altura = w / (PROPORCAO * (1 + (por - 1) * (1 - sobreposicao)))
+    }
+    return { fileiras: f, alturaDaCarta: altura, sobreposicao: Math.max(0, sobreposicao) }
+  }
+  if (!area.w || !area.h) return { fileiras: 1, alturaDaCarta: 120, sobreposicao: 0 }
+  const uma = fileiras(1)
+  // uma fileira enquanto ela não aperta: menos de um terço de cada carta
+  // escondido e a carta ainda grande
+  if (n <= 2 || (uma.sobreposicao <= 0.34 && uma.alturaDaCarta >= h * 0.5)) return uma
+  const duas = fileiras(2)
+  return duas.alturaDaCarta * (1 - duas.sobreposicao * 0.5) > uma.alturaDaCarta * (1 - uma.sobreposicao * 0.5) ? duas : uma
 }

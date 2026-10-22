@@ -80,6 +80,8 @@ export function descreverCondicao(c: Condicao): string {
       return limite('{advertencia}', c.aoMenos)
     case 'ineditaNaRun':
       return '1ª vez na partida'
+    case 'efeitoAtivo':
+      return 'ativa'
     case 'cartasJogadasHoje':
       if (c.noMaximo === 0) return '1ª carta do dia'
       return `${faixa(c.aoMenos, c.noMaximo)} cartas jogadas hoje`
@@ -149,7 +151,9 @@ export function descreverAcao(a: Acao): string {
       return `${recurso(a.qual, a.quanto)} ${quando}${ate}`
     }
     case 'maoDoDia':
-      return a.relativo ? `mão do dia ${a.quantas < 0 ? '−' : '+'}${Math.abs(a.quantas)}` : `mão do dia: ${a.quantas}`
+      return a.relativo
+        ? `${a.quantas < 0 ? '−' : '+'}${Math.abs(a.quantas)} ${plural(Math.abs(a.quantas), 'carta', 'cartas')} na mão`
+        : `mão de ${a.quantas} ${plural(a.quantas, 'carta', 'cartas')}`
     case 'sorteio': {
       const pct = Math.round(a.chance * 100)
       const senao = lista(a.senao)
@@ -279,6 +283,27 @@ export interface Caminho {
   texto: string
   /** No `sorteio`, a chance do caminho (0 a 1): vira a altura da faixa. */
   chance?: number
+  /** A condição do caminho, para a mesa acender o que vale agora; o
+   *  "senão" não tem (vale quando nenhum outro vale). */
+  cond?: Condicao
+}
+
+/**
+ * Junta duas listas de ações somando os recursos fixos do mesmo tipo: "−2🔥"
+ * mais "−2🔥" é "−4🔥". É o que deixa a carta que faz uma coisa SEMPRE e
+ * mais uma COM condição dizer o total de cada caminho (a Meditação no
+ * Banheiro dizia "6+🔥: −2🔥" e, embaixo, "−2🔥", e ninguém lia "−4").
+ */
+function mesclar(base: Acao[], extra: Acao[]): Acao[] {
+  const saida = base.map((a) => ({ ...a })) as Acao[]
+  for (const a of extra) {
+    const igual = a.faz === 'recurso' && typeof a.quanto === 'number'
+      ? saida.find((b): b is Extract<Acao, { faz: 'recurso' }> => b.faz === 'recurso' && b.qual === a.qual && typeof b.quanto === 'number')
+      : undefined
+    if (igual && a.faz === 'recurso') igual.quanto = (igual.quanto as number) + (a.quanto as number)
+    else saida.push(a)
+  }
+  return saida.filter((a) => !(a.faz === 'recurso' && a.quanto === 0))
 }
 
 /**
@@ -302,7 +327,21 @@ export function caminhosDaCarta(carta: { efeitos?: Efeito[]; restricao?: Restric
   if (condicionais.length >= 2) {
     return {
       antes: descreverCarta({ ...carta, efeitos: efeitos.filter((e) => !condicionais.includes(e)) }),
-      caminhos: condicionais.map((e) => ({ quando: descreverCondicao(e.se!), texto: frase(lista(e.acoes) || 'nada') })),
+      caminhos: condicionais.map((e) => ({ quando: descreverCondicao(e.se!), texto: frase(lista(e.acoes) || 'nada'), cond: e.se })),
+    }
+  }
+  // um bloco com condição MAIS o que a carta faz sempre (a Meditação no
+  // Banheiro): cada caminho diz o TOTAL — "6+🔥: −4🔥", "senão: −2🔥"
+  const sempre = efeitos.filter((e) => ehDoJogar(e) && !e.se)
+  const base = sempre.flatMap((e) => e.acoes)
+  if (condicionais.length === 1 && base.length > 0 && !base.some((a) => a.faz === 'se' || a.faz === 'sorteio' || a.faz === 'rolar')) {
+    const c = condicionais[0]
+    return {
+      antes: descreverCarta({ ...carta, efeitos: efeitos.filter((e) => e !== c && !sempre.includes(e)) }),
+      caminhos: [
+        { quando: descreverCondicao(c.se!), texto: frase(lista(mesclar(base, c.acoes)) || 'nada'), cond: c.se },
+        { quando: 'senão', texto: frase(lista(base) || 'nada') },
+      ],
     }
   }
   for (const e of efeitos) {
@@ -326,8 +365,25 @@ export function caminhosDaCarta(carta: { efeitos?: Efeito[]; restricao?: Restric
     return {
       antes,
       caminhos: [
-        { quando: descreverCondicao(se.condicao), texto: frase(lista(se.entao) || 'nada') },
+        { quando: descreverCondicao(se.condicao), texto: frase(lista(se.entao) || 'nada'), cond: se.condicao },
         { quando: 'senão', texto: frase(lista(se.senao) || 'nada') },
+      ],
+    }
+  }
+  // um `se` SEM `senao` no meio do que a carta faz sempre (a Reunião que
+  // Podia Ser E-mail: "+1↗ e, se já jogou social, −2🔥"): os dois caminhos
+  // com o total de cada um
+  for (const e of efeitos) {
+    if (!ehDoJogar(e) || e.se) continue
+    const ses = e.acoes.filter((a) => a.faz === 'se')
+    const resto = e.acoes.filter((a) => a.faz !== 'se')
+    if (ses.length !== 1 || resto.length === 0 || resto.some((a) => a.faz === 'sorteio' || a.faz === 'rolar')) continue
+    const se = ses[0] as Extract<Acao, { faz: 'se' }>
+    return {
+      antes: descreverCarta({ ...carta, efeitos: efeitos.filter((x) => x !== e) }),
+      caminhos: [
+        { quando: descreverCondicao(se.condicao), texto: frase(lista(mesclar(resto, se.entao)) || 'nada'), cond: se.condicao },
+        { quando: 'senão', texto: frase(lista(resto) || 'nada') },
       ],
     }
   }

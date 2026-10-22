@@ -366,6 +366,9 @@ export interface Recorrente {
   /** Quem criou, para o histórico dizer o nome da carta. Guarda o ID: quem
    *  traduz id em nome é o catálogo, e quem fala com ele é o motor. */
   origem: CardId | null
+  /** Quantas vezes rendia ao nascer (opcional: quem gravou antes não tem).
+   *  Com o `restam`, diz em que dia do efeito a carta está (v0.46). */
+  total?: number
 }
 
 /**

@@ -302,6 +302,10 @@ export const CONDICOES = {
     rotulo: 'Inédita nesta run', grupo: 'especiais', Icone: Gift,
     campos: [],
   },
+  efeitoAtivo: {
+    rotulo: 'Efeito desta carta ainda ativo', grupo: 'especiais', Icone: Gift,
+    campos: [],
+  },
   cartasJogadasHoje: {
     rotulo: 'Cartas jogadas hoje', grupo: 'cartas', Icone: Layers,
     campos: [

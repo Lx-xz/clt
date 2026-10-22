@@ -1,6 +1,6 @@
 'use client'
 
-import { Coffee, Coins, Droplet, Hammer } from 'lucide-react'
+import { Coffee, Coins, Droplet, Hammer, Hourglass } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { custosDe, textoDoCusto } from '@/game/custos'
 import type { ActionCard, Custo, EventCard } from '@/game/types'
@@ -58,6 +58,12 @@ export interface CardProps {
   corpo?: ReactNode
   /** Na carta que rola dado: a faixa que saiu na mesa, para acender. */
   saiuNaSorte?: number | null
+  /** O caminho da carta que vale agora (`caminhoAtivo` do motor), na mão. */
+  caminhoAtivo?: number | null
+  /** O dia do efeito que a carta deixou valendo (`diaDoEfeito`). */
+  efeitoAtivo?: { dia: number | null; total: number | null } | null
+  /** A carta de 1× por partida que já saiu nesta partida. */
+  usada?: boolean
   /** Um selo a mais no canto de cima, ao lado do da classe (o dado da carta
    *  de sorte). */
   seloExtra?: ReactNode
@@ -93,6 +99,9 @@ export default function Card({
   corpo,
   seloExtra,
   saiuNaSorte,
+  caminhoAtivo,
+  efeitoAtivo,
+  usada,
 }: CardProps) {
   const ref = useRef<HTMLDivElement>(null)
   const palco = useRef<HTMLLabelElement & HTMLDivElement>(null)
@@ -393,6 +402,15 @@ export default function Card({
           {copies && copies > 1 ? <span className={styles.copias}>×{copies}</span> : null}
           <div className={styles.arte}>
             <Icon size={40} aria-hidden />
+            {/* o efeito que a carta deixou, contando os dias: "2/6" no dia
+                seguinte ao que ela saiu; some quando o efeito acaba (v0.46) */}
+            {efeitoAtivo ? (
+              <span className={styles.diaDoEfeito} title="Efeito desta carta ainda valendo">
+                <Hourglass size={10} aria-hidden />
+                {efeitoAtivo.dia === null ? 'ativa' : `dia ${efeitoAtivo.dia}/${efeitoAtivo.total}`}
+              </span>
+            ) : null}
+            {usada ? <span className={styles.usada}>usada</span> : null}
           </div>
           <div className={styles.topo}>
             <span className={styles.nome}>{card.name}</span>
@@ -401,7 +419,7 @@ export default function Card({
             {corpo ?? (rolar ? (
               <BarraDaSorte rolar={rolar} texto={automatica ? descricao : card.text} destaque={saiuNaSorte} />
             ) : caminhos ? (
-              <BarraDeCaminhos antes={caminhos.antes} caminhos={caminhos.caminhos} />
+              <BarraDeCaminhos antes={caminhos.antes} caminhos={caminhos.caminhos} vale={caminhoAtivo} />
             ) : (
               automatica && descricao ? (
                 // em linhas: a condição em cima do que ela libera, como o

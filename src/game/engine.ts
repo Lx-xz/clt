@@ -1,3 +1,4 @@
+import { caminhosDaCarta } from './descricao'
 import { custoQueFalta, custosEfetivos, pagarCustos } from './custos'
 import {
   diaDaSemana,
@@ -29,6 +30,7 @@ import {
   type Rolagem,
 } from './acoes'
 import type {
+  ActionCard,
   CardId,
   CardInstance,
   ClasseDaCarta,
@@ -493,6 +495,33 @@ export function chooseEventOption(input: GameState, index: 0 | 1): GameState {
 }
 
 // ------------------------------------------------------------ jogar cartas
+
+/**
+ * Qual caminho da carta vale AGORA (v0.46): a mesa o acende na mão. É o
+ * índice em `caminhosDaCarta`, ou nulo quando a carta não tem caminhos ou
+ * eles são de sorte. O "senão" vale quando nenhum outro vale.
+ */
+export function caminhoAtivo(state: GameState, card: ActionCard): number | null {
+  const c = caminhosDaCarta(card)
+  if (!c || c.caminhos.some((x) => x.chance !== undefined)) return null
+  const ctx = contexto(card.id)
+  const i = c.caminhos.findIndex((x) => x.cond && condicaoVale(state, x.cond, ctx))
+  if (i >= 0) return i
+  const senao = c.caminhos.findIndex((x) => !x.cond)
+  return senao >= 0 ? senao : null
+}
+
+/**
+ * Em que dia está o efeito que esta carta deixou (o "+1 todo dia" da
+ * Automatizar): `{ dia, total }`, contando o dia em que foi jogada como o
+ * 1, ou `{ dia: null }` para o efeito sem fim. Nulo sem efeito ativo.
+ */
+export function diaDoEfeito(state: GameState, cardId: CardId): { dia: number | null; total: number | null } | null {
+  const r = state.recorrentes.find((x) => x.origem === cardId)
+  if (!r) return null
+  if (r.restam === null || r.total === undefined) return { dia: null, total: null }
+  return { dia: r.total - r.restam + 1, total: r.total }
+}
 
 /**
  * Muda uma carta de lugar na mão (a pessoa arrastou e soltou de volta nela).
