@@ -1,0 +1,39 @@
+// por cima do tapete e das cartas jogadas, sem pegar o ponteiro
+.camada
+  position: absolute
+  inset: 0
+  z-index: 30
+  pointer-events: none
+
+.saindo
+  animation: sair .4s ease 1s both
+
+@keyframes sair
+  to
+    opacity: 0
+
+.total
+  position: absolute
+  top: 10px
+  left: 50%
+  padding: 4px 14px
+  transform: translateX(-50%)
+  border: 1px solid var(--linha)
+  border-radius: 999px
+  background: var(--papel-alto)
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18)
+  font-family: var(--mono)
+  font-size: 13px
+  animation: entrar .2s ease-out
+
+  b
+    font-size: 16px
+
+@keyframes entrar
+  from
+    opacity: 0
+    transform: translate(-50%, -6px)
+
+@media (prefers-reduced-motion: reduce)
+  .saindo, .total
+    animation: none

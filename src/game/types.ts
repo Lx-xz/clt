@@ -224,6 +224,10 @@ export interface GameState {
    *  fora da mão e do baralho até a mão do dia seguinte chegar, e aí entram
    *  POR CIMA dela. Opcional, como todo campo novo: save de antes não tem. */
   guardadas?: CardInstance[]
+  /** A última rolagem de dados de uma carta ou evento (`Quantia` com
+   *  dados), para a mesa jogá-los na tela. `selo` muda a cada rolagem.
+   *  Opcional, sem subir a chave do save. */
+  ultimaRolagem?: { lados: number; valores: number[]; mais: number; total: number; selo: number }
   discard: CardInstance[]
   /** O que já foi jogado hoje, para o tapete mostrar o dia se montando. */
   playedToday: CardId[]

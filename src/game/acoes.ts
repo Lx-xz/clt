@@ -31,14 +31,49 @@ import type { CardId, CardKind, GameState } from './types'
 
 export type Recurso = 'produtividade' | 'energia' | 'estresse' | 'dinheiro'
 
+/**
+ * Dados no lugar de um número (v0.41): "1d3 de energia" em vez de "3 de
+ * energia". `dados` dados de `lados` lados, somados, mais `mais`; com
+ * `negativo`, o total entra subtraindo ("−1d3 estresse"). A rolagem é do
+ * motor (`ctx.sorte`), então o simulador continua determinístico, e fica
+ * em `GameState.ultimaRolagem` para a mesa mostrar os dados caindo.
+ */
+export interface Rolagem {
+  dados: number
+  lados: number
+  mais?: number
+  negativo?: boolean
+}
+
+/** Um número fixo, ou dados. */
+export type Quantia = number | Rolagem
+
+export function ehRolagem(q: unknown): q is Rolagem {
+  return typeof q === 'object' && q !== null && typeof (q as Rolagem).lados === 'number'
+}
+
+/** O valor esperado de uma quantia: quem precisa de UM número antes de
+ *  rolar (o bot do simulador, a prévia de uma jogada) usa a média. */
+export function mediaDe(q: Quantia): number {
+  if (!ehRolagem(q)) return q
+  const media = (q.dados * (q.lados + 1)) / 2 + (q.mais ?? 0)
+  return q.negativo ? -media : media
+}
+
+/** "1d3", "2d6+1", "−1d4": como a rolagem se escreve. */
+export function textoDaRolagem(r: Rolagem): string {
+  const mais = r.mais ? (r.mais > 0 ? `+${r.mais}` : `${r.mais}`) : ''
+  return `${r.negativo ? '−' : ''}${r.dados}d${r.lados}${mais}`
+}
+
 export type Acao =
   /** Soma no recurso. Estresse positivo SOBE o estresse; nunca passa de zero. */
-  | { faz: 'recurso'; qual: Recurso; quanto: number }
+  | { faz: 'recurso'; qual: Recurso; quanto: Quantia }
   /** Efeito adiado: a lista inteira roda no começo do dia seguinte. Serve
    *  para QUALQUER coisa — um recurso, uma carta, uma mensagem —, e não para
    *  dois números escolhidos a dedo, que era o que ela fazia antes. */
   | { faz: 'amanha'; acoes: Acao[] }
-  | { faz: 'comprar'; quantas: number }
+  | { faz: 'comprar'; quantas: Quantia }
   /** `quantas: 'tudo'` esvazia a mão. `aleatorio` escolhe qual sai.
    *  `porque` é quem aparece no histórico: "Fofoca de Corredor descartou
    *  Café." diz mais do que "Descartou Café.", e o custo é um campo. */
@@ -62,7 +97,7 @@ export type Acao =
   /** Duas informais viram uma de verdade — a conta é do motor. */
   | { faz: 'advertencia'; quanto: number; informal?: boolean }
   /** Soma na cota do dia, ou fixa um valor com `absoluto`. */
-  | { faz: 'cota'; quanto: number; absoluto?: boolean }
+  | { faz: 'cota'; quanto: Quantia; absoluto?: boolean }
   /** O que continua valendo depois de hoje.
    *
    *  Ela nasceu de duas: `salarioPermanente` somava no salário da sexta e
@@ -260,20 +295,40 @@ function valorDoRecurso(state: GameState, qual: Recurso): number {
 }
 
 /** Roda uma ação. Muda o estado no lugar — o motor já clonou antes. */
+/**
+ * O número de uma quantia: ele mesmo, ou os dados rolados agora. A rolagem
+ * fica anotada no estado (com um `selo` que muda a cada uma, como o da
+ * mensagem) para a mesa jogar os dados na frente de quem joga, e numa linha
+ * do histórico.
+ */
+function resolver(state: GameState, q: Quantia, ctx: Contexto): number {
+  if (!ehRolagem(q)) return q
+  const lados = Math.max(2, Math.round(q.lados))
+  const valores: number[] = []
+  for (let i = 0; i < Math.max(1, Math.round(q.dados)); i++) valores.push(1 + Math.floor(ctx.sorte() * lados))
+  const total = valores.reduce((a, b) => a + b, 0) + (q.mais ?? 0)
+  const selo = (state.ultimaRolagem?.selo ?? 0) + 1
+  state.ultimaRolagem = { lados, valores, mais: q.mais ?? 0, total, selo }
+  ctx.log(state, `Rolou ${textoDaRolagem(q).replace('−', '')}: ${valores.join(' + ')}${q.mais ? ` ${q.mais > 0 ? '+' : '−'} ${Math.abs(q.mais)}` : ''} = ${total}.`)
+  return q.negativo ? -total : total
+}
+
 export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
   switch (acao.faz) {
-    case 'recurso':
-      if (acao.qual === 'produtividade') state.productivity += acao.quanto
-      else if (acao.qual === 'energia') state.energy = Math.max(0, state.energy + acao.quanto)
-      else if (acao.qual === 'dinheiro') state.money += acao.quanto
-      else state.stress = Math.max(0, state.stress + acao.quanto)
+    case 'recurso': {
+      const quanto = resolver(state, acao.quanto, ctx)
+      if (acao.qual === 'produtividade') state.productivity += quanto
+      else if (acao.qual === 'energia') state.energy = Math.max(0, state.energy + quanto)
+      else if (acao.qual === 'dinheiro') state.money += quanto
+      else state.stress = Math.max(0, state.stress + quanto)
       break
+    }
     case 'amanha':
       // a fila é só dado: ela é clonada e serializada com o resto do estado
       state.amanha.push(...acao.acoes)
       break
     case 'comprar':
-      ctx.comprar(state, acao.quantas)
+      ctx.comprar(state, Math.max(0, resolver(state, acao.quantas, ctx)))
       break
     case 'descartar': {
       // as cartas saem uma a uma, mas a mesa mostra o LOTE: "descartou 2" é
@@ -334,9 +389,11 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
         state.warnings = Math.max(0, state.warnings + acao.quanto)
       }
       break
-    case 'cota':
-      state.dailyQuota = acao.absoluto ? acao.quanto : state.dailyQuota + acao.quanto
+    case 'cota': {
+      const quanto = resolver(state, acao.quanto, ctx)
+      state.dailyQuota = acao.absoluto ? quanto : state.dailyQuota + quanto
       break
+    }
     case 'recorrente': {
       // a duração é resolvida AGORA, e não guardada como palavra: "uma
       // semana" depende de quantos dias tem a semana DESTA run, e a run já

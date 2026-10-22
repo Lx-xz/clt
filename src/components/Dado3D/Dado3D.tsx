@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { solido, type TipoDeDado, type Vec } from './geometria'
+import FacesDoDado from './FacesDoDado'
 import styles from './Dado3D.module.sass'
 
 /**
@@ -90,8 +91,6 @@ export default function Dado3D({
 
   // a luz é calculada para a posição FINAL: na cambalhota ninguém repara
   const inclina = (v: Vec) => aplicar(rot('x', INCLINACAO_X), aplicar(rot('y', INCLINACAO_Y), v))
-  const luz: Vec = [-0.35, -0.6, 0.72]
-  const metade = tamanho / 2
 
   return (
     <div className={styles.cena} style={{ width: tamanho * 1.6, height: tamanho * 1.6 }}>
@@ -106,61 +105,15 @@ export default function Dado3D({
             style={{ '--ex': giro.x, '--ey': giro.y, '--ez': giro.z, '--voltas': `${giro.voltas}deg` } as CSSProperties}
           >
             <div className={styles.dado} style={{ transform: final }}>
-              {s.faces.map((fc, i) => {
-                const nFinal = inclina(aplicar(R, fc.n))
-                const brilho = Math.max(0, nFinal[0] * luz[0] + nFinal[1] * luz[1] + nFinal[2] * luz[2])
-                const escuro = Math.round(34 - brilho * 30)
-                const numero = s.numeros[i]
-                const texto = numero === null ? null : rotulo ? rotulo(numero) : String(numero)
-                // o maior círculo dentro da face decide o tamanho do número
-                const raioDentro = Math.min(
-                  ...fc.pontos.map((p, k) => {
-                    const q = fc.pontos[(k + 1) % fc.pontos.length]
-                    const ex = q[0] - p[0]
-                    const ey = q[1] - p[1]
-                    return Math.abs(ex * p[1] - ey * p[0]) / Math.hypot(ex, ey)
-                  }),
-                )
-                const fonte = Math.min(raioDentro * (texto && texto.length > 1 ? 0.95 : 1.25), 0.62, texto ? 1.5 / texto.length : 1)
-                const m = `matrix3d(${fc.u[0]},${fc.u[1]},${fc.u[2]},0,${fc.v[0]},${fc.v[1]},${fc.v[2]},0,${fc.n[0]},${fc.n[1]},${fc.n[2]},0,${fc.c[0] * metade},${fc.c[1] * metade},${fc.c[2] * metade},1)`
-                const sublinha = texto === '6' || texto === '9'
-                return (
-                  <div
-                    key={i}
-                    className={`${styles.face} ${i === face && parado ? styles.sorteada : ''}`}
-                    style={{ width: tamanho, height: tamanho, marginLeft: -metade, marginTop: -metade, transform: m }}
-                  >
-                    <svg viewBox="-1 -1 2 2" width={tamanho} height={tamanho} aria-hidden>
-                      <polygon
-                        points={fc.pontos.map(([x, y]) => `${x},${y}`).join(' ')}
-                        fill={`color-mix(in srgb, ${cor}, #000 ${escuro}%)`}
-                        stroke={`color-mix(in srgb, ${cor}, #fff 18%)`}
-                        strokeWidth={0.025}
-                        strokeLinejoin="round"
-                      />
-                      {texto ? (
-                        <>
-                          <text
-                            x={0}
-                            y={0}
-                            fill={corNumero}
-                            fontSize={fonte}
-                            fontWeight={700}
-                            textAnchor="middle"
-                            dominantBaseline="central"
-                            fontFamily="var(--mono), monospace"
-                          >
-                            {texto}
-                          </text>
-                          {sublinha ? (
-                            <line x1={-fonte * 0.22} x2={fonte * 0.22} y1={fonte * 0.5} y2={fonte * 0.5} stroke={corNumero} strokeWidth={fonte * 0.07} />
-                          ) : null}
-                        </>
-                      ) : null}
-                    </svg>
-                  </div>
-                )
-              })}
+              <FacesDoDado
+                tipo={tipo}
+                tamanho={tamanho}
+                cor={cor}
+                corNumero={corNumero}
+                rotulo={rotulo}
+                orientacao={(n) => inclina(aplicar(R, n))}
+                destaque={parado ? face : null}
+              />
             </div>
           </div>
         </div>

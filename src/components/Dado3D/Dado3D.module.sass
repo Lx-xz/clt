@@ -62,3 +62,54 @@
 @media (prefers-reduced-motion: reduce)
   .pulo, .giro
     animation: none
+
+// ------------------------------------------------- a mesa com física
+// a raiz corta o que passa da borda: overflow AQUI não achata o 3D (é a
+// raiz da cena); entre o chão e as faces não pode haver nenhum
+.mesaFisica
+  position: absolute
+  inset: 0
+  overflow: hidden
+  perspective: 900px
+  perspective-origin: 50% 20%
+  touch-action: none
+
+.pegavel
+  cursor: grab
+
+  &:active
+    cursor: grabbing
+
+.chao
+  position: absolute
+  left: 0
+  right: 0
+  transform-style: preserve-3d
+  transform-origin: 50% 50%
+
+.corpo
+  position: absolute
+  left: 0
+  top: 0
+  width: 0
+  height: 0
+  transform-style: preserve-3d
+
+.sombra
+  position: absolute
+  left: 0
+  top: 0
+  border-radius: 50%
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .55), transparent)
+  pointer-events: none
+
+.dica
+  position: absolute
+  left: 0
+  right: 0
+  bottom: 8px
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: 13px
+  text-align: center
+  pointer-events: none

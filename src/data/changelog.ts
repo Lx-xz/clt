@@ -61,6 +61,14 @@ export const ROTULO_TIPO: Record<Versao['itens'][number]['tipo'], string> = {
 
 export const VERSOES: Versao[] = [
   {
+    versao: '0.41',
+    data: '2026-10-22',
+    titulo: 'Dados na mesa',
+    itens: [
+      { tipo: 'novo', texto: 'Cartas podem rolar dados: em vez de +3 de energia, 1d3. Os dados caem no tapete, quicam nas bordas e param no número que saiu.' },
+    ],
+  },
+  {
     versao: '0.40',
     data: '2026-10-21',
     titulo: 'Presentes',

@@ -37,6 +37,7 @@
 
 import { readFileSync } from 'node:fs'
 import { carregarCatalogo, cartasDoJogo, catalogoJogavel, eventosDoJogo, getEvent } from '../src/game/catalogo'
+import { mediaDe } from '../src/game/acoes'
 import { idAtual } from '../src/game/ids'
 import { custosDe } from '../src/game/custos'
 import * as engine from '../src/game/engine'
@@ -110,7 +111,7 @@ function mexeEm(carta: { efeitos?: { se?: unknown; quando?: string; acoes: unkno
   for (const efeito of carta.efeitos ?? []) {
     if (efeito.se || (efeito.quando && efeito.quando !== 'aoJogar')) continue
     for (const acao of efeito.acoes as { faz: string; qual?: string; quanto?: number }[]) {
-      if (acao.faz === 'recurso' && acao.qual === qual) total += acao.quanto ?? 0
+      if (acao.faz === 'recurso' && acao.qual === qual) total += mediaDe(acao.quanto ?? 0)
     }
   }
   return total

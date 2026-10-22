@@ -210,6 +210,27 @@ carta escolhível vira "Guardar" (`.guardavel`). O "Deixar pra Amanhã" adia
 um problema; isto adia uma carta. Conferido com o simulador: a saída das
 cartas de sempre não mudou.
 
+**Dados no lugar do número (v0.41, `Quantia` em `acoes.ts`).** O `quanto`
+de `recurso` e de `cota` e o `quantas` de `comprar` aceitam, além do número,
+uma ROLAGEM: `{ dados, lados, mais?, negativo? }` ("1d3", "2d6+1", "−1d4").
+Quem rola é `resolver()`, pelo `ctx.sorte` (o simulador continua
+determinístico), e a rolagem fica em `GameState.ultimaRolagem` (opcional,
+com `selo` como a mensagem). O bot do simulador e o "custo escondido" do
+lab contam pela média (`mediaDe`). No `/lab/cartas` é o campo `quantia`:
+número ou dados, com o sinal, a quantidade, os lados e o "+".
+Na mesa, `DadosNaMesa` joga os dados no tapete quando o `selo` muda: a
+física de `components/Dado3D/RolagemNaMesa` (gravidade, quique nas bordas,
+atrito, colisão entre dados) e, quando eles quase param, um `slerp` até a
+face que o MOTOR sorteou, de frente para quem olha, com a inclinação de
+repouso de cada dado (`REPOUSO`: a moeda deita reta, o d10 fica de lado). O
+número já saiu antes da animação: ela não decide nada. O d100 são dois d10
+(a dezena em vermelho), a moeda é a d2 dourada. O `/lab/sorte` tem a mesma
+mesa com "Você joga" (arrastar e soltar: a velocidade do dedo é o
+lançamento) — no jogo, por enquanto, a mesa joga sozinha.
+**O dado é 3D de CSS** (faces do fecho convexo dos vértices, cada uma um SVG
+posto por `matrix3d`): vale a armadilha do 3D achatado, e o `overflow` mora
+só na raiz da cena.
+
 **`escolha` e `escolherDescarte` PARAM a lista.** `executar` devolve o que
 faltava para dentro da pergunta (`escolhaAberta.resto`) e retoma ao responder —
 senão as ações depois da pergunta aconteceriam antes dela, que é contar o fim

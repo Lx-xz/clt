@@ -4,7 +4,7 @@ import { ArrowLeft, Dices } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Card from '@/components/Card'
-import Dado3D, { DadoPercentual, LADOS, type TipoDeDado } from '@/components/Dado3D'
+import Dado3D, { DadoPercentual, LADOS, RolagemNaMesa, dadosDoValor, type DadoNaMesa, type TipoDeDado } from '@/components/Dado3D'
 import { TextoComIcones } from '@/components/Dinheiro'
 import Segmentado from '@/components/Segmentado'
 import type { ActionCard } from '@/game/types'
@@ -173,7 +173,12 @@ function DadoQualquer({ dado, valor, jogada, tamanho, onParar }: {
 }
 
 /** A mesa: joga a carta, o dado rola, e a faixa que saiu acende nela. */
-function Mesa({ ex }: { ex: Exemplo }) {
+/** Os dados que a mesa joga para um resultado (moeda diz cara ou coroa). */
+function dadosDoResultado(dado: TipoDeDado | 'd100', valor: number): DadoNaMesa[] {
+  return dadosDoValor(dado === 'd100' ? 100 : LADOS[dado], valor, 'cara-coroa') ?? []
+}
+
+function Mesa({ ex, modo }: { ex: Exemplo; modo: 'auto' | 'mao' }) {
   const [jogada, setJogada] = useState(0)
   const [valor, setValor] = useState<number | null>(null)
   const [parou, setParou] = useState(false)
@@ -192,7 +197,7 @@ function Mesa({ ex }: { ex: Exemplo }) {
       <Card card={ex.carta} corpo={<CorpoBarra ex={ex} destaque={parou ? saiu : null} />} seloExtra={dado ? <SeloDoDado dado={dado} /> : null} />
       <div className={styles.tapete}>
         {dado && valor !== null ? (
-          <DadoQualquer dado={dado} valor={valor} jogada={jogada} tamanho={70} onParar={() => setParou(true)} />
+          <RolagemNaMesa dados={dadosDoResultado(dado, valor)} modo={modo} jogada={jogada} tamanho={72} onParar={() => setParou(true)} />
         ) : (
           <p className={styles.vazio}>{dado ? 'Jogue a carta.' : 'Esta não rola dado: o caminho sai do estado da partida.'}</p>
         )}
@@ -244,6 +249,7 @@ function TodosOsDados() {
 
 export default function LabSortePage() {
   const [qual, setQual] = useState(0)
+  const [modo, setModo] = useState<'auto' | 'mao'>('auto')
   const ex = EXEMPLOS[qual]
 
   return (
@@ -278,7 +284,17 @@ export default function LabSortePage() {
         opcoes={EXEMPLOS.map((e, i) => ({ valor: String(i), rotulo: e.carta.name }))}
         className={styles.escolha}
       />
-      <Mesa key={qual} ex={ex} />
+      <Segmentado
+        rotulo="Como o dado é jogado"
+        valor={modo}
+        onChange={setModo}
+        opcoes={[
+          { valor: 'auto', rotulo: 'A mesa joga' },
+          { valor: 'mao', rotulo: 'Você joga (arraste e solte)' },
+        ]}
+        className={styles.escolha}
+      />
+      <Mesa key={`${qual}-${modo}`} ex={ex} modo={modo} />
 
       <h2 className={styles.secao}>Todos os dados</h2>
       <p className={styles.intro}>

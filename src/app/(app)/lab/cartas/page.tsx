@@ -88,8 +88,9 @@ function somaDe(c: ActionCard, qual: Recurso): number | '' {
   const bloco = c.efeitos[blocoSimples(c)]
   if (!bloco) return ''
   const total = bloco.acoes
+    // os campos rápidos só somam número fixo: dado se edita nos blocos
     .filter((a): a is Extract<Acao, { faz: 'recurso' }> => a.faz === 'recurso' && a.qual === qual)
-    .reduce((soma, a) => soma + a.quanto, 0)
+    .reduce((soma, a) => soma + (typeof a.quanto === 'number' ? a.quanto : 0), 0)
   return total === 0 ? '' : total
 }
 
@@ -251,7 +252,8 @@ function custoEscondido(c: ActionCard): ActionCard | null {
   if (i < 0) return null
   const bloco = c.efeitos[i]
   const pagos = bloco.acoes.filter(
-    (a): a is Extract<Acao, { faz: 'recurso' }> => a.faz === 'recurso' && a.qual === 'dinheiro' && a.quanto < 0,
+    (a): a is Extract<Acao, { faz: 'recurso' }> & { quanto: number } =>
+      a.faz === 'recurso' && a.qual === 'dinheiro' && typeof a.quanto === 'number' && a.quanto < 0,
   )
   if (pagos.length === 0) return null
   const preco = pagos.reduce((t, a) => t - a.quanto, 0)

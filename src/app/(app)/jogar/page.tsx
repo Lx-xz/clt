@@ -10,6 +10,7 @@ import ComoJogar from '@/components/ComoJogar'
 import CardDetail from '@/components/CardDetail'
 import Dialogo from '@/components/Dialogo'
 import Dinheiro, { TextoComIcones } from '@/components/Dinheiro'
+import DadosNaMesa from '@/components/DadosNaMesa'
 import DescarteNaMesa from '@/components/DescarteNaMesa'
 import HistoricoDaRun from '@/components/HistoricoDaRun'
 import MensagemNaMesa from '@/components/MensagemNaMesa'
@@ -472,6 +473,7 @@ export default function JogarPage() {
         )}
         <DescarteNaMesa descarte={state.ultimoDescarte} />
         <MensagemNaMesa mensagem={state.ultimaMensagem} />
+        <DadosNaMesa rolagem={state.ultimaRolagem} />
 
         {state.escolhaAberta ? (
           <div className={styles.pedido} role="status">

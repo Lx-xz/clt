@@ -29,6 +29,49 @@ export interface Face {
   n: Vec
   /** Os cantos no plano da face, em (u, v). */
   pontos: [number, number][]
+  /** Onde o número mora: o centro do MAIOR círculo que cabe na face, e o
+   *  raio dele. A média dos cantos não serve: na pipa do d10 ela escorrega
+   *  para o bico comprido, e o número saía do meio. */
+  meio: [number, number]
+  raio: number
+}
+
+/** A distância de um ponto à borda de um polígono convexo (negativa fora). */
+function folga(px: number, py: number, pts: [number, number][]): number {
+  let menor = Infinity
+  for (let k = 0; k < pts.length; k++) {
+    const [ax, ay] = pts[k]
+    const [bx, by] = pts[(k + 1) % pts.length]
+    const ex = bx - ax
+    const ey = by - ay
+    const l = Math.hypot(ex, ey)
+    // o lado de dentro: o centro (0,0) da face está sempre dentro
+    const lado = Math.sign(ex * (0 - ay) - ey * (0 - ax)) || 1
+    menor = Math.min(menor, (lado * (ex * (py - ay) - ey * (px - ax))) / l)
+  }
+  return menor
+}
+
+/** O maior círculo dentro do polígono: uma grade e depois um refino. */
+function circuloDentro(pts: [number, number][]): { meio: [number, number]; raio: number } {
+  let melhor: [number, number] = [0, 0]
+  let raio = folga(0, 0, pts)
+  let passo = 0.25
+  for (let rodada = 0; rodada < 6; rodada++) {
+    const [cx, cy] = melhor
+    for (let i = -4; i <= 4; i++)
+      for (let j = -4; j <= 4; j++) {
+        const x = cx + i * passo
+        const y = cy + j * passo
+        const f = folga(x, y, pts)
+        if (f > raio) {
+          raio = f
+          melhor = [x, y]
+        }
+      }
+    passo /= 3
+  }
+  return { meio: melhor, raio }
 }
 
 /** O fecho convexo de um punhado de pontos, como lista de faces. */
@@ -68,7 +111,8 @@ function fecho(pontos: Vec[]): Face[] {
         else alto = norm(sub(naFace[dist.indexOf(max)], c))
         const v = mul(alto, -1)
         const u = cross(v, n)
-        faces.push({ c, u, v, n, pontos: ordenados.map((p) => [dot(sub(p, c), u), dot(sub(p, c), v)]) })
+        const pontos2d = ordenados.map((p) => [dot(sub(p, c), u), dot(sub(p, c), v)] as [number, number])
+        faces.push({ c, u, v, n, pontos: pontos2d, ...circuloDentro(pontos2d) })
       }
   return faces
 }
@@ -148,7 +192,13 @@ export function solido(tipo: TipoDeDado): Solido {
   let faces = fecho(VERTICES[base])
   // normaliza o tamanho: o raio maior vira 1
   const raio = Math.max(...VERTICES[base].map(len))
-  faces = faces.map((f) => ({ ...f, c: mul(f.c, 1 / raio), pontos: f.pontos.map(([x, y]) => [x / raio, y / raio]) }))
+  faces = faces.map((f) => ({
+    ...f,
+    c: mul(f.c, 1 / raio),
+    pontos: f.pontos.map(([x, y]) => [x / raio, y / raio] as [number, number]),
+    meio: [f.meio[0] / raio, f.meio[1] / raio] as [number, number],
+    raio: f.raio / raio,
+  }))
   let numeros: (number | null)[]
   if (tipo === 'd2') {
     // só as duas tampas têm número; a borda é a borda

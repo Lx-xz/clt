@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronUp, X } from 'lucide-react'
 import { createContext, useContext, useId, useState } from 'react'
 import { todasAsCartas } from '@/game/catalogo'
-import type { Acao, Condicao, Efeito, Quando } from '@/game/acoes'
+import { ehRolagem, textoDaRolagem, type Acao, type Condicao, type Efeito, type Quando, type Rolagem } from '@/game/acoes'
 import { textoDaCondicao } from '@/game/textos'
 import type { EventChoice } from '@/game/types'
 import {
@@ -12,6 +12,9 @@ import {
   type Campo, type Descritor, type NomeDeAcao, type NomeDeCondicao,
 } from './descritores'
 import styles from './editor.module.sass'
+
+/** Os dados que o editor oferece: os da mesa de RPG. */
+const LADOS_DOS_DADOS = [2, 3, 4, 6, 8, 10, 12, 20, 100]
 
 /**
  * O editor visual das ações — o que aposentou o painel de JSON cru.
@@ -76,6 +79,55 @@ function CampoSimples({ c, valor, aoMudar, cartas }: {
         <input type="checkbox" checked={valor === true} onChange={(e) => aoMudar(e.target.checked)} />
         {c.rotulo}
       </label>
+    )
+  }
+
+  if (k.tipo === 'quantia') {
+    // um número fixo, ou dados: "1d3 de energia" no lugar de "3 de energia"
+    const rol = ehRolagem(valor) ? valor : null
+    const mudar = (r: Partial<Rolagem>) => aoMudar({ ...(rol ?? { dados: 1, lados: 6 }), ...r })
+    return (
+      <span className={styles.campo}>
+        <span className={styles.rotulo}>{c.rotulo}</span>
+        <span className={styles.linha}>
+          <select
+            className={styles.seletor}
+            value={rol ? 'dados' : 'numero'}
+            onChange={(e) => aoMudar(e.target.value === 'dados' ? { dados: 1, lados: 3 } : 1)}
+            aria-label={`${c.rotulo}: número ou dados`}
+          >
+            <option value="numero">número</option>
+            <option value="dados">dados</option>
+          </select>
+          {rol ? (
+            <>
+              <select className={styles.seletor} value={rol.negativo ? '-' : '+'} onChange={(e) => mudar({ negativo: e.target.value === '-' || undefined })} aria-label="Soma ou tira">
+                <option value="+">+</option>
+                <option value="-">−</option>
+              </select>
+              <input className={styles.numero} type="number" min={1} max={10} value={rol.dados} onChange={(e) => mudar({ dados: Math.max(1, Number(e.target.value) || 1) })} aria-label="Quantos dados" />
+              <select className={styles.seletor} value={rol.lados} onChange={(e) => mudar({ lados: Number(e.target.value) })} aria-label="Que dado">
+                {LADOS_DOS_DADOS.map((l) => (
+                  <option key={l} value={l}>{l === 2 ? 'd2 (moeda)' : `d${l}`}</option>
+                ))}
+              </select>
+              <span className={styles.sufixo}>+</span>
+              <input className={styles.numero} type="number" min={-20} max={20} value={rol.mais ?? 0} onChange={(e) => mudar({ mais: Number(e.target.value) || undefined })} aria-label="Soma fixa" />
+              <span className={styles.sufixo}>{textoDaRolagem(rol)}</span>
+            </>
+          ) : (
+            <input
+              className={styles.numero}
+              type="number"
+              min={k.min}
+              max={k.max}
+              value={typeof valor === 'number' ? valor : ''}
+              onChange={(e) => aoMudar(Number(e.target.value) || 0)}
+              aria-label={c.rotulo}
+            />
+          )}
+        </span>
+      </span>
     )
   }
 

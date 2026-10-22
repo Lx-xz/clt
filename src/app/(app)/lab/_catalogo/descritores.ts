@@ -23,6 +23,8 @@ import type { Acao, Condicao, Quando } from '@/game/acoes'
 
 export type TipoDeCampo =
   | { tipo: 'numero'; min?: number; max?: number }
+  /** Um número OU dados ("1d3", "2d6+1"): veja `Quantia` em `acoes.ts`. */
+  | { tipo: 'quantia'; min?: number; max?: number }
   /** Guardado de 0 a 1, digitado de 0 a 100: `chance: 0.4` é "40%". */
   | { tipo: 'porcento' }
   | { tipo: 'escolha'; opcoes: { valor: string; rotulo: string }[] }
@@ -98,7 +100,7 @@ export const DESCRITORES = {
     rotulo: 'Mexer em recurso', grupo: 'recursos', Icone: Gauge,
     campos: [
       { chave: 'qual', rotulo: 'Qual', padrao: 'produtividade', campo: { tipo: 'escolha', opcoes: RECURSOS } },
-      { chave: 'quanto', rotulo: 'Quanto', padrao: 1, campo: { tipo: 'numero', min: -20, max: 20 } },
+      { chave: 'quanto', rotulo: 'Quanto', padrao: 1, campo: { tipo: 'quantia', min: -20, max: 20 } },
     ],
   },
   amanha: {
@@ -109,7 +111,7 @@ export const DESCRITORES = {
   },
   comprar: {
     rotulo: 'Comprar carta', grupo: 'cartas', Icone: Layers,
-    campos: [{ chave: 'quantas', rotulo: 'Quantas', padrao: 1, campo: { tipo: 'numero', min: 1, max: 10 } }],
+    campos: [{ chave: 'quantas', rotulo: 'Quantas', padrao: 1, campo: { tipo: 'quantia', min: 1, max: 10 } }],
   },
   descartar: {
     rotulo: 'Descartar', grupo: 'cartas', Icone: Trash2,
@@ -177,7 +179,7 @@ export const DESCRITORES = {
   cota: {
     rotulo: 'Mexer na cota', grupo: 'chefe', Icone: Target,
     campos: [
-      { chave: 'quanto', rotulo: 'Quanto', padrao: 1, campo: { tipo: 'numero', min: -10, max: 20 } },
+      { chave: 'quanto', rotulo: 'Quanto', padrao: 1, campo: { tipo: 'quantia', min: -10, max: 20 } },
       { chave: 'absoluto', rotulo: 'Fixar neste valor', padrao: false, opcional: true, campo: { tipo: 'simNao' } },
     ],
   },
