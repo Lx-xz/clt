@@ -330,6 +330,24 @@ $levantada: 18px
   p
     margin: 0
 
+// o comentário da carta (a sátira): embaixo, em itálico, no espaço que
+// sobrar — sem espaço, o Card o esconde (`hidden`) e ele fica só no detalhe
+.comentario
+  flex: none
+  margin: auto 0 0
+  padding-top: 4px
+  color: var(--tinta-fraca)
+  font-size: clamp(8.5px, calc(var(--carta-h, 200px) * .05), 11px)
+  font-style: italic
+  line-height: 1.25
+  display: -webkit-box
+  -webkit-line-clamp: 3
+  -webkit-box-orient: vertical
+  overflow: hidden
+
+  &[hidden]
+    display: none
+
 // a linha com condição: o rótulo em cima, em letra de máquina, e um fio do
 // lado — o mesmo desenho das faixas da barra dividida, sem a cor
 .condicionada

@@ -7,7 +7,7 @@ import type { ActionCard, Custo, EventCard } from '@/game/types'
 import BarraDaSorte, { BarraDeCaminhos } from '../BarraDaSorte'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { rolarDaCarta } from '@/game/acoes'
-import { caminhosDaCarta, descreverCarta, linhasDaCarta } from '@/game/descricao'
+import { caminhosDaCarta, comentarioDaCarta, descreverCarta, linhasDaCarta } from '@/game/descricao'
 import { useModoDaDescricao } from '@/data/modoDaDescricao'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import { ArrowDown, ArrowUp } from 'lucide-react'
@@ -107,15 +107,38 @@ export default function Card({
   // texto dela, se houver, vira a linha de cima (o que ela faz além do dado)
   const rolar = evento ? null : rolarDaCarta(card.efeitos)
   // a descrição AUTOMÁTICA (v0.44): sai das ações, com o ícone do recurso
-  // antes do número. O texto escrito virou o comentário, e ele mora SÓ no
-  // detalhe (pedido do autor): a carta fica com o que ela faz. O evento
-  // continua escrito: as escolhas dele já são texto
+  // depois do número. O texto escrito virou o comentário: na carta só
+  // quando sobra espaço, e sempre no detalhe. O evento continua escrito:
+  // as escolhas dele já são texto
   const modo = useModoDaDescricao()
   const automatica = !evento && modo === 'icones'
   const descricao = automatica ? descreverCarta(card, { semRolar: Boolean(rolar) }) : card.text
   // "se X, senão Y" também se desenha dividido, com a condição no lugar
   // das faces do dado
   const caminhos = automatica && !rolar ? caminhosDaCarta(card) : null
+  // o comentário vai na carta SÓ se couber inteiro junto com a ação; sem
+  // espaço, ele mora só no detalhe (o popup do clique). Quem decide é a
+  // medida, a cada mudança de tamanho da carta
+  const comentario = automatica && !rolar && !caminhos && !corpo ? comentarioDaCarta(card.text) : null
+  const caixaDoTexto = useRef<HTMLDivElement>(null)
+  const caixaDoComentario = useRef<HTMLParagraphElement>(null)
+  useEffect(() => {
+    const texto = caixaDoTexto.current
+    const nota = caixaDoComentario.current
+    if (!texto || !nota) return
+    // mostra, mede (o navegador recalcula ali mesmo) e esconde se a ação
+    // ficou cortada ou se o próprio comentário não coube: tudo antes de
+    // pintar, sem piscar
+    const medir = () => {
+      nota.hidden = false
+      const cortou = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 1
+      nota.hidden = cortou(texto) || cortou(nota)
+    }
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(texto.parentElement ?? texto)
+    return () => ro.disconnect()
+  }, [comentario, descricao])
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
   /** Só a carta que ARRASTA prende o dedo: as outras deixam a lista rolar
    *  por baixo dela (o histórico, a fileira de cartas do replay). */
@@ -325,7 +348,8 @@ export default function Card({
               automatica && descricao ? (
                 // em linhas: a condição em cima do que ela libera, como o
                 // rótulo das faixas da barra
-                <div className={`${styles.texto} ${styles.automatica}`}>
+                <>
+                <div ref={caixaDoTexto} className={`${styles.texto} ${styles.automatica}`}>
                   {linhasDaCarta(card).map((l, i) => (
                     <p key={i} className={l.quando ? styles.condicionada : styles.linha}>
                       {l.quando ? (
@@ -343,6 +367,12 @@ export default function Card({
                     </p>
                   ))}
                 </div>
+                {comentario ? (
+                  <p ref={caixaDoComentario} className={styles.comentario}>
+                    {comentario}
+                  </p>
+                ) : null}
+                </>
               ) : (
                 <p className={styles.texto}>
                   <TextoComIcones texto={descricao || card.text} />

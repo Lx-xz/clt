@@ -281,9 +281,11 @@ tentativa, e o autor preferiu depois; a notação `{energia}`, `{estresse}`,
 Rebalancear no lab já muda o que a carta diz — o texto à mão era "a única
 coisa que pode mentir". Toda ação tem uma linha no `switch` de
 `descreverAcao`, sem `default`: ação nova sem descrição quebra o build.
-O TEXTO ESCRITO virou o COMENTÁRIO da carta (a sátira), em itálico, e mora
-SÓ no detalhe (o popup do clique), a pedido do autor: a carta fica com o
-que ela faz. **A regra da transição** (`comentarioDaCarta`):
+O TEXTO ESCRITO virou o COMENTÁRIO da carta (a sátira), em itálico: sempre
+no detalhe (o popup do clique), e na face da carta SÓ quando cabe inteiro
+junto com a ação — o `Card` mostra, mede (texto ou comentário cortados?) e
+esconde (`hidden`), de novo a cada mudança de tamanho (`ResizeObserver`).
+Na carta de sorte e na de caminhos ele não vai na face. **A regra da transição** (`comentarioDaCarta`):
 texto com número ou "R$" é a descrição de antes e fica escondido; sem
 número, é comentário. O `/lab/cartas` mostra a descrição gerada, chama o
 campo de "Comentário da carta", avisa quando o texto ainda é descrição, e
