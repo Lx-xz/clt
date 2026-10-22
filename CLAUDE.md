@@ -917,8 +917,12 @@ opções. O que ele escolheu, e que deve ser preservado:
   vale nada para as regras: é só arrumação. A carta que não se pode jogar
   agora (sem energia) também se arrasta, só não joga. **As cartas vão ao
   DOM numa ordem FIXA (pelo uid) e a posição é o `order` do flex**: mover
-  o nó reiniciaria a `mao-entra` da carta, e o flex pinta pela ordem do
-  `order`, então a sobreposição segue a mão. Ao soltar, a carta sai do
+  o nó reiniciaria a `mao-entra` da carta. **A sobreposição precisa de
+  `z-index` pela posição** (`--camada`): o lugar da carta é posicionado, e
+  posicionado pinta pela ordem do DOM, não pelo `order`, no Safari — sem
+  ele, no iPhone, uma carta da esquerda tampava a da direita conforme o
+  uid sorteado (o Chromium segue o `order`, e o defeito não aparecia no
+  teste). Ao soltar, a carta sai do
   ponto em que foi solta (`onSoltar` devolve quanto o lugar dela andou) e
   só então desliza; a vaga fecha sem transição, no mesmo quadro em que a
   carta muda de lugar.

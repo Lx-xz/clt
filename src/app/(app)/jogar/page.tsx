@@ -651,8 +651,10 @@ export default function JogarPage() {
           >
             {/* as cartas vão ao DOM numa ordem FIXA (pelo uid) e a posição
                 na mão é o `order` do flex: reordenar não move nó nenhum —
-                mover reinicia a animação de entrada da carta —, e o flex
-                pinta pela ordem do `order`, então a sobreposição segue a mão */}
+                mover reinicia a animação de entrada da carta. A
+                sobreposição NÃO segue o `order` sozinha (o lugar é
+                posicionado, e posicionado pinta pela ordem do DOM): quem a
+                faz seguir a mão é o `--camada` */}
             {state.hand
               .map((instancia, i) => ({ instancia, i }))
               .sort((a, b) => (a.instancia.uid < b.instancia.uid ? -1 : 1))
@@ -662,7 +664,11 @@ export default function JogarPage() {
                   '--i': i,
                   order: i,
                   '--abre': `${deslocamento(i)}px`,
-                  zIndex: reordem?.uid === instancia.uid ? 40 : undefined,
+                  // a camada é a POSIÇÃO na mão: o lugar da carta é
+                  // posicionado, e o navegador pinta posicionados pela
+                  // ordem do DOM (que aqui é a do uid), não pelo `order`
+                  '--camada': i + 1,
+                  zIndex: reordem?.uid === instancia.uid ? 60 : undefined,
                 } as React.CSSProperties
                 const podeJogar = canPlay(state, instancia)
                 // com uma escolha de descarte em pé, a mão inteira vira
