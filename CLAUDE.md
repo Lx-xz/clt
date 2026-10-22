@@ -446,10 +446,13 @@ entregas):
    entrar em baralho novo e sair como recompensa.
 2. **A run guarda o próprio retrato.** Mudar o custo hoje não reescreve a
    partida de ontem.
-3. **Não dá para mudar em silêncio.** `admin_salvar_carta` recusa `porque`
-   vazio. O `o_que` ("Custo 4 → 6") é sugerido automaticamente pela bancada,
-   porque essa metade um diff sabe escrever; o `porque` é digitado, porque
-   essa não.
+3. **Não dá para mudar em silêncio.** Todo salvamento grava uma linha em
+   `cartas_antigas`. O `o_que` ("Custo 4 → 6") é sugerido automaticamente
+   pela bancada, porque essa metade um diff sabe escrever; o `porque` é
+   digitado. **Desde a v0.47 o `porque` é OPCIONAL ao criar ou ajustar
+   carta e evento** (pedido do autor: o `o_que` já registra a mudança); para
+   REMOVER e para as regras do jogo (`admin_excluir_carta`,
+   `admin_salvar_modo`) o banco ainda o exige.
 
 **Uma carta desconhecida não derruba mais nada.** `getCard` devolve uma carta
 inerte (custo 0, sem classe, sem efeito) e avisa no console, em vez de lançar.
@@ -1519,9 +1522,9 @@ opções. O que ele escolheu, e que deve ser preservado:
   bloco de efeito SEM condição (é o atalho de quem só quer rebalancear um
   número), e o editor de blocos abaixo monta a carta inteira, condição e
   sorteio inclusive — veja "A carta se monta em blocos".
-  **Salvar pede um motivo, e a função do banco recusa sem ele.** O histórico
-  de uma carta nasce no momento da mudança, porque escrito depois ele não
-  seria escrito.
+  **Salvar pede um motivo** (opcional desde a v0.47 para criar e ajustar;
+  obrigatório para remover). O histórico de uma carta nasce no momento da
+  mudança, porque escrito depois ele não seria escrito.
 - **`/lab/avatar` (até a v0.25, hoje só no git) produzia código, não salvava nada.** O site é export estático:
   não há servidor para escrever arquivo, então a bancada devolve a linha de
   `MEDIDAS` para colar em `Avatar.tsx`. Ela desenha com o **mesmo** componente
@@ -2356,6 +2359,9 @@ e a um bot diferente — não compare os dois.
   run (`run_id` não existe mais). A run que
   falhar não se perde — entra na fila (`clt:runs-pendentes:v1`, que lê o
   `run_id` de antes como `id`) e sobe na próxima abertura da mesa.
+- **Rodar o `schema.sql` da v0.47** (`admin_salvar_carta` e
+  `admin_salvar_evento` sem a recusa do motivo vazio). Sem ele, salvar no
+  lab com o motivo em branco volta com o erro "Diga por que está mudando".
 - **Rodar o `schema.sql` da v0.40** (a tabela `presentes` e as três
   funções). Sem ele, enviar presente no lab diz que a função falta, e o
   início não mostra nada.

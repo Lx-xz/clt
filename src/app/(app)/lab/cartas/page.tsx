@@ -778,6 +778,7 @@ export default function LabCartasPage() {
           aoFechar={() => setPedindo(null)}
           erro={erro}
           salvando={ocupado}
+          opcional
         />
       ) : null}
 

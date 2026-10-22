@@ -1929,9 +1929,10 @@ begin
 end;
 $$;
 
--- Cria ou ajusta uma carta de ação. `p_o_que` e `p_porque` não são enfeite:
--- é o que o jogador lê no histórico da carta e o que vira item de Novidades.
--- Salvar sem motivo é mudar o jogo em silêncio, então a função recusa.
+-- Cria ou ajusta uma carta de ação. `p_o_que` e `p_porque` são o que o
+-- jogador lê no histórico da carta. Desde a v0.47 o `porque` é OPCIONAL (a
+-- pedido do autor): o `o_que` sugerido já registra a mudança, e o histórico
+-- continua sendo gravado; só a frase do motivo pode faltar.
 create function public.admin_salvar_carta(
   p_carta  jsonb,
   p_o_que  text,
@@ -1956,9 +1957,6 @@ begin
     raise exception 'Id inválido: o id da carta é um uuid.';
   end if;
   v_id := v_texto::uuid;
-  if coalesce(btrim(p_porque), '') = '' then
-    raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';
-  end if;
 
   select true into v_existia from public.cartas where id = v_id;
 
@@ -1997,7 +1995,7 @@ begin
   -- balanceamento como qualquer outra
   if not coalesce(v_existia, false) then
     insert into public.cartas_antigas (carta_id, familia, versao, dados, tipo, o_que, porque)
-    select v_id, 'acao', c.versao, to_jsonb(c), 'criada', coalesce(p_o_que, 'Carta nova'), p_porque
+    select v_id, 'acao', c.versao, to_jsonb(c), 'criada', coalesce(p_o_que, 'Carta nova'), coalesce(p_porque, '')
     from public.cartas c where c.id = v_id;
   end if;
 
@@ -2029,9 +2027,6 @@ begin
     raise exception 'Id inválido: o id da carta é um uuid.';
   end if;
   v_id := v_texto::uuid;
-  if coalesce(btrim(p_porque), '') = '' then
-    raise exception 'Diga por que está mudando: é isso que o jogador lê no histórico.';
-  end if;
 
   select true into v_existia from public.cartas_evento where id = v_id;
 
@@ -2056,7 +2051,7 @@ begin
 
   if not coalesce(v_existia, false) then
     insert into public.cartas_antigas (carta_id, familia, versao, dados, tipo, o_que, porque)
-    select v_id, 'evento', e.versao, to_jsonb(e), 'criada', coalesce(p_o_que, 'Evento novo'), p_porque
+    select v_id, 'evento', e.versao, to_jsonb(e), 'criada', coalesce(p_o_que, 'Evento novo'), coalesce(p_porque, '')
     from public.cartas_evento e where e.id = v_id;
   end if;
 

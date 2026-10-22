@@ -301,6 +301,7 @@ export default function LabEventosPage() {
           aoFechar={() => setPedindo(null)}
           erro={erro}
           salvando={ocupado}
+          opcional
         />
       ) : null}
 

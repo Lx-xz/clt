@@ -335,9 +335,10 @@ async function escrever(
 }
 
 /**
- * `oQue` e `porque` viajam junto com a carta e não são opcionais no banco.
- * É a decisão central desta tela: o histórico da carta nasce NO MOMENTO da
- * edição, porque escrito depois ele não seria escrito.
+ * `oQue` e `porque` viajam junto com a carta: o histórico da carta nasce NO
+ * MOMENTO da edição, porque escrito depois ele não seria escrito. Desde a
+ * v0.47 o `porque` pode ir vazio ao criar ou ajustar carta e evento (pedido
+ * do autor); para remover, o banco ainda o exige.
  */
 export function salvarCarta(carta: ActionCard, oQue: string, porque: string) {
   return escrever('admin_salvar_carta', {

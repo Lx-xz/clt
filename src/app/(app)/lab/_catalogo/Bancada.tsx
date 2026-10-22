@@ -43,10 +43,14 @@ export function Origem({ doBanco }: { doBanco: boolean }) {
  *
  * É a peça central da tela, e não uma formalidade: o histórico de uma carta
  * nasce AQUI, no momento da mudança. Escrito depois ele não seria escrito, e
- * o jogador veria o custo da carta mudar sem nunca saber por quê. A função do
- * banco recusa `porque` vazio — a tela só está repetindo a regra mais cedo.
+ * o jogador veria o custo da carta mudar sem nunca saber por quê.
+ *
+ * `opcional` (v0.47, pedido do autor): ao criar ou ajustar carta e evento o
+ * motivo pode ficar em branco — o "o que mudou" já entra no histórico. Para
+ * remover e para as regras do jogo ele continua obrigatório, e o banco
+ * repete a mesma regra.
  */
-export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFechar, erro, salvando }: {
+export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFechar, erro, salvando, opcional }: {
   titulo: string
   oQueSugerido: string
   exemplo: string
@@ -54,6 +58,7 @@ export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFech
   aoFechar: () => void
   erro: string | null
   salvando: boolean
+  opcional?: boolean
 }) {
   const [oQue, setOQue] = useState(oQueSugerido)
   const [porque, setPorque] = useState('')
@@ -70,7 +75,7 @@ export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFech
         />
       </label>
       <label className={styles.rotulo}>
-        Por que mudou
+        {opcional ? 'Por que mudou (opcional)' : 'Por que mudou'}
         <textarea
           className={styles.campoTexto}
           value={porque}
@@ -96,7 +101,7 @@ export function PedirMotivo({ titulo, oQueSugerido, exemplo, aoConfirmar, aoFech
         <button
           type="button"
           className={`${buttons.button} ${buttons.primary}`}
-          disabled={porque.trim().length < 3 || salvando}
+          disabled={(!opcional && porque.trim().length < 3) || salvando}
           onClick={() => aoConfirmar(oQue.trim(), porque.trim())}
         >
           {salvando ? 'Salvando…' : 'Salvar'}
