@@ -234,9 +234,10 @@ O d100 são dois d10 (a dezena em vermelho), a moeda é a d2 dourada.
 Na mesa, a carta que rola PAUSA (`GameState.rolagemAberta`, opcional, como
 a `escolhaAberta`: a lista para e o resto espera em `resto`; `pausaAberta`
 olha as duas, e `dispararEfeitos` empilha os blocos seguintes ali, com a
-condição conferida na hora). Os dados esperam no tapete; a pessoa arrasta
-e solta (a velocidade do gesto é o lançamento) ou toca em "Jogar", e
-quando eles quase param o resultado é a face MAIS VIRADA PARA CIMA naquele
+condição conferida na hora). Os dados esperam no tapete e só se jogam
+com a MÃO: a pessoa arrasta e solta (a velocidade do gesto é o lançamento).
+O botão "a mesa joga" existiu e saiu a pedido do autor; quem usa teclado
+foca a mesa e aperta Enter, e aí a mesa lança por ela. E quando eles quase param o resultado é a face MAIS VIRADA PARA CIMA naquele
 instante (`faceDeCima`; no d4, a mais virada para baixo) — o assentar é só
 o fim do tombo, sem cambalhota de última hora. A soma fica à vista, os
 dados esmaecem e só então `responderRolagem(state, valores)` segue a carta
@@ -794,6 +795,13 @@ opções. O que ele escolheu, e que deve ser preservado:
   barra lateral usa para não roubar o gesto de arrastar uma carta (veja
   abaixo). Carta parada (bloqueada, histórico) não leva o atributo: ela não
   tem gesto para proteger, e com ele o arraste da borda morria em cima dela.
+  **Só a carta que se arrasta prende o dedo** (`.arrastavel`, `touch-action:
+  none`); as outras são `manipulation`, e o dedo que encosta nelas rola a
+  lista em volta. Era `none` em toda carta, e a fileira do histórico só
+  andava se o dedo começasse FORA de uma carta. **Fora da mesa nada se
+  arrasta**, a não ser o baralho no computador (entre as duas colunas); no
+  celular as colunas são abas, não há onde soltar, e ele passa
+  `semArraste` (o clique duplo e o contador continuam movendo a cópia).
 - **Medidores compactos:** só ícone e valor (`⚡ 10`), com nome e explicação numa
   dica que aparece no hover, no foco e no toque. No celular o dinheiro perde o
   "R$" e os 6 medidores viram uma grade 3×2.

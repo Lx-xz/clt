@@ -65,7 +65,8 @@ export const VERSOES: Versao[] = [
     data: '2026-10-22',
     titulo: 'Você joga o dado',
     itens: [
-      { tipo: 'novo', texto: 'Carta com dado espera você: arraste o dado e solte (ou toque em Jogar). Vale o número que ficar para cima.' },
+      { tipo: 'novo', texto: 'Carta com dado espera você: arraste o dado e solte. Vale o número que ficar para cima.' },
+      { tipo: 'melhor', texto: 'No celular, o dedo em cima de uma carta rola a lista: o histórico, o replay e o baralho.' },
     ],
   },
   {

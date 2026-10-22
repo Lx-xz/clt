@@ -35,6 +35,9 @@ export interface CardProps {
   onOpen?: () => void
   /** Clique duplo ou soltar sobre o alvo: joga a carta. */
   onPlay?: () => void
+  /** O clique duplo joga, mas a carta não se ARRASTA: o baralho no
+   *  celular, onde as colunas são abas e não há para onde soltar. */
+  semArraste?: boolean
   /** Alvo em que soltar a carta conta como jogada. */
   dropRef?: RefObject<HTMLElement | null>
   onDragOver?: (over: boolean) => void
@@ -68,6 +71,7 @@ export default function Card({
   lift = 0,
   onOpen,
   onPlay,
+  semArraste = false,
   dropRef,
   onDragOver,
   style,
@@ -93,6 +97,9 @@ export default function Card({
   /** Quanto o evento do dia mexeu num custo: a seta diz para que lado. */
   const desvio = (qual: string, quanto: number) => quanto - (base.find((b) => b.qual === qual)?.quanto ?? quanto)
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
+  /** Só a carta que ARRASTA prende o dedo: as outras deixam a lista rolar
+   *  por baixo dela (o histórico, a fileira de cartas do replay). */
+  const arrastavel = Boolean(onPlay) && !semArraste
 
   /** Informa só o deslocamento do ponteiro; o CSS compõe o resto. */
   function mover(dx: number, dy: number) {
@@ -122,7 +129,7 @@ export default function Card({
     // `cliqueSimples` esperando) aponta o rótulo da carta para o interruptor
     // que treme; qualquer outro toque desaponta (`vibrar.ts`)
     apontarParaTremer(palco.current, !!onPlay && !disabled && !locked && !faceDown && !!cliqueSimples.current)
-    if (!onPlay || disabled || locked || faceDown || e.button !== 0) return
+    if (!arrastavel || disabled || locked || faceDown || e.button !== 0) return
     ignorarClique.current = false
     arraste.current = { x: e.clientX, y: e.clientY, moveu: false }
     ref.current?.setPointerCapture(e.pointerId)
@@ -193,6 +200,7 @@ export default function Card({
 
   const classes = [styles.carta]
   if (interativa) classes.push(styles.interativa)
+  if (arrastavel) classes.push(styles.arrastavel)
   if (disabled) classes.push(styles.indisponivel)
   if (locked) classes.push(styles.bloqueada)
   if (faceDown) classes.push(styles.virada)
@@ -218,7 +226,7 @@ export default function Card({
         // só a carta que ARRASTA se marca: é a marca que a barra lateral lê
         // para não abrir com o gesto. Carta parada (bloqueada, de leitura)
         // marcada roubava o arraste do menu sem ela mesma arrastar
-        data-carta={onPlay ? '' : undefined}
+        data-carta={arrastavel ? '' : undefined}
         className={classes.join(' ')}
         style={
           {

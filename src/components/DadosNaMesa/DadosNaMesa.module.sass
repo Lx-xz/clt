@@ -10,6 +10,11 @@
 .pegando
   pointer-events: auto
 
+  &:focus-visible
+    outline: 2px solid var(--destaque)
+    outline-offset: -4px
+    border-radius: var(--raio)
+
 .saindo
   animation: sair .4s ease 1s both
 
@@ -34,8 +39,7 @@
   b
     font-size: 16px
 
-// o que a carta pediu, e o botão para a mesa jogar por quem não quer
-// arrastar. Preso nas DUAS bordas (e não centrado por transform): numa mesa
+// o que a carta pediu, e como jogar. Preso nas DUAS bordas (e não centrado por transform): numa mesa
 // estreita, um balão de largura própria passava da tela e arrastava a
 // página inteira para o lado
 .pedido
@@ -65,18 +69,6 @@
     font-size: 11px
     text-align: center
 
-  button
-    display: inline-flex
-    align-items: center
-    gap: 5px
-    padding: 4px 12px
-    border: none
-    border-radius: 999px
-    background: var(--tinta)
-    color: var(--papel)
-    font: inherit
-    font-weight: 700
-    cursor: pointer
 
 .oQue
   min-width: 0

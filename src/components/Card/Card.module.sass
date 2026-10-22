@@ -23,10 +23,19 @@ $levantada: 18px
   --ty: var(--lift, 0px)
   transform: translate(var(--tx, 0px), var(--ty)) rotate(var(--rot, 0deg)) rotateY(var(--flip, 0deg)) scale(var(--sc, 1))
   transition: transform .3s cubic-bezier(.2, .8, .25, 1)
-  touch-action: none
+  // o dedo que encosta numa carta parada ROLA a lista em volta dela (o
+  // histórico, a fileira do replay); era `none` em toda carta, e a fileira
+  // só andava se o dedo começasse fora delas. `manipulation` ainda corta o
+  // zoom do toque duplo, que é o gesto de jogar
+  touch-action: manipulation
   user-select: none
 
 .interativa
+  cursor: pointer
+
+// só a carta que se arrasta prende o dedo: o gesto é dela
+.arrastavel
+  touch-action: none
   cursor: grab
 
   &:focus-visible

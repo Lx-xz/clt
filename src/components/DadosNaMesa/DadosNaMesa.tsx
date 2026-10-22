@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Dices } from 'lucide-react'
 import { RolagemNaMesa, dadosDaRolagem, dadosDoValor, valoresDosNumeros, type DadoNaMesa } from '../Dado3D'
 import { textoDaRolagem } from '@/game/acoes'
 import type { GameState } from '@/game/types'
@@ -11,8 +10,8 @@ import styles from './DadosNaMesa.module.sass'
  * Os dados de uma carta no tapete. Dois casos:
  *
  * - **A carta pediu dados** (`pedido`, o `rolagemAberta` do motor, v0.42):
- *   eles esperam no canto, a pessoa pega e joga com o dedo ou o mouse (ou
- *   toca em "Jogar" e a mesa joga), e o número é o da face que ficar para
+ *   eles esperam no canto, a pessoa pega e joga com o dedo ou o mouse, e
+ *   o número é o da face que ficar para
  *   CIMA quando eles assentarem — não um sorteio feito antes. Parados, a
  *   soma fica um instante à vista, e só então a resposta vai ao motor
  *   (`onJogou`), que segue com o resto da carta.
@@ -83,8 +82,21 @@ function DadosPedidos({ pedido, nomeDaCarta, onJogou }: {
 
   if (!dados) return null
   return (
-    // `data-carta`: o arraste do dado não pode abrir a barra lateral no celular
-    <div className={`${styles.camada} ${styles.pegando} ${valores ? styles.saindo : ''}`} data-carta>
+    // `data-carta`: o arraste do dado não pode abrir a barra lateral no celular.
+    // Só se joga com a mão (pedido do autor: o botão "a mesa joga" saiu); quem
+    // usa teclado foca a mesa e joga com Enter ou espaço, e aí, sem gesto, a
+    // mesa lança por ele — a face de cima continua sendo o resultado
+    <div
+      className={`${styles.camada} ${styles.pegando} ${valores ? styles.saindo : ''}`}
+      data-carta
+      tabIndex={jogou || auto ? -1 : 0}
+      aria-label={`${nomeDaCarta ?? 'A carta'} rola ${textoDaRolagem(rolagem).replace('−', '')}. Arraste o dado e solte, ou aperte Enter.`}
+      onKeyDown={(e) => {
+        if (jogou || auto || (e.key !== 'Enter' && e.key !== ' ')) return
+        e.preventDefault()
+        setAuto(true)
+      }}
+    >
       <RolagemNaMesa
         key={auto ? 'auto' : 'mao'}
         dados={dados}
@@ -101,14 +113,7 @@ function DadosPedidos({ pedido, nomeDaCarta, onJogou }: {
           <span className={styles.oQue}>
             {nomeDaCarta ? <b>{nomeDaCarta}</b> : null} rola {textoDaRolagem(rolagem).replace('−', '')}
           </span>
-          {!jogou && !auto ? (
-            <>
-              <button type="button" onClick={() => setAuto(true)}>
-                <Dices size={15} aria-hidden /> Jogar
-              </button>
-              <small>ou arraste o dado e solte</small>
-            </>
-          ) : null}
+          {!jogou && !auto ? <small>arraste o dado e solte</small> : null}
         </div>
       )}
     </div>

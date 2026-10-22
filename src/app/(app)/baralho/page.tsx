@@ -97,6 +97,16 @@ export default function BaralhoPage() {
   const dentroRef = useRef<HTMLElement>(null)
   const foraRef = useRef<HTMLElement>(null)
   const sessao = useSessao()
+  // no celular as colunas viram abas: não há para onde arrastar, e o dedo
+  // na carta tem que rolar a página. O clique duplo e o contador seguem
+  const [estreito, setEstreito] = useState(false)
+  useEffect(() => {
+    const m = window.matchMedia('(max-width: 760px)')
+    const ver = () => setEstreito(m.matches)
+    ver()
+    m.addEventListener('change', ver)
+    return () => m.removeEventListener('change', ver)
+  }, [])
 
   useEffect(() => {
     let vivo = true
@@ -413,6 +423,7 @@ export default function BaralhoPage() {
                     card={getCard(id)}
                     onOpen={() => setAberta(id)}
                     onPlay={() => mover(id, -1)}
+                    semArraste={estreito}
                     dropRef={foraRef}
                     onDragOver={(v) => setSobre(v ? 'fora' : null)}
                   />
@@ -442,6 +453,7 @@ export default function BaralhoPage() {
                     card={getCard(id)}
                     onOpen={() => setAberta(id)}
                     onPlay={() => mover(id, +1)}
+                    semArraste={estreito}
                     dropRef={dentroRef}
                     onDragOver={(v) => setSobre(v ? 'dentro' : null)}
                   />
