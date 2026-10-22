@@ -8,7 +8,6 @@ import BarraDaSorte, { BarraDeCaminhos } from '../BarraDaSorte'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
 import { rolarDaCarta } from '@/game/acoes'
 import { caminhosDaCarta, comentarioDaCarta, descreverCarta, linhasDaCarta } from '@/game/descricao'
-import { useModoDaDescricao } from '@/data/modoDaDescricao'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { apontarParaTremer } from '@/data/vibrar'
@@ -110,8 +109,7 @@ export default function Card({
   // depois do número. O texto escrito virou o comentário: na carta só
   // quando sobra espaço, e sempre no detalhe. O evento continua escrito:
   // as escolhas dele já são texto
-  const modo = useModoDaDescricao()
-  const automatica = !evento && modo === 'icones'
+  const automatica = !evento
   const descricao = automatica ? descreverCarta(card, { semRolar: Boolean(rolar) }) : card.text
   // "se X, senão Y" também se desenha dividido, com a condição no lugar
   // das faces do dado

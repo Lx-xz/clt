@@ -27,13 +27,13 @@ interface Faixa {
  * cima e o que acontece embaixo. Serve à carta de SORTE (as faixas do
  * dado) e à carta de CAMINHOS (o "se X, senão Y" do estado da partida).
  *
- * As cores dizem o TOM, e o tom é escolha de quem faz a carta: verde e
- * vermelho só quando a carta quer dizer "deu certo / deu errado"; as neutras
- * não julgam, e são três tons de papelada que se distinguem entre si.
- * `sem` não tem cor nenhuma. `destaque` acende a faixa que saiu na mesa.
+ * SEM COR (pedido do autor, v0.44): nada de verde, vermelho, azul ou
+ * amarelo — a faixa é papel e um fio de tinta, e quem as distingue é o
+ * rótulo e o texto. Os tons (`bom`, `ruim`, neutros) existiram e as classes
+ * ficaram no sass; o `tom` da faixa continua no dado da carta, só não pinta
+ * mais nada. `destaque` acende a faixa que saiu na mesa.
  */
 function BarraDividida({ antes, faixas, destaque }: { antes?: string; faixas: Faixa[]; destaque?: number | null }) {
-  let neutra = 0
   return (
     <div className={styles.corpo}>
       {/* o que a carta faz ALÉM dos caminhos, por cima da barra */}
@@ -44,7 +44,7 @@ function BarraDividida({ antes, faixas, destaque }: { antes?: string; faixas: Fa
       ) : null}
       <div className={styles.barra}>
         {faixas.map((f, i) => {
-          const tom = f.tom === 'sem' ? styles.semCor : f.tom === 'neutro' ? styles[`neutro${neutra++ % 3}`] : styles[f.tom]
+          const tom = styles.semCor
           const estado = destaque == null ? '' : destaque === i ? styles.aceso : styles.apagado
           return (
             <div key={i} className={`${styles.lado} ${tom} ${estado}`} style={{ flexGrow: Math.max(f.peso, 0.28) }}>

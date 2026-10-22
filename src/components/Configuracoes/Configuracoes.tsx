@@ -8,7 +8,6 @@ import { tocar } from '@/data/efeitos'
 import type { Volumes } from '@/data/som'
 import { podeVibrar, vibrar } from '@/data/vibrar'
 import { TEMAS, type Tema } from '@/data/tema'
-import { gravarModoDaDescricao, useModoDaDescricao } from '@/data/modoDaDescricao'
 import type { Sessao } from '@/game/session'
 import buttons from '@/styles/buttons.module.sass'
 import Avatar from '../Avatar'
@@ -65,7 +64,6 @@ export default function Configuracoes({
   onFechar: () => void
 }) {
   const [aba, setAba] = useState<Aba>('som')
-  const modoDaDescricao = useModoDaDescricao()
   const [vibra] = useState(podeVibrar)
 
   return (
@@ -122,22 +120,6 @@ export default function Configuracoes({
           </div>
           <p className={styles.dica}>
             &ldquo;Sistema&rdquo; acompanha o aparelho, inclusive quando ele troca sozinho de noite.
-          </p>
-
-          <h3 className={styles.titulo}>Descrição das cartas</h3>
-          <Segmentado
-            rotulo="Descrição das cartas"
-            valor={modoDaDescricao}
-            onChange={gravarModoDaDescricao}
-            opcoes={[
-              { valor: 'icones', rotulo: 'Com ícones' },
-              { valor: 'escrita', rotulo: 'Escrita' },
-            ]}
-          />
-          <p className={styles.dica}>
-            {modoDaDescricao === 'icones'
-              ? 'A carta diz o que faz com o ícone do recurso antes do número, e embaixo vem o comentário dela.'
-              : 'A carta mostra o texto escrito, como antes.'}
           </p>
         </section>
       ) : null}

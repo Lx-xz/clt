@@ -233,7 +233,6 @@ export const DESCRITORES = {
           opcoes: [2, 3, 4, 6, 8, 10, 12, 20, 100].map((l) => ({ valor: String(l), rotulo: l === 2 ? 'moeda (d2)' : `d${l}` })),
         },
       },
-      { chave: 'semCor', rotulo: 'Faixas sem cor', padrao: false, opcional: true, campo: { tipo: 'simNao' } },
       {
         chave: 'saidas', rotulo: 'Faixas', campo: { tipo: 'saidas' },
         padrao: [

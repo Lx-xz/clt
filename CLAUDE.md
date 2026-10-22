@@ -291,10 +291,9 @@ número, é comentário. O `/lab/cartas` mostra a descrição gerada, chama o
 campo de "Comentário da carta", avisa quando o texto ainda é descrição, e
 tem a seção "Cartas com a descrição de antes", que troca o texto pelos
 comentários sugeridos (`lab/cartas/comentarios.ts`, pelo NOME da carta) —
-um salvamento com motivo por carta, como sempre. É um TESTE: em
-Configurações › Aparência, "Descrição das cartas" volta para a escrita
-(`src/data/modoDaDescricao.ts`, chave `clt-descricao:v1` com hífen, para
-sobreviver à troca de conta). Evento continua escrito, e a carta de sorte
+um salvamento com motivo por carta, como sempre. Houve uma escolha em
+Configurações para voltar à descrição escrita; o autor a tirou, e a
+descrição com ícones é a única. Evento continua escrito, e a carta de sorte
 põe a descrição automática (sem o `rolar`) em cima da barra.
 
 **"Se X, senão Y" também é barra dividida (v0.44, `caminhosDaCarta`).**
@@ -302,11 +301,18 @@ A carta com dois ou mais blocos de condição (a Reunião), com uma ação `se`
 que tem `senao` (o Prazo Apertado), ou com um `sorteio` de duas saídas (a
 Pedir Aumento) se desenha com `BarraDeCaminhos`: a condição (ou a chance)
 no lugar das faces do dado, o que acontece embaixo, e o resto da carta na
-linha de cima. Faixas neutras (o motor não sabe qual caminho é o bom); as
-de condição têm a mesma altura, as de sorteio a altura da chance. `se` sem
+linha de cima. As de condição têm a mesma altura, as de sorteio a altura da chance. `se` sem
 `senao` não é caminho ("e, se tal, mais isto") e continua no texto. A
 barra é uma só (`BarraDividida`, dentro de `BarraDaSorte`), para sorte e
-para caminhos. Só no modo "Com ícones".
+para caminhos.
+**Toda barra dividida é SEM COR** (pedido do autor): nada de verde,
+vermelho, azul ou amarelo; a faixa é papel e um fio de tinta. O `tom` das
+saídas do `rolar` e o `semCor` continuam no dado das cartas já salvas, mas
+não pintam mais nada, e o editor não os oferece.
+**O detalhe da carta (`CardDetail`) dá a ênfase à CARTA:** ela vem num
+palco iluminado, ampliada por `zoom` (as fontes da carta têm teto em px, e
+só o zoom cresce o texto junto), e as informações ficam ao lado, menores;
+no celular, o palco em cima.
 
 **A condição vai EM CIMA do que ela libera (v0.44, `linhasDaCarta`).** Na
 face da carta a descrição sai em linhas: a condição (ou o gatilho, "Na

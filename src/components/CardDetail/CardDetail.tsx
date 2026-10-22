@@ -3,7 +3,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { custosDe } from '@/game/custos'
 import { comentarioDaCarta, descreverCarta } from '@/game/descricao'
-import { useModoDaDescricao } from '@/data/modoDaDescricao'
 import type { ActionCard, Custo, EventCard } from '@/game/types'
 import buttons from '@/styles/buttons.module.sass'
 import Card from '../Card'
@@ -40,8 +39,7 @@ export default function CardDetail({ card, cost, custos, onClose, onPlay, blocke
   const Energia = RESOURCE_ICONS.energia
   // no detalhe a descrição automática vai INTEIRA (a carta corta), e o
   // comentário embaixo; o texto antigo de efeito não se repete
-  const modo = useModoDaDescricao()
-  const automatica = !evento && modo === 'icones'
+  const automatica = !evento
   const comentario = automatica ? comentarioDaCarta(card.text) : null
   const custo = evento ? null : (cost ?? card.cost)
 
@@ -54,7 +52,9 @@ export default function CardDetail({ card, cost, custos, onClose, onPlay, blocke
       onClick={onClose}
     >
       <div className={styles.painel} onClick={(e) => e.stopPropagation()}>
-        <Card card={card} cost={custo ?? undefined} custos={custos} className={styles.carta} />
+        <div className={styles.palco}>
+          <Card card={card} cost={custo ?? undefined} custos={custos} className={styles.carta} />
+        </div>
         <div className={styles.info}>
           <h2 className={styles.nome}>{card.name}</h2>
           <div className={styles.linha}>

@@ -313,7 +313,6 @@ function Bloco({ acao, aoMudar, aoRemover, aoSubir, aoDescer, cartas }: {
             <ListaDeSaidas
               saidas={Array.isArray(obj[c.chave]) ? (obj[c.chave] as SaidaDoDado[]) : []}
               lados={Number(obj.lados) || 6}
-              semCor={obj.semCor === true}
               aoMudar={(lista) => aoMudar(comCampo(obj, c, lista) as unknown as Acao)}
             />
           ) : null}
@@ -380,14 +379,13 @@ function ListaDeOpcoes({ opcoes, aoMudar }: {
 
 /**
  * As faixas do dado da ação `rolar`: de que face a que face, o que a carta
- * DIZ naquela faixa (é o texto da barra), o tom e o que acontece. Embaixo,
+ * DIZ naquela faixa (é o texto da barra) e o que acontece. Embaixo,
  * as faces que ficaram sem faixa ou em duas — erro que a carta mostraria
  * como "não faz nada" ou como a primeira faixa vencendo, em silêncio.
  */
-function ListaDeSaidas({ saidas, lados, semCor, aoMudar }: {
+function ListaDeSaidas({ saidas, lados, aoMudar }: {
   saidas: SaidaDoDado[]
   lados: number
-  semCor: boolean
   aoMudar: (s: SaidaDoDado[]) => void
 }) {
   const mudar = (i: number, parte: Partial<SaidaDoDado>) => aoMudar(saidas.map((x, j) => (j === i ? { ...x, ...parte } : x)))
@@ -406,13 +404,6 @@ function ListaDeSaidas({ saidas, lados, semCor, aoMudar }: {
             <input className={styles.numero} type="number" min={1} max={lados} value={x.de} aria-label="Da face" onChange={(e) => mudar(i, { de: Number(e.target.value) || 1 })} />
             <span className={styles.sufixo}>a</span>
             <input className={styles.numero} type="number" min={1} max={lados} value={x.ate} aria-label="Até a face" onChange={(e) => mudar(i, { ate: Number(e.target.value) || 1 })} />
-            {semCor ? null : (
-              <select className={styles.seletor} value={x.tom ?? 'neutro'} aria-label="Tom" onChange={(e) => mudar(i, { tom: e.target.value as SaidaDoDado['tom'] })}>
-                <option value="bom">boa (verde)</option>
-                <option value="ruim">ruim (vermelha)</option>
-                <option value="neutro">neutra</option>
-              </select>
-            )}
             <button type="button" className={`${styles.iconeBotao} ${styles.tirar}`} onClick={() => aoMudar(saidas.filter((_, j) => j !== i))} aria-label="Remover faixa">
               <X size={14} aria-hidden />
             </button>
