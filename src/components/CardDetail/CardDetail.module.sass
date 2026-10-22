@@ -1,6 +1,7 @@
-// O detalhe da carta (v0.45, duas versões em prova): a carta FLUTUA no meio
-// da cortina, sem janela em volta, com o brilho da raridade atrás — o mesmo
-// da abertura de recompensa —, e as informações ficam ao lado dela
+// O detalhe da carta (v0.45): a carta FLUTUA no meio da cortina escura, sem
+// janela em volta, e as informações ficam escritas direto na cortina, ao
+// lado dela. O autor provou duas versões (com as informações num cartão de
+// papel, e assim) e um brilho da raridade atrás; ficou esta, sem o brilho
 .fundo
   position: fixed
   inset: 0
@@ -12,7 +13,7 @@
   // com o histórico da carta (no baralho) a coluna passa da tela: quem
   // rola é a cortina inteira, e a carta rola junto
   overflow-y: auto
-  background: rgba(10, 8, 5, .8)
+  background: radial-gradient(circle at 35% 50%, rgba(22, 18, 12, .86), rgba(4, 3, 2, .94) 70%)
   backdrop-filter: blur(3px)
   animation: surgir .18s ease
 
@@ -20,19 +21,18 @@
     align-items: flex-start
     padding: 56px 16px 80px
 
-// a versão solta escurece mais: o texto mora direto no fundo
-.solta
-  background: radial-gradient(circle at 35% 50%, rgba(22, 18, 12, .86), rgba(4, 3, 2, .94) 70%)
-
 @keyframes surgir
   from
     opacity: 0
 
 .cena
+  position: relative
   display: flex
   align-items: center
   gap: 56px
   margin: auto
+  // do tamanho do que tem dentro: é o canto DELA que o X marca
+  width: fit-content
   max-width: 980px
 
   @media (max-width: 720px)
@@ -47,48 +47,6 @@
   display: grid
   place-items: center
   flex: none
-  // a luz e os raios passam da carta: o palco não recorta nada
-  isolation: isolate
-
-.brilho
-  position: absolute
-  inset: -45%
-  z-index: -1
-  border-radius: 50%
-  background: radial-gradient(circle, var(--cor-brilho) 0%, transparent 62%)
-  pointer-events: none
-  animation: acende .6s ease both, pulsa 2.6s ease-in-out .6s infinite
-
-// épica e lendária ganham raios girando, como na abertura
-.raios
-  position: absolute
-  inset: -62%
-  z-index: -2
-  border-radius: 50%
-  // o período divide 360 (16 raios de 22,5°), senão a volta não fecha
-  background: repeating-conic-gradient(from 0deg, var(--cor-brilho) 0 6deg, transparent 6deg 22.5deg)
-  mask: radial-gradient(circle, #000 22%, transparent 66%)
-  opacity: .55
-  pointer-events: none
-  animation: acende .6s ease both, gira 14s linear infinite
-
-.brilho_comum
-  --cor-brilho: rgba(255, 238, 200, .55)
-
-.brilho_incomum
-  --cor-brilho: color-mix(in srgb, var(--raridade-incomum) 75%, transparent)
-
-.brilho_rara
-  --cor-brilho: color-mix(in srgb, var(--raridade-rara) 75%, transparent)
-
-.brilho_epica
-  --cor-brilho: color-mix(in srgb, var(--raridade-epica) 80%, transparent)
-
-.brilho_lendaria
-  --cor-brilho: color-mix(in srgb, var(--raridade-lendaria) 85%, transparent)
-
-.brilho_evento
-  --cor-brilho: rgba(224, 181, 68, .42)
 
 // a carta não fica parada: sobe e desce devagar, com um quase nada de giro
 .flutua
@@ -123,21 +81,6 @@
   50%
     transform: translateY(-9px) rotate(.6deg)
 
-@keyframes acende
-  from
-    opacity: 0
-    transform: scale(.6)
-
-@keyframes pulsa
-  0%, 100%
-    transform: scale(1)
-  50%
-    transform: scale(1.07)
-
-@keyframes gira
-  to
-    transform: rotate(1turn)
-
 // ------------------------------------------------------------ as informações
 
 .info
@@ -158,18 +101,10 @@
     opacity: 0
     transform: translateX(-14px)
 
-// A: um cartão de papel flutuando ao lado, levemente torto como um bilhete
-.janela .info
-  padding: 22px 22px 20px
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: 14px
-  box-shadow: 0 30px 70px rgba(0, 0, 0, .5), 0 2px 0 rgba(0, 0, 0, .15)
-
-// B: sem papel, escrito direto na cortina — que é escura nos dois temas,
+// sem papel, escrito direto na cortina — que é escura nos dois temas,
 // então a coluna usa a tinta e as cores do tema escuro (as mesmas de
 // `=escuras` em _tokens.sass, que não dá para importar num módulo)
-.solta .info
+.info
   --papel: #171613
   --papel-alto: #211f1b
   --papel-baixo: #100f0d
@@ -193,33 +128,33 @@
   flex-direction: column
   gap: 4px
 
-// "rara · tarefa": a cor é a do brilho, então a raridade se lê duas vezes
 .sobre
-  color: var(--cor-brilho)
+  color: var(--tinta-fraca)
   font-family: var(--mono)
   font-size: 11.5px
   font-weight: 700
   letter-spacing: .14em
   text-transform: uppercase
 
-.janela .brilho_comum.sobre, .janela .brilho_evento.sobre
-  color: var(--tinta-fraca)
+// "rara · tarefa" na cor da raridade (a comum fica na tinta fraca)
+.raridade_incomum
+  color: var(--raridade-incomum)
 
-.solta .brilho_comum.sobre
-  color: var(--tinta-fraca)
+.raridade_rara
+  color: var(--raridade-rara)
 
-.janela .sobre:not(.brilho_comum):not(.brilho_evento)
-  filter: brightness(.8) saturate(1.3)
+.raridade_epica
+  color: var(--raridade-epica)
+
+.raridade_lendaria
+  color: var(--raridade-lendaria)
 
 .nome
   margin: 0
   color: var(--tinta)
-  font-size: 26px
+  font-size: 34px
   line-height: 1.1
   letter-spacing: -.02em
-
-.solta .nome
-  font-size: 34px
   text-shadow: 0 2px 18px rgba(0, 0, 0, .6)
 
 .custos
@@ -271,12 +206,9 @@
 .texto
   margin: 0
   color: var(--tinta)
-  font-size: 17px
+  font-size: 19px
   font-weight: 560
   line-height: 1.5
-
-.solta .texto
-  font-size: 19px
 
 // a sátira, como uma citação
 .comentario
@@ -329,8 +261,6 @@
   display: flex
   flex-direction: column
   gap: 12px
-
-.solta .extra
   padding: 14px
   background: rgba(255, 255, 255, .05)
   border: 1px solid rgba(255, 255, 255, .1)
@@ -372,16 +302,21 @@
     align-self: stretch
     padding: 14px
 
-// o X redondo no canto da tela, fora de tudo
+// o X redondo no canto da cena, perto da carta e das informações (no
+// canto da tela ficava longe demais delas)
 .fechar
-  position: fixed
-  top: 16px
-  right: 16px
+  position: absolute
+  top: -14px
+  right: -54px
   z-index: 2
   display: grid
   place-items: center
-  width: 46px
-  height: 46px
+  width: 42px
+  height: 42px
+
+  @media (max-width: 720px)
+    top: -48px
+    right: 0
   padding: 0
   background: rgba(255, 255, 255, .1)
   border: 1px solid rgba(255, 255, 255, .22)
@@ -398,41 +333,6 @@
     outline: 3px solid var(--destaque)
     outline-offset: 2px
 
-// a escolha entre as versões, enquanto o autor não decide
-.prova
-  position: fixed
-  bottom: 14px
-  left: 50%
-  z-index: 2
-  display: flex
-  gap: 4px
-  align-items: center
-  padding: 4px 4px 4px 12px
-  background: rgba(0, 0, 0, .55)
-  border: 1px solid rgba(255, 255, 255, .15)
-  border-radius: 999px
-  color: #c9c2b2
-  font-family: var(--mono)
-  font-size: 11px
-  letter-spacing: .08em
-  text-transform: uppercase
-  white-space: nowrap
-  transform: translateX(-50%)
-
-  button
-    padding: 6px 12px
-    background: none
-    border: none
-    border-radius: 999px
-    color: inherit
-    font: inherit
-    cursor: pointer
-
-    &[aria-pressed='true']
-      background: #e0b544
-      color: #17150f
-      font-weight: 700
-
 @media (prefers-reduced-motion: reduce)
-  .flutua, .brilho, .raios, .info
+  .flutua, .info
     animation: none

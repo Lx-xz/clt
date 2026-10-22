@@ -1,7 +1,7 @@
 'use client'
 
 import { Lock, Play, X } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { NOMES_DE_RARIDADE } from '@/game/colecao'
 import { custosDe } from '@/game/custos'
 import { comentarioDaCarta, descreverCarta } from '@/game/descricao'
@@ -27,33 +27,8 @@ interface CardDetailProps {
   children?: ReactNode
 }
 
-/**
- * As duas versões em prova (v0.45, o autor escolhe uma): nas duas a carta
- * FLUTUA sozinha, sem janela, com o brilho da raridade atrás (o mesmo da
- * abertura de recompensa). Muda o que vai ao lado dela:
- * - `janela`: as informações num cartão de papel flutuando;
- * - `solta`: o fundo mais escuro, e as informações escritas direto nele.
- */
-type Versao = 'janela' | 'solta'
-const CHAVE_VERSAO = 'clt-prova-detalhe'
-
-function lerVersao(): Versao {
-  try {
-    return localStorage.getItem(CHAVE_VERSAO) === 'solta' ? 'solta' : 'janela'
-  } catch {
-    return 'janela'
-  }
-}
-
 export default function CardDetail({ card, cost, custos, onClose, onPlay, blockedReason, children }: CardDetailProps) {
   const evento = 'tone' in card
-  const [versao, setVersao] = useState<Versao>('janela')
-  useEffect(() => setVersao(lerVersao()), [])
-  function escolher(v: Versao) {
-    setVersao(v)
-    try { localStorage.setItem(CHAVE_VERSAO, v) } catch { /* sem armazenamento, só nesta abertura */ }
-  }
-
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -70,25 +45,22 @@ export default function CardDetail({ card, cost, custos, onClose, onPlay, blocke
   const custo = evento ? null : (cost ?? card.cost)
   const raridade = evento ? null : (card.raridade ?? 'comum')
   const outrosCustos = evento ? [] : (custos ?? custosDe(card))
-  const brilho = evento ? styles.brilho_evento : styles[`brilho_${raridade}`]
-  const comRaios = raridade === 'epica' || raridade === 'lendaria'
+  const corDaRaridade = evento ? '' : styles[`raridade_${raridade}`]
 
   return (
     <div
-      className={`${styles.fundo} ${styles[versao]}`}
+      className={styles.fundo}
       role="dialog"
       aria-modal="true"
       aria-label={card.name}
       onClick={onClose}
     >
-      <button type="button" className={styles.fechar} onClick={onClose} aria-label="Fechar" title="Fechar (Esc)">
-        <X size={22} aria-hidden />
-      </button>
-
       <div className={styles.cena}>
-        <div className={`${styles.palco} ${brilho}`} onClick={(e) => e.stopPropagation()}>
-          {comRaios ? <span className={styles.raios} aria-hidden /> : null}
-          <span className={styles.brilho} aria-hidden />
+        {/* o X junto da carta e das informações, e não no canto da tela */}
+        <button type="button" className={styles.fechar} onClick={onClose} aria-label="Fechar" title="Fechar (Esc)">
+          <X size={20} aria-hidden />
+        </button>
+        <div className={styles.palco} onClick={(e) => e.stopPropagation()}>
           <div className={styles.flutua}>
             <Card card={card} cost={custo ?? undefined} custos={custos} className={styles.carta} />
           </div>
@@ -96,7 +68,7 @@ export default function CardDetail({ card, cost, custos, onClose, onPlay, blocke
 
         <div className={styles.info} onClick={(e) => e.stopPropagation()}>
           <div className={styles.cabeca}>
-            <span className={`${styles.sobre} ${brilho}`}>
+            <span className={`${styles.sobre} ${corDaRaridade}`}>
               {evento ? `evento · ${card.tone}` : `${NOMES_DE_RARIDADE[raridade!]} · ${nomeDaClasse(card.kind)}`}
             </span>
             <h2 className={styles.nome}>{card.name}</h2>
@@ -154,12 +126,6 @@ export default function CardDetail({ card, cost, custos, onClose, onPlay, blocke
         </div>
       </div>
 
-      {/* a escolha entre as duas versões: some quando o autor decidir */}
-      <div className={styles.prova} onClick={(e) => e.stopPropagation()} role="group" aria-label="Versão do detalhe">
-        <span>Versão</span>
-        <button type="button" aria-pressed={versao === 'janela'} onClick={() => escolher('janela')}>A · janela</button>
-        <button type="button" aria-pressed={versao === 'solta'} onClick={() => escolher('solta')}>B · solta</button>
-      </div>
     </div>
   )
 }

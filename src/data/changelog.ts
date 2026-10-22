@@ -67,7 +67,7 @@ export const VERSOES: Versao[] = [
     itens: [
       { tipo: 'melhor', texto: 'A carta diz o que faz com o ícone depois do número: +1🔥 em vez de "+1 estresse". E um comentário sobre ela, quando cabe (sempre ao abrir a carta).' },
       { tipo: 'melhor', texto: 'Carta com "se isto, senão aquilo" ou com chance mostra os caminhos divididos, como as de dado.' },
-      { tipo: 'melhor', texto: 'Ao abrir uma carta, ela aparece grande, em destaque.' },
+      { tipo: 'melhor', texto: 'Ao abrir uma carta, ela flutua grande no fundo escuro, com o que ela faz ao lado e os botões Jogar e X.' },
     ],
   },
   {
