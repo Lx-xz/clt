@@ -1,148 +1,438 @@
+// O detalhe da carta (v0.45, duas versões em prova): a carta FLUTUA no meio
+// da cortina, sem janela em volta, com o brilho da raridade atrás — o mesmo
+// da abertura de recompensa —, e as informações ficam ao lado dela
 .fundo
   position: fixed
   inset: 0
   z-index: 280
-  display: grid
-  place-items: center
-  padding: 20px
-  background: var(--cortina)
-  animation: surgir .16s ease
+  display: flex
+  align-items: center
+  justify-content: center
+  padding: 56px 24px 72px
+  // com o histórico da carta (no baralho) a coluna passa da tela: quem
+  // rola é a cortina inteira, e a carta rola junto
+  overflow-y: auto
+  background: rgba(10, 8, 5, .8)
+  backdrop-filter: blur(3px)
+  animation: surgir .18s ease
+
+  @media (max-width: 720px)
+    align-items: flex-start
+    padding: 56px 16px 80px
+
+// a versão solta escurece mais: o texto mora direto no fundo
+.solta
+  background: radial-gradient(circle at 35% 50%, rgba(22, 18, 12, .86), rgba(4, 3, 2, .94) 70%)
 
 @keyframes surgir
   from
     opacity: 0
-  to
-    opacity: 1
 
-// a CARTA é o assunto (v0.44, pedido do autor): ela vem grande, num palco
-// iluminado, e as informações ficam ao lado (computador) ou embaixo
-// (celular), menores
-.painel
-  display: grid
-  grid-template-columns: auto minmax(0, 1fr)
-  gap: 0
-  align-items: stretch
-  width: min(720px, 100%)
-  // com o histórico da carta dentro (no baralho) o painel pode passar da
-  // altura da tela: quem rola é ele, e a cortina continua parada
-  max-height: calc(100dvh - 40px)
-  overflow-y: auto
-  background: var(--papel-alto)
-  border: 1px solid var(--linha)
-  border-radius: 12px
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .35)
+.cena
+  display: flex
+  align-items: center
+  gap: 56px
+  margin: auto
+  max-width: 980px
 
-  @media (max-width: 640px)
-    grid-template-columns: minmax(0, 1fr)
+  @media (max-width: 720px)
+    flex-direction: column
+    gap: 30px
+    width: 100%
 
-// o palco: a carta no meio de uma luz, ampliada por `zoom` — e não por
-// variáveis de tamanho: as fontes da carta têm teto em px, e só o zoom
-// cresce o texto junto com ela
+// ------------------------------------------------------------ a carta
+
 .palco
+  position: relative
   display: grid
   place-items: center
-  padding: 28px 34px
-  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--destaque) 16%, var(--papel)) 0%, var(--papel-baixo) 72%)
-  border-right: 1px solid var(--linha)
+  flex: none
+  // a luz e os raios passam da carta: o palco não recorta nada
+  isolation: isolate
 
-  @media (max-width: 640px)
-    padding: 22px 16px 18px
-    border-right: none
-    border-bottom: 1px solid var(--linha)
+.brilho
+  position: absolute
+  inset: -45%
+  z-index: -1
+  border-radius: 50%
+  background: radial-gradient(circle, var(--cor-brilho) 0%, transparent 62%)
+  pointer-events: none
+  animation: acende .6s ease both, pulsa 2.6s ease-in-out .6s infinite
 
+// épica e lendária ganham raios girando, como na abertura
+.raios
+  position: absolute
+  inset: -62%
+  z-index: -2
+  border-radius: 50%
+  // o período divide 360 (16 raios de 22,5°), senão a volta não fecha
+  background: repeating-conic-gradient(from 0deg, var(--cor-brilho) 0 6deg, transparent 6deg 22.5deg)
+  mask: radial-gradient(circle, #000 22%, transparent 66%)
+  opacity: .55
+  pointer-events: none
+  animation: acende .6s ease both, gira 14s linear infinite
+
+.brilho_comum
+  --cor-brilho: rgba(255, 238, 200, .55)
+
+.brilho_incomum
+  --cor-brilho: color-mix(in srgb, var(--raridade-incomum) 75%, transparent)
+
+.brilho_rara
+  --cor-brilho: color-mix(in srgb, var(--raridade-rara) 75%, transparent)
+
+.brilho_epica
+  --cor-brilho: color-mix(in srgb, var(--raridade-epica) 80%, transparent)
+
+.brilho_lendaria
+  --cor-brilho: color-mix(in srgb, var(--raridade-lendaria) 85%, transparent)
+
+.brilho_evento
+  --cor-brilho: rgba(224, 181, 68, .42)
+
+// a carta não fica parada: sobe e desce devagar, com um quase nada de giro
+.flutua
+  animation: chegar .4s cubic-bezier(.2, .8, .25, 1) both, flutuar 4.2s ease-in-out .4s infinite
+
+// ampliada por `zoom`, e não por variáveis de tamanho: as fontes da carta
+// têm teto em px, e só o zoom cresce o texto junto com ela
 .carta
   --carta-w: 190px
   --carta-h: 288px
   --carta-arte: 112px
-  flex: none
-  zoom: 1.4
-  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .3))
-  animation: chegar .32s cubic-bezier(.2, .8, .25, 1) both
+  zoom: 1.55
+  filter: drop-shadow(0 26px 30px rgba(0, 0, 0, .55))
 
-  @media (max-height: 760px)
+  @media (max-height: 800px)
+    zoom: 1.3
+
+  @media (max-width: 720px)
     zoom: 1.2
 
-  @media (max-width: 640px)
-    zoom: 1.25
-
-  @media (max-width: 640px) and (max-height: 760px)
-    zoom: 1.05
+  @media (max-width: 720px) and (max-height: 760px)
+    zoom: 1.02
 
 @keyframes chegar
   from
     opacity: 0
-    transform: translateY(14px) scale(.94)
+    transform: translateY(26px) scale(.9)
+
+@keyframes flutuar
+  0%, 100%
+    transform: translateY(0) rotate(-.6deg)
+  50%
+    transform: translateY(-9px) rotate(.6deg)
+
+@keyframes acende
+  from
+    opacity: 0
+    transform: scale(.6)
+
+@keyframes pulsa
+  0%, 100%
+    transform: scale(1)
+  50%
+    transform: scale(1.07)
+
+@keyframes gira
+  to
+    transform: rotate(1turn)
+
+// ------------------------------------------------------------ as informações
 
 .info
   display: flex
   flex-direction: column
-  gap: 12px
+  gap: 14px
+  width: min(360px, 100%)
   min-width: 0
+  animation: entrarInfo .4s cubic-bezier(.2, .8, .25, 1) .08s both
+
+  @media (max-width: 720px)
+    width: 100%
+    max-width: 440px
+    margin: 0 auto
+
+@keyframes entrarInfo
+  from
+    opacity: 0
+    transform: translateX(-14px)
+
+// A: um cartão de papel flutuando ao lado, levemente torto como um bilhete
+.janela .info
   padding: 22px 22px 20px
+  background: var(--papel-alto)
+  border: 1px solid var(--linha)
+  border-radius: 14px
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .5), 0 2px 0 rgba(0, 0, 0, .15)
+
+// B: sem papel, escrito direto na cortina — que é escura nos dois temas,
+// então a coluna usa a tinta e as cores do tema escuro (as mesmas de
+// `=escuras` em _tokens.sass, que não dá para importar num módulo)
+.solta .info
+  --papel: #171613
+  --papel-alto: #211f1b
+  --papel-baixo: #100f0d
+  --tinta: #ece7da
+  --tinta-fraca: #a39c8c
+  --linha: #3a362e
+  --energia: #6fb0dd
+  --estresse: #e0685e
+  --produtividade: #6fc08b
+  --dinheiro: #8fc47a
+  --destaque: #e0b544
+  --raridade-incomum: #6eaee8
+  --raridade-rara: #6cc68b
+  --raridade-epica: #b48ce8
+  --raridade-lendaria: #e8c04e
+  color: var(--tinta)
+  color-scheme: dark
+
+.cabeca
+  display: flex
+  flex-direction: column
+  gap: 4px
+
+// "rara · tarefa": a cor é a do brilho, então a raridade se lê duas vezes
+.sobre
+  color: var(--cor-brilho)
+  font-family: var(--mono)
+  font-size: 11.5px
+  font-weight: 700
+  letter-spacing: .14em
+  text-transform: uppercase
+
+.janela .brilho_comum.sobre, .janela .brilho_evento.sobre
+  color: var(--tinta-fraca)
+
+.solta .brilho_comum.sobre
+  color: var(--tinta-fraca)
+
+.janela .sobre:not(.brilho_comum):not(.brilho_evento)
+  filter: brightness(.8) saturate(1.3)
 
 .nome
   margin: 0
-  font-size: 19px
+  color: var(--tinta)
+  font-size: 26px
+  line-height: 1.1
   letter-spacing: -.02em
 
-.linha
+.solta .nome
+  font-size: 34px
+  text-shadow: 0 2px 18px rgba(0, 0, 0, .6)
+
+.custos
   display: flex
   flex-wrap: wrap
   gap: 8px
 
-.chip
+// o custo como o carimbo da carta: o ícone e o número, na cor do recurso
+.custo
+  --cor: var(--tinta)
   display: inline-flex
   align-items: center
-  gap: 5px
-  padding: 3px 10px
-  background: var(--papel)
-  border: 1px solid var(--linha)
+  gap: 6px
+  padding: 5px 12px 5px 9px
+  background: color-mix(in srgb, var(--cor) 14%, transparent)
+  border: 1.5px solid var(--cor)
   border-radius: 999px
+  color: var(--cor)
+  font-family: var(--mono)
+  font-size: 15px
+
+  b
+    font-weight: 800
+
+  // o custo de antes do evento, riscado
+  s
+    opacity: .6
+    font-size: 12px
+
+.custo_energia
+  --cor: var(--energia)
+
+.custo_dinheiro
+  --cor: var(--dinheiro)
+
+.custo_estresse
+  --cor: var(--estresse)
+
+.custo_produtividade
+  --cor: var(--produtividade)
+
+.semCusto
   color: var(--tinta-fraca)
   font-family: var(--mono)
-  font-size: 11.5px
-  letter-spacing: .04em
-
-.chipEnergia
-  border-color: var(--energia)
-  color: var(--energia)
-
-.chip_dinheiro
-  border-color: var(--dinheiro)
-  color: var(--dinheiro)
-
-.chip_estresse
-  border-color: var(--estresse)
-  color: var(--estresse)
-
-.chip_produtividade
-  border-color: var(--produtividade)
-  color: var(--produtividade)
+  font-size: 12px
+  letter-spacing: .08em
+  text-transform: uppercase
 
 .texto
   margin: 0
   color: var(--tinta)
-  font-size: 15px
-  font-weight: 550
+  font-size: 17px
+  font-weight: 560
   line-height: 1.5
 
-.nota
-  margin: 0
-  color: var(--tinta-fraca)
-  font-size: 12.5px
+.solta .texto
+  font-size: 19px
 
-.acoes
-  display: flex
-  flex-wrap: wrap
-  gap: 8px
-  margin-top: 4px
-
-// o comentário da carta (a sátira), embaixo do que ela faz
+// a sátira, como uma citação
 .comentario
   margin: 0
+  padding-left: 12px
+  border-left: 2px solid var(--linha)
   color: var(--tinta-fraca)
+  font-size: 14.5px
   font-style: italic
+  line-height: 1.45
+
+.escolhas
+  display: flex
+  flex-direction: column
+  gap: 8px
+  margin: 0
+  padding: 0
+  list-style: none
+
+  li
+    padding: 9px 12px
+    background: color-mix(in srgb, var(--tinta) 6%, transparent)
+    border: 1px solid var(--linha)
+    border-radius: 10px
+    color: var(--tinta-fraca)
+    font-size: 14px
+
+  strong
+    display: block
+    color: var(--tinta)
+
+.bloqueio
+  display: flex
+  gap: 8px
+  align-items: flex-start
+  margin: 0
+  padding: 9px 12px
+  background: color-mix(in srgb, var(--estresse) 12%, transparent)
+  border-radius: 10px
+  color: var(--tinta)
+  font-size: 13.5px
+
+  svg
+    flex: none
+    margin-top: 2px
+    color: var(--estresse)
+
+// o que a página põe embaixo (no baralho, as cópias e o histórico)
+.extra
+  display: flex
+  flex-direction: column
+  gap: 12px
+
+.solta .extra
+  padding: 14px
+  background: rgba(255, 255, 255, .05)
+  border: 1px solid rgba(255, 255, 255, .1)
+  border-radius: 12px
+
+// ------------------------------------------------------------ os botões
+
+.jogar
+  display: inline-flex
+  align-items: center
+  justify-content: center
+  gap: 10px
+  align-self: flex-start
+  margin-top: 4px
+  padding: 12px 26px 12px 20px
+  background: var(--destaque)
+  border: none
+  border-radius: 999px
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--destaque) 45%, transparent), inset 0 -3px 0 rgba(0, 0, 0, .18)
+  color: #17150f
+  font-size: 16px
+  font-weight: 750
+  letter-spacing: .02em
+  cursor: pointer
+  transition: transform .12s ease, box-shadow .12s ease
+
+  &:hover
+    transform: translateY(-2px)
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--destaque) 55%, transparent), inset 0 -3px 0 rgba(0, 0, 0, .18)
+
+  &:active
+    transform: translateY(1px)
+
+  &:focus-visible
+    outline: 3px solid #fff
+    outline-offset: 3px
+
+  @media (max-width: 720px)
+    align-self: stretch
+    padding: 14px
+
+// o X redondo no canto da tela, fora de tudo
+.fechar
+  position: fixed
+  top: 16px
+  right: 16px
+  z-index: 2
+  display: grid
+  place-items: center
+  width: 46px
+  height: 46px
+  padding: 0
+  background: rgba(255, 255, 255, .1)
+  border: 1px solid rgba(255, 255, 255, .22)
+  border-radius: 50%
+  color: #f4efe3
+  cursor: pointer
+  transition: background .15s ease, transform .15s ease
+
+  &:hover
+    background: rgba(255, 255, 255, .2)
+    transform: rotate(90deg)
+
+  &:focus-visible
+    outline: 3px solid var(--destaque)
+    outline-offset: 2px
+
+// a escolha entre as versões, enquanto o autor não decide
+.prova
+  position: fixed
+  bottom: 14px
+  left: 50%
+  z-index: 2
+  display: flex
+  gap: 4px
+  align-items: center
+  padding: 4px 4px 4px 12px
+  background: rgba(0, 0, 0, .55)
+  border: 1px solid rgba(255, 255, 255, .15)
+  border-radius: 999px
+  color: #c9c2b2
+  font-family: var(--mono)
+  font-size: 11px
+  letter-spacing: .08em
+  text-transform: uppercase
+  white-space: nowrap
+  transform: translateX(-50%)
+
+  button
+    padding: 6px 12px
+    background: none
+    border: none
+    border-radius: 999px
+    color: inherit
+    font: inherit
+    cursor: pointer
+
+    &[aria-pressed='true']
+      background: #e0b544
+      color: #17150f
+      font-weight: 700
 
 @media (prefers-reduced-motion: reduce)
-  .carta
+  .flutua, .brilho, .raios, .info
     animation: none

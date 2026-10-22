@@ -317,10 +317,16 @@ para caminhos.
 vermelho, azul ou amarelo; a faixa é papel e um fio de tinta. O `tom` das
 saídas do `rolar` e o `semCor` continuam no dado das cartas já salvas, mas
 não pintam mais nada, e o editor não os oferece.
-**O detalhe da carta (`CardDetail`) dá a ênfase à CARTA:** ela vem num
-palco iluminado, ampliada por `zoom` (as fontes da carta têm teto em px, e
-só o zoom cresce o texto junto), e as informações ficam ao lado, menores;
-no celular, o palco em cima.
+**O detalhe da carta (`CardDetail`) está EM PROVA (v0.45):** a carta
+flutua sozinha na cortina escura (sem janela), ampliada por `zoom` (as
+fontes da carta têm teto em px, e só o zoom cresce o texto junto), com o
+brilho da raridade atrás (e os raios na épica e na lendária, como na
+abertura de recompensa), o X redondo no canto e o "Jogar" com o ícone. Há
+duas versões, e um seletor embaixo (`clt-prova-detalhe`, sem o `clt:` para
+sobreviver à troca de conta) até o autor escolher: A, as informações num
+cartão de papel ao lado; B, a cortina mais escura e as informações escritas
+direto nela (com as cores do tema escuro na coluna). Escolhida, sai o
+seletor e a outra versão.
 
 **A condição vai EM CIMA do que ela libera (v0.44, `linhasDaCarta`).** Na
 face da carta a descrição sai em linhas: a condição (ou o gatilho, "Na
