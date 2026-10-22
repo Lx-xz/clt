@@ -1,0 +1,93 @@
+.corpo
+  display: flex
+  flex: 1
+  flex-direction: column
+  gap: 4px
+  min-height: 0
+
+.antes
+  margin: 0
+  color: var(--tinta-fraca)
+  font-size: clamp(9px, calc(var(--carta-h, 200px) * .052), 11.5px)
+  line-height: 1.25
+  display: -webkit-box
+  -webkit-line-clamp: 2
+  -webkit-box-orient: vertical
+  overflow: hidden
+
+// a barra dividida: uma faixa por saída, com a altura da chance dela
+.barra
+  display: flex
+  flex: 1
+  flex-direction: column
+  gap: 3px
+  min-height: 0
+  margin: -4px
+
+.lado
+  --tom: var(--tinta-fraca)
+  display: flex
+  flex-direction: column
+  justify-content: center
+  gap: 1px
+  min-height: 0
+  overflow: hidden
+  padding: 2px 6px 2px 8px
+  border-left: 4px solid var(--tom)
+  border-radius: 2px
+  background: color-mix(in srgb, var(--tom) 11%, var(--papel))
+  font-size: clamp(8.5px, calc(var(--carta-h, 200px) * .052), 11px)
+  line-height: 1.2
+  transition: opacity .3s ease, transform .3s ease, box-shadow .3s ease
+
+.bom
+  --tom: var(--produtividade)
+
+.ruim
+  --tom: var(--estresse)
+
+.neutro0
+  --tom: #56708f
+
+.neutro1
+  --tom: #a0783a
+
+.neutro2
+  --tom: #7d5a7a
+
+// sem cor: a faixa é só papel e o fio da tinta, e quem diferencia é o texto
+.semCor
+  --tom: color-mix(in srgb, var(--tinta) 35%, transparent)
+  background: color-mix(in srgb, var(--tinta) 5%, var(--papel))
+
+// a faixa que saiu na mesa acende; as outras recuam
+.aceso
+  box-shadow: 0 0 0 2px var(--tom)
+  transform: scale(1.03)
+
+.apagado
+  opacity: .4
+
+.faixa
+  color: var(--tom)
+  font-family: var(--mono)
+  font-size: .9em
+  font-weight: 700
+
+  small
+    font-weight: 400
+    opacity: .8
+
+.semCor .faixa
+  color: var(--tinta-fraca)
+
+.efeito
+  overflow: hidden
+  color: var(--tinta)
+  display: -webkit-box
+  -webkit-line-clamp: 2
+  -webkit-box-orient: vertical
+
+@media (prefers-reduced-motion: reduce)
+  .lado
+    transition: none

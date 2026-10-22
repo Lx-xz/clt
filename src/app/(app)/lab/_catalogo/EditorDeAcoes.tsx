@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronUp, X } from 'lucide-react'
 import { createContext, useContext, useId, useState } from 'react'
 import { todasAsCartas } from '@/game/catalogo'
-import { ehRolagem, textoDaRolagem, type Acao, type Condicao, type Efeito, type Quando, type Rolagem } from '@/game/acoes'
+import { ehRolagem, textoDaRolagem, type Acao, type Condicao, type Efeito, type Quando, type Rolagem, type SaidaDoDado } from '@/game/acoes'
 import { textoDaCondicao } from '@/game/textos'
 import type { EventChoice } from '@/game/types'
 import {
@@ -309,6 +309,14 @@ function Bloco({ acao, aoMudar, aoRemover, aoSubir, aoDescer, cartas }: {
               aoMudar={(lista) => aoMudar(comCampo(obj, c, lista) as unknown as Acao)}
             />
           ) : null}
+          {c.campo.tipo === 'saidas' ? (
+            <ListaDeSaidas
+              saidas={Array.isArray(obj[c.chave]) ? (obj[c.chave] as SaidaDoDado[]) : []}
+              lados={Number(obj.lados) || 6}
+              semCor={obj.semCor === true}
+              aoMudar={(lista) => aoMudar(comCampo(obj, c, lista) as unknown as Acao)}
+            />
+          ) : null}
         </fieldset>
       ))}
     </div>
@@ -319,7 +327,7 @@ function Bloco({ acao, aoMudar, aoRemover, aoSubir, aoDescer, cartas }: {
  *  linha do bloco. Um conjunto só porque o filtro precisa bater nos DOIS
  *  lados: um campo aninhado que caia no `CampoSimples` renderiza o rótulo e
  *  nada dentro, em silêncio. */
-const EH_ANINHADO = new Set(['acoes', 'condicao', 'condicoes', 'opcoes'])
+const EH_ANINHADO = new Set(['acoes', 'condicao', 'condicoes', 'opcoes', 'saidas'])
 
 type OpcaoDeEscolha = { rotulo: string; acoes: Acao[] }
 
@@ -366,6 +374,65 @@ function ListaDeOpcoes({ opcoes, aoMudar }: {
       >
         + adicionar caminho
       </button>
+    </div>
+  )
+}
+
+/**
+ * As faixas do dado da ação `rolar`: de que face a que face, o que a carta
+ * DIZ naquela faixa (é o texto da barra), o tom e o que acontece. Embaixo,
+ * as faces que ficaram sem faixa ou em duas — erro que a carta mostraria
+ * como "não faz nada" ou como a primeira faixa vencendo, em silêncio.
+ */
+function ListaDeSaidas({ saidas, lados, semCor, aoMudar }: {
+  saidas: SaidaDoDado[]
+  lados: number
+  semCor: boolean
+  aoMudar: (s: SaidaDoDado[]) => void
+}) {
+  const mudar = (i: number, parte: Partial<SaidaDoDado>) => aoMudar(saidas.map((x, j) => (j === i ? { ...x, ...parte } : x)))
+  const contagem = Array.from({ length: lados }, (_, f) => saidas.filter((x) => f + 1 >= x.de && f + 1 <= x.ate).length)
+  const sem = contagem.flatMap((n, f) => (n === 0 ? [f + 1] : []))
+  const duas = contagem.flatMap((n, f) => (n > 1 ? [f + 1] : []))
+  const faces = (l: number[]) => (l.length > 8 ? `${l.slice(0, 8).join(', ')}…` : l.join(', '))
+  return (
+    <div className={styles.lista}>
+      <p className={styles.dicaAninhada}>
+        Cada faixa é um pedaço da barra na carta, do tamanho da chance dela. O texto é o que a carta diz ali.
+      </p>
+      {saidas.map((x, i) => (
+        <fieldset key={i} className={styles.aninhado}>
+          <legend className={styles.legenda}>
+            <input className={styles.numero} type="number" min={1} max={lados} value={x.de} aria-label="Da face" onChange={(e) => mudar(i, { de: Number(e.target.value) || 1 })} />
+            <span className={styles.sufixo}>a</span>
+            <input className={styles.numero} type="number" min={1} max={lados} value={x.ate} aria-label="Até a face" onChange={(e) => mudar(i, { ate: Number(e.target.value) || 1 })} />
+            {semCor ? null : (
+              <select className={styles.seletor} value={x.tom ?? 'neutro'} aria-label="Tom" onChange={(e) => mudar(i, { tom: e.target.value as SaidaDoDado['tom'] })}>
+                <option value="bom">boa (verde)</option>
+                <option value="ruim">ruim (vermelha)</option>
+                <option value="neutro">neutra</option>
+              </select>
+            )}
+            <button type="button" className={`${styles.iconeBotao} ${styles.tirar}`} onClick={() => aoMudar(saidas.filter((_, j) => j !== i))} aria-label="Remover faixa">
+              <X size={14} aria-hidden />
+            </button>
+          </legend>
+          <input className={styles.texto} value={x.texto} placeholder="O que a carta diz nesta faixa (+R$ 90)" onChange={(e) => mudar(i, { texto: e.target.value })} />
+          <ListaDeAcoes acoes={x.acoes ?? []} aoMudar={(lista) => mudar(i, { acoes: lista })} />
+        </fieldset>
+      ))}
+      <button
+        type="button"
+        className={styles.adicionar}
+        onClick={() => {
+          const de = Math.min(lados, (saidas.at(-1)?.ate ?? 0) + 1)
+          aoMudar([...saidas, { de, ate: lados, texto: '', tom: 'neutro', acoes: [] }])
+        }}
+      >
+        + adicionar faixa
+      </button>
+      {sem.length ? <p className={styles.dicaAninhada}>Faces sem faixa (não fazem nada): {faces(sem)}</p> : null}
+      {duas.length ? <p className={styles.dicaAninhada}>Faces em duas faixas (vale a primeira): {faces(duas)}</p> : null}
     </div>
   )
 }

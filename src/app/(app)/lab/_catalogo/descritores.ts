@@ -46,6 +46,8 @@ export type TipoDeCampo =
   | { tipo: 'condicoes' }
   /** A lista de { rotulo, acoes } da ação `escolha`. */
   | { tipo: 'opcoes' }
+  /** As faixas do dado da ação `rolar`: de, até, texto, tom e ações. */
+  | { tipo: 'saidas' }
 
 export interface Campo {
   chave: string
@@ -219,6 +221,26 @@ export const DESCRITORES = {
       { chave: 'condicao', rotulo: 'quando', padrao: CONDICAO_PADRAO, campo: { tipo: 'condicao' } },
       { chave: 'entao', rotulo: 'então', padrao: [], campo: { tipo: 'acoes' } },
       { chave: 'senao', rotulo: 'senão', padrao: [], opcional: true, campo: { tipo: 'acoes' } },
+    ],
+  },
+  rolar: {
+    rotulo: 'Rolar dado (faixas)', grupo: 'especiais', Icone: Dices,
+    campos: [
+      {
+        chave: 'lados', rotulo: 'Dado', padrao: '6',
+        campo: {
+          tipo: 'escolha',
+          opcoes: [2, 3, 4, 6, 8, 10, 12, 20, 100].map((l) => ({ valor: String(l), rotulo: l === 2 ? 'moeda (d2)' : `d${l}` })),
+        },
+      },
+      { chave: 'semCor', rotulo: 'Faixas sem cor', padrao: false, opcional: true, campo: { tipo: 'simNao' } },
+      {
+        chave: 'saidas', rotulo: 'Faixas', campo: { tipo: 'saidas' },
+        padrao: [
+          { de: 1, ate: 3, texto: '', tom: 'ruim', acoes: [] },
+          { de: 4, ate: 6, texto: '', tom: 'bom', acoes: [] },
+        ],
+      },
     ],
   },
   escolha: {

@@ -250,6 +250,27 @@ de `escolha`, no `entao` do descarte e na própria `responderRolagem`):
 evento e começo de dia rolam na hora, pela mesma razão da `escolha`, e a
 mesa os joga sozinha até a face que saiu. A rolagem da mão grava
 `ultimaRolagem.naMao`, que a mesa não joga de novo.
+**A carta de SORTE é uma barra dividida (v0.43, ação `rolar`).** Um dado
+só (`lados`) e uma lista de `saidas` — cada uma `{ de, ate, texto, tom,
+acoes }` —, e roda as ações da faixa em que o dado caiu: é o `sorteio` com
+mais de duas saídas e com o dado à vista. A carta que tem um `rolar`
+(`rolarDaCarta`) se DESENHA sozinha como barra (`components/BarraDaSorte`,
+escolhida pelo autor entre os protótipos do `/lab/sorte`): uma faixa por
+saída, da altura da chance dela, com as faces escritas em cima e o `texto`
+da faixa embaixo; o `text` da carta, se houver, vai numa linha por cima
+(é o que ela faz ALÉM do dado — o lab avisa), e o selo do canto diz o
+dado. As cores dizem o TOM, e o tom é de quem faz a carta: verde e
+vermelho só para "deu certo / deu errado", três neutras que não julgam, e
+`semCor` (a caixa "Faixas sem cor" do editor) tira a cor de todas. Na
+mesa ela pausa como qualquer rolagem (`rolagemDe` entrega o dado;
+`comQuantia` devolve a ação com `saiu`, que só o motor preenche), e
+`ultimaRolagem.saida`/`cartaId` acendem a faixa que saiu na carta jogada.
+**As cartas de `sorteio` de antes NÃO viram barra sozinhas**: elas têm
+uma chance e duas listas, sem texto por saída — refazê-las com "Rolar
+dado (faixas)" no `/lab/cartas` é escolha de quem balanceia. O editor
+(`ListaDeSaidas`) acusa face sem faixa e face em duas.
+`migrarAcao` converte o `lados` em número (o `<select>` guarda "10").
+
 **O dado é 3D de CSS** (faces do fecho convexo dos vértices, cada uma um SVG
 posto por `matrix3d`): vale a armadilha do 3D achatado, e o `overflow` mora
 só na raiz da cena.

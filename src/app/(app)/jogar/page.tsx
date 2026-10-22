@@ -94,6 +94,14 @@ export default function JogarPage() {
   const tapete = useRef<HTMLDivElement>(null)
   const sessao = useSessao()
 
+  // a última carta jogada que rolou um dado na barra: é nela que a faixa que
+  // saiu acende (enquanto o dado ainda espera a mão, nada acende)
+  const rolou = state?.ultimaRolagem
+  const jogadaQueRolou =
+    state && !state.rolagemAberta && rolou?.cartaId && rolou.saida !== undefined && rolou.saida >= 0
+      ? state.playedToday.lastIndexOf(rolou.cartaId)
+      : -1
+
   // na mesa, os dados de uma carta são jogados por quem joga, e o número é o
   // da face que ficar para cima; fora dela (o simulador do lab roda o mesmo
   // motor no navegador) o motor volta a sortear sozinho
@@ -477,6 +485,7 @@ export default function JogarPage() {
                 card={getCard(id)}
                 className={styles.jogada}
                 style={{ '--i': i } as React.CSSProperties}
+                saiuNaSorte={i === jogadaQueRolou ? state.ultimaRolagem?.saida : null}
               />
             ))}
           </div>

@@ -45,6 +45,36 @@ export interface Rolagem {
   negativo?: boolean
 }
 
+/** O tom de uma saída do dado: verde e vermelho quando a carta quer dizer
+ *  "deu certo / deu errado"; neutro quando ela só tem caminhos diferentes. */
+export type TomDaSaida = 'bom' | 'ruim' | 'neutro'
+
+/** Uma faixa de faces do dado (`de` a `ate`), o que ela diz na carta e o que
+ *  ela faz. Face sem faixa nenhuma não faz nada. */
+export interface SaidaDoDado {
+  de: number
+  ate: number
+  texto: string
+  tom?: TomDaSaida
+  acoes: Acao[]
+}
+
+/** O `rolar` que a carta faz ao ser jogada, se ela tem um: é ele que vira a
+ *  barra no corpo da carta. */
+export function rolarDaCarta(efeitos: { acoes: Acao[]; quando?: string }[] | undefined): Extract<Acao, { faz: 'rolar' }> | null {
+  for (const e of efeitos ?? []) {
+    if (e.quando && e.quando !== 'aoJogar') continue
+    const r = e.acoes.find((a) => a.faz === 'rolar')
+    if (r && r.faz === 'rolar') return r
+  }
+  return null
+}
+
+/** A saída da face `valor`, ou -1. */
+export function saidaDaFace(acao: Extract<Acao, { faz: 'rolar' }>, valor: number): number {
+  return acao.saidas.findIndex((s) => valor >= s.de && valor <= s.ate)
+}
+
 /** Um número fixo, ou dados. */
 export type Quantia = number | Rolagem
 
@@ -67,11 +97,21 @@ export function quantiaDe(acao: Acao): Quantia | null {
   return null
 }
 
-/** A mesma ação, com a quantia já resolvida num número. */
+/** A mesma ação, com a quantia já resolvida num número (no `rolar`, a face
+ *  que saiu). */
 export function comQuantia(acao: Acao, n: number): Acao {
   if (acao.faz === 'recurso' || acao.faz === 'cota') return { ...acao, quanto: n }
   if (acao.faz === 'comprar') return { ...acao, quantas: n }
+  if (acao.faz === 'rolar') return { ...acao, saiu: n }
   return acao
+}
+
+/** O que a ação rola, se rola: a quantia em dados, ou o dado do `rolar`
+ *  (que ainda não saiu). */
+export function rolagemDe(acao: Acao): Rolagem | null {
+  if (acao.faz === 'rolar') return acao.saiu === undefined ? { dados: 1, lados: Number(acao.lados) || 6 } : null
+  const q = quantiaDe(acao)
+  return q !== null && ehRolagem(q) ? q : null
 }
 
 /** "1d3", "2d6+1", "−1d4": como a rolagem se escreve. */
@@ -135,6 +175,14 @@ export type Acao =
    *  mudar a mão de 5 para 6. */
   | { faz: 'maoDoDia'; quantas: number; relativo?: boolean }
   | { faz: 'sorteio'; chance: number; entao: Acao[]; senao?: Acao[] }
+  /** Joga UM dado e segue a saída da faixa em que ele caiu (v0.43): "1 a 7
+   *  no d10, perde R$ 30; 8 a 10, ganha R$ 90". É o irmão do `sorteio` com
+   *  mais de duas saídas, e o que a carta desenha como barra dividida no
+   *  lugar do texto (`BarraDaSorte`). Na mesa, o dado é jogado pela mão de
+   *  quem joga, como toda rolagem. `semCor` desenha as faixas sem o verde e
+   *  o vermelho (carta que não julga). `saiu` é só do motor: o número que a
+   *  mesa respondeu, quando a ação volta para ser executada. */
+  | { faz: 'rolar'; lados: number; saidas: SaidaDoDado[]; semCor?: boolean; saiu?: number }
   /** O irmão do `sorteio`: um pergunta à sorte, o outro pergunta ao estado.
    *  Ele existe porque o `se` do efeito só vale no nível do bloco — dentro de
    *  um `sorteio` não havia como perguntar nada. */
@@ -347,8 +395,8 @@ function resolver(state: GameState, q: Quantia, ctx: Contexto): number {
 /** Roda uma ação. Muda o estado no lugar — o motor já clonou antes. */
 export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
   // dados que o jogador vai jogar: a ação espera a mesa, e a lista pausa
-  const q = quantiaDe(acao)
-  if (q !== null && ehRolagem(q) && ctx.pedirRolagem) {
+  const q = rolagemDe(acao)
+  if (q && ctx.pedirRolagem) {
     ctx.pedirRolagem(state, acao, q)
     return
   }
@@ -467,6 +515,19 @@ export function executarAcao(state: GameState, acao: Acao, ctx: Contexto) {
     case 'sorteio':
       executar(state, ctx.sorte() < acao.chance ? acao.entao : (acao.senao ?? []), ctx)
       break
+    case 'rolar': {
+      // `saiu` vem da mesa (já anotado lá); sem ele, rola-se aqui pela sorte
+      const lados = Math.max(2, Number(acao.lados) || 6)
+      const valor = acao.saiu ?? 1 + Math.floor(ctx.sorte() * lados)
+      if (acao.saiu === undefined) anotarRolagem(state, { dados: 1, lados }, [valor], ctx.log)
+      const i = saidaDaFace(acao, valor)
+      if (state.ultimaRolagem) {
+        state.ultimaRolagem.saida = i
+        if (ctx.cartaId) state.ultimaRolagem.cartaId = ctx.cartaId
+      }
+      if (i >= 0) executar(state, acao.saidas[i].acoes, ctx)
+      break
+    }
     case 'se':
       executar(state, condicaoVale(state, acao.condicao, ctx) ? acao.entao : (acao.senao ?? []), ctx)
       break
@@ -599,6 +660,9 @@ function migrarAcao(acao: Acao): Acao {
       return { ...acao, acoes: migrarAcoes(acao.acoes) }
     case 'escolha':
       return { ...acao, opcoes: acao.opcoes.map((o) => ({ ...o, acoes: migrarAcoes(o.acoes) })) }
+    case 'rolar':
+      // o editor guarda o dado como texto ("10", vem de um <select>)
+      return { ...acao, lados: Number(acao.lados) || 6, saidas: (acao.saidas ?? []).map((x) => ({ ...x, acoes: migrarAcoes(x.acoes) })) }
     default:
       return acao
   }

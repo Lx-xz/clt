@@ -24,7 +24,7 @@ import {
   versoesDasCartas,
 } from '@/data/cartas'
 import { catalogoVeioDoBanco, todasAsCartas, todosOsEventos } from '@/game/catalogo'
-import type { Acao, Efeito, Recurso } from '@/game/acoes'
+import { rolarDaCarta, type Acao, type Efeito, type Recurso } from '@/game/acoes'
 import { COPIAS_POR_RARIDADE, NOMES_DE_RARIDADE } from '@/game/colecao'
 import { RECURSOS_DE_CUSTO, lerCustos } from '@/game/custos'
 import type { ActionCard, ClasseDaCarta, Custo, Raridade, RecursoDeCusto } from '@/game/types'
@@ -532,8 +532,9 @@ export default function LabCartasPage() {
               onChange={(e) => setEmEdicao({ ...emEdicao, text: e.target.value })}
             />
             <span className={comuns.dica}>
-              É o que o jogador lê. Escreva o efeito de verdade — o texto não é lido pelo motor,
-              então ele é a única coisa que pode mentir.
+              {rolarDaCarta(emEdicao.efeitos)
+                ? 'Esta carta rola um dado: a carta se desenha como barra, com o texto de cada faixa. Este texto aparece em cima da barra — escreva só o que ela faz ALÉM do dado, ou deixe vazio.'
+                : 'É o que o jogador lê. Escreva o efeito de verdade — o texto não é lido pelo motor, então ele é a única coisa que pode mentir.'}
             </span>
           </label>
 

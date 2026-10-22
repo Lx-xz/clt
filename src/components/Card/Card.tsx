@@ -1,10 +1,12 @@
 'use client'
 
-import { Coffee, Droplet, Hammer } from 'lucide-react'
+import { Coffee, Coins, Droplet, Hammer } from 'lucide-react'
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { custosDe, textoDoCusto } from '@/game/custos'
 import type { ActionCard, Custo, EventCard } from '@/game/types'
+import BarraDaSorte from '../BarraDaSorte'
 import { TextoComIcones, textoSemReais } from '../Dinheiro'
+import { rolarDaCarta } from '@/game/acoes'
 import { LockIcon, RESOURCE_ICONS, TONE_ICONS, iconeDaClasse } from '../icons'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { apontarParaTremer } from '@/data/vibrar'
@@ -46,6 +48,8 @@ export interface CardProps {
   /** O corpo desenhado no lugar do texto — é como a carta de SORTE mostra
    *  as duas saídas (protótipos em `/lab/sorte`). */
   corpo?: ReactNode
+  /** Na carta que rola dado: a faixa que saiu na mesa, para acender. */
+  saiuNaSorte?: number | null
   /** Um selo a mais no canto de cima, ao lado do da classe (o dado da carta
    *  de sorte). */
   seloExtra?: ReactNode
@@ -78,6 +82,7 @@ export default function Card({
   className,
   corpo,
   seloExtra,
+  saiuNaSorte,
 }: CardProps) {
   const ref = useRef<HTMLDivElement>(null)
   const palco = useRef<HTMLLabelElement & HTMLDivElement>(null)
@@ -96,6 +101,9 @@ export default function Card({
   const extras = evento ? [] : (custos ?? base)
   /** Quanto o evento do dia mexeu num custo: a seta diz para que lado. */
   const desvio = (qual: string, quanto: number) => quanto - (base.find((b) => b.qual === qual)?.quanto ?? quanto)
+  // a carta que rola um dado se DESENHA como barra dividida, sozinha: o
+  // texto dela, se houver, vira a linha de cima (o que ela faz além do dado)
+  const rolar = evento ? null : rolarDaCarta(card.efeitos)
   const interativa = !locked && !faceDown && (Boolean(onOpen) || Boolean(onPlay))
   /** Só a carta que ARRASTA prende o dedo: as outras deixam a lista rolar
    *  por baixo dela (o histórico, a fileira de cartas do replay). */
@@ -284,7 +292,11 @@ export default function Card({
           <span className={styles.selo} aria-label={locked ? 'bloqueada' : undefined} aria-hidden={!locked}>
             {locked ? <LockIcon size={13} /> : <Icon size={13} />}
           </span>
-          {seloExtra ? <span className={styles.seloExtra}>{seloExtra}</span> : null}
+          {seloExtra ?? rolar ? (
+            <span className={styles.seloExtra}>
+              {seloExtra ?? (rolar && Number(rolar.lados) === 2 ? <Coins size={12} aria-label="moeda" /> : `${Number(rolar?.lados) || 6}`)}
+            </span>
+          ) : null}
           {copies && copies > 1 ? <span className={styles.copias}>×{copies}</span> : null}
           <div className={styles.arte}>
             <Icon size={40} aria-hidden />
@@ -293,11 +305,13 @@ export default function Card({
             <span className={styles.nome}>{card.name}</span>
           </div>
           <div className={styles.corpo}>
-            {corpo ?? (
+            {corpo ?? (rolar ? (
+              <BarraDaSorte rolar={rolar} texto={card.text} destaque={saiuNaSorte} />
+            ) : (
               <p className={styles.texto}>
                 <TextoComIcones texto={card.text} />
               </p>
-            )}
+            ))}
           </div>
         </div>
         <div className={`${styles.face} ${styles.tras}`}>
